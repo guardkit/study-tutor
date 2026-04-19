@@ -232,6 +232,18 @@ The technical write-up scaffolding. Doc stubs that will be filled as the build p
 
 Ops work. Low code content. Good for a tired weekday evening.
 
+> **Bedrock-out contingency (decided 19 Apr 2026, TASK-CDR-005).** If
+> FEAT-PO-004 fails on 22 Apr (eu-west-2 lacks Gemma 4 31B Custom Model
+> Import support, or fallback regions also fail) and demo-week inference
+> must run on Ollama/GB10, the three DEC-07 GB10 training workloads are
+> sequenced as: (1) **non-negotiable** — architect-agent training +
+> fine-tune for DDD Southwest 16 May; (2) **squeezed if needed** —
+> study-tutor re-fine-tune (the 18 Apr checkpoint is shippable as-is);
+> (3) **squeezed first** — study-tutor training-dataset expansion
+> (waiting on more GCSE subject books anyway). Captured here so the call
+> is already made if Tuesday's smoke test goes south. Hosting order on
+> Bedrock if it works: study-tutor first, architect second.
+
 1. **Enable Bedrock Custom Model Import in AWS console.** Confirm region. Accept terms.
 
 2. **Upload the existing merged 16-bit weights to S3.** From GB10:

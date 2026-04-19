@@ -19,7 +19,11 @@ your child" is undermined by cloud telemetry.
 Three data-residency facts shape the architecture:
 
 1. **Layer 1 inference.** Primary on GB10 (household network).
-   Validation on AWS Bedrock (UK-region Custom Model Import).
+   Validation on AWS Bedrock — region pinned to `eu-west-2` (London)
+   if Custom Model Import for Gemma 4 31B is supported there;
+   otherwise `us-east-1` (Virginia) or `us-west-2` (Oregon) as a
+   demo-week fallback. Verified during FEAT-PO-004 setup
+   (21–22 Apr 2026); see ASSUM-007.
 2. **Layer 2 knowledge.** ChromaDB on MacBook; source PDFs in
    `domains/*/sources/` (user-provided, gitignored).
 3. **Layer 3 student model.** Graphiti — FalkorDB on Synology NAS
@@ -59,10 +63,21 @@ Mitigations for the exception:
 - If PII leaks, add a pre-Gemini redaction layer (ADR-TBD in Phase 1).
 
 **Bedrock exception** — AWS Bedrock is a cloud service, but:
-- It runs in a UK-adjacent region.
+- **Region:** preferred `eu-west-2` (London — UK-region) if Bedrock
+  Custom Model Import supports Gemma 4 31B there. If `eu-west-2` does
+  not yet list Gemma 4 31B, the demo-week fallback is `us-east-1`
+  (Virginia) or `us-west-2` (Oregon) — a deliberate residency
+  trade-off for the hackathon, accepted because only prompts and
+  responses transit (see next bullet). The actual region is verified
+  during FEAT-PO-004 setup (21–22 Apr 2026) via the AWS Bedrock
+  console's "Custom model import" region selector; the verification
+  outcome is recorded in TASK-CDR-003 and ASSUM-007.
 - Only **prompts and responses** pass through; no student identity
   or session metadata beyond what the prompt carries.
 - Fine-tuned model weights are in S3 (user's AWS account).
+- Residency posture for the non-UK fallback is a Phase 3 concern —
+  post-hackathon migration to a UK region (or a local-only inference
+  path) once `eu-west-2` Custom Model Import catches up.
 
 **No** telemetry, analytics, error reporting to any third-party
 service (Sentry, LogRocket, etc.) in any phase.

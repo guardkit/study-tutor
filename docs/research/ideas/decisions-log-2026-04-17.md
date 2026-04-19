@@ -11,7 +11,7 @@
 
 The specialist-agent workflow treats scope documents as capturing already-made decisions, not pending ones. Writing a scope doc over open decisions reopens them. This log captures every decision that shapes Phase 0 scope so the scope doc can hard-code their answers and move on.
 
-Each decision has a one-line resolution, the options considered, and the reasoning for the chosen path. Decisions are numbered so they can be referenced from downstream docs as `DEC-01` through `DEC-08`.
+Each decision has a one-line resolution, the options considered, and the reasoning for the chosen path. Decisions are numbered so they can be referenced from downstream docs as `DEC-01` through `DEC-09`.
 
 ---
 
@@ -181,6 +181,26 @@ AWS Bedrock Custom Model Import. Validates the pipeline as a Phase 1 deliverable
 - Phase 1 includes a Graphiti spike as an explicit deliverable with end-to-end latency measurement
 - Graphiti write-back is async (fire-and-forget from the tutor's perspective) regardless of Gemini latency
 - No Phase 0 blocker; no Phase 0 action required
+
+---
+
+## DEC-09 — Reference prose stays on disk; Graphiti holds decisions only
+
+**Decision:** Do NOT seed `domain-model.md`, `system-context.md`, `container.md`, or `assumptions.yaml` as `full_doc` Graphiti episodes. The 16 ADRs already encode every decision. Domain-model is reference prose that loses fidelity in Graphiti's extraction step. Read reference docs from disk in `/system-design` and `/system-plan`.
+
+**Options considered:**
+- (a) Seed all four files as `full_doc` Graphiti episodes — ensures everything is queryable from one place, but reference prose loses fidelity through Graphiti's entity-extraction step and duplicates content the ADRs already encode
+- (b) Seed a summary node per file — still lossy and still competes with the ADRs as the decision record
+- (c) **Keep Graphiti as decision record (ADRs + session-derived entities) and disk as reference library — chosen**
+
+**Reasoning:** Graphiti's strength is capturing decisions and their relationships, not storing full reference documents. The 16 ADRs already encode every architectural decision in a form Graphiti handles well. `domain-model.md`, `system-context.md`, `container.md`, and `assumptions.yaml` are reference prose and structured data that lose fidelity when extracted — the extracted entities are both noisier than the source and redundant with the ADRs. Reading them from disk in `/system-design` and `/system-plan` is cheap, deterministic, and preserves full fidelity. Revisit only if Graphiti's extraction fidelity improves materially.
+
+**Implications for Phase 0:**
+- `/system-design` and `/system-plan` read `domain-model.md`, `system-context.md`, `container.md`, and `assumptions.yaml` from disk, not Graphiti
+- Graphiti remains the "decision record" (ADRs + session-derived entities); disk remains the "reference library"
+- No seeding tooling required for these four files
+
+**Confirmation:** Claude Desktop `/system-arch` review on 2026-04-19 (TASK-REV-C7D1, observation O5) confirmed the existing handoff decision.
 
 ---
 

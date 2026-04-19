@@ -39,6 +39,12 @@ classified per CC-07 / SR-07:
 | `tutor_session_status` | sync | < 2s |
 | `tutor_session_end` | sync (triggers async Graphiti write-back in P1) | < 2s |
 
+> `tutor_start_session` is architected as long-running for Phase-1 forward
+> compatibility (where it will read the student model from Graphiti). In Phase 0
+> the implementation is a UUID mint + in-memory dict insert that returns in ≤1s.
+> The classification is stable across phases so `/feature-spec` does not need to
+> re-classify the MCP contract when Graphiti lands.
+
 HTTP MCP transport is deferred to Phase 1+ (only if a real use case
 emerges — e.g. a containerised Bedrock wrapper).
 
@@ -81,6 +87,19 @@ for reference per CC-06 / SR-06).
   behaviour) via Open WebUI. The architectural reveal (three-layer,
   Coach, Graphiti) is accessible only via the MCP surface. Accepted;
   demo script uses both surfaces.
+
+**Phase 0 session scope.** Session state lives in an in-memory dict inside the
+single MCP stdio child process. Claude Desktop spawns a fresh child per
+conversation, so:
+
+- A new Claude Desktop conversation = a fresh process = an empty session dict.
+- `tutor_session_status(session_id=...)` against a session created in a prior
+  conversation will fail.
+- **Demo-script constraint (16 May):** do not close and re-open the stdio
+  transport mid-session.
+
+This limitation is generalised by ASSUM-003 and is fine for Phase 0. Phase 1
+Graphiti-backed sessions remove it.
 
 ## References
 

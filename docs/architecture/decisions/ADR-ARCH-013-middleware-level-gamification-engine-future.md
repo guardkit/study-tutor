@@ -60,6 +60,13 @@ Phase 2 feature spec (`FEAT-PO-007`) will make the call.
   plain-data (Pydantic models) with no deepagents-specific
   dependencies.
 
+**Middleware insertion point.** ADR-ARCH-012's `CompositeBackend`
+route-scoped permissions already provide the middleware insertion
+point a `GamificationMiddleware` would attach to. If Phase 2 chooses
+middleware, the wiring seam is already there; if it chooses the
+standalone-module alternative, the cost is a small amount of
+additional wiring, not a re-architecture.
+
 ## References
 
 - deepagents 0.5.x middleware architecture docs.

@@ -100,20 +100,42 @@ assumptions:
     category: technology
     description: >-
       AWS Bedrock Custom Model Import supports Gemma 4 31B natively
-      in the selected region (us-east-1 or us-west-2), with a
-      cold-start of 30–60s and per-call latency within 5× of the
-      Ollama path.
+      in the selected region — preferred `eu-west-2` (London) for
+      UK-residency alignment with ADR-ARCH-015, with `us-east-1` or
+      `us-west-2` as a demo-week fallback if `eu-west-2` does not
+      list Gemma 4 31B for Custom Model Import. Cold-start of 30–60s
+      and per-call latency within 5× of the Ollama path.
     confidence: medium
     source: interactive_session_category_3
     evidence: >-
       Research memo flagging Bedrock as a viable Phase 2 target;
       not yet validated against the actual 31B Gemma 4 import.
+      Region availability for `eu-west-2` is verified during
+      FEAT-PO-004 setup (21–22 Apr 2026); see TASK-CDR-003.
     related_adr: ADR-ARCH-006
     revisit_trigger: >-
       FEAT-PO-004 validation smoke test in Phase 0 (Tuesday
-      22 April). If Bedrock cold-start exceeds 5 minutes or
-      per-call latency exceeds 30s, Ollama-primary posture stays
-      and demo-week scheduling becomes tighter.
+      22 April). If `eu-west-2` Custom Model Import does not
+      support Gemma 4 31B, fall back to `us-east-1` / `us-west-2`
+      and accept the residency trade-off per ADR-ARCH-015. If
+      Bedrock cold-start exceeds 5 minutes or per-call latency
+      exceeds 30s, Ollama-primary posture stays and demo-week
+      scheduling becomes tighter.
+
+      Bedrock-out contingency (DEC-07 GB10 workload priority,
+      decided 19 Apr 2026 — see TASK-CDR-005): if Bedrock is
+      unavailable for demo week and demo inference falls back to
+      Ollama on GB10, the three DEC-07 training workloads are
+      sequenced as follows on the contended GB10 schedule:
+      (1) NON-NEGOTIABLE — architect-agent training + fine-tune
+      for DDD Southwest (16 May 2026, fixed external deadline);
+      (2) SQUEEZED IF NEEDED — study-tutor re-fine-tune (current
+      checkpoint dated 18 Apr 2026 is shippable; only re-runs once
+      a meaningfully larger dataset arrives); (3) SQUEEZED FIRST —
+      study-tutor training-dataset expansion (input-bound on
+      additional GCSE subject books, deferred until books arrive).
+      Demo-week inference runs on Ollama (GB10) only in this
+      branch.
 
   - id: ASSUM-008
     category: technology

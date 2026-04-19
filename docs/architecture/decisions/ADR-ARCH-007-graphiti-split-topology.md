@@ -49,8 +49,10 @@ llm_model: gemini-2.5-pro
 embedding_provider: vllm
 embedding_base_url: http://promaxgb10-41b1:8001/v1
 embedding_model: nomic-embed-text-v1.5
-embedding_dimensions: 1024
 ```
+
+Dim resolved from `KNOWN_EMBEDDING_DIMS` (nomic-embed-text-v1.5 → 768).
+See TASK-REV-E8D1 for investigation.
 
 Phase 0 includes a `guardkit graphiti status` check in the
 clean-machine walkthrough; connection failure does not block Phase 0
