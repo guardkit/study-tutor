@@ -1,9 +1,11 @@
 ---
 id: TASK-PO02F-003
 title: Fix stale DEFAULT_OLLAMA_MODEL fallback in client.py
-status: backlog
+status: completed
 created: 2026-04-21T00:00:00Z
 updated: 2026-04-21T00:00:00Z
+completed: 2026-04-21T00:00:00Z
+completed_location: tasks/completed/TASK-PO02F-003/
 priority: low
 task_type: bugfix
 tags: [phase-0, llm-client, hygiene, micro]
@@ -15,9 +17,10 @@ estimated_minutes: 10
 implementation_mode: direct
 micro: true
 test_results:
-  status: pending
+  status: passed
   coverage: null
-  last_run: null
+  last_run: 2026-04-21T00:00:00Z
+  summary: "23/23 unit tests passed (pytest tests/unit)"
 ---
 
 # Fix stale DEFAULT_OLLAMA_MODEL fallback in client.py

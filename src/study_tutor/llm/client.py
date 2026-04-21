@@ -15,8 +15,8 @@ from __future__ import annotations
 import os
 
 DEFAULT_PLAYER_MODEL = "local"
-DEFAULT_OLLAMA_BASE_URL = "http://gb10.tailnet:11434"
-DEFAULT_OLLAMA_MODEL = "gcse-tutor-gemma4-31b:Q4_K_M"
+DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+DEFAULT_OLLAMA_MODEL = "gcse-tutor-gemma4-moe:latest"
 DEFAULT_OLLAMA_TIMEOUT_SECONDS = 120.0
 # Ollama's default num_predict is ~128 tokens — too small for GCSE essay
 # scaffolds. Cap at 2048 to fit a full Intro/Body ×2/Conclusion plan;

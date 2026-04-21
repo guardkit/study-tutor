@@ -66,7 +66,7 @@ def test_local_provider_posts_to_ollama_with_system_prompt() -> None:
     fake_response.raise_for_status.return_value = None
 
     env = {
-        "OLLAMA_BASE_URL": "http://gb10.tailnet:11434",
+        "OLLAMA_BASE_URL": "http://localhost:11434",
         "OLLAMA_MODEL": "gcse-tutor-test",
     }
     with patch.dict(os.environ, env, clear=False):
@@ -77,7 +77,7 @@ def test_local_provider_posts_to_ollama_with_system_prompt() -> None:
     assert out == "Macbeth is a tragedy."
     mock_post.assert_called_once()
     args, kwargs = mock_post.call_args
-    assert args[0] == "http://gb10.tailnet:11434/api/generate"
+    assert args[0] == "http://localhost:11434/api/generate"
     body = kwargs["json"]
     assert body["model"] == "gcse-tutor-test"
     assert body["prompt"] == "Explain the dagger speech."
