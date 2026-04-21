@@ -1,0 +1,10 @@
+role:
+  id: tutor
+  name: Tutor Agent
+  description: "Interactive tutoring runtime — player/coach loop that guides a learner through a domain goal with criteria-based feedback"
+
+player:
+  prompt_file: roles/tutor/prompts/player.md
+
+coach:
+  criteria_file: roles/tutor/criteria/definitions.yaml

@@ -1,0 +1,103 @@
+id: FEAT-PO-002
+name: "Fine-tuned English tutoring runtime over local deployment"
+description: "Phase 0 critical-path runtime: Python package scaffold, MCP adapter with four tutor tools, Ollama-backed LLM client with Bedrock stub, in-memory session state, and parity-surface unit tests (SR-01 stdio, SR-03 provider resolution). Completion gate is a live tutor_turn from Claude Desktop against the fine-tuned Gemma 4 31B model on GB10."
+created: "2026-04-20T00:00:00Z"
+status: planned
+complexity: 6
+estimated_tasks: 7
+parent_review: TASK-REV-PO02
+
+tasks:
+  - id: TASK-PO02-001
+    name: "Python package scaffold and config files"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-001-python-package-scaffold.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+    task_type: scaffolding
+
+  - id: TASK-PO02-002
+    name: "Role manifest and player prompt shell"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-002-role-manifest.md"
+    complexity: 2
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+    task_type: declarative
+
+  - id: TASK-PO02-003
+    name: "LLM client with provider resolution (Ollama + Bedrock stub)"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-003-llm-client.md"
+    complexity: 4
+    dependencies:
+      - TASK-PO02-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 75
+    task_type: feature
+
+  - id: TASK-PO02-004
+    name: "In-memory tutor session state"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-004-tutor-session.md"
+    complexity: 3
+    dependencies:
+      - TASK-PO02-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+    task_type: feature
+
+  - id: TASK-PO02-005
+    name: "MCP adapter + CLI + bash wrapper"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-005-mcp-adapter-cli-wrapper.md"
+    complexity: 6
+    dependencies:
+      - TASK-PO02-002
+      - TASK-PO02-003
+      - TASK-PO02-004
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 120
+    task_type: feature
+
+  - id: TASK-PO02-006
+    name: "Parity surface verification and unit tests"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-006-parity-tests.md"
+    complexity: 4
+    dependencies:
+      - TASK-PO02-005
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 75
+    task_type: testing
+
+  - id: TASK-PO02-007
+    name: "Claude Desktop integration and live smoke test"
+    file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-007-smoke-test.md"
+    complexity: 3
+    dependencies:
+      - TASK-PO02-005
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+    task_type: integration
+
+orchestration:
+  parallel_groups:
+    - - TASK-PO02-001
+      - TASK-PO02-002
+    - - TASK-PO02-003
+      - TASK-PO02-004
+    - - TASK-PO02-005
+    - - TASK-PO02-006
+      - TASK-PO02-007
+  estimated_duration_minutes: 450
+  recommended_parallel: 2
+  execution_mode: task-work-reviewer-in-loop
+  notes: |
+    Reviewer-in-loop execution per plan guidance (phase-0-build-plan.md:419).
+    No AutoBuild. FEAT-PO-002 is critical path with parity surface requirements
+    that benefit from human review at each checkpoint.

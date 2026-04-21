@@ -14,6 +14,12 @@
         "EMBEDDING_API_URL": "http://promaxgb10-41b1:8001/v1",
         "EMBEDDING_DIM": "1024"
       }
+    },
+    "study-tutor": {
+      "type": "stdio",
+      "defer_loading": false,
+      "command": "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/scripts/mcp-wrapper.sh",
+      "env": {}
     }
   }
 }
