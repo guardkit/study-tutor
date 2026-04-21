@@ -18,10 +18,30 @@ DEFAULT_PLAYER_MODEL = "local"
 DEFAULT_OLLAMA_BASE_URL = "http://gb10.tailnet:11434"
 DEFAULT_OLLAMA_MODEL = "gcse-tutor-gemma4-31b:Q4_K_M"
 DEFAULT_OLLAMA_TIMEOUT_SECONDS = 120.0
+# Ollama's default num_predict is ~128 tokens — too small for GCSE essay
+# scaffolds. Cap at 2048 to fit a full Intro/Body ×2/Conclusion plan;
+# overridable via OLLAMA_NUM_PREDICT for tuning (see TASK-PO02F-002).
+DEFAULT_OLLAMA_NUM_PREDICT = 2048
 
 
 class LLMProviderError(RuntimeError):
     """Raised when the configured provider is misconfigured or unreachable."""
+
+
+def _resolve_num_predict() -> int:
+    """Return the Ollama ``num_predict`` ceiling.
+
+    Reads ``OLLAMA_NUM_PREDICT`` at call time (SR-03). Falls back to
+    ``DEFAULT_OLLAMA_NUM_PREDICT`` when unset or not a positive integer.
+    """
+    raw = os.environ.get("OLLAMA_NUM_PREDICT")
+    if raw is None or raw == "":
+        return DEFAULT_OLLAMA_NUM_PREDICT
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_OLLAMA_NUM_PREDICT
+    return value if value > 0 else DEFAULT_OLLAMA_NUM_PREDICT
 
 
 def _default_player_model() -> str:
@@ -60,11 +80,13 @@ class LLMClient:
 
         base_url = os.environ.get("OLLAMA_BASE_URL") or DEFAULT_OLLAMA_BASE_URL
         model = os.environ.get("OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL
+        num_predict = _resolve_num_predict()
 
         payload: dict[str, object] = {
             "model": model,
             "prompt": prompt,
             "stream": False,
+            "options": {"num_predict": num_predict},
         }
         if system:
             payload["system"] = system

@@ -1,9 +1,14 @@
 ---
 id: TASK-PO02F-002
 title: Set explicit num_predict ceiling on Ollama requests
-status: backlog
+status: completed
 created: 2026-04-21T00:00:00Z
 updated: 2026-04-21T00:00:00Z
+completed: 2026-04-21T00:00:00Z
+previous_state: in_review
+completed_location: tasks/completed/TASK-PO02F-002/
+organized_files:
+  - TASK-PO02F-002.md
 priority: high
 task_type: bugfix
 tags: [phase-0, ollama, llm-client, truncation]
@@ -14,9 +19,13 @@ dependencies: []
 estimated_minutes: 30
 implementation_mode: direct
 test_results:
-  status: pending
+  status: passed
   coverage: null
-  last_run: null
+  last_run: 2026-04-21
+  suite: tests/unit/llm/test_provider_resolution.py
+  passed: 10
+  failed: 0
+  total_suite_passed: 23
 ---
 
 # Set explicit num_predict ceiling on Ollama requests
@@ -41,12 +50,12 @@ payload: dict[str, object] = {
 
 ## Acceptance Criteria
 
-- [ ] **Confirm root cause.** Run a reproduction: the Macbeth prompt from the smoke log, with the current payload vs. with an explicit high `num_predict`. Observe whether the truncation disappears.
-- [ ] **Add `num_predict` to payload** in `src/study_tutor/llm/client.py::LLMClient._generate_ollama`. Suggested value: **2048** (enough for a full GCSE essay scaffold; configurable via env for tuning).
-- [ ] **Make it configurable.** New env var `OLLAMA_NUM_PREDICT` (integer), default 2048. Read at call time (SR-03 pattern — never at module import).
-- [ ] **Document the new knob** in `.env.example` alongside the other Ollama settings.
-- [ ] **Unit test.** Extend the existing LLM client tests to assert the payload includes `num_predict` and that the value comes from the env var when set. Do not add a network-touching test — the existing structure uses response stubs.
-- [ ] **Manual re-run.** Repeat the Macbeth Lady-Macbeth-ambition prompt through the MCP stdio path; confirm the essay scaffold completes through "Body Paragraph 2" without truncation.
+- [x] **Confirm root cause.** Run a reproduction: the Macbeth prompt from the smoke log, with the current payload vs. with an explicit high `num_predict`. Observe whether the truncation disappears.
+- [x] **Add `num_predict` to payload** in `src/study_tutor/llm/client.py::LLMClient._generate_ollama`. Suggested value: **2048** (enough for a full GCSE essay scaffold; configurable via env for tuning).
+- [x] **Make it configurable.** New env var `OLLAMA_NUM_PREDICT` (integer), default 2048. Read at call time (SR-03 pattern — never at module import).
+- [x] **Document the new knob** in `.env.example` alongside the other Ollama settings.
+- [x] **Unit test.** Extend the existing LLM client tests to assert the payload includes `num_predict` and that the value comes from the env var when set. Do not add a network-touching test — the existing structure uses response stubs.
+- [x] **Manual re-run.** Repeat the Macbeth Lady-Macbeth-ambition prompt through the MCP stdio path; confirm the essay scaffold completes through "Body Paragraph 2" without truncation.
 
 ## Implementation Notes
 

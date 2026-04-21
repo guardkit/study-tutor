@@ -83,6 +83,9 @@ def test_local_provider_posts_to_ollama_with_system_prompt() -> None:
     assert body["prompt"] == "Explain the dagger speech."
     assert body["system"] == "You are a tutor."
     assert body["stream"] is False
+    # Default num_predict ceiling (TASK-PO02F-002) keeps essay scaffolds
+    # from truncating at Ollama's ~128-token default.
+    assert body["options"]["num_predict"] == 2048
 
 
 def test_local_provider_omits_system_when_none() -> None:
@@ -99,6 +102,46 @@ def test_local_provider_omits_system_when_none() -> None:
 
     body = mock_post.call_args.kwargs["json"]
     assert "system" not in body
+
+
+def test_local_provider_uses_env_num_predict_at_call_time() -> None:
+    """OLLAMA_NUM_PREDICT override must be read at call time (SR-03).
+
+    TASK-PO02F-002: the Ollama default (~128 tokens) truncates GCSE essay
+    scaffolds mid-body-paragraph. Default ceiling is 2048; overridable
+    per-call via the env var.
+    """
+    from study_tutor.llm.client import LLMClient
+
+    fake_response = MagicMock()
+    fake_response.json.return_value = {"response": "ok"}
+    fake_response.raise_for_status.return_value = None
+
+    with patch.dict(os.environ, {"OLLAMA_NUM_PREDICT": "512"}, clear=False):
+        with patch("httpx.post", return_value=fake_response) as mock_post:
+            LLMClient(provider="local").generate("hi")
+
+    body = mock_post.call_args.kwargs["json"]
+    assert body["options"]["num_predict"] == 512
+
+
+def test_local_provider_falls_back_to_default_on_bad_num_predict() -> None:
+    """Non-integer or non-positive OLLAMA_NUM_PREDICT values must fall back
+    to the default, not crash or pass through garbage to Ollama."""
+    from study_tutor.llm.client import LLMClient
+
+    fake_response = MagicMock()
+    fake_response.json.return_value = {"response": "ok"}
+    fake_response.raise_for_status.return_value = None
+
+    for bad in ("not-a-number", "0", "-1", ""):
+        with patch.dict(os.environ, {"OLLAMA_NUM_PREDICT": bad}, clear=False):
+            with patch("httpx.post", return_value=fake_response) as mock_post:
+                LLMClient(provider="local").generate("hi")
+        body = mock_post.call_args.kwargs["json"]
+        assert body["options"]["num_predict"] == 2048, (
+            f"Expected fallback to 2048 for OLLAMA_NUM_PREDICT={bad!r}"
+        )
 
 
 def test_local_provider_wraps_http_errors() -> None:
