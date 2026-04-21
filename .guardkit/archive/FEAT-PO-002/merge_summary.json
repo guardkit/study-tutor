@@ -1,0 +1,28 @@
+{
+  "feature_id": "FEAT-PO-002",
+  "name": "Fine-tuned English tutoring runtime over local deployment",
+  "merged_at": "2026-04-21T00:00:00Z",
+  "execution_mode": "task-work-reviewer-in-loop",
+  "autobuild": false,
+  "merge_strategy": "direct-to-main (no worktrees; reviewer-in-loop)",
+  "tasks": [
+    {"id": "TASK-PO02-001", "name": "Python package scaffold and config files", "complexity": 3, "status": "completed", "location": "tasks/completed/TASK-PO02-001/"},
+    {"id": "TASK-PO02-002", "name": "Role manifest and player prompt shell", "complexity": 2, "status": "completed", "location": "tasks/completed/TASK-PO02-002/"},
+    {"id": "TASK-PO02-003", "name": "LLM client with provider resolution (Ollama + Bedrock stub)", "complexity": 4, "status": "completed", "location": "tasks/completed/TASK-PO02-003/"},
+    {"id": "TASK-PO02-004", "name": "In-memory tutor session state", "complexity": 3, "status": "completed", "location": "tasks/completed/TASK-PO02-004/"},
+    {"id": "TASK-PO02-005", "name": "MCP adapter + CLI + bash wrapper", "complexity": 6, "status": "completed", "location": "tasks/completed/TASK-PO02-005/"},
+    {"id": "TASK-PO02-006", "name": "Parity surface verification and unit tests", "complexity": 4, "status": "completed", "location": "tasks/completed/TASK-PO02-006/"},
+    {"id": "TASK-PO02-007", "name": "Claude Desktop integration and live smoke test", "complexity": 3, "status": "completed", "location": "tasks/completed/TASK-PO02-007/"}
+  ],
+  "completion_gate": "Live tutor_turn from Claude Desktop against fine-tuned Gemma 4 31B on GB10 — verified by TASK-PO02-007 smoke test.",
+  "parity_surfaces": {
+    "SR-01_stdio_discipline": "GREEN (test-covered)",
+    "SR-02_cwd_absolute": "GREEN (shell-verified)",
+    "SR-03_provider_resolution": "GREEN (test-covered)",
+    "SR-04_providers_extras": "GREEN (shell-verified)",
+    "SR-05_dockerfile": "GREEN (Phase-0 pass-through)",
+    "SR-06_env_hygiene": "GREEN (shell-verified)",
+    "SR-07_tool_description": "GREEN (shell-verified)"
+  },
+  "parity_log": ".claude/reviews/TASK-PO02-006-parity-log.md"
+}

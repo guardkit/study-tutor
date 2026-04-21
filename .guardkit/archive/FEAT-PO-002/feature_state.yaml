@@ -2,9 +2,11 @@ id: FEAT-PO-002
 name: "Fine-tuned English tutoring runtime over local deployment"
 description: "Phase 0 critical-path runtime: Python package scaffold, MCP adapter with four tutor tools, Ollama-backed LLM client with Bedrock stub, in-memory session state, and parity-surface unit tests (SR-01 stdio, SR-03 provider resolution). Completion gate is a live tutor_turn from Claude Desktop against the fine-tuned Gemma 4 31B model on GB10."
 created: "2026-04-20T00:00:00Z"
-status: planned
+status: merged
+merged: "2026-04-21T00:00:00Z"
 complexity: 6
 estimated_tasks: 7
+completed_tasks: 7
 parent_review: TASK-REV-PO02
 
 tasks:
@@ -13,7 +15,7 @@ tasks:
     file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-001-python-package-scaffold.md"
     complexity: 3
     dependencies: []
-    status: pending
+    status: merged
     implementation_mode: task-work
     estimated_minutes: 60
     task_type: scaffolding
@@ -23,7 +25,7 @@ tasks:
     file_path: "tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-002-role-manifest.md"
     complexity: 2
     dependencies: []
-    status: pending
+    status: merged
     implementation_mode: direct
     estimated_minutes: 30
     task_type: declarative
@@ -34,7 +36,7 @@ tasks:
     complexity: 4
     dependencies:
       - TASK-PO02-001
-    status: pending
+    status: merged
     implementation_mode: task-work
     estimated_minutes: 75
     task_type: feature
@@ -45,7 +47,7 @@ tasks:
     complexity: 3
     dependencies:
       - TASK-PO02-001
-    status: pending
+    status: merged
     implementation_mode: task-work
     estimated_minutes: 45
     task_type: feature
@@ -58,7 +60,7 @@ tasks:
       - TASK-PO02-002
       - TASK-PO02-003
       - TASK-PO02-004
-    status: pending
+    status: merged
     implementation_mode: task-work
     estimated_minutes: 120
     task_type: feature
@@ -69,7 +71,7 @@ tasks:
     complexity: 4
     dependencies:
       - TASK-PO02-005
-    status: pending
+    status: merged
     implementation_mode: task-work
     estimated_minutes: 75
     task_type: testing
@@ -80,7 +82,7 @@ tasks:
     complexity: 3
     dependencies:
       - TASK-PO02-005
-    status: pending
+    status: merged
     implementation_mode: direct
     estimated_minutes: 45
     task_type: integration
