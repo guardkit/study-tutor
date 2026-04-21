@@ -543,3 +543,412 @@ TASK-CDR-006 — COMPLETED
   (domain-model.md, system-context.md, container.md, assumptions.yaml) and
   referencing TASK-REV-C7D1 observation O5.
   - Updated intro line DEC-01 through DEC-08 → DEC-01 through DEC-09.
+
+
+please implement FEAT-PO-002
+FEAT-PO-002 is the weekend-scale critical-path feature (~9 hrs of planned work per phase-0-build-plan.md:82): full Python package scaffold, MCP adapter with 4 tools, LLM provider abstraction (Ollama + Bedrock), tutor session state, six parity surfaces, CLI, and tests. The build plan itself tags it "Reviewer-in-loop … critical path, parity surfaces" — not a single-shot autonomous build.
+
+Before I start, pick a lane:
+
+GuardKit-native (recommended): I run /feature-plan FEAT-PO-002 to break it into reviewable tasks, then we work them one by one via /task-work with you reviewing each. Matches the plan's stated reviewer-in-loop guidance and the workflow in .claude/CLAUDE.md.
+One-shot implementation: I implement the full weekend plan in one go right now — scaffold, MCP adapter, LLM client, session, tests, parity surfaces. Faster but you'll be reviewing a very large diff with no checkpoints, and MCP/Ollama wiring genuinely needs a local smoke test I can't run for you.
+Scaffold only: I lay down pyproject.toml, directory skeleton, .env.example, .mcp.json, empty modules per the "Files changed" table at phase-0-build-plan.md:428, and you drive the substantive code yourself with /task-work.
+Which lane? My recommendation is (1) given the critical-path flag and the number of judgment calls (provider-resolution rules, SR-01–SR-07 parity-surface choices, role manifest shape) that benefit from your sign-off before code lands.
+
+1
+feature-plan skill
+Starting Context A clarification (review scope), then creating the review task and running the decision analysis.
+
+Agent:Context A: review scope clarification
+IN
+Execute clarification for feature planning.
+
+CONTEXT TYPE: review_scope
+
+FEATURE: FEAT-PO-002 — Fine-tuned English tutoring runtime over local deployment
+
+FEATURE BACKGROUND (authoritative context the user already has in their repo):
+- Roadmap entry: docs/product/roadmap/roadmap.md:102 ("FEAT-PO-002: Fine-tuned English tutoring runtime over local deployment")
+- Bounded Context: Tutoring Runtime BC
+- Depends on: FEAT-PO-001 (domain config — not yet built either)
+- Detailed build plan already exists: docs/research/ideas/phase-0-build-plan.md (the user currently has this open in their IDE)
+- Complexity: 6/10 per the build plan ranking
+- Scope summary: Python package scaffold (pyproject.toml, src/study_tutor/), MCP adapter with 4 tools (tutor_start_session, tutor_turn, tutor_status, tutor_end_session), LLM provider abstraction (Ollama local + AWS Bedrock Custom Model Import), tutor session state management, CLI entry point, role manifest (roles/tutor/), .mcp.json, .env.example, six parity surfaces (SR-01 to SR-07) including stdio discipline and provider-resolution rules, unit tests for stdio discipline and provider resolution
+
+ESTIMATED COMPLEXITY: 6/10
+
+FLAGS:
+  --no-questions: false
+  --with-questions: false
+  --defaults: false
+  --answers: (none)
+
+SPECIAL NOTE: This feature already has a highly detailed hour-by-hour build plan in docs/research/ideas/phase-0-build-plan.md. The review focus should arguably be narrower than a typical greenfield review — the technical options are largely decided (Python, MCP SDK, Ollama, Bedrock). The open questions are more about task decomposition granularity, review cadence, and whether to lock to the existing plan or reopen technical options.
+
+Ask the user about:
+1. Review focus — given the existing detailed plan, is the review confirming the plan (light) or re-evaluating options (full)?
+2. Trade-off priority (speed to weekend demo vs. code quality vs. learnings)
+3. Any specific concerns to address (parity surfaces, provider abstraction, MCP transport, etc.)
+
+Return ClarificationContext with review preferences.
+Read roadmap.md (lines 96-125)
+The clarifier has three questions. I'll present them and wait for your answers before proceeding.
+
+CLARIFICATION — FEAT-PO-002 Review Scope
+
+The plan in phase-0-build-plan.md is unusually detailed, so the questions are about how the review relates to it — not re-litigating decisions already made.
+
+Q1 — Review stance
+
+A — Confirm the plan (light). Build plan authoritative. Review checks consistency, produces a task breakdown mirroring the plan. No tech options reopened.
+B — Confirm + targeted spot-checks. Authoritative for most, but validate 2–3 thin assumptions (e.g. LiteLLM proxy risk, SR-01 stdio impl, Bedrock region).
+C — Full re-evaluation. Plan is one input, not the answer.
+D — Recommend (AI decides).
+Default: B.
+
+Q2 — Priority trade-off
+
+Hackathon deadline is 18 May 2026; Phase 0 also underpins Phase 1.
+
+A — Speed to demo (submittable by Wed 23 Apr). Cut anything off critical path.
+B — Code quality and parity-surface rigour. SR-01–SR-07 non-negotiable.
+C — Balanced (existing plan's weekend-code / weekday-ops split).
+D — Recommend.
+Default: C.
+
+Q3 — Specific concerns (multi-select, comma-separated)
+
+Parity surfaces (SR-01 stdio, SR-03 provider resolution) — correctness of specialist-agent pattern transfer
+Provider abstraction — Ollama→Bedrock routing, LiteLLM-on-GB10 proxy risk
+MCP transport + tool contract (tutor_start_session long-running, SR-07 description≡behaviour)
+Session state design — in-memory for Phase 0, must not block Graphiti in Phase 1
+Task decomposition granularity — are plan breakpoints the right GuardKit boundaries?
+Bedrock ops sequencing — contingency and Mon/Tue robustness
+None — standard scope review
+Default: 1, 3, 5.
+
+You can answer all three at once (e.g. B, C, 1,3,5) or accept all defaults with defaults.
+
+accept defaults
+
+
+Context A settled (B / C / 1,3,5). Creating the review task now.
+
+Review report written to .claude/reviews/TASK-REV-PO02-review-report.md.
+
+📋 Decision Checkpoint — TASK-REV-PO02
+Approach score: 82/100 (plan is sound; -18 for residual MCP/LLM seam risk + one ambiguous-ownership file)
+
+Key findings (3 spot-checks)
+Parity tests should shift left — write test_stdio_discipline.py and test_provider_resolution.py Saturday evening at first commit, not Sunday morning. Catches SR-01/SR-03 violations 12 hours sooner.
+SR-07 violation in tutor_session_end description — plan's description ("triggers async Graphiti write in Phase 1") doesn't match Phase-0 behaviour (no-op). Must say "marks session ended" in Phase 0 with a TODO(phase-1) comment.
+Ollama cold-start can blow the 30s tutor_turn ceiling on first call — add a no-op warm-up generate() in tutor_start_session handler. One-line mitigation.
+Decision-point resolutions (D1–D5)
+D1: roles/tutor/role.yaml → FEAT-PO-002 owns structure; FEAT-PO-001 owns prompt content.
+D2: Two code tests (SR-01, SR-03) + one verification-checklist subtask for SR-02/04/06/07. No per-surface over-testing.
+D3: Bedrock stub only in FEAT-PO-002 (NotImplementedError); real impl in FEAT-PO-004.
+D4: scripts/mcp-wrapper.sh → FEAT-PO-002 (runtime glue, not packaging).
+D5: Reviewer-in-loop /task-work per plan's explicit guidance. No AutoBuild.
+Proposed breakdown: 7 subtasks, 3 waves
+Wave	Tasks	Parallel	Hrs
+1 — Foundation	PO02-001 (scaffold), PO02-002 (role manifest)	yes	1.5
+2 — Runtime	PO02-003 (LLM client), PO02-004 (session), PO02-005 (MCP+CLI+wrapper)	003+004 parallel, 005 serial	4.0
+3 — Hardening	PO02-006 (parity tests), PO02-007 (smoke test)	yes	2.0
+Four Integration Contracts drafted (AGENT_MODELS__REASONING_MODEL env, role manifest path, tutor session interface, LLM client interface) — ensures consumers build against fixed producer contracts.
+
+Your choice
+[A] Accept — save the 7-task plan for later, don't scaffold now
+[R] Revise — re-run with different focus (e.g. Phase 1 forward-compat, or re-open tech options)
+[I] Implement — I create subtask markdown files, IMPLEMENTATION-GUIDE.md with Mermaid diagrams, and .guardkit/features/FEAT-PO-002.yaml; task-work starts from TASK-PO02-001
+[C] Cancel — discard
+A / R / I / C?
+
+TASK-REV-PO02-review-report.md
+I
+
+📋 Implementation Preferences (Context B)
+Three quick choices before I scaffold:
+
+Q1 — Testing depth
+
+[T] TDD for all 7 subtasks
+[S] Standard — quality gates + the two parity unit tests from the plan (default)
+[M] Minimal — compilation + smoke test only
+Q2 — Task frontmatter
+
+[V] Verbose — full §4 contract block in every consumer
+[L] Lean — contract block only where format is non-obvious (default)
+Q3 — Implementation mode
+
+[C] Conservative — /task-work for all 7
+[M] Mixed — /task-work for the 5 substantive tasks; direct for PO02-002 (role manifest) and PO02-007 (smoke test) (default)
+Reply S L M, or defaults to accept all recommendations, or override any subset (e.g. T L C).
+
+defaults
+
+FEAT-PO-002 planning complete.
+
+✅ FEATURE PLANNING COMPLETE — FEAT-PO-002
+Created:
+
+tasks/backlog/feat-po-002-tutoring-runtime/ — 7 subtasks, README, IMPLEMENTATION-GUIDE with 3 Mermaid diagrams
+.guardkit/features/FEAT-PO-002.yaml — structured feature file (4 waves, 7.5h estimate)
+.claude/reviews/TASK-REV-PO02-review-report.md — approach score 82/100
+Review task moved to in_review with status review_complete and decision: implement.
+
+Execution plan:
+
+Wave	Tasks	Mode	Total
+1	PO02-001 (scaffold), PO02-002 (role manifest)	task-work + direct	~1.5h
+2	PO02-003 (LLM client), PO02-004 (session), PO02-005 (MCP+CLI+wrapper)	task-work	~4h
+3	PO02-006 (parity tests), PO02-007 (smoke test)	task-work + direct	~2h
+Three review findings baked into acceptance criteria: shift-left parity tests, SR-07 tutor_session_end wording fix, Ollama cold-start warm-up.
+
+Four Integration Contracts documented in §4 of the guide; consumer_context blocks on TASK-PO02-003 (env var) and TASK-PO02-005 (role path) where format is non-obvious.
+
+Start implementation:
+
+
+/task-work TASK-PO02-001
+
+✅ Task Work Complete — TASK-PO02-001
+
+  Stack: Python 3.11 (scaffolding task, complexity 3)
+  Mode: Minimal (auto-detected: parent_review + complexity ≤4)
+  Duration: ~10 min
+
+  Acceptance Criteria — all passed
+
+  ┌─────┬───────────────────────────────────────────────────────────────────────────┬────────┐
+  │  #  │                                 Criterion                                 │ Status │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │     │ pyproject.toml with package study_tutor, Python ≥3.11, entrypoint         │        │
+  │ 1   │ study-tutor = study_tutor.cli.main:serve, [providers] extra with 5        │ ✅     │
+  │     │ LangChain integrations                                                    │        │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 2   │ .venv created + pip install -e '.[providers]' succeeded                   │ ✅     │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 3   │ SR-04: pip show passes for all 5 providers                                │ ✅     │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 4   │ src/study_tutor/{cli,llm,mcp,session}/__init__.py tree, empty, imports    │ ✅     │
+  │     │ cleanly                                                                   │        │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 5   │ .env.example with <angle-bracket> placeholders +                          │ ✅     │
+  │     │ AGENT_MODELS__REASONING_MODEL=local default (SR-06)                       │        │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 6   │ AGENTS.md with ALWAYS/NEVER/ASK for Tutor role                            │ ✅     │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 7   │ .mcp.json template with study-tutor stanza                                │ ✅     │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 8   │ .gitignore includes .venv/, .env, __pycache__/, *.pyc, dist/, build/,     │ ✅     │
+  │     │ *.egg-info/                                                               │        │
+  ├─────┼───────────────────────────────────────────────────────────────────────────┼────────┤
+  │ 9   │ command_history.md first entry = /feature-plan FEAT-PO-002                │ ✅     │
+  └─────┴───────────────────────────────────────────────────────────────────────────┴────────┘
+
+  State transition
+
+  BACKLOG → IN_PROGRESS → IN_REVIEW at
+  tasks/in_review/feat-po-002-tutoring-runtime/TASK-PO02-001-*.md
+
+  Next
+
+  /task-work TASK-PO02-002 (Role manifest + player prompt shell) — Wave 1 foundation continues.
+
+Task complete. Created the role manifest shell for TASK-PO02-002:
+
+  - roles/tutor/role.yaml — minimal manifest mirroring specialist-agent's shape
+  (role.id/name/description, player.prompt_file, coach.criteria_file). Omitted optional blocks
+  (session, output, knowledge_graph, mode_inference, fleet) per the task note to not invent fields
+   not obviously needed for Phase 0.
+  - roles/tutor/prompts/player.md — placeholder with the FEAT-PO-001 handoff comment.
+  - roles/tutor/criteria/ already existed with definitions.yaml in place (FEAT-PO-001 territory).
+
+  Paths in role.yaml are written repo-root-relative (roles/tutor/...) per AC-5, aligning with the
+  bash wrapper's cd to repo root in TASK-PO02-005.
+
+
+  🎉 Task Completed — TASK-PO02-003
+
+  State transition
+
+  in_review → completed · moved to tasks/completed/TASK-PO02-003/TASK-PO02-003.md
+
+  Acceptance criteria — all ✅
+
+  - src/study_tutor/llm/client.py exposes LLMClient and _default_player_model() ✅
+  - _default_player_model() reads env at call time, falls back to "local" ✅
+  - LLMClient(provider).generate(prompt, system=None) -> str sync interface ✅
+  - provider="local" → Ollama HTTP via httpx (configurable OLLAMA_BASE_URL / OLLAMA_MODEL) ✅
+  - provider="bedrock" → NotImplementedError("Bedrock provider wired by FEAT-PO-004") with no
+  boto3/langchain-aws import ✅
+  - No hard-coded provider anywhere (asserted via module-source inspection test) ✅
+
+  Quality gates
+
+  - Tests: 7/7 passing
+  - Coverage: 100% (32/32 stmts on client.py)
+  - Full suite: 12/12 passing (7 new + 5 pre-existing session tests)
+
+  Knowledge capture
+
+  [Graphiti] Task outcome captured to knowledge graph (via MCP add_memory, queued async).
+
+  Uncommitted changes
+
+  - src/study_tutor/llm/client.py (new)
+  - tests/unit/llm/__init__.py, tests/unit/llm/test_provider_resolution.py (new)
+  - pyproject.toml (httpx dep + pytest markers)
+  - tasks/completed/TASK-PO02-003/TASK-PO02-003.md (moved from tasks/in_review/)
+  - Parent dir tasks/backlog/feat-po-002-tutoring-runtime/TASK-PO02-003-llm-client.md is now
+  gone (moved).
+
+  Feature rollup (FEAT-PO-002, wave 2)
+
+  3 of 7 tasks done (PO02-001, PO02-002, PO02-003). Unblocks: TASK-PO02-005 (MCP adapter CLI
+  wrapper) per the feature's dependency chain.
+
+  Run /task-work TASK-PO02-004 (tutor-session) or TASK-PO02-005 (MCP adapter) when ready.
+
+
+🎉 TASK-PO02-004 Complete
+
+  State: IN_REVIEW → COMPLETED
+  Location: tasks/completed/TASK-PO02-004/TASK-PO02-004.md
+
+  Deliverables:
+  - src/study_tutor/session/tutor_session.py — TutorSession/TutorTurn dataclasses, SessionStore,
+  module-level singleton
+  - tests/unit/session/test_tutor_session.py — 5/5 passing
+
+  Quality gates: compilation ✅, tests 100% ✅ (coverage skipped per minimal intensity)
+
+  📝 Graphiti Knowledge Capture:
+  - Task outcome → guardkit__task_outcomes
+  - Architectural decision (Phase 0 pure-dataclass contract) → guardkit__project_decisions
+
+  Feature progress: FEAT-PO-002 wave 2 task complete — tutor_session module is now the session
+  substrate for Phase 0; Phase 1 Graphiti writer can consume it directly without re-shaping.
+
+  Git commit skipped (no docs/state/ files for this task, and repo state is outside the task-work
+  scope).
+
+  Task Work Complete — TASK-PO02-005
+
+  Stack: Python (FastMCP + Click)
+  Intensity: LIGHT (feature subtask, complexity 6)
+  State: BACKLOG → IN_REVIEW
+
+  Files created:
+  - src/study_tutor/roles/loader.py — YAML manifest loader, paths resolved from Path.cwd()
+  (SR-02 anchor)
+  - src/study_tutor/mcp/adapter.py — MCPAdapter with 4 async handlers; _default_player_model()
+  resolved per call (SR-03); asyncio.create_task warm-up on tutor_start_session
+  - src/study_tutor/mcp/server.py — create_mcp_server() registers the 4 tools with
+  SR-07-compliant descriptions
+  - src/study_tutor/cli/main.py — click.group → serve subcommand; logging to stderr, banner via
+  click.echo(err=True) (SR-01)
+  - scripts/mcp-wrapper.sh — chmod +x; cd to absolute repo, sources .env, defaults
+  AGENT_MODELS__REASONING_MODEL=local, exec's study-tutor serve
+  - tests/unit/mcp/test_adapter.py — 6 smoke tests including SR-07 description check
+  - README.md — claude_desktop_config.json snippet + SR-01/SR-02 rationale
+  - pyproject.toml — entry point flipped to study_tutor.cli.main:cli (group)
+  - .mcp.json — switched study-tutor entry to wrapper path
+
+  Quality gates:
+  - Tests: 18/18 pass (6 new + 12 existing)
+  - SR-01 smoke: stdout 0 bytes after 2s serve; all output on stderr ✅
+  - SR-02 smoke: wrapper invoked from /tmp — role.yaml resolved from abs repo root ✅
+  - study-tutor serve --help exposes the expected flags
+  - Server lists exactly 4 tools; tutor_session_end description = "Marks session ended." (no
+  Graphiti leakage)
+
+  Deferred to TASK-PO02-006: formal tests/unit/mcp/test_stdio_discipline.py parity suite.
+
+✻ Cogitated for 6m 17s
+
+※ recap: Goal: ship FEAT-PO-002 Phase-0 tutoring MCP runtime. Just finished TASK-PO02-005
+  (adapter, CLI, bash wrapper) — 18/18 tests pass, task moved to in_review. Next: run
+  /task-complete TASK-PO02-005, then start TASK-PO02-006 (stdio-discipline parity tests).
+  (disable recaps in /config)
+
+  Task Work Complete — TASK-PO02-006
+
+  State: backlog → in_progress → in_review
+
+  Deliverables
+
+  - tests/unit/mcp/test_stdio_discipline.py (new, 2 tests) — spawns real study-tutor serve with stdin
+  closed, asserts zero stdout bytes in the 3-s startup window and banner lands on stderr (SR-01).
+  - tests/unit/llm/test_provider_resolution.py — added
+  test_adapter_handlers_do_not_reference_provider_string_literals: strips docstrings/comments from
+  adapter.py then greps for provider literals (local, bedrock, openai, anthropic, gemini). Closes SR-03
+  gap.
+  - .claude/reviews/TASK-PO02-006-parity-log.md — full parity log with commands run, output captured,
+  per-SR verdict, and final Six parity surfaces: GREEN line.
+
+  Results
+
+  - All 21 tests pass (.venv/bin/pytest tests/).
+  - SR-01 & SR-03 code-verified; SR-02/04/06/07 shell-verified; SR-05 documented pass-through.
+  - One minor AC-text adjustment documented in the log: SR-02's grep '^cd /' was written for an inline
+  path; the wrapper uses the idiomatic REPO_ROOT="/…"; cd "$REPO_ROOT" pattern. The log verifies the same
+   invariant with grep '^REPO_ROOT="/' + no-$PWD check.
+  - No drift fixed in source tasks — prior tasks shipped the parity invariants correctly.
+
+
+  Gate: 🟢 GREEN — FEAT-PO-002 is submittable
+
+  Full log at .claude/reviews/TASK-PO02-007-smoke-log.md.
+
+  Every hard acceptance criterion in TASK-PO02-007 is met: Ollama reachable, config backed up, study-tutor registered with exactly 4 tools,
+  session lifecycle clean (start → turn → end → status:ended), turn latencies ~11–13s (well under the 15s budget and the 30s acceptance
+  bound), coherent tutor-appropriate responses.
+
+  Three ⚠️ items are content-quality defects, not integration defects, and the task note explicitly says "exact content does not" matter for
+   the gate. Logged as follow-ups:
+
+  1. Quote fidelity (HIGH — priority for production). Fabricated Macbeth quotes ("mortal coats… unmaculate me" vs real "mortal thoughts…
+  unsex me here"). This is the RAG-layer problem; right place to fix it, right time to sequence it — before multi-subject expansion.
+  2. Truncation at ~mid-paragraph. Likely Ollama default num_predict cap. Check src/study_tutor/llm/client.py — it currently sends no
+  explicit token ceiling in the payload.
+  3. First-token artefact in Session 1 ("He'to manipulate"). Single occurrence, park as watch-list.
+  4. Stale default in client.py:19 — gcse-tutor-gemma4-31b:Q4_K_M should be gcse-tutor-gemma4-moe:latest. .env overrides correctly so
+  runtime is fine; fallback default is wrong.
+
+  Want me to open follow-up task files for #1 and #2, or leave them in the log for now?
+
+✻ Cooked for 1m 46s
+
+※ recap: Implementing TASK-PO02-007 (Phase 0 end-of-Saturday smoke test for study-tutor MCP) — gate is GREEN, FEAT-PO-002 submittable. Next:
+   decide whether to open follow-up task files for the quote-fidelity and truncation defects, or leave them in the log.
+
+❯ please create the follow up tasks
+
+ Created tasks/backlog/po02-smoke-followups/ with a README and three task files:
+
+  ┌────────────────────────────────────┬──────────┬────────────┬────────────────────────────────────────────────────────────────────────┐
+  │                Task                │ Priority │ Complexity │                                 Notes                                  │
+  ├────────────────────────────────────┼──────────┼────────────┼────────────────────────────────────────────────────────────────────────┤
+  │ TASK-PO02F-001 — Scope RAG         │          │            │ Scoping only; likely becomes FEAT-PO-006. Produce                      │
+  │ grounding for quote fidelity       │ high     │ 5          │ docs/research/ideas/rag-grounding-design.md. Sequence before           │
+  │                                    │          │            │ multi-subject expansion.                                               │
+  ├────────────────────────────────────┼──────────┼────────────┼────────────────────────────────────────────────────────────────────────┤
+  │ TASK-PO02F-002 — Set explicit      │          │            │ Root cause of the Macbeth mid-sentence truncation. ~10 LOC + 1 test,   │
+  │ num_predict ceiling on Ollama      │ high     │ 2          │ new OLLAMA_NUM_PREDICT env var (default 2048).                         │
+  │ requests                           │          │            │                                                                        │
+  ├────────────────────────────────────┼──────────┼────────────┼────────────────────────────────────────────────────────────────────────┤
+  │ TASK-PO02F-003 — Fix stale         │ low      │ 1 (micro)  │ Corrects client.py:18-19 defaults that reference the speculative       │
+  │ DEFAULT_OLLAMA_MODEL fallback      │          │            │ gb10.tailnet host and -31b model tag.                                  │
+  └────────────────────────────────────┴──────────┴────────────┴────────────────────────────────────────────────────────────────────────┘
+
+  The Session 1 first-token artefact ("He'to manipulate") is not in a task — it's on the README's watch list. Promote to a file only if it
+  recurs.
+
+✻ Crunched for 2m 10s
+
+※ recap: Goal was implementing TASK-PO02-007 (Claude Desktop smoke test for FEAT-PO-002); gate is GREEN and three follow-up tasks are filed
+  in tasks/backlog/po02-smoke-followups/. Next action: decide whether to schedule TASK-PO02F-002 (num_predict fix) now or close out
+  FEAT-PO-002 first.
+
+  
