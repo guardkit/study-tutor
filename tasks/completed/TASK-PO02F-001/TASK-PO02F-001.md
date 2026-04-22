@@ -1,9 +1,15 @@
 ---
 id: TASK-PO02F-001
 title: Scope RAG grounding for quote fidelity
-status: backlog
+status: completed
 created: 2026-04-21T00:00:00Z
 updated: 2026-04-21T00:00:00Z
+completed: 2026-04-21T00:00:00Z
+previous_state: in_review
+completed_location: tasks/completed/TASK-PO02F-001/
+deliverable: docs/research/ideas/rag-grounding-design.md
+organized_files:
+  - TASK-PO02F-001.md
 priority: high
 task_type: research
 tags: [phase-1, rag, grounding, quote-fidelity, english-literature]
@@ -36,15 +42,15 @@ The right place to fix this is not more fine-tuning. It's a **retrieval layer** 
 
 ## Acceptance Criteria
 
-- [ ] **Corpus inventory.** Decide the authoritative text source per GCSE set-text (Macbeth, An Inspector Calls, plus any others on the exam board syllabus). Record edition/source (Project Gutenberg? OUP? Royal Shakespeare Company?). Whatever we choose becomes the corpus of record — license and canonical line-numbering both matter.
-- [ ] **Retrieval shape decision.** Document which approach we're taking and why:
+- [x] **Corpus inventory.** Decide the authoritative text source per GCSE set-text (Macbeth, An Inspector Calls, plus any others on the exam board syllabus). Record edition/source (Project Gutenberg? OUP? Royal Shakespeare Company?). Whatever we choose becomes the corpus of record — license and canonical line-numbering both matter.
+- [x] **Retrieval shape decision.** Document which approach we're taking and why:
   - (a) Tool-call grounding — expose a `lookup_quote(text_id, search)` tool the model must call before quoting; cite exact line numbers in the response.
   - (b) Embedded-context grounding — RAG-fetch likely passages at turn time and concatenate into the player prompt.
   - (c) Post-hoc verification — generate the response freely, then run a verifier pass that flags/corrects quotes against the corpus.
   - (d) Something hybrid.
-- [ ] **Embedding/indexing sketch.** If we go with retrieval, name the chunk granularity (scene? speech? line-with-context?) and the vector store (likely the same one we'll use for pedagogy memory — don't proliferate stores).
-- [ ] **Eval harness sketch.** How do we regression-test quote fidelity? Minimum proposal: a set of known-hard quotes (e.g. `"unsex me here"`, `"The raven himself is hoarse"`, the dagger soliloquy) with expected exact strings. Ship this before the implementation lands so we can measure the delta.
-- [ ] **Output.** A one-page design doc at `docs/research/ideas/rag-grounding-design.md` that hand-offs cleanly to a subsequent implementation task.
+- [x] **Embedding/indexing sketch.** If we go with retrieval, name the chunk granularity (scene? speech? line-with-context?) and the vector store (likely the same one we'll use for pedagogy memory — don't proliferate stores).
+- [x] **Eval harness sketch.** How do we regression-test quote fidelity? Minimum proposal: a set of known-hard quotes (e.g. `"unsex me here"`, `"The raven himself is hoarse"`, the dagger soliloquy) with expected exact strings. Ship this before the implementation lands so we can measure the delta.
+- [x] **Output.** A one-page design doc at `docs/research/ideas/rag-grounding-design.md` that hand-offs cleanly to a subsequent implementation task.
 
 ## Implementation Notes
 

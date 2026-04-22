@@ -951,4 +951,104 @@ Task complete. Created the role manifest shell for TASK-PO02-002:
   in tasks/backlog/po02-smoke-followups/. Next action: decide whether to schedule TASK-PO02F-002 (num_predict fix) now or close out
   FEAT-PO-002 first.
 
-  
+  /task-work TASK-PO02F-001
+
+  Task complete. State: backlog → in_progress → in_review.
+
+  Deliverable: docs/research/ideas/rag-grounding-design.md
+
+  Decision summary (all 5 acceptance criteria addressed):
+
+  1. Corpus: Folger TEI for Shakespeare, Project Gutenberg for PD novels. In-copyright texts (An Inspector Calls — Priestley d. 1984 →
+  copyright to 2055, Blood Brothers, DNA) get an analysis-mode policy — paraphrase, don't verbatim-quote. Verifier enforces.
+  2. Retrieval shape: Post-hoc verification as MVP (option c), embedded-context (option b) as Phase B. Tool-call grounding (a) deferred to
+  Phase C — fine-tuned Gemma 4 is not reliable enough at tool-use and the extra RTT blows the 15s budget.
+  3. Indexing: Speech-level for Shakespeare, paragraph-level for prose. Flat-text + SQLite FTS5 for the verifier (ships without Graphiti
+  infra); FalkorDB + nomic-embed on GB10 (reuses DEC-02 stack) for Phase B. One group_id per text.
+  4. Eval: tests/quote_fidelity/golden_quotes.yaml seeded from the smoke's known fabrications (unsex me here, raven, dagger) + innocent
+  flower as control. Target: fabrication rate <5% Phase A, <1% Phase B.
+  5. Hand-off: 6-subtask breakdown for FEAT-PO-006, sequenced before multi-subject expansion.
+
+  Research/scoping task — no code, no tests, no build. Quality gates don't apply; the acceptance criterion is "doc exists and decides the
+  approach", which it does.
+
+
+  🏁 Task Complete: TASK-PO02F-001
+
+  📁 Files organized
+    tasks/completed/TASK-PO02F-001/TASK-PO02F-001.md
+    docs/research/ideas/rag-grounding-design.md (deliverable — lives in research tree)
+
+  🔄 State: in_review → completed
+
+  📝 Graphiti knowledge capture (via MCP)
+    ✅ guardkit__task_outcomes — "Task Completion: TASK-PO02F-001"
+    ✅ guardkit__project_decisions — "Decision: FEAT-PO-006 — post-hoc quote verifier as MVP"
+
+  ⏭️  Git commit skipped
+    Commit the task move + design doc manually when you're ready:
+      git add tasks/completed/TASK-PO02F-001/ docs/research/ideas/rag-grounding-design.md tasks/backlog/po02-smoke-followups/
+      git commit -m "Complete TASK-PO02F-001 — RAG grounding scope doc for quote fidelity"
+
+  Next steps (handed off): promote docs/research/ideas/rag-grounding-design.md into FEAT-PO-006 via /feature-plan when you want to build the
+   verifier. The 6-subtask breakdown at the bottom of the doc is ready to consume.
+
+✻ Worked for 1m 38s
+
+※ recap: Goal was to scope a RAG grounding layer to stop the tutor fabricating Shakespeare quotes; TASK-PO02F-001 is complete, with the
+  design doc at docs/research/ideas/rag-grounding-design.md. Next: commit the task move and design doc, then promote to FEAT-PO-006 via
+  /feature-plan.
+
+
+/task-work TASK-PO02F-002
+
+ Task Work Complete — TASK-PO02F-002
+
+  State: backlog → in_review
+
+  Changes:
+  - src/study_tutor/llm/client.py: added DEFAULT_OLLAMA_NUM_PREDICT = 2048, new _resolve_num_predict() helper (SR-03
+  call-time read, validates int > 0), injected options.num_predict into Ollama payload.
+  - tests/unit/llm/test_provider_resolution.py: extended existing payload assertion for default (2048); added
+  test_local_provider_uses_env_num_predict_at_call_time (override) and
+  test_local_provider_falls_back_to_default_on_bad_num_predict (bad values fall back, not crash).
+  - .env.example: documented OLLAMA_NUM_PREDICT=2048 beside the other Ollama settings.
+
+  Tests: 23/23 pass (10/10 in the LLM suite, incl. 2 new).
+
+  AC status:
+  - ✅ num_predict added to payload (under options, per Ollama API)
+  - ✅ Configurable via OLLAMA_NUM_PREDICT, default 2048, read at call time
+  - ✅ Documented in .env.example
+  - ✅ Unit tests assert default + override + bad-value fallback
+  - ⚠️ Not verified by me: (a) live reproduction of the Macbeth truncation against the GB10 Ollama — requires network
+  access to the tailnet; (b) the manual MCP stdio re-run. Both need your box. The code path is straightforward and
+  unit-verified, but the "observe truncation disappears" AC is still open until you run it.
+
+✻ Worked for 2m 33s
+
+※ recap: Goal: raise Ollama's num_predict ceiling so GCSE essay scaffolds stop truncating. Code and unit tests are
+  done (23/23 pass) and TASK-PO02F-002 is in review. Next: run the Macbeth prompt through the live MCP stdio path to
+  confirm the truncation is gone.
+
+
+/task-work TASK-PO02F-003
+
+✅ TASK-PO02F-003 — Complete (in_review)
+
+  Changes applied:
+  - src/study_tutor/llm/client.py:18 — DEFAULT_OLLAMA_BASE_URL → http://localhost:11434
+  - src/study_tutor/llm/client.py:19 — DEFAULT_OLLAMA_MODEL → gcse-tutor-gemma4-moe:latest
+  - tests/unit/llm/test_provider_resolution.py:69,80 — arbitrary literal env values updated to localhost for consistency (test behavior
+  unchanged — it still overrides env vars explicitly)
+
+  Tests: 23/23 unit tests passing (pytest tests/unit)
+
+  Deliberately NOT modified (per AC "historical artefacts"):
+  - tasks/completed/*, .claude/reviews/*-smoke-log.md, docs/history/*, command_history.md
+  - docs/research/ideas/phase-0-*.md — these reference the ~/fine-tuning/output/gcse-tutor-gemma4-31b/ training directory, which is a real
+  past filesystem path (the 31B Dense LoRA run), not the serving tag. Updating would rewrite history.
+  - Module docstring mention of "GB10 over Tailscale" on client.py:5 — outside AC scope; flag for the plan owner if they want a follow-up
+  hygiene task.
+
+  Task moved to tasks/in_review/po02-smoke-followups/. Ready for human review / /task-complete.
