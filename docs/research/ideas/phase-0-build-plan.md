@@ -1,11 +1,53 @@
 # Phase 0 Build Plan — Hackathon Floor + Parity Hygiene
 
 ## For: Weekend build (19–20 April 2026 + continuation through Friday 24 April)
-## Date: 17 April 2026
-## Status: Ready to execute
+## Date: 17 April 2026 (last updated 23 April 2026)
+## Status: **In-flight — weekend code work complete; close-out gates pending**
 ## Repo: `guardkit/study-tutor` (or equivalent — currently a near-empty repo at `/Users/richardwoollcott/Projects/appmilla_github/study-tutor`)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (inference), Synology NAS over Tailscale (FalkorDB, Phase 1 only)
 ## Target completion: End of Friday 24 April 2026 (close of Week 1 of the 31-day burn)
+
+---
+
+## Current Status — 2026-04-23 (Thursday evening)
+
+**Day-by-day progress against the original schedule:**
+
+| Day | Planned | Actual |
+|-----|---------|--------|
+| Fri 18 Apr | Prereqs | ✅ Done |
+| Sat 19 Apr | FEAT-PO-001 + FEAT-PO-002 kickoff | ✅ Done — GOAL.md drafted, scaffold + MCP server landed (commits `4d6610a`, `2b9ad15`, `94ee157`) |
+| Sun 20 Apr | Parity surfaces + FEAT-PO-003 + FEAT-PO-005 | 🟡 Partial — parity surfaces green, README + LICENSE + `.gitignore` in place; `domains/gcse-english/sources/README.md` and `docs/submission/` stubs **not yet landed** |
+| Mon 21 Apr | FEAT-PO-004 Bedrock setup | ✅/🟡 Pivot — Bedrock placeholder in `.env.example`; actual S3 upload + import **deferred**. Unplanned work absorbed here instead: FEAT-PO-002 shipped end-to-end (commits `0acda09`, `15d4aa2`), Graphiti LLM switched to vLLM on GB10 (commit `bd74d43`), two post-smoke defects fixed (commits `7a8a3a3`, `14afc08`) |
+| Tue 22 Apr | FEAT-PO-004 Bedrock validation | 🔲 Not done — instead, TASK-PO02F-001 scoped RAG grounding for quote fidelity (commit `b3c567f`) |
+| Wed 23 Apr | Clean-machine walkthrough | 🔲 Not yet run |
+| Thu 24 Apr (today) | Phase 1 prep | 🟡 Partial — unplanned empirical work on OpenWebUI+RAG interim deployment for Lilymay absorbed the evening; research captured in [openwebui-rag-empirical-findings-2026-04-23.md](./openwebui-rag-empirical-findings-2026-04-23.md); Phase 1 scope/build-plan docs still to draft |
+| Fri 25 Apr | Buffer / rest | — |
+
+**Feature-level status:**
+
+| Feature | State | Evidence |
+|---------|-------|----------|
+| FEAT-PO-001 (domain contract) | ✅ Complete | `domains/gcse-english/GOAL.md`, `docs/gamification/` present |
+| FEAT-PO-002 (tutoring runtime) | ✅ Complete + hardened | 7/7 core tasks done (`TASK-PO02-001..007`); 2/3 follow-up fixes landed (`TASK-PO02F-002`, `TASK-PO02F-003`); 1 follow-up scoped (`TASK-PO02F-001` — RAG grounding) with empirical validation session completed 23 Apr — see [openwebui-rag-empirical-findings-2026-04-23.md](./openwebui-rag-empirical-findings-2026-04-23.md) |
+| FEAT-PO-003 (repo packaging) | 🟡 Mostly done | `README.md`, `LICENSE`, `pyproject.toml`, `AGENTS.md` all present; missing: `domains/gcse-english/sources/README.md`, `docs/licensing.md` |
+| FEAT-PO-004 (Bedrock validation) | 🔲 Deferred | `BEDROCK_MODEL_ARN` placeholder in `.env.example`; no S3 upload or Bedrock import executed. Depends on AWS ops evening. |
+| FEAT-PO-005 (write-up scaffolding) | 🔲 Not started | `docs/submission/` directory does not exist |
+
+**Smoke-test gate:** The end-of-Saturday gate (TASK-PO02-007) declared GREEN on 2026-04-21 — Phase 0 is functionally submittable on Ollama/GB10 today. The remaining work is Bedrock validation, doc stubs, and the clean-machine walkthrough.
+
+**Open punch-list to close Phase 0:**
+
+1. **Clean-machine walkthrough** (originally Wed 23 Apr) — run tonight or Thu evening; fresh-clone reproduces the tutor.
+2. **FEAT-PO-005 write-up stubs** — create `docs/submission/{technical-writeup,demo-script,video-outline}.md` shells.
+3. **FEAT-PO-003 tail** — `domains/gcse-english/sources/README.md`, `docs/licensing.md`.
+4. **FEAT-PO-004 Bedrock validation** — S3 upload + Custom Model Import + LLM client wiring. Contingency TASK-CDR-005 stands: if eu-west-2 lacks 31B import support, stay on Ollama/GB10 for demo.
+5. **TASK-PO02F-001 RAG grounding** — scoped (will likely be promoted to FEAT-PO-006 in Phase 1) and now backed by empirical findings from the 23 Apr OpenWebUI session (R1–R6 recommendations captured in [openwebui-rag-empirical-findings-2026-04-23.md §4](./openwebui-rag-empirical-findings-2026-04-23.md)).
+6. **Phase 1 scope + build-plan docs** — `phase-1-scope.md` exists; `phase-1-build-plan.md` exists but needs refresh against Phase 0 actuals and the new FEAT-PO-006 recommendations before next weekend.
+
+**Unplanned strategic move (21 Apr):** Graphiti's LLM backend migrated from Gemini to vLLM on GB10 (`neuralmagic/Qwen2.5-14B-Instruct-FP8-dynamic`) — this is Phase 1 infrastructure landed early, with Ollama fallback kept for MacBook-only mode. Reduces dependency on external APIs ahead of the Phase 1 Graphiti spike.
+
+**Unplanned strategic move (23 Apr):** Interim OpenWebUI + RAG deployment hardened for Lilymay so she can start using the tutor for GCSE revision immediately while the Phase 1/2 deep-agents harness is built. Session produced ten empirical findings and a shippable three-persona configuration (Shakespeare / Modern Texts / General). Materially advances Success Criterion 6 ("Lilymay's experience unchanged or improved") — her experience is improved *today*. Findings validate and extend the pre-existing `rag-grounding-design.md` Phase A plan with six concrete recommendations feeding FEAT-PO-006. Full capture: [openwebui-rag-empirical-findings-2026-04-23.md](./openwebui-rag-empirical-findings-2026-04-23.md). Key headline: for primary texts the fine-tune has memorised (Shakespeare), direct Ollama beats RAG; retrieval must be selective, source-type-aware, and primary-text-inclusive to add value.
 
 ---
 
@@ -79,7 +121,7 @@ Features FEAT-PO-001 and FEAT-PO-005 can run in parallel — both doc-heavy, no 
 
 This is the weekend-first, "like we did last weekend for the specialist agent" plan. Front-loads the code work onto the two uninterrupted weekend days and reserves weekday evenings for the lower-energy doc work and the Bedrock ops work.
 
-### Saturday 19 April (weekend day 1) — FEAT-PO-001 + FEAT-PO-002 kickoff
+### Saturday 19 April (weekend day 1) — FEAT-PO-001 + FEAT-PO-002 kickoff ✅ DONE
 
 **Target:** Domain contract complete. Project scaffolded. MCP server returning a real response from Ollama by end of day.
 
@@ -176,7 +218,7 @@ Switch to Claude Code. Set up the repo structure.
 
 ---
 
-### Sunday 20 April (weekend day 2) — FEAT-PO-002 hardening + FEAT-PO-003 + FEAT-PO-005 start
+### Sunday 20 April (weekend day 2) — FEAT-PO-002 hardening + FEAT-PO-003 + FEAT-PO-005 start 🟡 PARTIAL (PO-002 hardening ✅; FEAT-PO-003 doc tail + FEAT-PO-005 stubs outstanding)
 
 **Target:** All six parity surfaces green. Public repo packaging done. Technical write-up stub in place. Clean-machine walkthrough achievable.
 
@@ -228,7 +270,7 @@ The technical write-up scaffolding. Doc stubs that will be filled as the build p
 
 ---
 
-### Monday 21 April (evening, ~2 hours) — FEAT-PO-004 Bedrock setup
+### Monday 21 April (evening, ~2 hours) — FEAT-PO-004 Bedrock setup 🔲 DEFERRED (FEAT-PO-002 shipped end-to-end this evening instead; Bedrock S3 upload + import not yet executed)
 
 Ops work. Low code content. Good for a tired weekday evening.
 
@@ -263,7 +305,7 @@ Ops work. Low code content. Good for a tired weekday evening.
 
 ---
 
-### Tuesday 22 April (evening, ~2 hours) — FEAT-PO-004 Bedrock validation
+### Tuesday 22 April (evening, ~2 hours) — FEAT-PO-004 Bedrock validation 🔲 DEFERRED (TASK-PO02F-001 RAG grounding scoped instead — `b3c567f`)
 
 1. **Verify Bedrock import completed.** Model status = "Active". Test via AWS CLI:
    ```bash
@@ -287,7 +329,7 @@ Ops work. Low code content. Good for a tired weekday evening.
 
 ---
 
-### Wednesday 23 April (evening, ~2 hours) — Clean-machine walkthrough
+### Wednesday 23 April (evening, ~2 hours) — Clean-machine walkthrough 🔲 NOT YET RUN
 
 This is the canonical-gate for Phase 0. Everything green, ready for submission if nothing else ships.
 
@@ -316,7 +358,7 @@ This is the canonical-gate for Phase 0. Everything green, ready for submission i
 
 ---
 
-### Thursday 24 April (evening, ~2 hours) — Phase 1 kickoff prep
+### Thursday 24 April (evening, ~2 hours) — Phase 1 kickoff prep 🔲 PENDING (tonight)
 
 Phase 0 done. Phase 1 (Graphiti + DeepAgents + session lifecycle) starts next weekend. Thursday evening preps for that weekend.
 
