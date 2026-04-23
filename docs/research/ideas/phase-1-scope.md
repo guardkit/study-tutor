@@ -1,11 +1,25 @@
 # Phase 1 Scope — Three-Layer Architecture + Student Model
 
 ## For: Claude Code `/system-arch` → `/system-design` → `/system-plan` → `/feature-spec` → `/feature-plan` → AutoBuild
-## Date: 17 April 2026
+## Date: 17 April 2026 (last updated 23 April 2026)
 ## Status: Ready to consume — execute starting Saturday 26 April (weekend 2 of the 31-day burn)
-## Predecessor: `phase-0-scope.md`, `phase-0-build-plan.md` (Phase 0 completes Friday 24 April)
+## Predecessor: `phase-0-scope.md`, `phase-0-build-plan.md` (Phase 0 completes Friday 24 April), `rag-grounding-design.md`, `openwebui-rag-empirical-findings-2026-04-23.md`
 ## Successor: `phase-2-scope.md` (sketch exists; build plan written Phase 1 Thursday 30 April per hybrid cadence)
-## Context: The load-bearing phase. Turns the Phase 0 MCP-accessible tutor into a genuinely three-layer adaptive system: fine-tuned behaviour (Layer 1, already in Phase 0) + curriculum RAG (Layer 2, seeded in Phase 1) + Graphiti student model (Layer 3, newly built) + DeepAgents tutoring loop with Player-Coach quality monitor orchestrating all three.
+## Context: The load-bearing phase. Turns the Phase 0 MCP-accessible tutor into a genuinely three-layer adaptive system: fine-tuned behaviour (Layer 1, already in Phase 0) + curriculum RAG (Layer 2, now with source-typed grounding — see FEAT-PH1-004) + Graphiti student model (Layer 3, newly built) + DeepAgents tutoring loop with Player-Coach quality monitor orchestrating all three.
+
+---
+
+## Post-empirical update — 2026-04-23
+
+An interim OpenWebUI + RAG deployment was stood up for Lilymay on 23 Apr to support immediate GCSE revision while Phase 1 is built. The session produced ten empirical findings (captured in [openwebui-rag-empirical-findings-2026-04-23.md](./openwebui-rag-empirical-findings-2026-04-23.md)) and six R-numbered recommendations that this scope doc now absorbs:
+
+- **R1 (source-typed quote verifier), R2 (dynamic retrieval decision), R3 (AO3 retrieval-bypass), R4 (Standard Ebooks over Gutenberg)** → now captured as new feature **FEAT-PH1-004** below.
+- **R5 (runtime-param smoke assertion)** → new structural requirement **SR-09** below.
+- **R6 (AO-labelled exemplars in next fine-tune)** → noted in "Future fine-tune inputs" at the bottom; not a Phase 1 deliverable.
+
+Headline finding informing the Phase 1 architecture: *for primary texts the fine-tune has memorised (Shakespeare), direct Ollama beats RAG; retrieval must be selective, source-typed, and primary-text-inclusive to add value. Always-on retrieval against a secondary-sources-only corpus actively degrades quality.*
+
+This means Phase 1's curriculum RAG layer (Layer 2) is not a "retrieve-everything" layer; it is a *selective, source-aware* layer that the tutoring loop consults conditionally.
 
 ---
 
@@ -34,6 +48,14 @@ The seven structural requirements from Phase 0 (SR-01 through SR-07) remain load
 **Acceptance.** `tutor_session_end` returns within 2 seconds regardless of Graphiti write latency. Graphiti write failures are logged but do not surface to the MCP caller. Subsequent `tutor_start_session` calls tolerate a not-yet-written previous session by treating it as absent rather than erroring.
 
 **Coupling to the spike.** If the Saturday morning spike shows end-to-end Graphiti write latency under 2 seconds consistently, SR-08 is still the right shape (defensive) but the "real" impact is small. If latency exceeds 5 seconds, SR-08 is load-bearing and shapes every feature.
+
+### SR-09: Runtime LLM parameters are explicit and asserted
+
+**Requirement.** Every Ollama Modelfile used by the tutor must set explicit `num_ctx` (≥16384 for RAG-enabled personas) and `num_predict` (≥1500 for tutoring responses). The smoke-test suite must assert both values match expectation via `ollama show <model> --modelfile | grep PARAMETER` and via the runner log line `llama_new_context_with_model: n_ctx = N` observed during a real inference call.
+
+**Evidence from [openwebui-rag-empirical-findings-2026-04-23.md §2 Finding 4](./openwebui-rag-empirical-findings-2026-04-23.md).** Ollama's default `num_ctx=2048` silently truncates tutoring responses mid-sentence when RAG is active — no error surfaces, just a chopped reply. The model loaded from a Modelfile with the wrong default, and OpenWebUI's Advanced Params can also override at request time.
+
+**Acceptance.** A task-level smoke test (post-Modelfile-change) runs `ollama show` + parses log output to confirm `num_ctx` and `num_predict` reach the runner at expected values. Any regression trips the test.
 
 ---
 
@@ -231,7 +253,78 @@ On `tutor_session_end`, generate a short summary episode recording:
 
 Written to Graphiti as a `session_completed` episode, asynchronously per SR-08.
 
-**Dependencies:** FEAT-PH1-001 (Graphiti helpers for write-back + misconception recording), FEAT-PH1-002 (session plan provides focus_aos and opening_prompt).
+**Dependencies:** FEAT-PH1-001 (Graphiti helpers for write-back + misconception recording), FEAT-PH1-002 (session plan provides focus_aos and opening_prompt), FEAT-PH1-004 (quote verifier is a Coach rubric criterion).
+
+---
+
+### FEAT-PH1-004: Primary-Text RAG + Source-Typed Quote Verification
+
+**Problem.** The interim OpenWebUI deployment (23 Apr) surfaced a subtle failure mode: when the RAG corpus contains only secondary material (study guides, critical essays), a strict "only quote verbatim from context" rule *suppresses* the model's own verbatim primary-text knowledge and forces paraphrase. The tutor degrades below the no-RAG baseline. Phase 1's curriculum RAG layer must be source-typed and selective to avoid this.
+
+This feature operationalises R1–R4 from [openwebui-rag-empirical-findings-2026-04-23.md §4](./openwebui-rag-empirical-findings-2026-04-23.md).
+
+**Changes required.**
+
+#### 1. Source-typed corpus ingestion
+
+Every chunk in the corpus carries a `source_type` metadata label: one of `primary_text` (the play or novel itself), `secondary_study_guide` (Mr Bruff, CGP, York Notes, etc.), `secondary_critical` (essays, academic commentary), `context_historical` (Jacobean, Edwardian, Victorian context material — optional, see R3 below). Ingestion pipeline (reused from the Phase 0 BYOS README and `agentic-dataset-factory`) is extended with a source-type classifier or explicit per-directory labelling.
+
+Corpus layout (file-system-first):
+
+```
+domains/gcse-english/sources/
+├── primary_text/
+│   ├── macbeth_shakespeare_1606.txt      (Standard Ebooks)
+│   ├── christmas_carol_dickens_1843.txt  (Standard Ebooks)
+│   └── jekyll_hyde_stevenson_1886.txt    (Standard Ebooks)
+├── secondary_study_guide/
+│   ├── mr_bruff_macbeth.pdf
+│   └── cgp_inspector_calls.pdf
+├── secondary_critical/
+└── context_historical/
+    └── jacobean_james_i_witchcraft.md    (curated, optional)
+```
+
+Public-domain primary texts use Standard Ebooks as the canonical source (R4 — cleaner than Gutenberg, no project boilerplate, canonical line numbering). In-copyright modern texts (An Inspector Calls, Blood Brothers, DNA) remain out of the corpus per the rag-grounding-design §1a Analysis-Mode-Only policy, with the Phase 2 per-student Graphiti `Text` episode as the future path for user-licensed copies.
+
+#### 2. Dynamic retrieval decision (R2)
+
+Before each `tutor_turn`, the tutoring loop asks: *"For this query, does the corpus contain primary-text evidence relevant to the student's current `Text` (from the session plan)?"* Decision logic:
+
+- If yes → retrieve (source_type filter: `primary_text` first, then `secondary_*` as supplement), ground the response, pass chunks through to the Coach rubric's quote verifier.
+- If no → skip retrieval entirely, let Player answer from training knowledge, flag session metadata `retrieval_skipped: true` with reason.
+
+This means retrieval is NOT always-on. An unrevised Shakespeare session with the primary text in the corpus → retrieves. An unrevised An Inspector Calls session (in-copyright, no primary text) → does not retrieve, uses Analysis Mode instead.
+
+#### 3. AO3 retrieval-bypass (R3)
+
+AO3 (context — Jacobean/Victorian/Edwardian history, not themes) is explicitly a training-data-first category. The planner tags whether a turn is addressing AO3 (from the session plan's `focus_aos`); if so, retrieval either uses the optional `context_historical` sub-corpus OR skips entirely and relies on model training. AO3 never retrieves against `primary_text` or `secondary_study_guide` — those are AO1/AO2 evidence categories.
+
+#### 4. Source-typed quote verifier (R1) — integrates with Coach
+
+Coach's rubric (FEAT-PH1-003) gains a new criterion: `quote_fidelity`. For every quoted string in the Player's response:
+
+- If the quote appears verbatim in a `primary_text` corpus chunk → annotate with attribution (*"Macbeth 5.1.35"* from Standard Ebooks line numbering), score pass.
+- If the quote appears verbatim ONLY in a `secondary_*` chunk and is presented as if it were the primary author's words → strip the quotation marks, rewrite as paraphrase with *"as one critic observes"* or similar, log a `secondary_source_laundering` event.
+- If the quote does not appear in any corpus chunk (fabricated or training-recalled without verification) → for primary texts we attempt fuzzy match (≤3 edit distance) and correct; for in-copyright texts the verifier strips and paraphrases per rag-grounding-design §1a.
+
+This is the Phase A plan from [rag-grounding-design.md](./rag-grounding-design.md), extended with the source-type distinction that today's empirical work proved necessary.
+
+#### 5. Deliverables
+
+- `src/study_tutor/knowledge/corpus.py` — chunk metadata types, source-type enum, corpus loader with per-directory source-type inference
+- `src/study_tutor/knowledge/retrieval.py` — dynamic retrieval decision + source-filtered search
+- `src/study_tutor/knowledge/quote_verifier.py` — corpus-matcher with primary/secondary distinction (invoked by Coach)
+- `domains/gcse-english/sources/README.md` — updated BYOS instructions with the source-type directory structure (replaces the Phase 0 tail item)
+- Unit tests for each of the three modules; an integration test that exercises the full retrieval-decision + quote-verification flow end-to-end.
+
+**Dependencies:** FEAT-PH1-001 (student model's `Text` entity tells the retrieval decision which primary text to target), FEAT-PH1-002 (planner's `focus_aos` tells the retrieval decision whether AO3 is active). **FEAT-PH1-003 depends on this**: the Coach's `quote_fidelity` rubric criterion calls into the quote verifier.
+
+**Out of scope (Phase 2 or later):**
+
+- User-supplied in-copyright texts cached in a per-student Graphiti `Text` episode (rag-grounding-design §1a posture 2)
+- Embedding-based pre-generation grounding (rag-grounding-design Phase B) — Phase 1 stays post-hoc-verification-only
+- Reranker tuning beyond the `BAAI/bge-reranker-v2-m3` baseline proven in the 23 Apr session
 
 ---
 
@@ -249,6 +342,9 @@ These decisions are closed for Phase 1. Reopenable only per `decisions-log-2026-
 - **In-memory session state only for Phase 1.** If a session_id spans an MCP server restart it's lost. Persistent session state is a Phase 2 consideration if UX requires it.
 - **Single student.** Lilymay is the only student_id in Phase 1. Multi-student is post-hackathon even though the schema supports it.
 - **Bedrock from Phase 0 remains the demo-week inference backup.** Phase 1 doesn't rebuild the Bedrock import; it only extends the LLM client with per-provider dispatch (which was done in Phase 0 FEAT-PO-004).
+- **Retrieval is selective, not always-on.** The dynamic retrieval decision (FEAT-PH1-004 item 2) is not optional — every `tutor_turn` passes through it. Always-on retrieval is explicitly rejected based on 23 Apr empirical findings.
+- **In-copyright primary texts are not in the corpus.** Analysis Mode Only per rag-grounding-design §1a. No workarounds (no DRM-ripped Kindle, no unauthorised Scribd/archive.org copies). Phase 2 per-student Text episodes are the only future legitimate path.
+- **Quote verification is post-hoc, not pre-generation.** Phase B embedded-context grounding is explicitly deferred. Phase 1 ships only the post-hoc verifier (Phase A MVP shape).
 
 ---
 
@@ -276,6 +372,14 @@ Phase 1 is complete when all of the following are true:
 
 10. **Phase 1 validation gate run for Phase 0.** `phase-0-validation.md` produced early in Phase 1 reviewing what held, what drifted, what was falsified in the Phase 0 plan. Per the hybrid cadence approach doc.
 
+11. **Source-typed corpus ingested.** `domains/gcse-english/sources/` has the four-way source-type directory structure; at least Macbeth (primary) and one study guide (secondary) populated. Ingestion produces chunk metadata with `source_type` set correctly.
+
+12. **Quote verifier operational in Coach loop.** A demo session shows (a) a primary-text quote correctly attributed with act/scene, (b) a secondary-source phrase correctly rewritten as paraphrase with *"as one critic notes"*-style attribution, (c) a fabricated quote correctly stripped. Logged events visible in session summary.
+
+13. **Dynamic retrieval decision observable.** At least one session where the planner targets Shakespeare triggers retrieval; at least one where the planner targets An Inspector Calls (in-copyright) skips retrieval and logs `retrieval_skipped: analysis_mode`.
+
+14. **SR-09 smoke assertion passes.** `ollama show` and runner log grep both confirm `num_ctx` and `num_predict` reach the runner at Modelfile-declared values. Regression test added to CI (or manual walkthrough if CI absent in Phase 1).
+
 ---
 
 ## Knock-on to Phase 2
@@ -298,12 +402,23 @@ The Phase 1 features map to the existing 13-feature roadmap in `docs/product/roa
 | FEAT-PH1-001 Graphiti Student Model | FEAT-PO-004 roadmap | Same scope, Phase 1 ships it |
 | FEAT-PH1-002 Session Planner | FEAT-PO-005 roadmap | Same scope, deterministic-first per scope-doc decision |
 | FEAT-PH1-003 DeepAgents Tutoring Loop + Coach | FEAT-PO-006 roadmap | Same scope, with latency-budget constraint added from LES1 |
+| FEAT-PH1-004 Primary-Text RAG + Source-Typed Quote Verification | TASK-PO02F-001 promoted (new roadmap row) | Operationalises rag-grounding-design Phase A + 23 Apr empirical R1–R4 |
 
 Three Phase 0 features that continue to live through Phase 1 without changes: FEAT-PO-001 (domain contract), FEAT-PO-002 (MCP transport), FEAT-PO-004 (Bedrock path). Phase 1 extends each minimally (domain contract gets AO-level detail used by Coach; MCP gets fire-and-forget properly implemented; Bedrock remains as backup).
 
 ---
 
-*Phase 1 scope: 17 April 2026*
-*Consuming: `phase-0-scope.md`, `decisions-log-2026-04-17.md`, `planning-cadence-hybrid-approach.md`, `deepagents-patterns-review.md`, `cross-agent-lessons-from-specialist-agent.md`*
+## Future fine-tune inputs (not a Phase 1 deliverable)
+
+Captured from 23 Apr findings (R6) for when the next fine-tune round is scheduled:
+
+- **AO-labelled exemplars.** AO mis-labelling (especially theme-as-AO3) is a pretraining/fine-tune gap, not a prompt-engineering problem. Current Modelfile SYSTEM block patches it at runtime; future fine-tune datasets should include AO-correctly-labelled responses so the behaviour is baked in. Likely dataset source: AQA specimen papers and mark schemes, where AO attribution is explicit.
+- **Verbatim quote attribution exemplars.** Fine-tune exemplars that pair primary-text quotes with act/scene citations would reinforce the attribution habit the Coach currently enforces post-hoc.
+- **Socratic-close exemplars.** Already present in the current fine-tune and working well; preserve on retrain.
+
+---
+
+*Phase 1 scope: 17 April 2026 (last updated 23 April 2026 with 23 Apr empirical findings)*
+*Consuming: `phase-0-scope.md`, `decisions-log-2026-04-17.md`, `planning-cadence-hybrid-approach.md`, `deepagents-patterns-review.md`, `cross-agent-lessons-from-specialist-agent.md`, `rag-grounding-design.md`, `openwebui-rag-empirical-findings-2026-04-23.md`*
 *Produced alongside: `phase-1-build-plan.md` (day-by-day for 26 April – 2 May)*
 *Successor: `phase-2-scope.md` (sketch, build plan deferred to Phase 1 Thursday)*

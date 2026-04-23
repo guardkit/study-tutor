@@ -1,7 +1,7 @@
 # Phase 1 Build Plan — Three-Layer Architecture + Student Model
 
 ## For: Weekend build (26–27 April 2026) + weekday evenings 28 April – 1 May
-## Date: 17 April 2026
+## Date: 17 April 2026 (last updated 23 April 2026 — FEAT-PH1-004 added from 23 Apr empirical findings)
 ## Status: Ready to execute when Phase 0 closes Friday 24 April
 ## Repo: `study-tutor` (Phase 0 scaffolding already present)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (Ollama + embedder), Synology NAS over Tailscale (FalkorDB), Google Gemini (Graphiti entity extraction + Coach)
@@ -30,10 +30,13 @@ Week 2 of the 31-day build. Turns the Phase 0 MCP-accessible single-LLM tutor in
 4. Player-Coach tutoring loop runs end-to-end
 5. Session completion writes to Graphiti
 6. Demo flow works end-to-end
-7. Six parity surfaces still green
+7. Six parity surfaces still green (SR-01..SR-07); SR-08 (async write-back) and **SR-09 (runtime LLM param assertion)** established
 8. Technical write-up has content
 9. Phase 2 build plan drafted
 10. Phase 0 validation gate run
+11. **Source-typed corpus ingested** (FEAT-PH1-004)
+12. **Quote verifier operational in Coach loop** (FEAT-PH1-004 + FEAT-PH1-003)
+13. **Dynamic retrieval decision observable** in at least one Shakespeare session (retrieves) and one Inspector Calls session (skips, analysis mode)
 
 ---
 
@@ -60,15 +63,20 @@ Phase 0 closed by end of Friday 24 April. Before the weekend starts, confirm the
 | VALIDATION | Phase 0 validation gate | Phase 0 complete | 1/10 (document) | 1 |
 | FEAT-PH1-001 | Graphiti student model (schema, helpers, seeding) | SPIKE | 6/10 | 2 |
 | FEAT-PH1-002 | Deterministic session planner | FEAT-PH1-001 | 4/10 | 3 |
-| FEAT-PH1-003 | DeepAgents tutoring loop + Coach | FEAT-PH1-001, FEAT-PH1-002 | 8/10 | 4 |
+| FEAT-PH1-004 | Primary-text RAG + source-typed quote verifier | FEAT-PH1-001 (Text entity), FEAT-PH1-002 (focus_aos) | 5/10 | 3 (parallel with PH1-002) |
+| FEAT-PH1-003 | DeepAgents tutoring loop + Coach (Coach integrates verifier from PH1-004) | FEAT-PH1-001, FEAT-PH1-002, FEAT-PH1-004 | 8/10 | 4 |
 | TECH-WRITEUP | Phase 1 content in technical-writeup.md | Each FEAT as it lands | 2/10 | continuous |
 
 **Dependency chain:**
 
 ```
-Spike + Phase 0 validation ──► FEAT-PH1-001 (student model) ──► FEAT-PH1-002 (planner) ──► FEAT-PH1-003 (tutoring loop + Coach)
-                                                            └─► TECH-WRITEUP continuous
+Spike + Phase 0 validation ──► FEAT-PH1-001 (student model) ──┬─► FEAT-PH1-002 (planner) ─────────┐
+                                                               │                                    ├─► FEAT-PH1-003 (tutoring loop + Coach)
+                                                               └─► FEAT-PH1-004 (RAG + verifier) ──┘
+                                                                                                    └─► TECH-WRITEUP continuous
 ```
+
+FEAT-PH1-002 and FEAT-PH1-004 can run in parallel after PH1-001 — they touch different modules (`agents/session_planner.py` vs `knowledge/corpus.py` + `knowledge/retrieval.py` + `knowledge/quote_verifier.py`). Both feed PH1-003.
 
 ---
 
@@ -122,11 +130,13 @@ Switch to Claude Code for implementation.
 
 ---
 
-### Sunday 27 April (weekend day 2) — Session planner + Tutoring loop integration
+### Sunday 27 April (weekend day 2) — Session planner + RAG layer + Tutoring loop integration
 
-**Target:** Deterministic planner working. MCP handlers upgraded to read student state and return plans. First end-to-end Phase 1 session runs.
+**Target:** Deterministic planner working. Source-typed corpus ingested. Quote verifier callable. MCP handlers upgraded to read student state and return plans. First end-to-end Phase 1 session runs.
 
-#### Morning (3 hours) — FEAT-PH1-002 session planner
+**Scope note:** Two parallel tracks this morning (planner + RAG layer) converge into the afternoon's Coach loop. If going solo, do planner first (2h), then RAG layer (2h), then afternoon Coach. If pairing, one dev on each track.
+
+#### Morning track A (2 hours) — FEAT-PH1-002 session planner
 
 1. **Implement `src/study_tutor/agents/session_planner.py`.** Planner function signature: `plan_session(student_id: str, topic_override: str | None = None) -> SessionPlan`. Implements the deterministic rules 1, 3, 4 from the scope doc. Rules 2 and 5 stubbed with `# TODO(phase-2)` comments.
 
@@ -140,6 +150,28 @@ Switch to Claude Code for implementation.
 
 4. **Integration test.** Real call from MCP (Claude Desktop) to `tutor_start_session` for Lilymay. Verify: returns plan with topic name, focus AOs, opening prompt. Plan is shaped by the Saturday-seeded state.
 
+#### Morning track B (2 hours) — FEAT-PH1-004 corpus + retrieval + verifier
+
+This track is the Phase-1 operationalisation of the 23 Apr empirical findings. All three sub-modules are small (~50 lines each) but load-bearing for PH1-003 Coach.
+
+Prerequisites (do before starting): Standard Ebooks Macbeth + A Christmas Carol + Jekyll & Hyde downloaded to `domains/gcse-english/sources/primary_text/`; at least one study guide PDF moved to `domains/gcse-english/sources/secondary_study_guide/`.
+
+1. **Implement `src/study_tutor/knowledge/corpus.py`.** `SourceType` enum (`primary_text`, `secondary_study_guide`, `secondary_critical`, `context_historical`). `CorpusChunk` Pydantic model with `text`, `source_type`, `source_path`, `text_name`, `citation_anchor` (act/scene/line for plays; chapter/paragraph for novels). Corpus loader infers `source_type` from the parent directory name; chunking reuses the pattern from `agentic-dataset-factory`.
+
+2. **Implement `src/study_tutor/knowledge/retrieval.py`.** Three functions:
+   - `has_primary_text(text_name: str) -> bool` — corpus lookup
+   - `retrieve(query, text_name, focus_aos, top_k=6) -> list[CorpusChunk]` — source-filtered retrieval; returns `[]` for AO3-only queries (R3 retrieval-bypass) or when `has_primary_text` is False (R2 dynamic decision)
+   - `should_retrieve(text_name, focus_aos) -> tuple[bool, str]` — the explicit decision function the Coach/Player loop calls; returns `(False, "analysis_mode:no_primary_text")` or `(False, "ao3_only:training_first")` with reason strings that surface in session metadata
+
+3. **Implement `src/study_tutor/knowledge/quote_verifier.py`.** Functions:
+   - `extract_quotes(response_text) -> list[Quote]` — finds `"…"` spans (≥4 words, to avoid false positives on short phrases)
+   - `verify_quote(quote, corpus_chunks) -> VerifyResult` — returns `PrimaryMatch(citation)`, `SecondaryMatch(phrase)`, `FuzzyMatch(corrected, edit_distance)`, `NoMatch()`
+   - `rewrite_response(response_text, verify_results) -> str` — applies the transformations from scope §4 (annotate primary, rewrite secondary as paraphrase, strip/correct unmatched)
+
+4. **Unit tests.** One per module. Corpus loader: correct source-type inference from directory. Retrieval: decision function covers the four branches (primary present / absent, AO3 active / not). Verifier: four match types each produce the right rewrite.
+
+5. **Integration smoke.** Load Macbeth + a Macbeth study guide into the corpus. Hand a response containing a genuine Shakespeare quote and a genuine study-guide phrase to the verifier. Confirm the first is annotated with citation, the second is rewritten as *"as one critic observes"*.
+
 #### Afternoon (4 hours) — FEAT-PH1-003 Player-Coach loop
 
 This is the critical-path feature. Front-load it on Sunday afternoon while energy is fresh.
@@ -148,14 +180,16 @@ This is the critical-path feature. Front-load it on Sunday afternoon while energ
 
 6. **Write the Coach prompt.** `roles/tutor/prompts/coach.md`. Structure:
    - Role description (educational tutoring quality evaluator, not a tutor)
-   - Rubric with 5 criteria per the scope doc, each with specific evaluation guidance
-   - Structured JSON output schema: `{decision: "accept"|"revise", score: float, criteria: {...}, reasoning: str, misconceptions_observed: list[str]}`
+   - Rubric with 6 criteria: 5 from scope doc + **`quote_fidelity`** (new, from FEAT-PH1-004) — each with specific evaluation guidance
+   - Structured JSON output schema: `{decision: "accept"|"revise", score: float, criteria: {...}, reasoning: str, misconceptions_observed: list[str], quote_verification: {primary_matches: [...], secondary_rewrites: [...], stripped: [...]}}`
    - Constraints (never output for the student; max 200 words of reasoning)
 
 7. **Implement the Player-Coach loop.** Update `_run_tutor_session` in MCP adapter. Per turn:
-   - Player generates response grounded in plan + transcript
-   - Coach evaluates against rubric
-   - If score ≥ 0.7: emit Player's response to student, record turn
+   - Call `should_retrieve(text_name, focus_aos)` (from FEAT-PH1-004). If True, retrieve context and attach to Player prompt. If False, attach `retrieval_skipped` reason to turn metadata and proceed without context.
+   - Player generates response (grounded in plan + transcript + retrieved context if any)
+   - Run Player response through `quote_verifier` before Coach sees it; rewrites applied in place, verification metadata passed to Coach
+   - Coach evaluates against rubric (including `quote_fidelity` score derived from verifier output)
+   - If score ≥ 0.7: emit verified+rewritten Player response to student, record turn
    - If score < 0.7 and retries remain: Player revises with Coach feedback, loop
    - If score < 0.7 and max retries exhausted: emit lowest-scoring reply with a silent log marker, flag for session-end review
 
@@ -327,6 +361,13 @@ Phase 1 follows the same GuardKit pattern as Phase 0 — front-load the system-l
 | `src/study_tutor/knowledge/student_model.py` | FEAT-PH1-001 | NEW (7 entity types, 6 relationships) |
 | `src/study_tutor/knowledge/episodes.py` | FEAT-PH1-001 | NEW (3 episode types) |
 | `src/study_tutor/knowledge/graphiti_client.py` | FEAT-PH1-001 | NEW (lazy-import wrapper) |
+| `src/study_tutor/knowledge/corpus.py` | FEAT-PH1-004 | NEW (source-typed chunk model + loader) |
+| `src/study_tutor/knowledge/retrieval.py` | FEAT-PH1-004 | NEW (dynamic retrieval decision + source-filtered search) |
+| `src/study_tutor/knowledge/quote_verifier.py` | FEAT-PH1-004 | NEW (primary/secondary distinguisher + rewriter) |
+| `domains/gcse-english/sources/primary_text/macbeth_shakespeare_1606.txt` | FEAT-PH1-004 | NEW (Standard Ebooks) |
+| `domains/gcse-english/sources/primary_text/christmas_carol_dickens_1843.txt` | FEAT-PH1-004 | NEW (Standard Ebooks) |
+| `domains/gcse-english/sources/primary_text/jekyll_hyde_stevenson_1886.txt` | FEAT-PH1-004 | NEW (Standard Ebooks) |
+| `domains/gcse-english/sources/README.md` | FEAT-PH1-004 | REPLACE Phase 0 stub with source-type directory doc |
 | `src/study_tutor/agents/session_planner.py` | FEAT-PH1-002 | NEW |
 | `src/study_tutor/agents/coach.py` | FEAT-PH1-003 | NEW |
 | `roles/tutor/prompts/coach.md` | FEAT-PH1-003 | EXTEND from Phase 0 skeleton |
@@ -337,8 +378,13 @@ Phase 1 follows the same GuardKit pattern as Phase 0 — front-load the system-l
 | `docs/research/ideas/phase-2-build-plan.md` | Thursday prep | NEW |
 | `docs/research/ideas/phase-1-validation.md` (seed only) | Friday close-out | NEW stub |
 | `tests/unit/knowledge/test_student_model.py` | FEAT-PH1-001 | NEW |
+| `tests/unit/knowledge/test_corpus.py` | FEAT-PH1-004 | NEW |
+| `tests/unit/knowledge/test_retrieval.py` | FEAT-PH1-004 | NEW (covers four-branch decision) |
+| `tests/unit/knowledge/test_quote_verifier.py` | FEAT-PH1-004 | NEW (covers four match types) |
 | `tests/unit/agents/test_session_planner.py` | FEAT-PH1-002 | NEW |
 | `tests/integration/test_tutoring_loop.py` | FEAT-PH1-003 | NEW |
+| `tests/integration/test_rag_end_to_end.py` | FEAT-PH1-004 | NEW (Shakespeare → retrieve+verify; Inspector Calls → skip+analysis-mode) |
+| `tests/smoke/test_ollama_runtime_params.py` | SR-09 | NEW (asserts num_ctx and num_predict reach runner) |
 
 ### Modified files
 
