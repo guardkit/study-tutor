@@ -17,7 +17,7 @@
 |-----|---------|--------|
 | Fri 18 Apr | Prereqs | ✅ Done |
 | Sat 19 Apr | FEAT-PO-001 + FEAT-PO-002 kickoff | ✅ Done — GOAL.md drafted, scaffold + MCP server landed (commits `4d6610a`, `2b9ad15`, `94ee157`) |
-| Sun 20 Apr | Parity surfaces + FEAT-PO-003 + FEAT-PO-005 | 🟡 Partial — parity surfaces green, README + LICENSE + `.gitignore` in place; `domains/gcse-english/sources/README.md` and `docs/submission/` stubs **not yet landed** |
+| Sun 20 Apr | Parity surfaces + FEAT-PO-003 + FEAT-PO-005 | ✅ Done (closed-out 23 Apr evening) — parity surfaces green Sun; FEAT-PO-003 tail landed 23 Apr evening (`domains/gcse-english/sources/README.md`, `docs/licensing.md`, `.gitignore` hardening for PDFs / GGUF / ChromaDB / `train.jsonl` / model artefacts); FEAT-PO-005 `docs/submission/` stubs landed 23 Apr evening (technical-writeup, demo-script, video-outline) |
 | Mon 21 Apr | FEAT-PO-004 Bedrock setup | ✅/🟡 Pivot — Bedrock placeholder in `.env.example`; actual S3 upload + import **deferred**. Unplanned work absorbed here instead: FEAT-PO-002 shipped end-to-end (commits `0acda09`, `15d4aa2`), Graphiti LLM switched to vLLM on GB10 (commit `bd74d43`), two post-smoke defects fixed (commits `7a8a3a3`, `14afc08`) |
 | Tue 22 Apr | FEAT-PO-004 Bedrock validation | 🔲 Not done — instead, TASK-PO02F-001 scoped RAG grounding for quote fidelity (commit `b3c567f`) |
 | Wed 23 Apr | Clean-machine walkthrough | 🔲 Not yet run |
@@ -30,17 +30,17 @@
 |---------|-------|----------|
 | FEAT-PO-001 (domain contract) | ✅ Complete | `domains/gcse-english/GOAL.md`, `docs/gamification/` present |
 | FEAT-PO-002 (tutoring runtime) | ✅ Complete + hardened | 7/7 core tasks done (`TASK-PO02-001..007`); 2/3 follow-up fixes landed (`TASK-PO02F-002`, `TASK-PO02F-003`); 1 follow-up scoped (`TASK-PO02F-001` — RAG grounding) with empirical validation session completed 23 Apr — see [openwebui-rag-empirical-findings-2026-04-23.md](./openwebui-rag-empirical-findings-2026-04-23.md) |
-| FEAT-PO-003 (repo packaging) | 🟡 Mostly done | `README.md`, `LICENSE`, `pyproject.toml`, `AGENTS.md` all present; missing: `domains/gcse-english/sources/README.md`, `docs/licensing.md` |
+| FEAT-PO-003 (repo packaging) | ✅ Complete | `README.md`, `LICENSE` (MIT — plan called for Apache 2.0; see `docs/licensing.md §1`), `pyproject.toml`, `AGENTS.md`, `domains/gcse-english/sources/README.md`, `docs/licensing.md` all present; `.gitignore` hardened with study-tutor entries (PDFs under `domains/*/sources/`, `chroma/`, `train.jsonl`, `*.gguf`, `*.safetensors`, `models/`, `adapters/`, `merged-*/`). SR-06 placeholder hygiene passes; pre-commit PDF/GGUF scan clean; `git check-ignore` confirms dummy-PDF drop test |
 | FEAT-PO-004 (Bedrock validation) | 🔲 Deferred | `BEDROCK_MODEL_ARN` placeholder in `.env.example`; no S3 upload or Bedrock import executed. Depends on AWS ops evening. |
-| FEAT-PO-005 (write-up scaffolding) | 🔲 Not started | `docs/submission/` directory does not exist |
+| FEAT-PO-005 (write-up scaffolding) | ✅ Stubs landed | `docs/submission/technical-writeup.md` (13 section stubs per scope-doc outline), `docs/submission/demo-script.md` (5-scene skeleton, ~3.5min), `docs/submission/video-outline.md` (storyboard-lite + shot list + B-roll checklist) all present. Content populated incrementally through Phases 1–2; target feature-complete 10 May. |
 
-**Smoke-test gate:** The end-of-Saturday gate (TASK-PO02-007) declared GREEN on 2026-04-21 — Phase 0 is functionally submittable on Ollama/GB10 today. The remaining work is Bedrock validation, doc stubs, and the clean-machine walkthrough.
+**Smoke-test gate:** The end-of-Saturday gate (TASK-PO02-007) declared GREEN on 2026-04-21 — Phase 0 is functionally submittable on Ollama/GB10 today. The remaining work is Bedrock validation and the clean-machine walkthrough.
 
 **Open punch-list to close Phase 0:**
 
 1. **Clean-machine walkthrough** (originally Wed 23 Apr) — run tonight or Thu evening; fresh-clone reproduces the tutor.
-2. **FEAT-PO-005 write-up stubs** — create `docs/submission/{technical-writeup,demo-script,video-outline}.md` shells.
-3. **FEAT-PO-003 tail** — `domains/gcse-english/sources/README.md`, `docs/licensing.md`.
+2. ~~**FEAT-PO-005 write-up stubs** — create `docs/submission/{technical-writeup,demo-script,video-outline}.md` shells.~~ ✅ Landed 23 Apr evening. All three stubs present; content filled incrementally through Phases 1–2.
+3. ~~**FEAT-PO-003 tail** — `domains/gcse-english/sources/README.md`, `docs/licensing.md`.~~ ✅ Landed 23 Apr evening. Open sub-point: LICENSE is MIT but the plan specified Apache 2.0 — decision deferred until Kaggle IP rules read in full; `docs/licensing.md §1` documents the discrepancy so the swap is one edit when confirmed.
 4. **FEAT-PO-004 Bedrock validation** — S3 upload + Custom Model Import + LLM client wiring. Contingency TASK-CDR-005 stands: if eu-west-2 lacks 31B import support, stay on Ollama/GB10 for demo.
 5. **TASK-PO02F-001 RAG grounding** — scoped (will likely be promoted to FEAT-PO-006 in Phase 1) and now backed by empirical findings from the 23 Apr OpenWebUI session (R1–R6 recommendations captured in [openwebui-rag-empirical-findings-2026-04-23.md §4](./openwebui-rag-empirical-findings-2026-04-23.md)).
 6. **Phase 1 scope + build-plan docs** — `phase-1-scope.md` exists; `phase-1-build-plan.md` exists but needs refresh against Phase 0 actuals and the new FEAT-PO-006 recommendations before next weekend.
@@ -218,7 +218,7 @@ Switch to Claude Code. Set up the repo structure.
 
 ---
 
-### Sunday 20 April (weekend day 2) — FEAT-PO-002 hardening + FEAT-PO-003 + FEAT-PO-005 start 🟡 PARTIAL (PO-002 hardening ✅; FEAT-PO-003 doc tail + FEAT-PO-005 stubs outstanding)
+### Sunday 20 April (weekend day 2) — FEAT-PO-002 hardening + FEAT-PO-003 + FEAT-PO-005 start ✅ DONE (closed-out 23 Apr evening: PO-002 hardening Sun; FEAT-PO-003 doc tail 23 Apr; FEAT-PO-005 stubs 23 Apr)
 
 **Target:** All six parity surfaces green. Public repo packaging done. Technical write-up stub in place. Clean-machine walkthrough achievable.
 
