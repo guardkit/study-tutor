@@ -1052,3 +1052,239 @@ Task complete. Created the role manifest shell for TASK-PO02-002:
   hygiene task.
 
   Task moved to tasks/in_review/po02-smoke-followups/. Ready for human review / /task-complete.
+
+
+  implement phase-0-build-plan.md → Sunday 20 April → Afternoon (FEAT-PO-003)
+
+FEAT-PO-003 Sunday afternoon tail is done. Closed the two gaps flagged in the status table and hardened .gitignore per the plan's §4.
+
+Changes
+
+domains/gcse-english/sources/README.md — bring-your-own-sources guide: tested (Mr Bruff) + alternatives (CGP/York Notes/Pearson/Collins), explicit AQA exclusion, directory layout, Phase 1 ingestion command (aspirational until FEAT-PO-006 lands), public/private split, troubleshooting.
+docs/licensing.md — operational licensing summary: repo code (MIT), Gemma 4 base (Google terms), fine-tuned adapter/GGUF/train.jsonl (not distributed), third-party source material including AQA prohibition, runtime dependencies, downstream can/cannot.
+.gitignore — added study-tutor section: domains/*/sources/**/*.pdf (+ .PDF, .epub), chroma/, chroma_data*/, train.jsonl, *.gguf, *.safetensors, models/, adapters/, merged-*/, stdio logs.
+Gates passed
+
+SR-06: .env.example uses <placeholder> form only — no real-looking secrets.
+Pre-commit scan: no stray .pdf, .gguf, or .safetensors anywhere outside .venv/.
+Dummy-PDF drop test: git check-ignore confirmed .gitignore:219 blocks both domains/gcse-english/sources/__dummy.pdf and a nested mrbruff/__nested.pdf.
+One flag for you
+
+The plan (17 Apr) specified Apache 2.0, but the LICENSE that actually landed on 12 Apr is MIT. I documented it as MIT and noted the discrepancy in docs/licensing.md §1 rather than silently swapping the licence — that's a call for you to make, especially before the Kaggle IP rules are read.
+
+Not touched: docs/research/ideas/phase-0-build-plan.md (already dirty in your working tree). Once you're ready, the status-table row for FEAT-PO-003 can flip from 🟡 to ✅.
+
+implement phase-0-build-plan.md → Sunday 20 April → Evening (FEAT-PO-005 kickoff)
+
+I'll implement the Sunday 20 April Evening section — FEAT-PO-005 kickoff: three submission doc stubs in docs/submission/.
+
+Let me first check for referenced context so the stubs reflect the actual submission plan.
+
+Context confirmed — 13 required sections for the write-up (from phase-0-scope.md:267-280), 5-scene demo structure, and an empty video shell. Creating the three stubs.
+
+Write technical-writeup.md
+62 lines
+# Study Tutor — Technical Write-Up
+
+**Submission:** Gemma 4 Good Hackathon (Kaggle × Google DeepMind)
+**Deadline:** 18 May 2026, 23:59 UTC
+**Status:** 🔲 Stub — populated incrementally through Phases 0–2. Target feature-complete: 10 May 2026. Final polish: 17–18 May.
+
+> This is a living document. Each section is a titled stub with a one-line note. Content is added as each phase lands so the final write-up is a synthesis, not a sprint.
+
+---
+
+## 1. Problem Statement
+
+> *Lilymay, AI tutors, teenage engagement, privacy — why a 15-year-old won't open a revision tool on a Tuesday evening, and why a cloud-hosted AI tutor isn't an acceptable answer.*
+
+## 2. Solution Overview
+
+> *Three-layer architecture at a glance: fine-tuned Gemma 4 31B on-device (behaviour), RAG over licensed sources (knowledge), gamification layer (engagement).*
+
+## 3. Pipeline Methodology
+
+> *How the training data was produced — agentic dataset factory, Player–Coach adversarial generation, Unsloth fine-tuning harness. Why this yields better training data than hand-curation.*
+
+## 4. Fine-Tuning Specifics
+
+> *Gemma 4 31B Dense base, LoRA adapter, ShareGPT format, 75/25 `<think>` ratio, ~1,736 examples, ~2h 5min on GB10, final loss 0.7015. Training data provenance and filtering.*
+
+## 5. Architecture
+
+> *Phase 1 Ollama-on-GB10 runtime + Phase 2 Graphiti student model + DeepAgents Player–Coach loop + gamification state engine. Where each layer lives and how they compose.*
+
+## 6. Gamification Design
+
+> *Single-user engagement mechanics — personal growth over competition. XP economy, level progression, achievements, streaks, daily challenges, Boss Battle exam mode. See `docs/gamification/design.md` for the full spec.*
+
+## 7. On-Device Deployment
+
+> *GB10 under the desk → Ollama → GGUF Q4_K_M. Zero cloud calls in the default path. Privacy story: no student data leaves the home network.*
+
+## 8. Bedrock Migration Path
+
+> *AWS Bedrock Custom Model Import as the scale-to-zero fallback for demo week and multi-user scenarios. Cost profile (~$1.50–$3.00 per 5-min session), cold-start behaviour, when to route traffic where.*
+
+## 9. Multi-Subject Expansion
+
+> *Domain-agnostic pipeline — adding a subject is a `domains/{subject}/GOAL.md` plus a `sources/` directory, not a code change. Architecture demonstration, not Phase 0 implementation.*
+
+## 10. Copyright and Provenance
+
+> *Bring-your-own-sources public repo pattern. What the repo ships vs. what users acquire themselves. Training-data provenance chain. See `copyright-training-data-analysis.md`.*
+
+## 11. Evaluation
+
+> *What we measured (quote fidelity, AO coverage, coach-criteria pass rate, session completion) and what we deliberately did not (leaderboard-style benchmarks — wrong frame for a single-student tutor).*
+
+## 12. Roadmap
+
+> *Reachy Mini embodied interface, mobile surface, multi-subject expansion, Graphiti-backed long-term student model, Boss Battle exam mode.*
+
+## 13. Acknowledgements
+
+> *Pollen Robotics (Reachy), Unsloth (fine-tuning framework), Ollama (runtime), Anthropic (Claude — build harness), Google DeepMind (Gemma 4 base model), and the GCSE English teachers whose open pedagogy informed the Assessment Objective framing.*
+Write demo-script.md
+68 lines
+# Demo Video — Script
+
+**Target runtime:** ~3.5 minutes (within the hackathon's 3–5 minute window)
+**Phase:** 🔲 Stub — scene shape only. Content populated during Phase 2.
+**Status:** Skeleton
+
+---
+
+## Scene 1 — Working Today (30s)
+
+> *Open WebUI, GB10 under the desk, Lilymay prompts the tutor about a Macbeth scene. Response streams from the fine-tuned Gemma 4. No cloud call. Screen recording + ambient shot of the box.*
+
+**Beats:**
+- [ ] …
+- [ ] …
+- [ ] …
+
+---
+
+## Scene 2 — Architecture Reveal (60s)
+
+> *Cut to the three-layer diagram. Voice-over walks through fine-tune (behaviour) → RAG (knowledge) → gamification (engagement). Reveal MCP transport — Claude Desktop calling `tutor_turn` against the same model.*
+
+**Beats:**
+- [ ] …
+- [ ] …
+- [ ] …
+
+---
+
+## Scene 3 — Gamification Story (60s)
+
+> *Dashboard mockup: XP earned this session, level progression, near-unlockable achievement, streak. The point the hackathon cares about: will a teenager actually open this on a Tuesday evening? Boss Battle mode teaser.*
+
+**Beats:**
+- [ ] …
+- [ ] …
+- [ ] …
+
+---
+
+## Scene 4 — Reachy / Vision (30s)
+
+> *Reachy Mini "Scholar" reporting progress conversationally — "How's revision going?" Live if the robots have arrived by record date (per DEC-06 gate), otherwise pre-recorded or mocked-up scenario audio.*
+
+**Beats:**
+- [ ] …
+- [ ] …
+
+---
+
+## Scene 5 — Roadmap (30s)
+
+> *Graphiti adaptive student model, multi-subject expansion (Maths, Science), mobile surface, the system getting smarter over time. Close on the GitHub repo URL.*
+
+**Beats:**
+- [ ] …
+- [ ] …
+
+---
+
+## Production Notes
+
+- [ ] Capture screen recordings during the Phase 2 build, not at the end — raw footage accumulates as the feature ships
+- [ ] GorillaPod + sleeve adapter for any walk-and-talk inserts
+- [ ] Lilymay on-camera is optional — screen-only is fine per risk table
+- [ ] Narration written after scenes are cut, not before
+Write video-outline.md
+64 lines
+# Demo Video — Storyboard Outline
+
+**Companion to:** [demo-script.md](./demo-script.md)
+**Phase:** 🔲 Stub — empty shell. Shot list and storyboard drafted during Phase 2.
+**Status:** Skeleton
+
+---
+
+## Shot List
+
+> *One row per shot. Fill in during Phase 2 as screen recordings and B-roll accumulate.*
+
+| # | Scene | Shot | Duration | Source | Notes |
+|---|-------|------|----------|--------|-------|
+| 1 |       |      |          |        |       |
+| 2 |       |      |          |        |       |
+| 3 |       |      |          |        |       |
+
+---
+
+## Scene-by-Scene Storyboard
+
+### Scene 1 — Working Today
+
+> *Sketch the frame: screen-only? Ambient box shot? Over-the-shoulder?*
+
+- [ ] …
+
+### Scene 2 — Architecture Reveal
+
+> *How the three-layer diagram is introduced on screen — static image, animated reveal, or annotated live demo?*
+
+- [ ] …
+
+### Scene 3 — Gamification Story
+
+> *Dashboard mockup presentation. Static screenshots vs. animated walkthrough vs. live interaction.*
+
+- [ ] …
+
+### Scene 4 — Reachy / Vision
+
+> *Live robot footage vs. pre-recorded vs. mocked-up. Branch point set by DEC-06 gate on 4 May.*
+
+- [ ] …
+
+### Scene 5 — Roadmap
+
+> *Closing frame — GitHub URL, submission team, any acknowledgements visible on-screen.*
+
+- [ ] …
+
+---
+
+## B-Roll / Assets Checklist
+
+- [ ] GB10 hardware shot (ambient, on-desk)
+- [ ] Screen recording: Open WebUI Macbeth session
+- [ ] Screen recording: Claude Desktop `tutor_turn` call
+- [ ] Three-layer architecture diagram (exportable SVG/PNG)
+- [ ] Gamification dashboard mockup (React artifact or static HTML from Phase 2)
+- [ ] Reachy footage — live or placeholder
+- [ ] Repo URL / close card
+FEAT-PO-005 kickoff landed — three submission doc stubs in docs/submission/:
+
+technical-writeup.md — 13 titled sections from phase-0-scope.md:267-280, each with a one-line note
+demo-script.md — 5-scene skeleton (30s + 60s + 60s + 30s + 30s, ~3.5 min)
+video-outline.md — storyboard-lite shell with shot list, per-scene sketches, B-roll checklist
+This closes Phase 0 punch-list item #2. Want me to commit, and should I also knock out item #3 while I'm here (FEAT-PO-003 tail: domains/gcse-english/sources/README.md + docs/licensing.md) per the Sunday plan? Or commit these three first and stop?
+
+
+
