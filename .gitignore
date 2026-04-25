@@ -246,3 +246,6 @@ ollama_models/
 stdout.log
 stderr.log
 *.walkthrough.log
+
+# Per-machine Claude Code overrides
+.claude/settings.local.json
