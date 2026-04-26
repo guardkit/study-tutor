@@ -34,6 +34,13 @@ dev = [
     "pytest>=9.0.2",
     "pytest-asyncio>=0.23",
     "pytest-cov",
+    # TASK-OPS-BDDM-11 / FEAT-BDDM (2026-04-26): proactive add. study-tutor
+    # currently has zero `.feature` files, so there is no active silent-bypass
+    # risk today, but pytest-bdd must be importable in any worktree where
+    # GuardKit's bdd_runner might execute, so the absence of feature files
+    # cannot mask a missing dependency the moment the first .feature lands.
+    # See guardkit:tasks/.../TASK-OPS-BDDM-11-pyproject-study-tutor.md.
+    "pytest-bdd>=8.1,<9",
 ]
 
 [tool.hatch.build.targets.wheel]
