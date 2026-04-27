@@ -2,7 +2,7 @@
 
 ## For: Weekend build (19–20 April 2026 + continuation through Friday 24 April)
 ## Date: 17 April 2026 (last updated 27 April 2026)
-## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017). Graphiti latency spike DONE 27 Apr — SR-08 elevated to CRITICAL; ARCH-017 sync classification confirmed with massive margin.**
+## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017). Graphiti latency spike DONE 27 Apr — SR-08 elevated to CRITICAL; ARCH-017 sync classification confirmed with massive margin. SR-08 bundled `/arch-refine` DONE 27 Apr — ADR-ARCH-018 promotes SR-08 → CC-13 and SR-09 → CC-14 (six → fourteen parity surfaces); ADR-ARCH-019 broadens async write-back from session-end-only to every Graphiti write point. Both ADRs seeded into `architecture_decisions`.**
 ## Repo: `guardkit/study-tutor` (or equivalent — currently a near-empty repo at `/Users/richardwoollcott/Projects/appmilla_github/study-tutor`)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (inference), Synology NAS over Tailscale (FalkorDB, Phase 1 only)
 ## Target completion: End of Friday 24 April 2026 (close of Week 1 of the 31-day burn)
@@ -58,7 +58,7 @@
    - `search_memory_facts`: **0.08s** — same shape as search_nodes.
 
    **Decisions unblocked:**
-   - **SR-08 (async write-back): CRITICAL, not defensive.** At 79s median per write, a synchronous `add_episode` at session-end would make the student wait over a minute for `tutor_session_end` to return. Pattern per `phase-1-scope.md` L83: fire-and-forget from multiple write points (session-end, misconception-observed during turns, Coach confidence-delta proposals), not a single session-end batch. Next: bundle SR-08 (+ SR-09) into one `/arch-refine`, likely refining ADR-ARCH-009 (six → eight parity surfaces).
+   - **SR-08 (async write-back): CRITICAL, not defensive.** At 79s median per write, a synchronous `add_episode` at session-end would make the student wait over a minute for `tutor_session_end` to return. Pattern per `phase-1-scope.md` L83: fire-and-forget from multiple write points (session-end, misconception-observed during turns, Coach confidence-delta proposals), not a single session-end batch. ✅ **CLOSED 2026-04-27** — bundled `/arch-refine` ran in two passes: (a) ADR-ARCH-018 supersedes ADR-ARCH-009, promoting SR-08 → CC-13 and SR-09 → CC-14 (six → fourteen load-bearing CCs); (b) ADR-ARCH-019 supersedes ADR-ARCH-003, broadening async Graphiti write-back from session-end-only to every Graphiti write point in the tutor (session-end episode, mid-session misconception logs, Coach confidence-delta proposals, planner topic-confidence updates — all fire-and-forget; failures logged-only). Architecture artefacts (ARCHITECTURE.md, container.md, domain-model.md) updated in-place; design / planning artefacts flagged stale in ARCH-019's Downstream artefacts section for `/system-design` and `/feature-spec` to pick up. Both ADRs seeded into Graphiti `architecture_decisions` (live `add_episode` times: ARCH-003-superseded 113s; ARCH-019 153s — empirically reconfirms the 79s median's order of magnitude, in line with CC-13's premise).
    - **ADR-ARCH-017 / SR-07 (sync `tutor_start_session`): CONFIRMED with massive margin.** `search_nodes` at 0.07s is ~40× faster than the 3s reversion threshold in ARCH-017. The Phase-1 student-model read at session start costs ~70ms — completely negligible. No further refinement needed for ARCH-017; the reversion footnote stays as documented insurance against future stack changes.
    - **DEC-02 / DEC-08:** resolved.
 
@@ -444,7 +444,8 @@ After Saturday's domain docs are drafted (FEAT-PO-001 morning), kick off the Gua
 /system-design --focus="Student Model" \
   --from docs/architecture/ARCHITECTURE.md \
   --context docs/research/ideas/phase-1-scope.md \
-  --context docs/architecture/decisions/ADR-ARCH-003-async-graphiti-writeback.md \
+  --context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
   --context docs/architecture/decisions/ADR-ARCH-007-graphiti-split-topology.md
 
 # Phase 2 re-run (recommended once gamification engine moves from docs to

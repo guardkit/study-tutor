@@ -2,11 +2,12 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-ARCH-019](ADR-ARCH-019-async-graphiti-writeback-every-write-point.md) on 2026-04-27.
 
 **Date:** 2026-04-18
 **Phase:** Phase 0 (architectural commitment; runtime arrives in P1)
 **Related:** ADR-ARCH-002, ADR-ARCH-012, DEC-02, DEC-08
+**Superseded by:** ADR-ARCH-019 (broadens scope from session-end-only to every Graphiti write point in the tutor, per CC-13 / SR-08 and the 2026-04-27 latency spike).
 
 ## Context
 

@@ -1369,5 +1369,247 @@ Recommended next command:
   --context docs/research/ideas/phase-1-scope.md
 That clears D1 + D2 + adds SR-08 / SR-09 before the Sat 26 Apr Graphiti spike kicks off Phase 1. Then Phase 0 close-out: /feature-spec + /feature-plan for FEAT-PO-004 Bedrock validation.
 
+Final Summary
+Created (1):
+
+docs/architecture/decisions/ADR-ARCH-017-tutor-start-session-sync-classification.md
+Modified (9):
+
+ADR-ARCH-008 — status block flipped to "Partially superseded by ADR-ARCH-017"; classification table struck through with pointer; original rationale preserved verbatim with supersession warning above it.
+ARCHITECTURE.md:161 — index status updated; new row for ADR-ARCH-017.
+domain-model.md §7.1 — table row + footnote citing ADR-ARCH-017.
+container.md:30 — C4 description.
+design/README.md §3 D2 + §7.4 — both follow-up notes marked resolved with ADR-ARCH-017 reference.
+phase-0-scope.md §SR-07 — header + table + reversion conditions + FEAT-PO-002 bullet.
+phase-0-build-plan.md:246 — SR-07 verification step.
+adapter.py:5 — module docstring.
+server.py:4 + L29-32 — module docstring + the load-bearing registered tool description (the canonical SR-07 contract that ships to Claude Desktop).
+Phase 8 — Graphiti Seeding (offered, not auto-run)
+The new and superseded ADRs should be seeded into the architecture_decisions group. The guardkit graphiti add-context CLI handles sanitisation. Suggested commands:
+
+
+guardkit graphiti add-context docs/architecture/decisions/ADR-ARCH-017-tutor-start-session-sync-classification.md \
+  --group architecture_decisions
+
+guardkit graphiti add-context docs/architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md \
+  --group architecture_decisions
+Re-seeding ADR-ARCH-008 captures the new "Partially superseded" status block in the knowledge graph so Graphiti queries return the current state (not the pre-supersession version).
+
+Staleness flagging (Phase 5 of /arch-refine) is what update_entity_metadata({stale: True}) does in the canonical flow — it tags downstream nodes that referenced ADR-ARCH-008's classification so /system-design will report them on next run. I haven't run that step (no direct Graphiti write access in this command shape) — the affected downstream artefacts are listed in the ADR-ARCH-017 §"Affected downstream artefacts" section and have already been edited in this run, so the staleness flag would fire and immediately resolve. Worth running if you want the audit trail intact, no-op functionally.
+
+Want me to run the two seeding commands? Y/N — or hold off if you'd prefer to commit first and seed as a separate step.
+
+please can you run the seeding commands
+
+Re-seed complete — ADR-ARCH-008 now reflects the partial-supersession status in the knowledge graph. Final results:
+
+Graphiti seeding summary:
+
+ADR	Status	Nodes	Edges	Invalidated	Duration
+ADR-ARCH-017 (new)	seeded	9	26	0	~3min
+ADR-ARCH-008 (re-seed)	overwritten	30	41	0	~6min
+The vLLM duplicate-detection warnings on ADR-ARCH-008 are non-fatal — the model returned out-of-range indices for duplicate_facts and Graphiti handled it gracefully. Both ADRs are now queryable via mcp__graphiti__search_nodes / search_memory_facts against the architecture_decisions group.
+
+Note on invalidated=0: Graphiti preserved both the old and new ADR-ARCH-008 facts with timestamps rather than invalidating prior ones — that's the canonical temporal-superseding behaviour. Queries return the most recent facts by updated_at, but the historical "Accepted, classification stable across phases" assertion remains in the graph for audit. This is what we want.
+
+/arch-refine — complete
+Final state of the refinement:
+
+1 new ADR (ADR-ARCH-017) and 1 partial supersession (ADR-ARCH-008).
+8 downstream artefacts updated to reflect the sync classification — domain-model, container.md, ARCHITECTURE.md index, design/README.md, phase-0-scope.md, phase-0-build-plan.md, adapter.py, server.py.
+8/8 MCP unit tests passing — the runtime tool description on tutor_start_session now matches handler behaviour, resolving the SR-07 violation.
+Both ADRs seeded into Graphiti with full audit trail.
+The Phase 0 SR-07 contract is now consistent end-to-end: ADR → architecture text → design docs → scope/build-plan docs → registered MCP tool description → handler behaviour. Phase 1's reversion path is documented and conditional on the Graphiti latency spike measurement.
+
+Ready to commit when you are. Suggested commit subject: arch: reclassify tutor_start_session as sync (ADR-ARCH-017, supersedes ARCH-008 SR-07).
+
+The wrap-up already completed in the prior turn when the task-notification fired — the scheduled wakeup raced with the actual completion notification. Re-stating the final state for clarity:
+
+Both seeds confirmed complete:
+
+ADR-ARCH-017 (new) — 9 nodes, 26 edges, 0 invalidated, ~3min
+ADR-ARCH-008 (re-seed) — 30 nodes, 41 edges, 0 invalidated, ~6min
+Noteworthy from logs:
+
+vLLM duplicate_facts warnings on ADR-ARCH-008 — model returned out-of-range indices; Graphiti handled gracefully, non-fatal.
+invalidated=0 is correct — Graphiti preserves both old and new facts with timestamps rather than deleting prior ones (canonical temporal-superseding behaviour). Recency-ordered queries return the new "Partially superseded" status; the historical "Accepted / stable across phases" claim stays in the graph for audit.
+Full refinement is done: 1 new ADR, 1 partial supersession, 8 downstream artefacts aligned, 8/8 MCP tests green, both ADRs seeded. SR-07 contract now consistent end-to-end. No further work pending — ready for commit when you want.
+
+
+Build-plan punch-list updated — D2 marked CLOSED with ADR-ARCH-017 reference, header date bumped to 2026-04-27.
+
+On the next steps you pasted
+Your two /system-design --focus=... commands are correct in shape, but the sequencing in phase-1-scope.md:72 says the Graphiti latency spike must run first:
+
+Before any schema work, measure the three-hop latency end-to-end. This resolves DEC-02 / DEC-08 ambiguity and locks SR-08 + the Phase 0 MCP tool classification.
+
+So the right order is:
+
+Graphiti latency spike — measures add_episode and search_nodes latencies on the FalkorDB Synology + Gemini + GB10 split topology. Per phase-1-scope.md L83-85, the result determines:
+Whether SR-08 (async write-back) is "still defensive shape" (latency <2s) or "load-bearing throughout features" (latency >5s).
+Whether the SR-07 classification we just locked in ADR-ARCH-017 holds (sync), or needs reversion to long-running (if search_nodes median > ~3s).
+Bundle SR-08 + SR-09 (+ any SR-07 reversion) into one /arch-refine. This is the recommendation the /system-plan summary made. After the spike the inputs are concrete.
+Then your two /system-design --focus= re-runs — Knowledge & Curriculum and Student Model. They'll consume the ADR-ified SR-08 and the spike result.
+What's still open from /system-plan's four-item bundle
+Item	Status	What's needed
+D1 — TutorSession P0-only shape	✅ No action (fits within architecture envelope; you confirmed earlier)	—
+D2 — tutor_start_session sync	✅ CLOSED via ADR-ARCH-017	—
+SR-08 — Graphiti write-back asynchrony	📝 Documented in phase-1-scope.md §SR-08; not yet in any ADR	Spike result → /arch-refine to elevate to a CC alongside SR-01–07 (likely refines ADR-ARCH-009)
+SR-09 — Runtime LLM parameter explicitness	📝 Documented in phase-1-scope.md §SR-09; not yet in any ADR	Spike-independent; can /arch-refine ADR-ARCH-009 to add SR-09 anytime
+The /system-plan bundle recommendation makes sense because SR-08 + SR-09 + potential SR-07 reversion all touch ADR-ARCH-009 ("Six parity surfaces as load-bearing CC") — so refining ARCH-009 once with all three is cleaner than three separate runs.
+
+Suggested sequence
+
+# 1. Run the Graphiti latency spike (per phase-1-scope.md §"Graphiti latency spike").
+#    Produces the empirical numbers that lock SR-08 and confirm/revert SR-07.
+#    Targets per phase-1-scope.md L83-85: add_episode median, search_nodes median.
+
+# 2. Post-spike: bundle SR-08 + SR-09 (+ SR-07 reversion if needed) into one /arch-refine.
+#    Likely refines ADR-ARCH-009 (six parity surfaces → eight) — though ARCH-017's reversion
+#    rule already covers SR-07, so the bundle may shrink to just SR-08/09 if the spike
+#    confirms <3s search_nodes latency.
+
+/arch-refine --adr=ADR-ARCH-009 \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context <spike-results-doc>
+
+# 3. Then the Phase 1 design re-runs (your pasted commands):
+
+/system-design --focus="Knowledge & Curriculum" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/rag-grounding-design.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md
+
+/system-design --focus="Student Model" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/architecture/decisions/ADR-ARCH-003-async-graphiti-writeback.md \
+  --context docs/architecture/decisions/ADR-ARCH-007-graphiti-split-topology.md
+
+# 4. In parallel (independent of P1): Phase 0 close-out for FEAT-PO-004 Bedrock validation.
+/feature-spec FEAT-PO-004
+/feature-plan FEAT-PO-004
+Optional — if you want to skip the spike-first sequencing
+If the Graphiti spike is going to slip and you want to unblock Phase 1 design work now, you can run the two /system-design --focus= commands using the current SR-07 sync classification (ADR-ARCH-017) and accept that SR-08 stays as a phase-1-scope.md item rather than a CC. The risk is: if the spike later forces an SR-07 reversion, the design artefacts produced by the focus runs will need re-running. Probably not worth the rework — better to do the spike first.
+
+Recommendation: spike Saturday morning as originally planned, then bundle-refine, then design re-runs. That's the path of least churn.
+
+thanks, please can you rovide details on how to run : 1. Run the Graphiti latency spike (per phase-1-scope.md §"Graphiti latency spike").
+Let me read the spike spec in phase-1-scope.md and check whether any spike scaffolding already exists in the repo.
+
+
+Spike results — clear and decisive
+Operation	Min	Median	Max	Verdict
+add_episode	78.1s	78.98s	134.4s	>>> 5s threshold
+search_nodes	0.07s	0.07s	0.11s	<<< 1s threshold
+search_memory_facts	0.07s	0.08s	0.08s	fast
+The add_episode numbers are dominated by the LLM extraction step (Qwen2.5-14B FP8 on GB10 reasoning over the JSON payload — ~80s per call, cold-start gave run 1 the 134s outlier). Search operations hit only the embedding endpoint + FalkorDB cypher and complete in tens of milliseconds.
+
+What this means for the architecture
+1. SR-08 (Graphiti async write-back) — CRITICAL, not defensive.
+
+At ~79s median, a synchronous add_episode at session-end would make the student wait over a minute for tutor_session_end to return. SR-08 isn't just "defensive shape" — it's load-bearing. The right pattern per phase-1-scope.md L83 is: fire-and-forget from multiple write points (session-end is the obvious one, but also misconception-observed during turns, and confidence-delta proposals from the Coach), not a single session-end batch.
+
+This needs to be elevated to an ADR — likely refining ADR-ARCH-009 (six parity surfaces) to seven, with SR-08 joining SR-01–07 as a load-bearing CC.
+
+2. ADR-ARCH-017 / SR-07 (sync tutor_start_session) — CONFIRMED with massive margin.
+
+search_nodes at 0.07s is 40× faster than the 3s reversion threshold in ARCH-017's footnote. The sync classification holds. The Phase 1 student-model read at session start (the original concern that motivated long-running) costs ~70ms — completely negligible. No /arch-refine follow-up needed for ARCH-017.
+
+3. DEC-02 / DEC-08 — resolved.
+
+What this changes about your next-step sequence
+The plan you pasted earlier had the Phase 1 design re-runs after a /arch-refine for SR-08/SR-09. That bundle is now narrower:
+
+No need to refine ADR-ARCH-017 (SR-07) — the spike confirmed it.
+SR-08 still needs ADR treatment — but with a much stronger forcing function (the 79s number) than before.
+SR-09 (runtime LLM parameter explicitness) is unchanged by the spike — still wants ADR treatment.
+Suggested updated sequence:
+
+
+# 1. /arch-refine for SR-08 + SR-09 — cite the spike numbers as the empirical
+#    basis. Likely refines ADR-ARCH-009 (six → eight parity surfaces).
+/arch-refine --adr=ADR-ARCH-009 \
+  --context docs/research/ideas/graphiti-latency-spike-results.md \
+  --context docs/research/ideas/phase-1-scope.md
+
+# 2. Then your two Phase 1 design re-runs as previously planned.
+/system-design --focus="Knowledge & Curriculum" ...
+/system-design --focus="Student Model" ...
+Files to review/commit
+New: scripts/graphiti_latency_spike.py — reproducible benchmark script
+New: docs/research/ideas/graphiti-latency-spike-results.md — generated results doc with auto-derived decision verdicts
+Suggested commit subject: spike: graphiti latency on vLLM-GB10 stack (add_episode 79s, search 70ms) — captures both the load-bearing finding (SR-08 critical) and the configuration-pinning detail (vLLM, not Gemini).
+
+The throwaway latency-spike-2026-04-27 group was cleaned from the graph automatically — no leftover spike data in architecture_decisions.
+
+Where the project stands
+Phase 0 SR-07 contract: clean end-to-end. ADR ↔ architecture text ↔ design ↔ scope ↔ build-plan ↔ runtime tool description ↔ handler behaviour all consistent.
+Phase 1 latency budget: measured. 79s writes, 70ms reads — these are the numbers feature specs and the Coach pattern need to plan against.
+Open follow-up before P1 design re-runs: one /arch-refine to elevate SR-08 (and add SR-09) — the spike just gave it a strong empirical foundation.
+please provide the full command syntax for : Open follow-up before P1 design re-runs: one /arch-refine to elevate SR-08 (and add SR-09) — the spike just gave it a strong empirical foundation.
+Full command for the SR-08 + SR-09 refinement
+
+/arch-refine --adr=ADR-ARCH-009 \
+  "elevate SR-08 (Graphiti async write-back) and SR-09 (runtime LLM parameter explicitness) from phase-1-scope.md items to load-bearing cross-cutting concerns alongside SR-01..07; spike confirms 79s add_episode median makes async non-negotiable" \
+  --context docs/research/ideas/graphiti-latency-spike-results.md \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md
+
+
+/arch-refine --adr=ADR-ARCH-003 \
+  --context docs/research/ideas/graphiti-latency-spike-results.md \
+  "broaden async write-back scope from session-end-only to every Graphiti write point per CC-13 (ARCH-018)"
+
+
+
+All in-place updates landed cleanly. Now Graphiti seeding.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌱 GRAPHITI SEEDING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tier 1 check passed (.guardkit/graphiti.yaml has enabled: true). The add_episode median is 78.98s per the latency spike — which is exactly the rule ARCH-019 is encoding — so I will offer the seeding commands for explicit user execution rather than running them inline (a minutes-long block in this command is precisely what CC-13 says to avoid).
+
+Recommended seeding commands (run when convenient — they will block for several minutes per the latency spike):
+
+
+guardkit graphiti add-context docs/architecture/decisions/ADR-ARCH-003-async-graphiti-writeback.md \
+  --group architecture_decisions
+
+guardkit graphiti add-context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --group architecture_decisions
+Staleness flagging: the design / planning artefacts listed in the impact analysis are recorded inside ADR-ARCH-019's "Downstream artefacts flagged stale" section (matching ARCH-018's pattern); /system-design and /feature-spec will pick them up on next run. I did not invoke arch_sp.update_entity_metadata(...) programmatically because a) the /arch-refine command spec describes that as a Graphiti API call requiring runtime SDK access from the command harness (not directly available in this session), and b) the ARCH-019 markdown surface is the canonical staleness record that downstream commands read.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ARCHITECTURE DECISION REFINED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ADR-ARCH-003: Status changed to "Superseded by ADR-ARCH-019"
+  ADR-ARCH-019: Created (supersedes ADR-ARCH-003)
+                Scope: async Graphiti write-back at every write point
+                Evidence: 2026-04-27 latency spike — add_episode median 78.98s
+                CC anchor: CC-13 (ARCH-018)
+Updated files (in-place):
+
+docs/architecture/decisions/ADR-ARCH-003-async-graphiti-writeback.md — status → superseded
+docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md — new
+docs/architecture/ARCHITECTURE.md:148, 158, 174 — Phase 1 description, index entries
+docs/architecture/container.md:30, 38, 74, 82, 106-107 — labels and explanatory note
+docs/architecture/domain-model.md:338, 443-444, 466-468, 492-494 — write-back semantics
+Flagged stale (recorded in ADR-ARCH-019; not modified in this run):
+
+docs/design/README.md line 70 · docs/design/contracts/API-tutoring.md lines 119, 133 · docs/design/events-schema.yaml lines 185-186 · docs/planning/feature-roadmap.md lines 74, 81, 100-102 · docs/gamification/design.md line 482
+C4 re-review: Not triggered — topology unchanged (same containers, same relationships); only label text on existing relationships was refreshed in-place.
+
+Next steps:
+
+Run the two guardkit graphiti add-context commands above to seed the architecture_decisions group.
+Run /system-design — it will detect and report the design-artefact staleness flags listed in ARCH-019.
+When /feature-spec for FEAT-PH1-001 runs, point it at ADR-ARCH-019 (not ARCH-003) and let it pick up the broadened scope for Coach misconception logging and Planner topic-confidence updates.
+
+
 
 

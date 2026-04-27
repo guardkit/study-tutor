@@ -145,7 +145,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | Phase | Dates | Architectural deliverables |
 |---|---|---|
 | **Phase 0** | 18–24 April 2026 | Scaffolding, MCP adapter, LLM client, 4 tools, 6 parity surfaces green, Bedrock validation, BYOS packaging, submission-doc stubs |
-| **Phase 1** | 25 April – 11 May 2026 | Graphiti student model, DeepAgents Player-Coach harness, Session Planner, async session-end write-back, RAG retrieval |
+| **Phase 1** | 25 April – 11 May 2026 | Graphiti student model, DeepAgents Player-Coach harness, Session Planner, async Graphiti write-back at every write point (ADR-ARCH-019 / CC-13), RAG retrieval |
 | **Phase 2** | 12–16 May 2026 | Gamification state engine, static HTML dashboard, Reachy companion scripts (gated), demo assets |
 | **Submission** | 17–18 May 2026 | Final polish, video edit, Kaggle submission |
 
@@ -155,7 +155,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 |---|---|---|
 | ADR-ARCH-001 | Use Domain-Driven Design structural pattern | Accepted |
 | ADR-ARCH-002 | Three-layer architecture (behaviour / knowledge / student model) | Accepted |
-| ADR-ARCH-003 | Async Graphiti write-back at session-end boundary | Accepted |
+| ADR-ARCH-003 | Async Graphiti write-back at session-end boundary | Superseded by ADR-ARCH-019 |
 | ADR-ARCH-004 | Python 3.11 + deepagents + langchain + mcp stack | Accepted |
 | ADR-ARCH-005 | Defer Dockerfile to Phase 1+ — venv-only install for Phase 0 | Accepted |
 | ADR-ARCH-006 | Dual inference path — Ollama primary + Bedrock validation | Accepted |
@@ -171,6 +171,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-016 | 18 May 2026 deadline as load-bearing architectural constraint | Accepted |
 | ADR-ARCH-017 | `tutor_start_session` SR-07 classification: sync (Phase 0); measurement-conditional P1 reversion | Accepted (supersedes ADR-ARCH-008 partial) |
 | ADR-ARCH-018 | Extend cross-cutting concerns with SR-08 (Graphiti async write-back) and SR-09 (runtime LLM parameters explicit) | Accepted (supersedes ADR-ARCH-009) |
+| ADR-ARCH-019 | Async Graphiti write-back at every write point in the tutor (broadens ADR-ARCH-003 per CC-13) | Accepted (supersedes ADR-ARCH-003) |
 
 ## 10. Assumptions
 

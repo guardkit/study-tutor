@@ -2,7 +2,7 @@
 
 ## For: Weekend build (26–27 April 2026) + weekday evenings 28 April – 1 May
 ## Date: 17 April 2026 (last updated 23 April 2026 — FEAT-PH1-004 added from 23 Apr empirical findings)
-## Status: Ready to execute when Phase 0 closes Friday 24 April
+## Status: Pre-execution prerequisites partially landed (2026-04-27). Graphiti latency spike DONE — `add_episode` median 78.98s, `search_nodes` 0.07s ([graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md)). Architecture cross-cutting concerns extended: ADR-ARCH-018 (SR-08 → CC-13, SR-09 → CC-14, six → fourteen parity surfaces) and ADR-ARCH-019 (async Graphiti write-back at every write point; supersedes ADR-ARCH-003) accepted and seeded into `architecture_decisions`. Saturday-morning latency spike + Phase 0 validation gate items in this plan are partially pre-completed; remaining: Phase 0 validation gate write-up, then proceed to FEAT-PH1-001 schema work.
 ## Repo: `study-tutor` (Phase 0 scaffolding already present)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (Ollama + embedder), Synology NAS over Tailscale (FalkorDB), Google Gemini (Graphiti entity extraction + Coach)
 ## Target completion: End of Friday 2 May 2026 (close of Week 2 of the 31-day burn)
@@ -30,7 +30,7 @@ Week 2 of the 31-day build. Turns the Phase 0 MCP-accessible single-LLM tutor in
 4. Player-Coach tutoring loop runs end-to-end
 5. Session completion writes to Graphiti
 6. Demo flow works end-to-end
-7. Six parity surfaces still green (SR-01..SR-07); SR-08 (async write-back) and **SR-09 (runtime LLM param assertion)** established
+7. Six parity surfaces still green (SR-01..SR-07); SR-08 (async write-back) and **SR-09 (runtime LLM param assertion)** established. _Architecture-level establishment DONE 2026-04-27_ via ADR-ARCH-018 (CC-13 / CC-14 promotion) and ADR-ARCH-019 (async write-back broadened to every Graphiti write point). Phase 1 work that remains: structural conformance — every Graphiti write site routed through a fire-and-forget helper (CC-13), and CC-14 smoke tests landing per Modelfile change.
 8. Technical write-up has content
 9. Phase 2 build plan drafted
 10. Phase 0 validation gate run
@@ -193,7 +193,7 @@ This is the critical-path feature. Front-load it on Sunday afternoon while energ
    - If score < 0.7 and retries remain: Player revises with Coach feedback, loop
    - If score < 0.7 and max retries exhausted: emit lowest-scoring reply with a silent log marker, flag for session-end review
 
-8. **Implement `_end_tutor_session`.** On session end: generate session summary, write `session_completed` episode to Graphiti asynchronously per SR-08. Return summary to MCP caller immediately.
+8. **Implement `_end_tutor_session`.** On session end: generate session summary, write `session_completed` episode to Graphiti via the fire-and-forget helper per CC-13 / ADR-ARCH-019 (every Graphiti write point is async-from-caller; failures logged-only). Return summary to MCP caller immediately. Note: under ADR-ARCH-019 the same helper is used by mid-session writes (e.g. `misconception_observed` from the Coach loop, planner topic-confidence updates) — not just here.
 
 #### Evening (2 hours) — First end-to-end Phase 1 session
 

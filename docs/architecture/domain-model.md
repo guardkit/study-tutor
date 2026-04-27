@@ -335,7 +335,7 @@ Registers the following tools at startup:
 | `tutor_start_session` | sync — returns `session_id` synchronously; LLM warm-up is fire-and-forget (¹) | < 1s |
 | `tutor_turn` | sync (< 30s) | p95 < 10s |
 | `tutor_session_status` | sync | < 2s |
-| `tutor_session_end` | sync — triggers async Graphiti write-back (P1) | < 2s |
+| `tutor_session_end` | sync — triggers async Graphiti write-back (P1, fire-and-forget per CC-13 / ADR-ARCH-019) | < 2s |
 
 (¹) Per **ADR-ARCH-017** (2026-04-27, supersedes ADR-ARCH-008 SR-07 classification): Phase 0 classification settled by live behaviour in `src/study_tutor/mcp/adapter.py:49–68` — there is no still-running task to poll via `tutor_session_status`. Phase 1 may revert to **long-running** if the Graphiti latency spike (`phase-1-scope.md` §"Graphiti latency spike") shows `search_nodes` median > ~3s for the student-model read at session start.
 
@@ -440,7 +440,8 @@ Reachy (P2 stretch).
  (LLMClient)     (evaluates quality)
  returns text    writes TurnFeedback
                  │
-                 ▼ at session-end only
+                 ▼ async fire-and-forget at every observation point
+                   (CC-13 / ADR-ARCH-019); not deferred to session-end
                  Student Model (P1)
                  (appends Misconception if any)
 
@@ -460,10 +461,12 @@ Reachy (P2 stretch).
   delta, ≤±0.1)
 ```
 
-**Consistency model:** the `session.completed` event fan-out is async —
-the tutor can return control to the student while Graphiti write-back and
-gamification updates proceed in the background. This is deliberate
-(ADR-ARCH-003).
+**Consistency model:** every Graphiti write — `session.started`,
+mid-session misconception logs, planner topic-confidence updates, and the
+`session.completed` fan-out — is async fire-and-forget. The tutor returns
+control to the student without awaiting Graphiti acknowledgement at any
+write point. This is deliberate (ADR-ARCH-019, broadens ADR-ARCH-003;
+load-bearing under CC-13).
 
 ---
 
@@ -486,7 +489,10 @@ scaffolding. See `ADR-ARCH-001`.
 lifecycle, their own persistence (Graphiti, not the session-scoped
 in-memory dict), and their own consumers (Gamification, Reachy, future
 Session Planner). Collapsing them into Tutoring would muddle read vs
-write responsibilities at session-end boundary.
+write responsibilities — and under ADR-ARCH-019 / CC-13 the writes are
+async fire-and-forget at every point, not concentrated at a session-end
+boundary, which makes the read/write split structurally clearer when the
+Student Model is its own context.
 
 ### Why Gamification is a context, not a feature
 
