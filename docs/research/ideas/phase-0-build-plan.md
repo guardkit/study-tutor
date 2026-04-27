@@ -2,7 +2,7 @@
 
 ## For: Weekend build (19–20 April 2026 + continuation through Friday 24 April)
 ## Date: 17 April 2026 (last updated 27 April 2026)
-## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017).**
+## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017). Graphiti latency spike DONE 27 Apr — SR-08 elevated to CRITICAL; ARCH-017 sync classification confirmed with massive margin.**
 ## Repo: `guardkit/study-tutor` (or equivalent — currently a near-empty repo at `/Users/richardwoollcott/Projects/appmilla_github/study-tutor`)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (inference), Synology NAS over Tailscale (FalkorDB, Phase 1 only)
 ## Target completion: End of Friday 24 April 2026 (close of Week 1 of the 31-day burn)
@@ -49,6 +49,20 @@
    **In-session decisions (2026-04-26):**
    - **D1 — Tutoring schema P0-only.** The `TutorSession` data model artefact documents the Phase-0 shape only (`session_id, subject, topic, status, turns, started_at, ended_at`). P1 fields (`student_id`, `grade_target`, `paper`, `aos_scaffolded`, `rag_chunks_used`, `TurnFeedback`, `SessionSummary`) are deferred to a `/system-design --focus="Tutoring"` re-run when P1 wires Graphiti + Coach. Rationale: matches what's true in `src/study_tutor/session/tutor_session.py` today; avoids contract-drift before P1 implementation.
    - **D2 — `tutor_start_session` classified `sync`.** ✅ **CLOSED 2026-04-27 by `/arch-refine` → ADR-ARCH-017** (partially supersedes ADR-ARCH-008 SR-07 classification table). The design artefact classifies `tutor_start_session` as **sync** (returns `session_id` synchronously; warm-up LLM call is opportunistic fire-and-forget, not a polled long-running task). Architecture set, scope/build-plan docs, and the runtime MCP tool description in `src/study_tutor/mcp/server.py` all aligned. Phase 1 reversion path documented and conditional on the Graphiti latency spike (`phase-1-scope.md §"Graphiti latency spike"`): if `search_nodes` median > ~3s for the student-model read at session start, reclassify back to long-running and add the `_status`/`_cancel` companion. Both ADRs seeded into Graphiti `architecture_decisions` group.
+
+8. ~~**Phase 1 prep — Graphiti latency spike** (per `phase-1-scope.md §"Latency spike"`).~~ ✅ **DONE 2026-04-27** via `scripts/graphiti_latency_spike.py`. Three-hop stack measured: FalkorDB on whitestocks (Synology, Tailscale) + vLLM Qwen2.5-14B-FP8 on GB10:8000 (LLM extraction) + nomic-embed-text-v1.5 on GB10:8001 (embeddings). Full results in [graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md).
+
+   **Headline numbers (median over 3 timed runs after warm-up):**
+   - `add_episode`: **78.98s** — dominated by LLM extraction; cold-start outlier of 134s on run 1.
+   - `search_nodes`: **0.07s** — embedding + cypher only; no LLM call.
+   - `search_memory_facts`: **0.08s** — same shape as search_nodes.
+
+   **Decisions unblocked:**
+   - **SR-08 (async write-back): CRITICAL, not defensive.** At 79s median per write, a synchronous `add_episode` at session-end would make the student wait over a minute for `tutor_session_end` to return. Pattern per `phase-1-scope.md` L83: fire-and-forget from multiple write points (session-end, misconception-observed during turns, Coach confidence-delta proposals), not a single session-end batch. Next: bundle SR-08 (+ SR-09) into one `/arch-refine`, likely refining ADR-ARCH-009 (six → eight parity surfaces).
+   - **ADR-ARCH-017 / SR-07 (sync `tutor_start_session`): CONFIRMED with massive margin.** `search_nodes` at 0.07s is ~40× faster than the 3s reversion threshold in ARCH-017. The Phase-1 student-model read at session start costs ~70ms — completely negligible. No further refinement needed for ARCH-017; the reversion footnote stays as documented insurance against future stack changes.
+   - **DEC-02 / DEC-08:** resolved.
+
+   **Note on stack:** the spike measured the post-21-Apr vLLM-on-GB10 stack, not the original Gemini stack the spec assumed. The 1–3s / 5–8s expected ranges in `phase-1-scope.md:75` were calibrated for Gemini API latency; vLLM-on-Tailscale has a different shape (steadier per-call but slower per-token, dominated by 14B-parameter inference time).
 
 **Unplanned strategic move (21 Apr):** Graphiti's LLM backend migrated from Gemini to vLLM on GB10 (`neuralmagic/Qwen2.5-14B-Instruct-FP8-dynamic`) — this is Phase 1 infrastructure landed early, with Ollama fallback kept for MacBook-only mode. Reduces dependency on external APIs ahead of the Phase 1 Graphiti spike.
 
