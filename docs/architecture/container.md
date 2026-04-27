@@ -27,7 +27,7 @@ C4Container
     System_Boundary(studytutor, "Study Tutor") {
         Container(wrapper, "Bash MCP Wrapper", "bash / scripts/mcp-wrapper.sh", "Absolute cd + env load + exec — SR-02. Launched by Claude Desktop.")
         Container(cli, "CLI Entrypoint", "Python / Click", "study-tutor serve --role tutor --transport stdio. Banner→stderr per SR-01.")
-        Container(mcp, "MCP Adapter", "Python / mcp SDK", "Registers 4 tools: tutor_start_session (long-running), tutor_turn (sync), tutor_session_status, tutor_session_end. SR-07 classification.")
+        Container(mcp, "MCP Adapter", "Python / mcp SDK", "Registers 4 tools, all sync per SR-07 (ADR-ARCH-017): tutor_start_session (sync; warm-up fire-and-forget), tutor_turn (sync), tutor_session_status (sync), tutor_session_end (sync; async Graphiti write-back in P1).")
         Container(session, "Tutor Session Manager", "Python / in-memory dict", "TutorSession aggregate. In-memory in P0; Graphiti-backed P1+.")
         Container(llm, "LLM Client (Provider Factory)", "Python / langchain-*", "Resolves AGENT_MODELS__REASONING_MODEL at factory — SR-03. Routes local/bedrock/openai/anthropic/gemini.")
         ComponentDb(domain, "Domain Config", "Markdown + YAML", "domains/gcse-english/GOAL.md + roles/tutor/role.yaml + criteria/definitions.yaml. Shared-kernel taxonomy.")

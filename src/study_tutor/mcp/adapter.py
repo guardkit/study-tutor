@@ -2,8 +2,11 @@
 
 Registers four tools on the FastMCP server:
 
-* ``tutor_start_session`` — long-running classification; returns ``session_id``
-  immediately while a warm-up LLM call pre-loads model weights.
+* ``tutor_start_session`` — sync classification (per ADR-ARCH-017); returns
+  ``session_id`` synchronously while a warm-up LLM call pre-loads model
+  weights as fire-and-forget. No still-running task to poll. Phase 1 may
+  revert to long-running if the Graphiti student-model read at session
+  start exceeds ~3s.
 * ``tutor_turn`` — sync; generates one tutor reply per user message.
 * ``tutor_session_status`` — sync; pure read of session state.
 * ``tutor_session_end`` — sync; marks session ended (Phase 0 no-op beyond

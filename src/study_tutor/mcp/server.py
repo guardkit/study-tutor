@@ -1,7 +1,8 @@
 """FastMCP server for the tutor role.
 
 Registers exactly four tools whose descriptions encode their classification
-(long-running vs sync) per the Phase-0 scope (SR-07).
+(sync vs long-running) per the Phase-0 scope (SR-07). All four Phase-0
+tools are sync (ADR-ARCH-017).
 """
 from __future__ import annotations
 
@@ -27,8 +28,8 @@ def create_mcp_server(role_config: RoleConfig, adapter: MCPAdapter) -> FastMCP:
         name="tutor_start_session",
         description=(
             "Start a new tutoring session for the given subject/topic. "
-            "Long-running, returns session_id immediately; LLM model is "
-            "warmed up in the background."
+            "Sync; returns session_id immediately; LLM model is warmed up "
+            "in the background as fire-and-forget."
         ),
     )
     server.add_tool(

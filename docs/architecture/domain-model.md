@@ -332,10 +332,12 @@ Registers the following tools at startup:
 
 | Tool | Classification (SR-07) | Target latency |
 |---|---|---|
-| `tutor_start_session` | long-running (returns `session_id` ≤ 1s; poll via `tutor_session_status`) | ≤ 1s return |
+| `tutor_start_session` | sync — returns `session_id` synchronously; LLM warm-up is fire-and-forget (¹) | < 1s |
 | `tutor_turn` | sync (< 30s) | p95 < 10s |
 | `tutor_session_status` | sync | < 2s |
 | `tutor_session_end` | sync — triggers async Graphiti write-back (P1) | < 2s |
+
+(¹) Per **ADR-ARCH-017** (2026-04-27, supersedes ADR-ARCH-008 SR-07 classification): Phase 0 classification settled by live behaviour in `src/study_tutor/mcp/adapter.py:49–68` — there is no still-running task to poll via `tutor_session_status`. Phase 1 may revert to **long-running** if the Graphiti latency spike (`phase-1-scope.md` §"Graphiti latency spike") shows `search_nodes` median > ~3s for the student-model read at session start.
 
 ### 7.2 Invariants
 

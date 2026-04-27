@@ -52,7 +52,7 @@ docs/design/
 | ID | Decision | Rationale |
 |---|---|---|
 | **D1** | Tutoring data model documents the **Phase-0 shape only** (`session_id, subject, topic, status, turns, started_at, ended_at`). P1 fields deferred. | Matches live `tutor_session.py` dataclasses; avoids contract-drift before P1 implementation. |
-| **D2** | `tutor_start_session` classified **`sync`** (not `long-running`). | Live behaviour: returns `session_id` synchronously; warm-up is fire-and-forget, not a polled task. SR-07 wording in `domain-model.md §7.1` and `phase-0-scope.md SR-07` to be tightened by a follow-up `/arch-refine`. |
+| **D2** | `tutor_start_session` classified **`sync`** (not `long-running`). | Live behaviour: returns `session_id` synchronously; warm-up is fire-and-forget, not a polled task. **Resolved 2026-04-27 by ADR-ARCH-017** (partially supersedes ADR-ARCH-008 SR-07 table); downstream artefacts (`domain-model.md §7.1`, `phase-0-scope.md §SR-07`, `container.md`, MCP adapter/server code) all updated. |
 
 Both decisions are recorded in [`phase-0-build-plan.md` punch-list item 7](../research/ideas/phase-0-build-plan.md). No standalone DDR — both fall within the architecture decision envelope and only re-state classifications.
 
@@ -88,7 +88,7 @@ The artefacts in this directory are deliberately **descriptive of live code**, n
    ```
 2. **Seed Graphiti** with the artefacts (see § 8).
 3. **Phase-1 prep:** when `phase-1-scope.md` is finalised, re-run `/system-design` with `--focus="Knowledge & Curriculum"` and `--focus="Student Model"` per the recommended sequence in `phase-0-build-plan.md`.
-4. **Architecture follow-up:** open an `/arch-refine` ticket to update `domain-model.md §7.1` SR-07 wording for `tutor_start_session` (D2 — reclassify long-running → sync).
+4. **Architecture follow-up (resolved 2026-04-27):** D2 closed via `/arch-refine` → ADR-ARCH-017 (partially supersedes ADR-ARCH-008 SR-07 classification). All downstream artefacts and the runtime MCP tool description aligned to **sync** classification.
 
 ## 8. Graphiti seeding (offered separately)
 

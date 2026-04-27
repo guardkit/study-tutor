@@ -1,8 +1,8 @@
 # Phase 0 Build Plan — Hackathon Floor + Parity Hygiene
 
 ## For: Weekend build (19–20 April 2026 + continuation through Friday 24 April)
-## Date: 17 April 2026 (last updated 23 April 2026)
-## Status: **In-flight — weekend code work complete; close-out gates pending**
+## Date: 17 April 2026 (last updated 27 April 2026)
+## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017).**
 ## Repo: `guardkit/study-tutor` (or equivalent — currently a near-empty repo at `/Users/richardwoollcott/Projects/appmilla_github/study-tutor`)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (inference), Synology NAS over Tailscale (FalkorDB, Phase 1 only)
 ## Target completion: End of Friday 24 April 2026 (close of Week 1 of the 31-day burn)
@@ -48,7 +48,7 @@
 
    **In-session decisions (2026-04-26):**
    - **D1 — Tutoring schema P0-only.** The `TutorSession` data model artefact documents the Phase-0 shape only (`session_id, subject, topic, status, turns, started_at, ended_at`). P1 fields (`student_id`, `grade_target`, `paper`, `aos_scaffolded`, `rag_chunks_used`, `TurnFeedback`, `SessionSummary`) are deferred to a `/system-design --focus="Tutoring"` re-run when P1 wires Graphiti + Coach. Rationale: matches what's true in `src/study_tutor/session/tutor_session.py` today; avoids contract-drift before P1 implementation.
-   - **D2 — `tutor_start_session` classified `sync`.** The design artefact classifies `tutor_start_session` as **sync** (returns `session_id` synchronously; warm-up LLM call is opportunistic fire-and-forget, not a polled long-running task) — overriding the architecture text's "long-running" wording in `domain-model.md §7.1` and `phase-0-scope.md §SR-07`. Rationale: matches live behaviour in `src/study_tutor/mcp/adapter.py:49–68`; there is no still-running task to poll via `tutor_session_status`. The architecture text needs a follow-up `/arch-refine` to re-state SR-07 (or reclassify back to long-running if P1 adds Graphiti reads at session start that exceed 1s).
+   - **D2 — `tutor_start_session` classified `sync`.** ✅ **CLOSED 2026-04-27 by `/arch-refine` → ADR-ARCH-017** (partially supersedes ADR-ARCH-008 SR-07 classification table). The design artefact classifies `tutor_start_session` as **sync** (returns `session_id` synchronously; warm-up LLM call is opportunistic fire-and-forget, not a polled long-running task). Architecture set, scope/build-plan docs, and the runtime MCP tool description in `src/study_tutor/mcp/server.py` all aligned. Phase 1 reversion path documented and conditional on the Graphiti latency spike (`phase-1-scope.md §"Graphiti latency spike"`): if `search_nodes` median > ~3s for the student-model read at session start, reclassify back to long-running and add the `_status`/`_cancel` companion. Both ADRs seeded into Graphiti `architecture_decisions` group.
 
 **Unplanned strategic move (21 Apr):** Graphiti's LLM backend migrated from Gemini to vLLM on GB10 (`neuralmagic/Qwen2.5-14B-Instruct-FP8-dynamic`) — this is Phase 1 infrastructure landed early, with Ollama fallback kept for MacBook-only mode. Reduces dependency on external APIs ahead of the Phase 1 Graphiti spike.
 
@@ -243,7 +243,7 @@ The Saturday work was end-to-end-first. Sunday morning goes back over it and ver
 
 6. **SR-06 (.env hygiene).** `grep -r '=sk-' .env.example || echo "clean"`. `grep -r '=AIza' .env.example`. Verify placeholder values are `<your-openai-key-here>`-style, unambiguous.
 
-7. **SR-07 (tool description ≡ behaviour).** Read the four MCP tool descriptions. Verify each says "sync" / "long-running" explicitly, and the handler behaviour matches. Specifically: `tutor_start_session` description says "long-running, returns session_id immediately"; implementation returns session_id in ≤1s.
+7. **SR-07 (tool description ≡ behaviour).** Read the four MCP tool descriptions. Verify each is consistent with handler behaviour — by SR-07 acceptance, a description without the word "long-running" implies sync (< 30s). Per ADR-ARCH-017, all four Phase-0 tools are sync; `tutor_start_session` description says "Sync; returns session_id immediately; LLM model is warmed up in the background as fire-and-forget"; implementation returns session_id in < 1s with `asyncio.create_task` warm-up.
 
 #### Afternoon (3 hours) — FEAT-PO-003
 

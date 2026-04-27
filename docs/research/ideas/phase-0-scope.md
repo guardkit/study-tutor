@@ -85,16 +85,16 @@ These requirements apply to every feature in Phase 0 and every feature after it.
 
 **Acceptance.** Every MCP tool in Phase 0 classified as either "sync" (< 30s bound) or "long-running" (returns session_id immediately, poll via companion). No tool in the undefined middle.
 
-**Phase 0 decision — classification (provisional, to be confirmed by the Graphiti latency spike in Phase 1):**
+**Phase 0 decision — classification (settled 2026-04-27 by ADR-ARCH-017, supersedes ADR-ARCH-008 SR-07 table):**
 
 | Tool | Class | Rationale |
 |---|---|---|
-| `tutor_start_session` | long-running (session_id returned, poll via `tutor_session_status`) | Includes Graphiti read of student model (three-hop: MacBook → Synology → Gemini → GB10 embeddings); could exceed 10s |
+| `tutor_start_session` | sync (< 1s) | Returns `session_id` synchronously; LLM warm-up is fire-and-forget (`asyncio.create_task` in `src/study_tutor/mcp/adapter.py:49–68`); no Graphiti read in Phase 0; no still-running task to poll |
 | `tutor_turn` | sync (< 30s) | Single LLM inference via Ollama; target p95 < 10s |
 | `tutor_session_status` | sync | Quick read |
 | `tutor_session_end` | sync | Triggers Graphiti write-back which is async to the caller |
 
-If Phase 1 spike shows `tutor_start_session` consistently < 10s end-to-end, reclassify as sync. If `tutor_turn` exceeds 30s due to session-accumulated context, reclassify as long-running.
+Phase 1 reversion conditions (per `phase-1-scope.md` §"Graphiti latency spike"): if the Phase 1 student-model read at session start pushes `search_nodes` median > ~3s, reclassify `tutor_start_session` back to long-running and add the `_status`/`_cancel` polling companion. If `tutor_turn` exceeds 30s due to session-accumulated context, reclassify it as long-running.
 
 ---
 
@@ -165,7 +165,7 @@ Coach prompt and criteria file stub living in `roles/tutor/criteria/definitions.
 #### 3. MCP adapter
 
 `src/study_tutor/mcp/adapter.py` exposing four MCP tools per SR-07 classification:
-- `tutor_start_session` (long-running, returns session_id)
+- `tutor_start_session` (sync, returns session_id; warm-up fire-and-forget — per ADR-ARCH-017)
 - `tutor_turn` (sync, < 30s target)
 - `tutor_session_status` (sync, polls session state)
 - `tutor_session_end` (sync, triggers async Graphiti write in Phase 1)

@@ -158,7 +158,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-005 | Defer Dockerfile to Phase 1+ — venv-only install for Phase 0 | Accepted |
 | ADR-ARCH-006 | Dual inference path — Ollama primary + Bedrock validation | Accepted |
 | ADR-ARCH-007 | Graphiti split topology (FalkorDB Synology + Gemini LLM + GB10 embedder) | Accepted |
-| ADR-ARCH-008 | MCP-only for agent access; single-user auth posture | Accepted |
+| ADR-ARCH-008 | MCP-only for agent access; single-user auth posture | Partially superseded by ADR-ARCH-017 (SR-07 classification only) |
 | ADR-ARCH-009 | Six parity surfaces (LES1) as load-bearing cross-cutting concerns | Accepted |
 | ADR-ARCH-010 | Pydantic-at-boundary validation + domain vocabulary enums | Accepted |
 | ADR-ARCH-011 | No caching / rate limiting / feature flags in Phase 0 | Accepted |
@@ -167,6 +167,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-014 | Single-user scalability posture; multi-student schema-ready | Accepted |
 | ADR-ARCH-015 | UK on-device data residency; Gemini as explicit exception | Accepted |
 | ADR-ARCH-016 | 18 May 2026 deadline as load-bearing architectural constraint | Accepted |
+| ADR-ARCH-017 | `tutor_start_session` SR-07 classification: sync (Phase 0); measurement-conditional P1 reversion | Accepted (supersedes ADR-ARCH-008 partial) |
 
 ## 10. Assumptions
 

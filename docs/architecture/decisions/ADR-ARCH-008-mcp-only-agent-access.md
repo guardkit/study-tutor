@@ -2,11 +2,20 @@
 
 ## Status
 
-Accepted
+Partially superseded by **ADR-ARCH-017** (2026-04-27).
 
-**Date:** 2026-04-18
+The SR-07 classification table at lines 35–46 below — specifically the
+`tutor_start_session` row and the "stable across phases for forward compatibility"
+rationale block — is **superseded**. ADR-ARCH-017 reclassifies `tutor_start_session`
+as sync in Phase 0, with a measurement-conditional Phase 1 reversion rule.
+
+The remainder of this ADR — the single-transport choice (MCP stdio only), the
+HTTP MCP deferral, the single-user auth posture, the Phase 0 session-scope
+limitation (in-memory dict per child process) — **remains accepted and in force**.
+
+**Date:** 2026-04-18 (original); 2026-04-27 (partial supersession)
 **Phase:** Phase 0
-**Related:** ADR-ARCH-014, LES1 §1 (transport), CC-01, CC-02, CC-07
+**Related:** ADR-ARCH-014, ADR-ARCH-017, LES1 §1 (transport), CC-01, CC-02, CC-07
 
 ## Context
 
@@ -34,11 +43,17 @@ classified per CC-07 / SR-07:
 
 | Tool | Class | Bound |
 |---|---|---|
-| `tutor_start_session` | long-running (returns `session_id` in ≤1s; poll via `tutor_session_status`) | n/a (fire-and-forget) |
+| `tutor_start_session` | ~~long-running~~ → **sync** (see ADR-ARCH-017) | < 1s; warm-up fire-and-forget |
 | `tutor_turn` | sync | p95 < 10s |
 | `tutor_session_status` | sync | < 2s |
 | `tutor_session_end` | sync (triggers async Graphiti write-back in P1) | < 2s |
 
+> ⚠️ **Superseded by ADR-ARCH-017 (2026-04-27).** The original rationale below is preserved
+> for historical record only; it does not represent the current decision. The classification
+> table above is updated to reflect the current decision. See ADR-ARCH-017 for the new
+> rationale and the Phase 1 measurement-conditional reversion rule.
+>
+> *(Original 2026-04-18 rationale, preserved verbatim:)*
 > `tutor_start_session` is architected as long-running for Phase-1 forward
 > compatibility (where it will read the student model from Graphiti). In Phase 0
 > the implementation is a UUID mint + in-memory dict insert that returns in ≤1s.
