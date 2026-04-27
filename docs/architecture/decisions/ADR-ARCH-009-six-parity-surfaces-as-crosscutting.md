@@ -2,11 +2,12 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-ARCH-018](ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md) on 2026-04-27.
 
 **Date:** 2026-04-18
 **Phase:** Phase 0
 **Related:** LES1, CC-01 through CC-08, phase-0-scope.md §Structural Requirements
+**Superseded by:** ADR-ARCH-018 (extends the SR series with SR-08 / SR-09 and re-grades CC-08 against measured Graphiti latency).
 
 ## Context
 

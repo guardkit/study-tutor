@@ -98,7 +98,7 @@ See `ADR-ARCH-004` through `ADR-ARCH-007` and `ADR-ARCH-012`.
 
 See `ADR-ARCH-008-mcp-only-agent-access.md`.
 
-## 6. Cross-cutting concerns (12)
+## 6. Cross-cutting concerns (14)
 
 | Code | Concern | Source |
 |---|---|---|
@@ -109,13 +109,15 @@ See `ADR-ARCH-008-mcp-only-agent-access.md`.
 | CC-05 | Dockerfile literal-match venv install (SR-05) — deferred | LES1 DKRX |
 | CC-06 | `.env` hygiene — no real-looking keys (SR-06) | LES1 §retest-env |
 | CC-07 | Tool description ≡ implementation contract (SR-07) | LES1 POLR |
-| CC-08 | Fire-and-forget + poll above 30s | LES1 §4 |
+| CC-08 | Fire-and-forget + poll above 30s (generic) | LES1 §4 |
 | CC-09 | Safeguarding content boundary | `GOAL.md §6.3` |
 | CC-10 | Copyright / provenance boundary | `GOAL.md §6.1` + `copyright-training-data-analysis.md` |
 | CC-11 | In-process event bus vocabulary | Cat 2 + `design.md §11.2` |
 | CC-12 | Async-capable subagent boundary | deepagents 0.5.3 `AsyncSubAgent` |
+| CC-13 | Graphiti write-back is async at every write point (SR-08) | `phase-1-scope.md §SR-08` + `graphiti-latency-spike-results.md` (27 Apr 2026: `add_episode` median 78.98s) |
+| CC-14 | Runtime LLM parameters (`num_ctx`, `num_predict`) explicit & asserted (SR-09) | `openwebui-rag-empirical-findings-2026-04-23.md §2 Finding 4` |
 
-See `ADR-ARCH-009` through `ADR-ARCH-013`.
+See `ADR-ARCH-009` (superseded by `ADR-ARCH-018`) through `ADR-ARCH-013`, plus `ADR-ARCH-018` for CC-13 / CC-14.
 
 ## 7. Constraints & NFRs (highlights)
 
@@ -159,7 +161,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-006 | Dual inference path — Ollama primary + Bedrock validation | Accepted |
 | ADR-ARCH-007 | Graphiti split topology (FalkorDB Synology + Gemini LLM + GB10 embedder) | Accepted |
 | ADR-ARCH-008 | MCP-only for agent access; single-user auth posture | Partially superseded by ADR-ARCH-017 (SR-07 classification only) |
-| ADR-ARCH-009 | Six parity surfaces (LES1) as load-bearing cross-cutting concerns | Accepted |
+| ADR-ARCH-009 | Six parity surfaces (LES1) as load-bearing cross-cutting concerns | Superseded by ADR-ARCH-018 |
 | ADR-ARCH-010 | Pydantic-at-boundary validation + domain vocabulary enums | Accepted |
 | ADR-ARCH-011 | No caching / rate limiting / feature flags in Phase 0 | Accepted |
 | ADR-ARCH-012 | deepagents 0.5.3+ with AsyncSubAgent Coach + CompositeBackend routing | Accepted |
@@ -168,6 +170,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-015 | UK on-device data residency; Gemini as explicit exception | Accepted |
 | ADR-ARCH-016 | 18 May 2026 deadline as load-bearing architectural constraint | Accepted |
 | ADR-ARCH-017 | `tutor_start_session` SR-07 classification: sync (Phase 0); measurement-conditional P1 reversion | Accepted (supersedes ADR-ARCH-008 partial) |
+| ADR-ARCH-018 | Extend cross-cutting concerns with SR-08 (Graphiti async write-back) and SR-09 (runtime LLM parameters explicit) | Accepted (supersedes ADR-ARCH-009) |
 
 ## 10. Assumptions
 

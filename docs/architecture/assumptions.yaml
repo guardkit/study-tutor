@@ -198,11 +198,14 @@ assumptions:
       submission.
     confidence: high
     source: specialist-agent repo — LES1 dated Apr 2026.
-    related_adr: ADR-ARCH-009
+    related_adr: ADR-ARCH-018
     revisit_trigger: >-
       If specialist-agent publishes LES2 with a new class of
       findings, spot-check Study Tutor against the new rows before
-      merge.
+      merge. Note: ADR-ARCH-018 supersedes ADR-ARCH-009 and extends
+      the SR series with SR-08 (Graphiti async write-back, confirmed
+      critical by 27 Apr latency spike) and SR-09 (runtime LLM
+      parameters explicit & asserted).
 
   - id: ASSUM-013
     category: security
