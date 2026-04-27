@@ -1,0 +1,154 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/tool/v1",
+  "study_tutor_version": "0.1.0",
+  "phase": "P0",
+  "generated_at": "2026-04-26",
+  "generated_by": "/system-design (bias-to-defaults)",
+  "source_of_truth": "src/study_tutor/mcp/adapter.py",
+  "design_decisions": {
+    "D2": "tutor_start_session classified as 'sync' (not 'long-running') per phase-0-build-plan.md punch-list item 7"
+  },
+  "tools": [
+    {
+      "name": "tutor_start_session",
+      "classification": "sync",
+      "description": "Sync. Start a tutoring session for a given subject (and optional topic). Returns a session_id immediately; an opportunistic LLM warm-up runs in the background to prime model weights. Subsequent tutor_turn calls reference the returned session_id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "GCSE subject — free text in P0 (e.g. 'English Literature'). P1 will tighten to the Subject enum from Shared Kernel A."
+          },
+          "topic": {
+            "type": "string",
+            "description": "Optional topic within the subject (e.g. 'Macbeth Act 1 Scene 1'). Free text in P0; P1 will tighten to a Topic ID."
+          },
+          "player_model": {
+            "type": "string",
+            "description": "Optional provider override. If unset, resolves AGENT_MODELS__REASONING_MODEL at call time (SR-03). Closed set: 'local' | 'bedrock' | 'openai' | 'anthropic' | 'gemini'.",
+            "enum": ["local", "bedrock", "openai", "anthropic", "gemini"]
+          }
+        },
+        "required": ["subject"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string", "format": "uuid" }
+        },
+        "required": ["session_id"],
+        "additionalProperties": false
+      },
+      "latencyTarget": "<= 1s",
+      "errorEnvelope": null
+    },
+    {
+      "name": "tutor_turn",
+      "classification": "sync",
+      "description": "Sync (< 30s). Generate one tutor reply for user_message within the given session. Routes through LLMClient; provider resolves from AGENT_MODELS__REASONING_MODEL at call time unless player_model is provided.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string", "format": "uuid" },
+          "user_message": { "type": "string", "minLength": 1 },
+          "player_model": {
+            "type": "string",
+            "enum": ["local", "bedrock", "openai", "anthropic", "gemini"],
+            "description": "Optional per-call provider override (SR-03)."
+          }
+        },
+        "required": ["session_id", "user_message"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": { "tutor_response": { "type": "string" } },
+            "required": ["tutor_response"],
+            "additionalProperties": false
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      },
+      "latencyTarget": "p95 < 10s; hard ceiling 30s",
+      "errorEnvelope": ["SessionNotFoundError", "SessionEnded"]
+    },
+    {
+      "name": "tutor_session_status",
+      "classification": "sync",
+      "description": "Sync. Read the current state of a tutoring session — status, turn count, and start time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string", "format": "uuid" }
+        },
+        "required": ["session_id"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "session_id": { "type": "string", "format": "uuid" },
+              "status": { "type": "string", "enum": ["active", "ended"] },
+              "turn_count": { "type": "integer", "minimum": 0 },
+              "started_at": { "type": "string", "format": "date-time" }
+            },
+            "required": ["session_id", "status", "turn_count", "started_at"],
+            "additionalProperties": false
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      },
+      "latencyTarget": "< 2s",
+      "errorEnvelope": ["SessionNotFoundError"]
+    },
+    {
+      "name": "tutor_session_end",
+      "classification": "sync",
+      "description": "Sync. Mark a tutoring session ended. Phase 0 flips status only; Phase 1 will trigger an async Graphiti write-back inside the handler (the side effect is implementation-internal per SR-07 and is not part of the user-visible contract).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string", "format": "uuid" }
+        },
+        "required": ["session_id"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "session_id": { "type": "string", "format": "uuid" },
+              "status": { "type": "string", "enum": ["ended"] }
+            },
+            "required": ["session_id", "status"],
+            "additionalProperties": false
+          },
+          { "$ref": "#/definitions/ErrorResponse" }
+        ]
+      },
+      "latencyTarget": "< 2s",
+      "errorEnvelope": ["SessionNotFoundError"]
+    }
+  ],
+  "definitions": {
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": { "type": "string" },
+        "error_type": {
+          "type": "string",
+          "enum": ["SessionNotFoundError", "SessionEnded"]
+        }
+      },
+      "required": ["error", "error_type"],
+      "additionalProperties": false
+    }
+  }
+}

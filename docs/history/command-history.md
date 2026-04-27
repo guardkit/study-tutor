@@ -1287,4 +1287,34 @@ video-outline.md — storyboard-lite shell with shot list, per-scene sketches, B
 This closes Phase 0 punch-list item #2. Want me to commit, and should I also knock out item #3 while I'm here (FEAT-PO-003 tail: domains/gcse-english/sources/README.md + docs/licensing.md) per the Sunday plan? Or commit these three first and stop?
 
 
+/system-design --from docs/architecture/ARCHITECTURE.md --context docs/research/ideas/phase-0-scope.md --context docs/research/ideas/phase-0-build-plan.md
+
+
+✅ /system-design complete
+Graphiti seeding: 7/7 episodes added
+
+File	Type	Result
+docs/design/README.md	project_overview	✓ 10n / 6e
+docs/design/contracts/API-tutoring.md	full_doc	✓ 15n / 12e (retry)
+docs/design/contracts/API-mcp-transport.md	full_doc	✓ 15n / 13e
+docs/design/contracts/API-inference-runtime.md	full_doc	✓ 15n / 12e
+docs/design/models/DM-tutoring.md	full_doc	✓ 17n / 7e
+docs/design/models/DM-inference-runtime.md	full_doc	✓ 13n / 20e
+docs/design/models/DM-mcp-transport.md	full_doc	✓ 13n / 8e
+Total: 98 nodes, 78 edges in project_design group on FalkorDB at whitestocks.
+
+Reference artefacts retained on disk only (not seeded — they're machine-readable schemas):
+
+docs/design/mcp-tools.json — JSON Schema for the 4 MCP tools
+docs/design/events-schema.yaml — Shared Kernel B event vocabulary
+Build plan updated with both design decisions (D1: Tutoring schema P0-only; D2: tutor_start_session reclassified sync) and the recommended /system-design --focus="<context>" invocations for P1 (Knowledge & Curriculum, Student Model) and P2 (Gamification).
+
+Next:
+
+/system-plan --from docs/design/README.md --context docs/architecture/ARCHITECTURE.md --context docs/research/ideas/phase-0-scope.md --context docs/research/ideas/phase-0-build-plan.md to ground feature-level planning.
+/arch-refine to update domain-model.md §7.1 SR-07 wording for tutor_start_session per D2.
+When phase-1-scope.md is ready, re-run /system-design --focus="Knowledge & Curriculum" and /system-design --focus="Student Model".
+
+
+
 

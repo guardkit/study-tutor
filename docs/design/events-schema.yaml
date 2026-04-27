@@ -1,0 +1,189 @@
+## Shared Kernel B — Session Event Vocabulary
+## Phase: P0 reserved (CC-11) — schemas frozen here; in-process bus wired in P1
+## Source of truth: docs/architecture/domain-model.md §8.2
+## Generated: 2026-04-26 by /system-design (bias-to-defaults, Phase 0 scope)
+##
+## Delivery: in-process only (no NATS, no external broker). Subscribers MUST
+## use the deepagents 0.5.3 AsyncSubAgent boundary or equivalent async hook
+## (CC-12); synchronous fan-out into tutor_turn return is forbidden.
+##
+## Validation: subscribers validate at the boundary using Pydantic per
+## ADR-ARCH-010. The schemas below are the authoritative shape.
+
+version: "0.1.0"
+phase: P0-reserved-P1-live
+
+producers:
+  Tutoring:
+    emits:
+      - session.started
+      - session.turn_completed
+      - session.completed
+  Gamification:
+    emits:
+      - achievement.unlocked
+      - quest.completed
+      - quest.expired
+      - boss_battle.completed
+
+consumers:
+  StudentModel:
+    subscribes:
+      - session.started
+      - session.turn_completed
+      - session.completed
+  Gamification:
+    subscribes:
+      - session.completed
+  Reachy:
+    subscribes:
+      - achievement.unlocked
+      - boss_battle.completed
+    note: P2 stretch
+
+events:
+
+  session.started:
+    description: |
+      Emitted by Tutoring on transition to "active" state. Marks the
+      beginning of a tutoring session and lets the Student Model context
+      create a SessionEpisode head record.
+    phase_live: P1
+    payload:
+      type: object
+      properties:
+        session_id: { type: string, format: uuid }
+        student_id: { type: string }
+        subject: { type: string, description: "Subject enum value (Shared Kernel A) once P1 enums land; free text in P0 reserved shape" }
+        topic:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        started_at: { type: string, format: date-time }
+      required: [session_id, student_id, subject, started_at]
+      additionalProperties: false
+
+  session.turn_completed:
+    description: |
+      Emitted by Tutoring after each tutor reply (i.e. after a (user, tutor)
+      turn pair has been appended). Consumers: Coach (P1, evaluates quality);
+      Student Model (P1, may append Misconception via the Coach).
+    phase_live: P1
+    payload:
+      type: object
+      properties:
+        session_id: { type: string, format: uuid }
+        turn_index: { type: integer, minimum: 0 }
+        role: { type: string, enum: [user, tutor] }
+        ao_scaffolded:
+          oneOf:
+            - type: array
+              items: { type: string, enum: [AO1, AO2, AO3, AO4, AO5, AO6] }
+            - { type: "null" }
+          description: "Coach-derived; null until Coach is wired (P1)."
+      required: [session_id, turn_index, role]
+      additionalProperties: false
+
+  session.completed:
+    description: |
+      Emitted by Tutoring on transition to "ended" state. Triggers Student
+      Model rollup (TopicConfidence delta capped ±0.1, AssessmentObjectiveProgress
+      update) and Gamification XP/streak/achievement evaluation.
+      Per gamification/design.md §2.1, sessions abandoned before any tutor
+      turn (turn_count < 2) MUST NOT emit this event.
+    phase_live: P1
+    payload:
+      type: object
+      properties:
+        session_id: { type: string, format: uuid }
+        duration_seconds: { type: integer, minimum: 0 }
+        topic:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        aos_touched:
+          type: array
+          items: { type: string, enum: [AO1, AO2, AO3, AO4, AO5, AO6] }
+        quality_score:
+          oneOf:
+            - { type: number, minimum: 0.0, maximum: 1.0 }
+            - { type: "null" }
+          description: "Coach-derived overall session quality; null when Coach unavailable."
+        ended_at: { type: string, format: date-time }
+      required: [session_id, duration_seconds, aos_touched, ended_at]
+      additionalProperties: false
+
+  achievement.unlocked:
+    description: |
+      Emitted by Gamification when a Student crosses an achievement criterion.
+      Producer: Gamification context only — Tutoring does not emit this.
+      Consumers: Student Model (XP/level rollup), Reachy (P2 celebration trigger).
+      Achievements are sticky (once unlocked, always unlocked) per gamification/design.md §5.
+    phase_live: P2
+    payload:
+      type: object
+      properties:
+        student_id: { type: string }
+        achievement_id: { type: string, description: "Stable ID from gamification/design.md §5 (e.g. 'quote_champion', 'macbeth_master')" }
+        xp_reward: { type: integer, minimum: 0 }
+        unlocked_at: { type: string, format: date-time }
+      required: [student_id, achievement_id, xp_reward, unlocked_at]
+      additionalProperties: false
+
+  quest.completed:
+    description: |
+      Emitted by Gamification when a daily/weekly quest target is met.
+      Quests have one concurrent at Level <9; two at Level >=9 per gamification/design.md.
+    phase_live: P2
+    payload:
+      type: object
+      properties:
+        student_id: { type: string }
+        quest_id: { type: string }
+        completed_at: { type: string, format: date-time }
+      required: [student_id, quest_id, completed_at]
+      additionalProperties: false
+
+  quest.expired:
+    description: |
+      Emitted by Gamification when a quest's expires_at passes without
+      completion. Used to age quests out of active state.
+    phase_live: P2
+    payload:
+      type: object
+      properties:
+        student_id: { type: string }
+        quest_id: { type: string }
+        expired_at: { type: string, format: date-time }
+      required: [student_id, quest_id, expired_at]
+      additionalProperties: false
+
+  boss_battle.completed:
+    description: |
+      Emitted by Gamification when a Boss Battle ends. First completion per
+      calendar week awards XP; subsequent completions unlock practice mode
+      (no XP) per gamification/design.md.
+    phase_live: P2
+    payload:
+      type: object
+      properties:
+        student_id: { type: string }
+        paper: { type: string, description: "Paper enum value once Shared Kernel A enums land" }
+        trophy_id: { type: string }
+        completed_at: { type: string, format: date-time }
+        is_first_of_week: { type: boolean }
+      required: [student_id, paper, trophy_id, completed_at, is_first_of_week]
+      additionalProperties: false
+
+delivery_semantics:
+  transport: in-process
+  ordering: per-aggregate FIFO (within a single session_id, events emit in order)
+  durability: at-most-once
+  retry: none
+  dead_letter: none
+  rationale: |
+    Single-user posture (ADR-ARCH-014) plus async Graphiti write-back at
+    session-end (ADR-ARCH-003) make heavy delivery guarantees unnecessary.
+    A consumer crash on session.completed is an observable defect, not a
+    silent data-loss event — the SessionEpisode in Graphiti will be missing
+    and surface on the next session-status read.

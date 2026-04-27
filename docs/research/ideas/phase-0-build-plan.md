@@ -44,6 +44,11 @@
 4. **FEAT-PO-004 Bedrock validation** — S3 upload + Custom Model Import + LLM client wiring. Contingency TASK-CDR-005 stands: if eu-west-2 lacks 31B import support, stay on Ollama/GB10 for demo.
 5. **TASK-PO02F-001 RAG grounding** — scoped (will likely be promoted to FEAT-PO-006 in Phase 1) and now backed by empirical findings from the 23 Apr OpenWebUI session (R1–R6 recommendations captured in [openwebui-rag-empirical-findings-2026-04-23.md §4](./openwebui-rag-empirical-findings-2026-04-23.md)).
 6. **Phase 1 scope + build-plan docs** — `phase-1-scope.md` exists; `phase-1-build-plan.md` exists but needs refresh against Phase 0 actuals and the new FEAT-PO-006 recommendations before next weekend.
+7. **`/system-design` Phase 0 run (2026-04-26)** — scoped to the three implemented contexts (Tutoring, Inference Runtime, MCP Transport) plus Shared Kernel B event surface, bias-to-defaults. Knowledge & Curriculum, Student Model, and Gamification are deliberately deferred to per-phase `--focus` re-runs (see GuardKit Command Sequence below) so contracts are seeded into Graphiti only once the relevant runtime code lands. Rationale: P1/P2 contexts are doc-only today; designing now risks drift before implementation.
+
+   **In-session decisions (2026-04-26):**
+   - **D1 — Tutoring schema P0-only.** The `TutorSession` data model artefact documents the Phase-0 shape only (`session_id, subject, topic, status, turns, started_at, ended_at`). P1 fields (`student_id`, `grade_target`, `paper`, `aos_scaffolded`, `rag_chunks_used`, `TurnFeedback`, `SessionSummary`) are deferred to a `/system-design --focus="Tutoring"` re-run when P1 wires Graphiti + Coach. Rationale: matches what's true in `src/study_tutor/session/tutor_session.py` today; avoids contract-drift before P1 implementation.
+   - **D2 — `tutor_start_session` classified `sync`.** The design artefact classifies `tutor_start_session` as **sync** (returns `session_id` synchronously; warm-up LLM call is opportunistic fire-and-forget, not a polled long-running task) — overriding the architecture text's "long-running" wording in `domain-model.md §7.1` and `phase-0-scope.md §SR-07`. Rationale: matches live behaviour in `src/study_tutor/mcp/adapter.py:49–68`; there is no still-running task to poll via `tutor_session_status`. The architecture text needs a follow-up `/arch-refine` to re-state SR-07 (or reclassify back to long-running if P1 adds Graphiti reads at session start that exceed 1s).
 
 **Unplanned strategic move (21 Apr):** Graphiti's LLM backend migrated from Gemini to vLLM on GB10 (`neuralmagic/Qwen2.5-14B-Instruct-FP8-dynamic`) — this is Phase 1 infrastructure landed early, with Ollama fallback kept for MacBook-only mode. Reduces dependency on external APIs ahead of the Phase 1 Graphiti spike.
 
@@ -394,11 +399,47 @@ After Saturday's domain docs are drafted (FEAT-PO-001 morning), kick off the Gua
   --context docs/gamification/design.md
 
 # After ARCHITECTURE.md is produced:
+#
+# /system-design is staged by phase (decision 2026-04-26):
+#   - Phase 0 run: scope to the three implemented contexts + Shared Kernel B
+#     event surface only, bias-to-defaults (propose contracts/data models from
+#     existing docs, ask only on genuine open questions).
+#   - Phase 1 / Phase 2: re-run --focus per context as those contexts gain
+#     runtime code (Knowledge & Curriculum, Student Model, then Gamification).
+# Rationale: 3 of 6 contexts have shipped code today (Tutoring, Inference
+# Runtime, MCP Transport); P1/P2 contexts are still doc-only. Designing them
+# now risks contracts that drift before implementation. Per-phase --focus
+# re-runs keep the design context Graphiti-seeded with what's actually true.
 
+# Phase 0 invocation (run 2026-04-26):
 /system-design \
   --from docs/architecture/ARCHITECTURE.md \
   --context docs/research/ideas/phase-0-scope.md \
   --context docs/research/ideas/phase-0-build-plan.md
+# Inside the session, scope to: Tutoring, Inference Runtime, MCP Transport,
+# plus the Shared Kernel B (Events) surface. Skip Knowledge & Curriculum,
+# Student Model, Gamification at the [S]kip checkpoint.
+
+# Phase 1 re-runs (recommended Sat 26 Apr morning, after phase-1-scope.md is
+# drafted and the Graphiti spike has produced latency numbers — DEC-02/DEC-08):
+/system-design --focus="Knowledge & Curriculum" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/rag-grounding-design.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md
+/system-design --focus="Student Model" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/architecture/decisions/ADR-ARCH-003-async-graphiti-writeback.md \
+  --context docs/architecture/decisions/ADR-ARCH-007-graphiti-split-topology.md
+
+# Phase 2 re-run (recommended once gamification engine moves from docs to
+# runtime code per ADR-ARCH-013):
+/system-design --focus="Gamification" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/research/ideas/phase-2-scope.md \
+  --context docs/gamification/design.md \
+  --context docs/architecture/decisions/ADR-ARCH-013-middleware-level-gamification-engine-future.md
 
 /system-plan \
   --from docs/design/DESIGN.md \
