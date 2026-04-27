@@ -1318,3 +1318,56 @@ When phase-1-scope.md is ready, re-run /system-design --focus="Knowledge & Curri
 
 
 
+/system-plan --from docs/design/README.md --context docs/architecture/ARCHITECTURE.md --context docs/research/ideas/phase-0-scope.md --context docs/research/ideas/phase-0-build-plan.md
+
+Roadmap written. Graphiti reachable (738 episodes seeded; architecture_decisions group has 100 episodes).
+
+✅ /system-plan OUTPUT
+
+Created: docs/planning/feature-roadmap.md
+
+Contents:
+
+§2 — Architecture follow-ups: D1 (TutorSession P0 shape) + D2 (tutor_start_session sync) → bundle into one /arch-refine session before Phase 1 wires Graphiti
+§3 — Phase 0 close-out: FEAT-PO-004 Bedrock + clean-machine walkthrough (ready-to-run /feature-spec invocation included)
+§4 — Phase 1 features (PH1-001..004) with bounded-context mapping, ADR refs, and /feature-spec invocations; flags new SR-08 / SR-09 cross-cutting concerns
+§5 — Phase 2 sketch (PH2-001..003) — full invocations deferred to 1 May Phase 2 /system-plan re-run
+§6 — Feature dependency graph (Mermaid) — PH1-001 is the fan-out hub; D1/D2 dashed (arch-refine, not features); PH1-003 is the Phase 1 integration sink
+§7 — Phase timeline gantt — DDD Southwest 13–16 May absorption marked critical; Bedrock and Graphiti spike parallel-safe
+§8 — Recommended next commands in execution order
+§9 — Conformance check (no contradictions vs 16 ADRs; Shared Kernel B producer/consumer roles match events-schema.yaml)
+No architecture refinement performed — user picked [F]; ARCHITECTURE.md, ADRs, domain-model, and design contracts all unchanged.
+
+📥 Graphiti seeding (offered)
+
+Tier 2 connectivity confirmed (FalkorDB on whitestocks, vLLM on GB10, embeddings on promaxgb10-41b1:8001).
+
+The roadmap belongs in the architecture_decisions group (sequencing context for upcoming feature-plans). Recommended:
+
+
+guardkit graphiti add-context docs/planning/feature-roadmap.md \
+  --group architecture_decisions
+Seed the roadmap to Graphiti now? [Y/n]
+
+Seeded. 1 episode added (3 nodes, 2 edges) in 44s. Warnings are non-blocking — they're project_overview-schema heuristics that don't apply to a sequencing doc.
+
+📋 /system-plan complete
+
+Action	Result
+Mode	Refine → hand-off ([F])
+Architecture refinement	None — ARCHITECTURE.md, ADRs, domain-model unchanged
+Output	docs/planning/feature-roadmap.md (210 lines, 2 Mermaid diagrams)
+Graphiti seeding	✓ architecture_decisions group
+Architecture follow-ups identified	D1, D2, SR-08, SR-09 — bundle into one /arch-refine
+Recommended next command:
+
+
+/arch-refine \
+  --target docs/architecture/domain-model.md \
+  --context docs/design/README.md \
+  --context docs/research/ideas/phase-0-build-plan.md \
+  --context docs/research/ideas/phase-1-scope.md
+That clears D1 + D2 + adds SR-08 / SR-09 before the Sat 26 Apr Graphiti spike kicks off Phase 1. Then Phase 0 close-out: /feature-spec + /feature-plan for FEAT-PO-004 Bedrock validation.
+
+
+
