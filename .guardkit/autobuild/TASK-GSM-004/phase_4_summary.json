@@ -1,0 +1,7 @@
+{
+  "tests_run": 37,
+  "tests_failed": 0,
+  "coverage_pct": 98.0,
+  "output_summary": "pytest tests/unit/knowledge/test_async_write.py: 37 passed, 0 failed; line coverage 98% on src/study_tutor/knowledge/async_write.py",
+  "quality_gates_passed": true
+}

@@ -5,6 +5,7 @@ lazy-import subprocess test, and the §4 producer-side seam tests all live
 in this single file (the 2-file ceiling forbids splitting them across
 ``test_*.py`` modules).
 """
+
 from __future__ import annotations
 
 import asyncio

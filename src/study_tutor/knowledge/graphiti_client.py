@@ -33,6 +33,7 @@ Scope (per task):
 - :func:`get_client` — async factory implementing the four-step degradation
   path: import → construct → healthcheck → return wrapper.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -179,9 +180,7 @@ class GraphitiClient:
                 "TimeoutError",
                 self._config.falkor_host,
                 latency_ms=elapsed_ms,
-                error_message=(
-                    f"healthcheck exceeded {self._config.timeout_seconds}s"
-                ),
+                error_message=(f"healthcheck exceeded {self._config.timeout_seconds}s"),
             )
             return False
         except Exception as exc:  # noqa: BLE001 — boundary to external lib

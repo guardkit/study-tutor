@@ -1,17 +1,17 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 72.25807862501824,
+    "duration_seconds": 87.9790587919997,
     "error": null,
-    "tests_run": 23,
+    "tests_run": 37,
     "tests_failed": 0,
-    "coverage_pct": 90.0,
-    "output_summary": "23/23 passed in tests/unit/knowledge/test_graphiti_client.py; 90% line coverage on src/study_tutor/knowledge/graphiti_client.py (10 missing of 105 stmts)",
+    "coverage_pct": 98.0,
+    "output_summary": "pytest tests/unit/knowledge/test_async_write.py: 37 passed, 0 failed; line coverage 98% on src/study_tutor/knowledge/async_write.py",
     "quality_gates_passed": true
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 157.63076762499986,
+    "duration_seconds": 217.74484354199376,
     "error": null,
     "issues": [],
     "quality_score": 0.0,
