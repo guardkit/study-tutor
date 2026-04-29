@@ -1,8 +1,8 @@
 # Phase 1 Build Plan — Three-Layer Architecture + Student Model
 
 ## For: Weekend build (26–27 April 2026) + weekday evenings 28 April – 1 May
-## Date: 17 April 2026 (last updated 2026-04-27 PM late — Inference Runtime design refresh + DDR-004 landed; all ADR-018/019 stale-reference sweeps complete)
-## Status: Pre-execution prerequisites largely landed (2026-04-27). Graphiti latency spike DONE — `add_episode` median 78.98s, `search_nodes` 0.07s ([graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md)). Architecture cross-cutting concerns extended: ADR-ARCH-018 (SR-08 → CC-13, SR-09 → CC-14, six → fourteen parity surfaces) and ADR-ARCH-019 (async Graphiti write-back at every write point; supersedes ADR-ARCH-003) accepted and seeded into `architecture_decisions`. **All three Phase-0-context design refreshes complete:** (a) MCP Transport via `/system-design --focus="MCP Transport"` (AM) — new design rule [DDR-001](../../design/decisions/DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md) (no Graphiti enumeration in MCP descriptions; I-MCP8 / I-MCP9 invariants); (b) Tutoring via `/system-design --focus="Tutoring"` (PM) — [DDR-002](../../design/decisions/DDR-002-coach-async-subagent-owns-graphiti-writes.md) (Coach AsyncSubAgent owns its own writes), [DDR-003](../../design/decisions/DDR-003-session-completed-emits-on-state-transition.md) (`session.completed` emits on state transition, not write success), I-T7 invariant, 8-component C4 L3 diagram with F1/F2/F3 flush points; (c) Inference Runtime via `/system-design --focus="Inference Runtime"` (PM late) — [DDR-004](../../design/decisions/DDR-004-num-ctx-modelfile-owned-not-client.md) (`num_ctx` Modelfile-owned not `LLMClient`-owned; CC-14 conformance via two-part smoke test), I-IR7 / I-IR8 invariants, §4 client/Modelfile config split. All artefacts seeded into Graphiti. Saturday-morning latency spike + Phase 0 validation gate items in this plan are partially pre-completed; remaining: Phase 0 validation gate write-up, then proceed to FEAT-PH1-001 schema work.
+## Date: 17 April 2026 (last updated 2026-04-29 PM — FEAT-PH1-001 planned as FEAT-1773; ready to build)
+## Status: **Pre-build phase complete; FEAT-PH1-001 planned and ready to execute.** Graphiti latency spike DONE (2026-04-27) — `add_episode` median 78.98s, `search_nodes` 0.07s. Architecture cross-cutting concerns extended (ADR-ARCH-018 / ADR-ARCH-019). All three Phase-0-context design refreshes complete (MCP Transport with DDR-001; Tutoring with DDR-002 + DDR-003 + I-T7 + 8-component C4 L3; Inference Runtime with DDR-004 + I-IR7/I-IR8). FEAT-PH1-001 BDD spec generated 2026-04-27 (38 scenarios, 4 smoke / 8 key-example / 9 boundary / 7 negative / 14 edge-case across 5 implementation groups). FEAT-PH1-001 build plan generated 2026-04-29 as **FEAT-1773** (6 subtasks TASK-GSM-001..006, 4-wave structure with Conductor parallelism in Waves 1+2; CC-13 single-call-site invariant + DDR-002 ownership + DDR-003 event-emit-decoupling all expressed in IMPLEMENTATION-GUIDE.md and seam-test stubs; all 38 BDD scenarios @task: tagged for R2 oracle activation; smoke_gates wired between waves). **Schedule slip:** the original Saturday-afternoon FEAT-PH1-001 implementation slot (2026-04-26) did not run; week-1 burndown is now 2 days behind the optimistic plan. Recovery posture below ("Schedule recovery as of 2026-04-29").
 ## Repo: `study-tutor` (Phase 0 scaffolding already present)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (Ollama + embedder), Synology NAS over Tailscale (FalkorDB), Google Gemini (Graphiti entity extraction + Coach)
 ## Target completion: End of Friday 2 May 2026 (close of Week 2 of the 31-day burn)
@@ -55,17 +55,72 @@ Phase 0 closed by end of Friday 24 April. Before the weekend starts, confirm the
 
 ---
 
+## Status as of 2026-04-29 (Wednesday)
+
+### What has landed
+
+**Pre-build phase (architecture + design + spec) is complete:**
+
+- ✅ **Graphiti latency spike** (2026-04-27) — `add_episode` median 78.98s, `search_nodes` 0.07s. Decision statements recorded in [graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md). SR-08 elevated to load-bearing.
+- ✅ **Architecture cross-cutting concerns extended** — ADR-ARCH-018 (CC-13 / CC-14 promotion, fourteen parity surfaces); ADR-ARCH-019 (async write-back at every Graphiti write point, supersedes ADR-ARCH-003); ADR-ARCH-020 (LangChain 1.x pin + Py3.14 alignment).
+- ✅ **Phase-0-context design refreshes** for all three focus areas:
+  - MCP Transport — DDR-001 (no Graphiti enumeration in MCP descriptions), I-MCP8 / I-MCP9 invariants
+  - Tutoring — DDR-002 (Coach AsyncSubAgent owns its own writes), DDR-003 (`session.completed` emits on state transition), I-T7 invariant, 8-component C4 L3 with F1/F2/F3 flush points
+  - Inference Runtime — DDR-004 (`num_ctx` Modelfile-owned), I-IR7 / I-IR8 invariants
+- ✅ **FEAT-PH1-001 BDD spec** (2026-04-27) — 38 scenarios in [features/graphiti-student-model/graphiti-student-model.feature](../../../features/graphiti-student-model/graphiti-student-model.feature), 8 assumptions in `_assumptions.yaml`, 4 smoke / 8 key-example / 9 boundary / 7 negative / 14 edge-case across 5 implementation groups.
+- ✅ **FEAT-PH1-001 build plan** (2026-04-29) — `/feature-plan` produced [FEAT-1773](../../../.guardkit/features/FEAT-1773.yaml) with 6 subtasks ([tasks/backlog/graphiti-student-model/](../../../tasks/backlog/graphiti-student-model/)), IMPLEMENTATION-GUIDE.md (data-flow + sequence + dependency Mermaid diagrams + §4 Integration Contracts + risk register), seam-test stubs for every cross-task contract, smoke_gates between waves (including the **CC-13 single-call-site grep audit** between Wave 2 and Wave 3), and all 38 BDD scenarios `@task:` tagged for R2 oracle activation. TASK-REV-7DC0 in `tasks/in_review/` records the decision rationale.
+
+### What has NOT landed (the build itself)
+
+| Feature | State | Notes |
+|---|---|---|
+| FEAT-PH1-001 (Graphiti student model) | **Planned, ready to build** | FEAT-1773 — 6 subtasks, ~9.5h work, ~7.5h elapsed with parallelism |
+| FEAT-PH1-002 (session planner) | Not yet spec'd | Originally Sunday-morning track A; depends on PH1-001 query helpers |
+| FEAT-PH1-004 (RAG + quote verifier) | Not yet spec'd | Originally Sunday-morning track B; depends on PH1-001 Text entity |
+| FEAT-PH1-003 (Player-Coach loop) | Not yet spec'd | Originally Sunday-afternoon critical path; depends on PH1-001/002/004 |
+| Seeding executed against Synology | Blocked on FEAT-1773 Wave 4 | Lilymay's baseline not yet in FalkorDB |
+| Tech writeup Phase 1 section | Empty | Originally Monday work, content-first not polish |
+
+### Schedule recovery as of 2026-04-29
+
+The original plan assumed FEAT-PH1-001 + FEAT-PH1-002 + FEAT-PH1-004 + FEAT-PH1-003 all running end-to-end by end of Sunday 27 April. The actual weekend was absorbed by the architectural / design / spec work above; physical implementation has not started.
+
+**Days remaining before Friday 2 May close-out:** 4 (Wed evening 29 Apr, Thu 30 Apr, Fri 1 May, Sat 2 May reserved for Phase 2 plan write-up by original cadence).
+
+**Posture:**
+
+1. **Compress the spec→plan→build pipeline for the remaining three features.** FEAT-PH1-001 was the heaviest spec (38 scenarios, async-correctness-critical) and used the full `/feature-spec` → `/feature-plan` → AutoBuild flow because the architectural anchors (DDR-002, CC-13) made it worth the rigour. PH1-002 (planner, deterministic rules), PH1-003 (Player-Coach loop), PH1-004 (RAG + verifier) are smaller and better-understood — go straight from build-plan prose to `/task-create` or thin `/feature-plan` runs without the full BDD ceremony unless a specific risk surfaces.
+2. **Run FEAT-PH1-001 (FEAT-1773) start-to-finish on Wed 29 Apr evening + Thu 30 Apr.** FEAT-1773 is autobuild-ready: `/feature-build FEAT-1773` should land all 6 subtasks across the 4 waves (Wave 1+2 parallel via Conductor) in ~7.5h elapsed. Confirm Synology FalkorDB and `graphiti-core` install prereqs are green before kicking off.
+3. **Sequence the rest:** Thu 30 Apr evening → FEAT-PH1-002 (planner, 2h-ish if scoped tight); Fri 1 May evening → FEAT-PH1-004 (RAG + verifier, 3h) **and** FEAT-PH1-003 (Coach loop, 4h). PH1-002 and PH1-004 can still parallelise if energy permits. PH1-003 is the critical-path feature; do not start it until PH1-001 query helpers are seeded and PH1-004 verifier is callable.
+4. **Hold the Phase 2 plan write-up at Sat 3 May evening** (slipping it from original Thu 1 May). Phase 2 build starts Sunday 4 May per original cadence; one day's slip in plan write-up is absorbable.
+5. **Watch for FEAT-PH1-003 scope creep.** The original Coach prompt has 6 rubric criteria including `quote_fidelity` (which depends on PH1-004). If Friday energy runs out, defer the `quote_fidelity` arm of the Coach to a Phase 2 enhancement and ship a 5-criterion Coach for the demo. Document the decision in `phase-1-validation.md`.
+
+### Immediate next action
+
+Kick off `/feature-build FEAT-1773` (autonomous AutoBuild across all 6 subtasks) — or, if preferred granular control, start with Wave 1 in parallel:
+
+```bash
+/feature-build FEAT-1773
+# or, per-task:
+/task-work TASK-GSM-001   # Wave 1 — Pydantic entities + relationships (declarative, complexity 3)
+/task-work TASK-GSM-002   # Wave 1 — episode types (declarative, complexity 2)
+```
+
+After Wave 1 lands, the smoke-gate between Waves 2 and 3 will run a `git grep` audit asserting the **CC-13 single-call-site invariant** (exactly one `add_episode(` in `src/`). If that fails, do not advance to Wave 3 — fix the offending call site first.
+
+---
+
 ## Feature Summary
 
-| # | Feature | Depends On | Complexity | Wave |
-|---|---------|------------|------------|------|
-| SPIKE | Graphiti three-hop latency measurement | Prereqs green | 2/10 (measurement, no code) | 1 |
-| VALIDATION | Phase 0 validation gate | Phase 0 complete | 1/10 (document) | 1 |
-| FEAT-PH1-001 | Graphiti student model (schema, helpers, seeding) | SPIKE | 6/10 | 2 |
-| FEAT-PH1-002 | Deterministic session planner | FEAT-PH1-001 | 4/10 | 3 |
-| FEAT-PH1-004 | Primary-text RAG + source-typed quote verifier | FEAT-PH1-001 (Text entity), FEAT-PH1-002 (focus_aos) | 5/10 | 3 (parallel with PH1-002) |
-| FEAT-PH1-003 | DeepAgents tutoring loop + Coach (Coach integrates verifier from PH1-004) | FEAT-PH1-001, FEAT-PH1-002, FEAT-PH1-004 | 8/10 | 4 |
-| TECH-WRITEUP | Phase 1 content in technical-writeup.md | Each FEAT as it lands | 2/10 | continuous |
+| # | Feature | Depends On | Complexity | Wave | Status (2026-04-29) |
+|---|---------|------------|------------|------|---------------------|
+| SPIKE | Graphiti three-hop latency measurement | Prereqs green | 2/10 (measurement, no code) | 1 | ✅ DONE 2026-04-27 |
+| VALIDATION | Phase 0 validation gate | Phase 0 complete | 1/10 (document) | 1 | ✅ DONE — `phase-0-validation.md` |
+| FEAT-PH1-001 | Graphiti student model (schema, helpers, seeding) | SPIKE | 6/10 | 2 | 📋 **PLANNED as [FEAT-1773](../../../.guardkit/features/FEAT-1773.yaml)** — ready to `/feature-build` |
+| FEAT-PH1-002 | Deterministic session planner | FEAT-PH1-001 | 4/10 | 3 | ⏳ not yet spec'd / planned |
+| FEAT-PH1-004 | Primary-text RAG + source-typed quote verifier | FEAT-PH1-001 (Text entity), FEAT-PH1-002 (focus_aos) | 5/10 | 3 (parallel with PH1-002) | ⏳ not yet spec'd / planned |
+| FEAT-PH1-003 | DeepAgents tutoring loop + Coach (Coach integrates verifier from PH1-004) | FEAT-PH1-001, FEAT-PH1-002, FEAT-PH1-004 | 8/10 | 4 | ⏳ not yet spec'd / planned |
+| TECH-WRITEUP | Phase 1 content in technical-writeup.md | Each FEAT as it lands | 2/10 | continuous | ⏳ empty — content-first per original plan |
 
 **Dependency chain:**
 
@@ -106,23 +161,27 @@ The morning is intentionally two short deliverables rather than one big code pus
 
 #### Afternoon (4 hours) — FEAT-PH1-001 schema
 
+> **2026-04-29 update:** This section is **superseded by FEAT-1773**. The /feature-plan run on 2026-04-29 produced a 6-subtask AutoBuild-ready plan that decomposes this work into TASK-GSM-001..006 across 4 waves with smoke-gate checks (including the CC-13 single-call-site grep audit). See [tasks/backlog/graphiti-student-model/IMPLEMENTATION-GUIDE.md](../../../tasks/backlog/graphiti-student-model/IMPLEMENTATION-GUIDE.md) and run `/feature-build FEAT-1773` to execute. The numbered prose below is preserved as the original sketch — it remains accurate but the FEAT-1773 plan is the canonical source of truth for what to build and in what order.
+
 Switch to Claude Code for implementation.
 
-4. **Define the Pydantic entities.** Create `src/study_tutor/knowledge/student_model.py`. Seven entity types (Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence). Six relationship types. Follow the scope doc's tables exactly — don't invent new types.
+4. **Define the Pydantic entities.** Create `src/study_tutor/knowledge/student_model.py`. Seven entity types (Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence). Six relationship types. Follow the scope doc's tables exactly — don't invent new types. *(→ TASK-GSM-001)*
 
-5. **Define the episode types.** Create `src/study_tutor/knowledge/episodes.py`. Three types (`session_completed`, `topic_confidence_updated`, `misconception_observed`). Each a Pydantic model with the payload fields from the scope doc.
+5. **Define the episode types.** Create `src/study_tutor/knowledge/episodes.py`. Three types (`session_completed`, `topic_confidence_updated`, `misconception_observed`). Each a Pydantic model with the payload fields from the scope doc. *(→ TASK-GSM-002)*
 
-6. **Implement the Graphiti client wrapper.** Create `src/study_tutor/knowledge/graphiti_client.py`. Follow the specialist-agent pattern: lazy import of graphiti-core, fail gracefully if unavailable (logged warning, return None from queries), typed exception surface. Copy the lazy-import shape from `specialist-agent/src/specialist_agent/tools/graphiti_client.py`.
+6. **Implement the Graphiti client wrapper.** Create `src/study_tutor/knowledge/graphiti_client.py`. Follow the specialist-agent pattern: lazy import of graphiti-core, fail gracefully if unavailable (logged warning, return None from queries), typed exception surface. Copy the lazy-import shape from `specialist-agent/src/specialist_agent/tools/graphiti_client.py`. *(→ TASK-GSM-003)*
 
-7. **Implement the query helpers.** Three functions per the scope doc: `get_student_state`, `get_topic_recommendations`, `record_session_completion`. Each ≤50 lines. Unit tests mock Graphiti responses; integration tests hit the real Synology FalkorDB.
+   **Promoted to its own slice in FEAT-1773:** the **shared async fire-and-forget write helper** (CC-13 / DDR-002 single call site) is TASK-GSM-004. The original sketch implicitly bundled this with the query helpers; the planned decomposition makes it auditable on its own (one greppable `add_episode` call site, prompt-injection sanitisation for misconception text, shutdown-grace `drain()`).
 
-8. **First commit of the day.** "Phase 1 Saturday: latency spike + Phase 0 validation + student model schema + Graphiti client wrapper."
+7. **Implement the query helpers.** Three functions per the scope doc: `get_student_state`, `get_topic_recommendations`, `record_session_completion`. Each ≤50 lines. Unit tests mock Graphiti responses; integration tests hit the real Synology FalkorDB. *(→ TASK-GSM-005)*
+
+8. **First commit of the day.** "Phase 1 Saturday: latency spike + Phase 0 validation + student model schema + Graphiti client wrapper." *(commits will land per-task as `/feature-build` advances each wave)*
 
 #### Evening (2 hours) — Seeding
 
-9. **Write `scripts/seed_student_model.py`.** Creates Lilymay's Student entity, her Subject/Text/Topic entities for AQA 8700 + 8702, initial TopicConfidence entries (human-estimated), AO1–AO6 AssessmentObjective entities.
+9. **Write `scripts/seed_student_model.py`.** Creates Lilymay's Student entity, her Subject/Text/Topic entities for AQA 8700 + 8702, initial TopicConfidence entries (human-estimated), AO1–AO6 AssessmentObjective entities. *(→ TASK-GSM-006, Wave 4)*
 
-10. **Run the seeding script against Synology FalkorDB.** Verify with a direct query (via Graphiti MCP tool in Claude Desktop or a CLI): `search_nodes(query="Lilymay", group_ids=["student:lilymay"])` returns the Student entity with expected attributes.
+10. **Run the seeding script against Synology FalkorDB.** Verify with a direct query (via Graphiti MCP tool in Claude Desktop or a CLI): `search_nodes(query="Lilymay", group_ids=["student:lilymay"])` returns the Student entity with expected attributes. *(seeding script's post-seed verification gate calls `get_student_state(client, "lilymay")` and exits non-zero if the seed didn't land)*
 
 11. **Commit seeding.** Do not commit the seeding script's runtime output — seeding happens once per environment.
 

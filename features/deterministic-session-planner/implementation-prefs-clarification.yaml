@@ -1,0 +1,128 @@
+# Implementation Preferences Clarification
+# Feature: Deterministic Session Planner (FEAT-PH1-002)
+# Context type: implementation_prefs
+# Recorded: 2026-04-29
+
+clarification_context:
+  context_type: implementation_prefs
+  feature_id: FEAT-PH1-002
+  feature_title: "Deterministic Session Planner"
+  complexity: 7
+  mode: full
+  timestamp: "2026-04-29T00:00:00Z"
+  user_override: null
+
+  explicit_decisions:
+
+    - question_id: approach_selection
+      question_number: 1
+      category: architecture
+      question_text: >
+        Which implementation approach should be used for the rule evaluation
+        pipeline?
+      answer: "1"
+      answer_display: >
+        Option A — Sequential short-circuit pipeline of typed Rule objects
+        (recommended)
+      default_used: false
+      rationale: >
+        User explicitly selected Option A: a sequential short-circuit pipeline
+        of typed Rule objects. Each rule is a first-class object evaluated in
+        order (1 -> 3 -> 4 -> 6); the first non-None result short-circuits the
+        remaining rules. This is the recommended option and aligns with the
+        deterministic, testable design goal of FEAT-PH1-002.
+
+    - question_id: parallelization
+      question_number: 2
+      category: performance
+      question_text: >
+        Should the Graphiti read calls (get_student_state,
+        get_topic_recommendations) be parallelised or sequential?
+      answer: "D"
+      answer_display: "Detect automatically (respects wave structure)"
+      default_used: false
+      rationale: >
+        User selected D (Detect automatically). The implementation should
+        inspect the read dependency graph and parallelise where safe to do so,
+        honouring the wave structure already established in FEAT-PH1-001.
+        Measured read latency is <0.2s total so parallelisation is an
+        optimisation, not a correctness requirement — the auto-detect option
+        leaves the decision to the implementing agent.
+
+    - question_id: workspace_naming
+      question_number: 3
+      category: conventions
+      question_text: >
+        How should worktree / workspace identifiers be named for this feature's
+        subtasks?
+      answer: "A"
+      answer_display: >
+        Auto-generated deterministic names
+        (e.g. deterministic-session-planner-wave1-1)
+      default_used: false
+      rationale: >
+        User selected A (Auto-generated). Workspace names follow the
+        deterministic slug pattern: {feature-slug}-wave{n}-{task-index}.
+        Example: deterministic-session-planner-wave1-1.
+
+    - question_id: constraints
+      question_number: 4
+      category: constraints
+      question_text: >
+        Are there any tasks that should be held back or treated as blocked
+        pending external sign-offs or assumption resolution?
+      answer: "N"
+      answer_display: "None — all tasks unblocked"
+      default_used: false
+      rationale: >
+        User confirmed N (None). All 7 planned subtasks are unblocked.
+        The three assumptions that previously carried medium confidence and
+        could have prompted a [D]efer have now been fully resolved with
+        measured data:
+          ASSUM-006: 2s MCP handler budget confirmed — Graphiti reads
+            complete in <0.2s (search_nodes median 0.07s,
+            search_memory_facts median 0.08s), leaving >1.8s headroom.
+          ASSUM-007: 5s student-model read timeout trivially satisfied —
+            25x headroom over the measured <0.2s read time.
+          ASSUM-008: SessionCompletedEpisode.topics_covered: list[str]
+            field is implemented in TASK-GSM-002 (FEAT-PH1-001).
+            Cross-feature contract locked.
+
+  assumed_defaults: []
+
+  not_applicable: []
+
+  total_questions: 4
+  answered_count: 4
+  skipped_count: 0
+  deferred_count: 0
+
+  assumption_sign_offs:
+    - id: ASSUM-006
+      status: resolved
+      method: measured-data
+      evidence: >
+        search_nodes median = 0.07s, search_memory_facts median = 0.08s;
+        total read <0.2s; 2s outer guard is the binding constraint as designed.
+      signed_off_at: "2026-04-29"
+    - id: ASSUM-007
+      status: resolved
+      method: measured-data
+      evidence: >
+        Same measured read time (<0.2s) gives 25x headroom against 5s timeout.
+      signed_off_at: "2026-04-29"
+    - id: ASSUM-008
+      status: resolved
+      method: implementation-evidence
+      evidence: >
+        TASK-GSM-002 implements SessionCompletedEpisode with
+        topics_covered: list[str] matching Topic.name strings.
+        Cross-feature contract locked.
+      signed_off_at: "2026-04-29"
+
+  summary: >
+    Sequential short-circuit Rule pipeline (Option A), auto-parallelisation
+    of Graphiti reads respecting wave structure, deterministic auto-generated
+    workspace names, zero blocked tasks. All three latency/contract assumptions
+    (ASSUM-006, ASSUM-007, ASSUM-008) resolved with measured data ahead of
+    implementation. Feature is clear to proceed to structure generation.

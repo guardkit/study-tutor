@@ -1,6 +1,6 @@
 ---
 id: TASK-GSM-001
-title: "Define Pydantic entities and relationships for the student model"
+title: Define Pydantic entities and relationships for the student model
 task_type: declarative
 parent_review: TASK-REV-7DC0
 feature_id: FEAT-1773
@@ -8,12 +8,38 @@ wave: 1
 implementation_mode: direct
 complexity: 3
 estimated_minutes: 90
-status: backlog
+status: in_review
 priority: high
-created: 2026-04-27T00:00:00Z
-updated: 2026-04-27T00:00:00Z
+created: 2026-04-27 00:00:00+00:00
+updated: 2026-04-27 00:00:00+00:00
 dependencies: []
-tags: [graphiti, student-model, schema, pydantic, declarative]
+tags:
+- graphiti
+- student-model
+- schema
+- pydantic
+- declarative
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773
+  base_branch: main
+  started_at: '2026-04-29T16:11:30.550815'
+  last_updated: '2026-04-29T16:17:57.291756'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-29T16:11:30.550815'
+    player_summary: Created src/study_tutor/knowledge/student_model.py with the seven
+      Pydantic v2 BaseModel entity classes (Student, Subject, Text, Topic, AssessmentObjective,
+      Misconception, TopicConfidence), the six relationship-name string constants
+      (STUDIES, WORKING_ON, HAS_TEXT, COVERS, ASSESSED_BY, HAS_CONFIDENCE), and the
+      three group-id constants (STUDENT_GROUP_PREFIX='student:', SUBJECT_GROUP_PREFIX='subject:',
+      FLEET_GROUP_ID='fleet:appmilla'). Added confidence_band_for(percentage:int)->str
+      helper using a de
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Define Pydantic entities and relationships for the student model

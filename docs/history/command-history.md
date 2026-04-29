@@ -1771,7 +1771,175 @@ Pass to feature-plan:
     --context features/graphiti-student-model/graphiti-student-model_summary.md
 
 
+ FEATURE PLANNING COMPLETE
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE: Graphiti Student Model (FEAT-PH1-001)
+FEATURE ID: FEAT-1773
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Created
+📁 tasks/backlog/graphiti-student-model/
+
+README.md
+IMPLEMENTATION-GUIDE.md — data flow + sequence + dependency diagrams + §4 Integration Contracts + risk register + conformance tests
+6 subtask markdown files with task_type, parent_review, feature_id, wave, implementation_mode, consumer_context, and seam test stubs
+📁 .guardkit/features/FEAT-1773.yaml — AutoBuild-ready, with smoke_gates block (after_wave_1..4) including the CC-13 single-call-site audit between Wave 2 and Wave 3
+
+📁 tasks/in_review/TASK-REV-7DC0-plan-graphiti-student-model.md — review task moved with decision: implement recorded
+
+📁 features/graphiti-student-model/graphiti-student-model.feature — 38/38 scenarios tagged:
+
+16 → TASK-GSM-004 (async helper, the load-bearing slice)
+13 → TASK-GSM-005 (query helpers)
+5 → TASK-GSM-001 (entities)
+2 → TASK-GSM-006 (seeding)
+1 → TASK-GSM-002 (episodes)
+1 → TASK-GSM-003 (client wrapper)
+Wave Structure
+
+Wave 1 (parallel): TASK-GSM-001 (entities) + TASK-GSM-002 (episodes)
+Wave 2 (parallel): TASK-GSM-003 (client) + TASK-GSM-004 (async helper)
+Wave 3 (single):   TASK-GSM-005 (query helpers)
+Wave 4 (single):   TASK-GSM-006 (seeding script)
+Total work: 9.5h · With parallelism: ~7.5h elapsed
+
+Run It
+
+/feature-build FEAT-1773      # autonomous AutoBuild
+# or per-task:
+/task-work TASK-GSM-001        # start with Wave 1
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-1773 --verbose 
+
+
+
+/feature-spec "Deterministic Session Planner — SessionPlan type, rules 1/3/4 implemented, MCP integration" \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/phase-1-build-plan.md \
+  --context src/study_tutor/knowledge/student_model.py \
+  --context src/study_tutor/mcp/adapter.py
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE SPEC COMPLETE: Deterministic Session Planner
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files written:
+  features/deterministic-session-planner/deterministic-session-planner.feature
+  features/deterministic-session-planner/deterministic-session-planner_assumptions.yaml
+  features/deterministic-session-planner/deterministic-session-planner_summary.md
+
+Scenarios: 29 total
+  @key-example: 7   @boundary: 6
+  @negative: 6      @edge-case: 11
+  @smoke: 4         @regression: 0
+
+Assumptions: 8 total
+  high: 2 (auto-proceed)
+  medium: 6 (Coach review recommended)
+  low: 0
+
+Deferred: 0 scenario groups
+
+Next steps:
+  Review: features/deterministic-session-planner/deterministic-session-planner.feature
+  Pass to feature-plan:
+    /feature-plan "Deterministic Session Planner" \
+      --context features/deterministic-session-planner/deterministic-session-planner_summary.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+/feature-plan "Deterministic Session Planner" \
+      --context features/deterministic-session-planner/deterministic-session-planner_summary.md
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ FEATURE PLANNING COMPLETE — FEAT-PH1-002 Deterministic Session Planner
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Artefacts Created
+Path	Contents
+.guardkit/features/FEAT-PH1-002.yaml	Structured feature file. 7 tasks, 6 waves, smoke_gates configured. AutoBuild-ready.
+.guardkit/reviews/TASK-REV-DA72-review-report.md	Decision-mode review (463 lines): 4 options, recommendation, risks, gap analysis, subtask breakdown.
+tasks/in_review/TASK-REV-DA72-plan-deterministic-session-planner.md	Review task, status review_complete, frontmatter records sign-offs.
+tasks/backlog/deterministic-session-planner/README.md	Feature README.
+tasks/backlog/deterministic-session-planner/IMPLEMENTATION-GUIDE.md	Full guide with 3 mandatory Mermaid diagrams (data flow, integration contracts, task dependency graph) + §4 contracts + sign-off block + smoke gates documentation.
+tasks/backlog/deterministic-session-planner/TASK-DSP-001..007	7 task files with task_type, parent_review, feature_id, consumer_context (where applicable), and seam tests.
+features/deterministic-session-planner/deterministic-session-planner.feature	All 29 scenarios now carry @task:TASK-DSP-XXX tags — R2 BDD oracle activated.
+features/deterministic-session-planner/deterministic-session-planner_assumptions.yaml	Updated with verbatim sign-off wordings for ASSUM-006/007/008.
+Summary
+Approach: Option A — Sequential short-circuit pipeline of typed Rule objects (Strategy pattern). Determinism enforced structurally via injected clock + seeded random.Random.
+7 tasks across 6 waves, ~14h wave-parallel ceiling. Wave 3 has TASK-DSP-003 + TASK-DSP-004 in parallel (auto-named Conductor workspaces deterministic-session-planner-wave3-1/2).
+All 29 BDD scenarios tagged at confidence 0.83–0.93 (zero below threshold, zero already tagged).
+Pre-flight validation green: no schema errors, no parallel-group conflicts, smoke_gates active for waves 5 & 6 (pytest -m "feat-ph1-002 and smoke").
+All sign-offs resolved with measured data: ASSUM-006 (2s budget) + ASSUM-007 (5s read timeout) — both confirmed against the 0.07s/0.08s Graphiti read medians (28×–25× headroom). ASSUM-008 (SessionCompletedEpisode.topics_covered: list[str]) — locked against TASK-GSM-002.
+Next Step
+
+/feature-build FEAT-PH1-002
+or, manually:
+
+
+/task-work TASK-DSP-001
+Two minor side effects worth noting: I had to collapse two multi-line And steps in the feature Background (the Gherkin parser doesn't accept continuation lines), and the feature YAML's smoke_gates schema accepts a single SmokeGates object (not the after_wave_N: [commands] form documented in feature-plan.md) — so smoke gates fire after waves 5 & 6 with one shared pytest invocation rather than per-wave shell commands.
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-PH1-002 --verbose
 
 
 
 
+
+
+/feature-spec "DeepAgents Tutoring Loop with Coach — Player-Coach integration, Coach rubric, session-end summary, async Graphiti write-back" \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/phase-1-build-plan.md \
+  --context roles/tutor/prompts/coach.md \
+  --context /Users/richardwoollcott/Projects/appmilla_github/agentic-dataset-factory/agents/coach.py \
+  --context src/study_tutor/mcp/adapter.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE SPEC COMPLETE: DeepAgents Tutoring Loop with Coach
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files written:
+  features/deepagents-tutoring-loop/deepagents-tutoring-loop.feature
+  features/deepagents-tutoring-loop/deepagents-tutoring-loop_assumptions.yaml
+  features/deepagents-tutoring-loop/deepagents-tutoring-loop_summary.md
+
+Scenarios: 39 total
+  @key-example: 8     @boundary: 8
+  @negative: 7        @edge-case: 16
+  @smoke: 5           @regression: 0
+
+Assumptions: 11 total
+  high: 5 (auto-proceed)
+  medium: 4 (Coach review recommended)
+  low: 2 (human review required)
+
+REVIEW REQUIRED: 2 low-confidence assumptions need verification
+  - ASSUM-006: Coach reasoning behaviour beyond the 200-word cap
+  - ASSUM-011: Shutdown grace window (5 seconds) for in-flight Graphiti writes
+  See: features/deepagents-tutoring-loop/deepagents-tutoring-loop_assumptions.yaml
+
+Deferred: 0 scenario groups
+
+Anchor decisions honoured:
+  DDR-002, DDR-003, CC-13 / ADR-ARCH-019, D5 (Coach evaluation-only),
+  Two-provider invariant (enforced at construction)
+
+Next steps:
+  Review: features/deepagents-tutoring-loop/deepagents-tutoring-loop.feature
+  Pass to feature-plan:
+    /feature-plan "DeepAgents Tutoring Loop with Coach" \
+      --context features/deepagents-tutoring-loop/deepagents-tutoring-loop_summary.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Note on @task: tags — I used placeholder IDs TASK-DTL-001..005 matching the natural slice boundaries (Coach factory, rubric+verifier, loop+revision, async writes, session-end). /feature-plan Step 11 (bdd-linker) will replace these with the real task IDs once the subtasks are generated.
+
+
+
+
+
+
+
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-1773 --verbose 

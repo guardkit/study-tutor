@@ -1,6 +1,6 @@
 ---
 id: TASK-GSM-006
-title: "Write Lilymay baseline seeding script"
+title: Write Lilymay baseline seeding script
 task_type: scaffolding
 parent_review: TASK-REV-7DC0
 feature_id: FEAT-1773
@@ -8,29 +8,60 @@ wave: 4
 implementation_mode: direct
 complexity: 3
 estimated_minutes: 60
-status: backlog
+status: in_review
 priority: high
-created: 2026-04-27T00:00:00Z
-updated: 2026-04-27T00:00:00Z
+created: 2026-04-27 00:00:00+00:00
+updated: 2026-04-27 00:00:00+00:00
 dependencies:
-  - TASK-GSM-005
-tags: [graphiti, seeding, scaffolding, lilymay, idempotent]
+- TASK-GSM-005
+tags:
+- graphiti
+- seeding
+- scaffolding
+- lilymay
+- idempotent
 consumer_context:
-  - task: TASK-GSM-003
-    consumes: GraphitiClient
-    framework: "graphiti-core async client"
-    driver: "graphiti-core"
-    format_note: "Script obtains a real client via get_client(config) and exits non-zero if client is None (seeding is not a degradation path — it must run against a real Synology FalkorDB)"
-  - task: TASK-GSM-004
-    consumes: SharedAsyncWriteHelper
-    framework: "asyncio fire-and-forget"
-    driver: "asyncio"
-    format_note: "Seed writes use helper.schedule_write(..., flush_id='SEED'); script awaits helper.drain() before exit to ensure all seed writes land before the script returns"
-  - task: TASK-GSM-005
-    consumes: StudentModelQueries
-    framework: "knowledge.queries"
-    driver: "study_tutor"
-    format_note: "After seeding, script calls get_student_state(client, 'lilymay') as a verification gate; non-empty StudentState confirms the seed landed"
+- task: TASK-GSM-003
+  consumes: GraphitiClient
+  framework: graphiti-core async client
+  driver: graphiti-core
+  format_note: "Script obtains a real client via get_client(config) and exits non-zero\
+    \ if client is None (seeding is not a degradation path \u2014 it must run against\
+    \ a real Synology FalkorDB)"
+- task: TASK-GSM-004
+  consumes: SharedAsyncWriteHelper
+  framework: asyncio fire-and-forget
+  driver: asyncio
+  format_note: Seed writes use helper.schedule_write(..., flush_id='SEED'); script
+    awaits helper.drain() before exit to ensure all seed writes land before the script
+    returns
+- task: TASK-GSM-005
+  consumes: StudentModelQueries
+  framework: knowledge.queries
+  driver: study_tutor
+  format_note: After seeding, script calls get_student_state(client, 'lilymay') as
+    a verification gate; non-empty StudentState confirms the seed landed
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773
+  base_branch: main
+  started_at: '2026-04-29T17:13:17.284417'
+  last_updated: '2026-04-29T17:24:44.042888'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-29T17:13:17.284417'
+    player_summary: "Built scripts/seed_student_model.py as the one-off Lilymay baseline\
+      \ seeding script. Key design decisions:\n\n1. CC-13 single-call-site: every\
+      \ write \u2014 Student, Subject, Text, AO, Topic, and TopicConfidence \u2014\
+      \ is dispatched through GraphitiWriteHelper.schedule_write with flush_id='SEED'.\
+      \ The script never touches add_episode directly. To route entity baselines through\
+      \ the existing helper, I added a new SeedBaselineEpisode class (and extended\
+      \ the EpisodeKind Literal to include 'seed_baseline') in src/s"
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Write Lilymay baseline seeding script

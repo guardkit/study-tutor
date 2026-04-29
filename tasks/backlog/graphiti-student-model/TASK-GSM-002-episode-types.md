@@ -1,6 +1,6 @@
 ---
 id: TASK-GSM-002
-title: "Define Pydantic episode types for student-model write paths"
+title: Define Pydantic episode types for student-model write paths
 task_type: declarative
 parent_review: TASK-REV-7DC0
 feature_id: FEAT-1773
@@ -8,18 +8,44 @@ wave: 1
 implementation_mode: direct
 complexity: 2
 estimated_minutes: 30
-status: backlog
+status: in_review
 priority: high
-created: 2026-04-27T00:00:00Z
-updated: 2026-04-27T00:00:00Z
+created: 2026-04-27 00:00:00+00:00
+updated: 2026-04-27 00:00:00+00:00
 dependencies: []
-tags: [graphiti, episodes, schema, pydantic, declarative]
+tags:
+- graphiti
+- episodes
+- schema
+- pydantic
+- declarative
 consumer_context:
-  - task: TASK-GSM-001
-    consumes: PydanticEntities
-    framework: "Pydantic v2 (BaseModel)"
-    driver: "pydantic"
-    format_note: "Episode payloads reference Topic / Misconception / Student / Subject types from student_model.py — type-only imports, no runtime coupling"
+- task: TASK-GSM-001
+  consumes: PydanticEntities
+  framework: Pydantic v2 (BaseModel)
+  driver: pydantic
+  format_note: "Episode payloads reference Topic / Misconception / Student / Subject\
+    \ types from student_model.py \u2014 type-only imports, no runtime coupling"
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773
+  base_branch: main
+  started_at: '2026-04-29T16:11:30.550247'
+  last_updated: '2026-04-29T16:17:09.223673'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-29T16:11:30.550247'
+    player_summary: 'Created src/study_tutor/knowledge/episodes.py with EpisodeBase(BaseModel)
+      plus three concrete subclasses: SessionCompletedEpisode (F3), TopicConfidenceUpdatedEpisode
+      (F2), MisconceptionObservedEpisode (F1). Each subclass pins episode_kind to
+      a single Literal value matching the scope-doc spec exactly, and overrides to_graphiti_episode_body()
+      to project the payload into a deterministic natural-language string using f-strings
+      + datetime.isoformat() + comma-joined lists. EpisodeBase uses ConfigDict('
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Define Pydantic episode types for student-model write paths
