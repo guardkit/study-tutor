@@ -44,3 +44,21 @@ Claude Desktop spawns MCP servers with an unpredictable working directory.
 
 Stdout is reserved for MCP JSON-RPC (SR-01); all banners and logs go to
 stderr.
+
+## Pinning policy
+
+When changing `requires-python` or any LangChain ecosystem pin in
+`pyproject.toml`, see:
+
+- **`docs/architecture/decisions/ADR-ARCH-020-langchain-1x-pinning-and-py314-alignment.md`**
+  — the verified-versions table and the rationale for each cap, with
+  empirical evidence from a Python 3.14 install + test run.
+- **`appmilla_github/guardkit/docs/guides/portfolio-python-pinning.md`**
+  — the portfolio-wide guidance on why `requires-python` should not have a
+  closed upper bound (origin incident: TASK-REV-FA04, the 33-minute
+  autobuild stall caused by a stale `<3.13` cap excluding the active
+  `/usr/local/bin/python3` 3.14).
+
+Short version: open upper bound on Python; coherent same-major caps on
+the LangChain ecosystem; verified versions table lives in the ADR and
+gets updated when floors are lifted.
