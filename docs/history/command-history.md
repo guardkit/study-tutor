@@ -1939,6 +1939,66 @@ Note on @task: tags — I used placeholder IDs TASK-DTL-001..005 matching the na
 
 
 
+/feature-plan "DeepAgents Tutoring Loop with Coach" \
+      --context features/deepagents-tutoring-loop/deepagents-tutoring-loop_summary.md
+
+
+FEATURE PLANNING COMPLETE — FEAT-PH1-003
+DeepAgents Tutoring Loop with Coach
+
+Generated artefacts
+
+📁 tasks/backlog/deepagents-tutoring-loop/
+   ├── README.md
+   ├── IMPLEMENTATION-GUIDE.md       (4 mandatory Mermaid diagrams + §4 contracts)
+   ├── TASK-DTL-001-coach-factory-structural-invariants.md          [Wave 1, complexity 5]
+   ├── TASK-DTL-002-rubric-and-quote-fidelity.md                    [Wave 2, complexity 6]
+   ├── TASK-DTL-003-orchestrator-revision-loop-concurrency.md       [Wave 2, complexity 7]
+   ├── TASK-DTL-004-async-write-helper-consumer-misconceptions.md   [Wave 1, complexity 5]
+   └── TASK-DTL-005-session-end-summary-f3-emit-lifecycle.md        [Wave 3, complexity 6]
+
+📁 .guardkit/features/FEAT-PH1-003.yaml
+   • 5 tasks, 3 waves, smoke_gates wired (after_wave: [3])
+   • AC-quality review: 0 unverifiable criteria
+
+📁 .guardkit/reviews/TASK-REV-DTL3-review-report.md
+   • 4 options evaluated, Option A recommended (9.4/10)
+   • ASSUM-006 + ASSUM-011 resolutions documented
+
+📁 tasks/in_review/TASK-REV-DTL3-... (review task moved, status: review_complete)
+Wave Execution
+
+Wave 1 (parallel-safe):  TASK-DTL-001 ‖ TASK-DTL-004
+Wave 2 (parallel-safe):  TASK-DTL-002 ‖ TASK-DTL-003
+Wave 3 (sequential):     TASK-DTL-005
+Effort: 22-28h sequential / ~14h elapsed with parallel waves
+Smoke gate: pytest -m "feat-ph1-003 and smoke" -x --no-cov after Wave 3
+BDD linker (Step 11): skipped — .feature already carries @task:TASK-DTL-NNN tags matching the canonical IDs we generated
+
+Anchors honoured
+DDR-002 (Coach owns F1, handler owns F2/F3, single helper) · DDR-003 (session.completed emits before F3 task scheduled) · CC-13 (fire-and-forget) · D5 (Coach tools=[], structural enforcement) · two-provider invariant · 30s p95 turn budget · 2s session-end budget · I-T6 zero-turn guard
+
+Resolved low-confidence assumptions
+ASSUM-006 → record reasoning in full + reasoning_long: bool = True flag (no truncation, no rejection)
+ASSUM-011 → GRAPHITI_DRAIN_WINDOW = 5.0 constant on TASK-GSM-004 helper (consumed via default by TASK-DTL-005)
+Cross-feature dependency to confirm
+⚠️ TASK-GSM-004 (shared async write helper) must expose: write_misconception(...), write_session_episode(...), and drain(timeout=GRAPHITI_DRAIN_WINDOW). See §4 Integration Contracts for the consumer expectations.
+
+Next steps
+Review the data-flow diagram (§2) — most important artefact.
+Confirm TASK-GSM-004's helper surface against §4 contracts.
+Begin Wave 1: /task-work TASK-DTL-001 ‖ /task-work TASK-DTL-004.
+Or autonomously: /feature-build FEAT-PH1-003.
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-PH1-003 --verbose 
+
+
+
+
+
+
+
 
 
 

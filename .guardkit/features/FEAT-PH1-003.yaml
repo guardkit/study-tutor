@@ -1,0 +1,87 @@
+id: FEAT-PH1-003
+name: DeepAgents Tutoring Loop with Coach
+description: 'Phase 1 Player-Coach evaluation loop (FEAT-PH1-003): Coach AsyncSubAgent
+  factory with structural invariants (D5, two-provider, no-tools, non-empty prompt),
+  six-criterion weighted rubric with quote-fidelity integration, bounded Player-Coach
+  orchestrator with revision policy, per-misconception fire-and-forget Graphiti writes
+  (DDR-002 F1), session-end summary with session.completed emit ordering (DDR-003)
+  and F3 episode write, lifecycle race resolution and shutdown drain integration.'
+created: '2026-04-29T17:49:44.764911'
+status: planned
+complexity: 7
+estimated_tasks: 5
+tasks:
+- id: TASK-DTL-001
+  name: Coach factory and structural invariants
+  file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-001-coach-factory-structural-invariants.md
+  complexity: 5
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-DTL-002
+  name: Coach rubric scoring and quote-fidelity integration
+  file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-002-rubric-and-quote-fidelity.md
+  complexity: 6
+  dependencies:
+  - TASK-DTL-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 90
+- id: TASK-DTL-003
+  name: Player-Coach orchestrator with bounded revision loop and concurrency isolation
+  file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-003-orchestrator-revision-loop-concurrency.md
+  complexity: 7
+  dependencies:
+  - TASK-DTL-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 120
+- id: TASK-DTL-004
+  name: Async write helper consumer for per-misconception writes (F1)
+  file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-004-async-write-helper-consumer-misconceptions.md
+  complexity: 5
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-DTL-005
+  name: Session-end summary, F3 episode write, session.completed emit, lifecycle race,
+    and shutdown drain
+  file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-005-session-end-summary-f3-emit-lifecycle.md
+  complexity: 6
+  dependencies:
+  - TASK-DTL-003
+  - TASK-DTL-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 90
+orchestration:
+  parallel_groups:
+  - - TASK-DTL-001
+    - TASK-DTL-004
+  - - TASK-DTL-002
+    - TASK-DTL-003
+  - - TASK-DTL-005
+  estimated_duration_minutes: 450
+  recommended_parallel: 2
+smoke_gates:
+  # R3 feature-level smoke oracle (TASK-SMK-F703A schema).
+  # Fires AFTER wave 3, when tutor_session_end is wired end-to-end and
+  # the @smoke scenarios become runnable.
+  # The 5 @smoke scenarios in deepagents-tutoring-loop.feature exercise:
+  #   1. First-attempt accept (TASK-DTL-003 + TASK-DTL-001)
+  #   2. Below-threshold → revision → accept (TASK-DTL-003 + TASK-DTL-002)
+  #   3. Misconception persisted without blocking turn return (TASK-DTL-004 + DDR-002)
+  #   4. Session-end produces SessionCompletedEpisode (TASK-DTL-005)
+  #   5. session.completed emit ordering vs F3 (TASK-DTL-005 + DDR-003)
+  # Per-task Coach approval cannot see these compositions.
+  after_wave: [3]
+  command: pytest -m "feat-ph1-003 and smoke" -x --no-cov
+  expected_exit: 0
+  timeout: 60
