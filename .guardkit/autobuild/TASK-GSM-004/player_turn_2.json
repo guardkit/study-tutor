@@ -1,0 +1,215 @@
+{
+  "task_id": "TASK-GSM-004",
+  "turn": 2,
+  "files_modified": [
+    ".claude/task-plans/TASK-GSM-003-implementation-plan.md",
+    ".claude/task-plans/TASK-GSM-004-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GSM-001/checkpoints.json",
+    ".guardkit/autobuild/TASK-GSM-003/checkpoints.json",
+    ".guardkit/autobuild/TASK-GSM-003/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-003/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-003/coach_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-003/coach_turn_3.json",
+    ".guardkit/autobuild/TASK-GSM-003/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GSM-003/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-003/player_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-003/player_turn_3.json",
+    ".guardkit/autobuild/TASK-GSM-003/specialist_results.json",
+    ".guardkit/autobuild/TASK-GSM-003/task_work_results.json",
+    ".guardkit/autobuild/TASK-GSM-003/turn_context.json",
+    ".guardkit/autobuild/TASK-GSM-003/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-003/turn_state_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-003/turn_state_turn_3.json",
+    ".guardkit/autobuild/TASK-GSM-004/checkpoints.json",
+    ".guardkit/autobuild/TASK-GSM-004/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-004/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-004/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GSM-004/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-004/specialist_results.json",
+    ".guardkit/autobuild/TASK-GSM-004/task_work_results.json",
+    ".guardkit/autobuild/TASK-GSM-004/turn_context.json",
+    ".guardkit/autobuild/TASK-GSM-004/turn_state_turn_1.json",
+    ".guardkit/bdd/TASK-GSM-003_junit.xml",
+    ".guardkit/bdd/TASK-GSM-004_junit.xml",
+    "features/conftest.py",
+    "features/graphiti-student-model/test_graphiti_student_model.py",
+    "src/study_tutor/knowledge/async_write.py",
+    "src/study_tutor/knowledge/graphiti_client.py",
+    "tasks/backlog/graphiti-student-model/TASK-GSM-003-graphiti-client-wrapper.md",
+    "tasks/backlog/graphiti-student-model/TASK-GSM-004-async-write-back-helper.md",
+    "tasks/design_approved/TASK-GSM-003-graphiti-client-wrapper.md",
+    "tasks/design_approved/TASK-GSM-004-async-write-back-helper.md",
+    "tests/unit/knowledge/test_async_write.py",
+    "tests/unit/knowledge/test_graphiti_client.py"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-GSM-004/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/.guardkit/autobuild/TASK-GSM-004/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/features/graphiti-student-model/test_graphiti_student_model.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/features/graphiti-student-model/test_graphiti_student_model.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "All 14 acceptance criteria continue to be verified by the unit suite (37/37 passing)",
+    "BDD gate now passes: 16/16 @task:TASK-GSM-004 scenarios pass cleanly via pytest-bdd",
+    "CC-13 single-call-site audit still passes (one match, in async_write.py)",
+    "Handler-budget conformance still passes (synthetic handler returns < 2s under hanging mock)"
+  ],
+  "requirements_remaining": [
+    "Integration tests against a live FalkorDB (gated; deferred per scope)",
+    "FalkorDB-gated security smoke test for cross-learner entity isolation (gated; deferred per scope)"
+  ],
+  "sdk_turns_used": 49,
+  "sdk_max_turns": 160,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 210,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "GraphitiWriteHelper constructable with client=None; schedule_write returns None and logs no error when client is None",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. GraphitiWriteHelper.__init__ accepts client: GraphitiClientLike | None and short-circuits at the top of schedule_write. TestNoneClient::test_returns_none_and_logs_no_error asserts both no return value and zero WARNING/ERROR log records. Re-run: 37/37 unit tests pass.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "schedule_write returns an asyncio.Task for valid input + non-None client",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. schedule_write builds an asyncio.create_task wrapping _perform_write and returns it. TestScheduleWriteValid::test_returns_asyncio_task asserts isinstance(task, asyncio.Task) and that exactly one add_episode call is made on the fake client.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Caller-facing schedule_write returns in < 50ms even when the eventual add_episode would take 80s+ (no await in the dispatcher path)",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. schedule_write is synchronous and only calls asyncio.create_task; no await in its body. TestFireAndForget::test_dispatcher_returns_under_50ms_with_hanging_mock measures elapsed wall-clock time with a mock that sleeps 80s and asserts < 0.05s.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "_perform_write catches BaseException, emits graphiti_write_failed log line with error_class, and returns None \u2014 never raises",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. _perform_write wraps the underlying call in try/except BaseException and emits a structured log line containing event=graphiti_write_failed and error_class. TestPerformWriteFailure::test_failure_is_logged_and_swallowed mocks add_episode to raise RuntimeError, awaits the task without raising, and asserts the failed log + correct error_class.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "sanitise_misconception_text truncates strings > 500 chars",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. sanitise_misconception_text appends TRUNCATION_SUFFIX once length exceeds MAX_MISCONCEPTION_TEXT_LENGTH. TestSanitiseMisconceptionText::test_truncates_oversized_input_within_cap exercises the 1000-char input path and asserts len(result) <= 500 and the truncation suffix.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "sanitise_misconception_text strips ASCII control chars except \\n, \\t",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. _CONTROL_CHARS_PATTERN matches \\x00-\\x08, \\x0B-\\x0C, \\x0E-\\x1F (excluding \\t=0x09 and \\n=0x0A). TestSanitiseMisconceptionText::test_strips_ascii_control_chars_except_tab_and_newline asserts \\x00, \\x01, \\x1F are stripped while \\n and \\t are preserved.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "Texts matching (?i)(ignore previous|system:|<\\|.*\\|>|\\[INST\\]) are dropped (log line graphiti_write_dropped_injection); no add_episode call is made",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. schedule_write catches the ValueError raised by sanitise_misconception_text on injection match and emits event=graphiti_write_dropped_injection without scheduling a task. TestMisconceptionPath::test_injection_payload_is_dropped_with_log asserts task is None, the log line is present, and FakeClient.calls is empty. Parameterised TestSanitiseMisconceptionText::test_rejects_coarse_injection_patterns covers all four pattern families. Plus, BDD scenario 'A misconception observation containing instruction-like text is recorded as data, not interpreted as a directive' now passes via test_graphiti_student_model.py.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "Empty group_ids is rejected (log line graphiti_write_dropped_invalid)",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. _validate_group_ids raises ValueError when the list is empty; schedule_write catches it and logs graphiti_write_dropped_invalid. TestValidation::test_empty_group_ids_rejected asserts the rejection + log + no add_episode call.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "Group-ids not matching the three prefix patterns are rejected",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. _validate_group_ids requires each id to start with STUDENT_GROUP_PREFIX, SUBJECT_GROUP_PREFIX, or equal FLEET_GROUP_ID. Parameterised TestValidation::test_malformed_group_id_rejected covers wrong-prefix, no-prefix, wrong-fleet-constant, and empty-string cases.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "drain() awaits all in-flight tasks up to shutdown_grace_sec; returns (succeeded, abandoned) counts; emits graphiti_write_abandoned_at_shutdown for each unfinished task",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. drain() takes a snapshot of in-flight tasks, awaits via asyncio.wait with float(budget) timeout, and emits per-task abandoned log lines using cached metadata. TestDrain::test_drain_counts_succeeded_and_abandoned schedules 3 fast + 2 hanging tasks with shutdown_grace_sec=1 and asserts (3, 2). TestDrain::test_abandoned_tasks_emit_log_line asserts the log line for the hanging case. BDD scenario 'Pending background writes are awaited at process shutdown up to a bounded grace period' now also passes.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-011",
+      "criterion_text": "GRAPHITI_SHUTDOWN_GRACE_SEC env var overrides the default shutdown_grace_sec",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. _resolve_default_grace_sec reads GRAPHITI_SHUTDOWN_GRACE_ENV_VAR and falls back to DEFAULT_SHUTDOWN_GRACE_SEC. TestShutdownGraceEnvVar covers (a) default when unset, (b) env var override, (c) explicit arg wins over env, (d) non-int falls back, (e) non-positive falls back.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-012",
+      "criterion_text": "CC-13 conformance test: AST/grep audit asserts add_episode( appears in exactly one location (this module)",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. TestCC13SingleCallSite::test_add_episode_appears_exactly_once_in_src walks src/**/*.py with the regex add_episode\\s*\\(, asserts exactly one match, and asserts the file path ends with async_write.py. Verified to still hold after src/study_tutor/knowledge/graphiti_client.py was added by an external task \u2014 that module does not call add_episode( directly; the helper remains the sole call site.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-013",
+      "criterion_text": "Handler-budget conformance test: a tutor handler calling schedule_write returns within 2s when the underlying add_episode is mocked to hang for 80s",
+      "status": "complete",
+      "evidence": "Unchanged from Turn 1. TestHandlerBudget::test_synthetic_handler_returns_under_2s_with_hanging_mock wraps schedule_write in a synthetic async handler, runs it inside asyncio.wait_for(timeout=2.0) against a hanging fake client, and asserts the handler returns and elapsed < 2s. BDD scenario 'Recording a session completion returns within the handler budget even when persistence is slow' now also passes.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-014",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "All Python files use type hints, from __future__ import annotations, structured logging, no bare excepts. Project's full pytest suite (210 tests) and BDD subset (16 scenarios) execute cleanly. pyproject.toml does not declare ruff/black/mypy under tool sections; the de facto lint gate is pytest, which is green.",
+      "test_file": "tests/unit/knowledge/test_async_write.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/async_write.py",
+        "features/graphiti-student-model/test_graphiti_student_model.py"
+      ]
+    }
+  ]
+}

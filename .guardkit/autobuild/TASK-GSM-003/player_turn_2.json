@@ -1,0 +1,142 @@
+{
+  "task_id": "TASK-GSM-003",
+  "turn": 2,
+  "files_modified": [
+    ".claude/task-plans/TASK-GSM-003-implementation-plan.md",
+    ".claude/task-plans/TASK-GSM-004-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GSM-001/checkpoints.json",
+    ".guardkit/autobuild/TASK-GSM-003/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-003/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GSM-003/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-003/specialist_results.json",
+    ".guardkit/autobuild/TASK-GSM-003/task_work_results.json",
+    ".guardkit/autobuild/TASK-GSM-003/turn_context.json",
+    ".guardkit/autobuild/TASK-GSM-003/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-004/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-004/task_work_results.json",
+    ".guardkit/autobuild/TASK-GSM-004/turn_context.json",
+    ".guardkit/bdd/TASK-GSM-003_junit.xml",
+    ".guardkit/bdd/TASK-GSM-004_junit.xml",
+    "src/study_tutor/knowledge/async_write.py",
+    "src/study_tutor/knowledge/graphiti_client.py",
+    "tasks/backlog/graphiti-student-model/TASK-GSM-003-graphiti-client-wrapper.md",
+    "tasks/design_approved/TASK-GSM-003-graphiti-client-wrapper.md",
+    "tasks/design_approved/TASK-GSM-004-async-write-back-helper.md",
+    "tests/unit/knowledge/test_async_write.py",
+    "tests/unit/knowledge/test_graphiti_client.py"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-GSM-003/checkpoints.json",
+    ".guardkit/autobuild/TASK-GSM-003/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-003/player_turn_2.json",
+    ".guardkit/autobuild/TASK-GSM-004/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GSM-004/specialist_results.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/.guardkit/autobuild/TASK-GSM-003/player_turn_2.json"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001 module loads without graphiti-core",
+    "AC-002 get_client returns None on each degradation",
+    "AC-003 config rejects negative port and non-positive timeout",
+    "AC-004 healthcheck honours timeout_seconds (5s default)",
+    "AC-005 structured graphiti_client_degraded log on every degradation path",
+    "AC-006 close() is idempotent and None-safe",
+    "AC-007 docstring references specialist-agent lazy-import pattern",
+    "AC-008 ruff check + ruff format both clean on modified files",
+    "\u00a74 producer-side seam tests for PydanticEntities and GroupIdConstants"
+  ],
+  "requirements_remaining": [
+    "Integration tests against real Synology FalkorDB (gated on hardware availability \u2014 covered out-of-band, not by this turn)"
+  ],
+  "sdk_turns_used": 8,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 23,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Module imports successfully when graphiti-core is uninstalled (verified by integration test that runs in a venv without graphiti-core)",
+      "status": "complete",
+      "evidence": "graphiti_core import lives only inside _load_graphiti_core() (function body) \u2014 no top-level import. test_module_top_level_has_no_graphiti_core_import scans the source and fails on any top-level graphiti import. test_module_loads_in_subprocess_with_graphiti_core_absent launches a fresh python -c subprocess that pre-sets sys.modules['graphiti_core']=None (which causes any subsequent `import graphiti_core` to raise ImportError) and confirms study_tutor.knowledge.graphiti_client still imports cleanly and GraphitiConnectionConfig is constructible. Both pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "get_client() returns None (not raises) when graphiti-core is absent, FalkorDB is unreachable, or healthcheck times out",
+      "status": "complete",
+      "evidence": "get_client() implements the three documented degradation gates: (1) ImportError from _load_graphiti_core \u2192 log + return None; (2) any exception from FalkorDriver(...) or Graphiti(...) construction \u2192 log + return None; (3) healthcheck() returning False (timeout or driver exception) \u2192 log + close partial wrapper + return None. No exception escapes. Verified by test_get_client_returns_none_when_graphiti_core_import_fails (patches _load_graphiti_core to raise ImportError), test_get_client_returns_none_when_driver_construction_fails (driver_cls side_effect=ConnectionRefusedError), and test_get_client_returns_none_when_healthcheck_times_out (slow driver + 0.05s timeout). All three assert result is None and pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "GraphitiConnectionConfig rejects invalid values (negative port, non-positive timeout)",
+      "status": "complete",
+      "evidence": "GraphitiConnectionConfig uses pydantic Field constraints: falkor_port=Field(gt=0) (rejects 0 and negatives), timeout_seconds=Field(default=5.0, gt=0) (rejects 0 and negatives). model_config=ConfigDict(extra='forbid') rejects unknown fields. Verified by test_config_rejects_negative_port, test_config_rejects_zero_port, test_config_rejects_zero_timeout, test_config_rejects_negative_timeout, and test_config_rejects_extra_fields \u2014 all pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "healthcheck() honours timeout_seconds (5s default per ASSUM-005)",
+      "status": "complete",
+      "evidence": "GraphitiClient.healthcheck wraps the inner _ping() in asyncio.wait_for(..., timeout=self._config.timeout_seconds). Default timeout_seconds=5.0 matches ASSUM-005. Verified by test_config_default_timeout_matches_assum_005 (cfg.timeout_seconds == 5.0), test_healthcheck_respects_short_timeout (slow driver sleeping 0.5s with timeout_seconds=0.05 returns False well under 0.3s), and test_get_client_returns_none_when_healthcheck_times_out (covers the get_client() integration path).",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Structured log line on every degradation path: event=graphiti_client_degraded with error_class, falkor_host, degraded=true",
+      "status": "complete",
+      "evidence": "All degradation paths funnel through _log_degraded(error_class, host, *, latency_ms=None, error_message=None) which calls logger.warning with extra={event: 'graphiti_client_degraded', error_class, falkor_host, degraded: True, latency_ms?, error_message?}. EVENT_DEGRADED is a module constant. Tests assert these LogRecord attributes via getattr(rec, 'event', None) == mod.EVENT_DEGRADED, rec.error_class, rec.falkor_host, rec.degraded is True. Covered by test_get_client_returns_none_when_graphiti_core_import_fails, test_get_client_returns_none_when_driver_construction_fails, test_get_client_returns_none_when_healthcheck_times_out, and test_healthcheck_returns_false_when_driver_raises.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "close() is idempotent and safe to call when client is None",
+      "status": "complete",
+      "evidence": "GraphitiClient.close() short-circuits when self._inner is None. On the first real close it captures the inner reference, sets self._inner = None *before* awaiting (re-entrancy / concurrent-close safety), then calls inner.close() inside try/except so a raising shutdown cannot propagate. Verified by test_close_is_safe_when_inner_is_none (None inner, two close() calls, no exception), test_close_calls_inner_close_exactly_once_then_zeros_state (asserts inner.close.assert_awaited_once() across two close() calls and client_or_none is None), and test_close_swallows_inner_close_exceptions.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "Module docstring references the lazy-import pattern from specialist-agent",
+      "status": "complete",
+      "evidence": "The module docstring (lines 1-35 of src/study_tutor/knowledge/graphiti_client.py) explicitly cites both 'specialist-agent' (sibling repo) and the 'lazy import' pattern: 'This is the same shape used by the sibling specialist-agent repo's specialist_agent/tools/graphiti_client.py lazy-import pattern, which is the canonical reference for this module.' test_module_docstring_references_lazy_import_pattern asserts both substrings appear in the module __doc__.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Project uses ruff (presence confirmed by .ruff_cache/0.14.14 and global ruff 0.14.14 binary). Both files pass `ruff check src/study_tutor/knowledge/graphiti_client.py tests/unit/knowledge/test_graphiti_client.py` \u2192 'All checks passed!'. Both files also pass `ruff format --check ...` \u2192 '2 files already formatted' after running `ruff format` on this turn. Test suite still green: 23/23 in test_graphiti_client.py and 173/173 across the project after the format pass. There are no other linters in use (pyproject.toml has no [tool.ruff], [tool.black], [tool.mypy], [tool.flake8] sections; no .flake8, .pylintrc, setup.cfg, or .pre-commit-config.yaml files exist).",
+      "test_file": "tests/unit/knowledge/test_graphiti_client.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    }
+  ]
+}

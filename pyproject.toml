@@ -49,6 +49,20 @@ packages = ["src/study_tutor"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# ``pythonpath = ["."]`` makes the repo root importable so that
+# ``scripts/seed_student_model.py`` (TASK-GSM-006) can be reached as
+# ``scripts.seed_student_model`` by the seam + unit tests. Hatchling only
+# installs ``src/study_tutor`` into site-packages, so without this entry
+# the seeding script — which intentionally lives outside the package —
+# would be unimportable from tests.
+#
+# ``"src"`` is also included so the worktree's ``src/study_tutor`` (rather
+# than the parent repo's editable install) is the one tests resolve. Git
+# worktrees share the parent repo's ``.venv``, and that .venv has the
+# parent repo's ``src/`` baked into ``sys.path`` ahead of any worktree
+# code; without this entry the worktree's in-flight changes to
+# ``study_tutor`` wouldn't be visible to its own tests.
+pythonpath = ["src", "."]
 markers = [
     "seam: integration-contract seam tests between GuardKit tasks",
     "integration_contract: marks the specific contract under test (arg: contract name)",

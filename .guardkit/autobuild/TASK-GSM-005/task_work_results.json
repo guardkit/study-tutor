@@ -1,0 +1,304 @@
+{
+  "task_id": "TASK-GSM-005",
+  "timestamp": "2026-04-29T17:08:02.372832",
+  "completed": true,
+  "phases": {
+    "phase_1": {
+      "detected": true,
+      "text": "Requirements Analysis (skipped \u2014 using task spec directly)",
+      "completed": false
+    },
+    "phase_3": {
+      "detected": true,
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 12,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": true
+  },
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GSM-004/checkpoints.json",
+    "tasks/backlog/TASK-GSM-005-query-helpers.md"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-GSM-005-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GSM-005/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-005/task_work_results.json",
+    ".guardkit/autobuild/TASK-GSM-005/turn_context.json",
+    ".guardkit/bdd/TASK-GSM-005_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/.guardkit/autobuild/TASK-GSM-005/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/src/study_tutor/knowledge/queries.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/tests/unit/knowledge/test_queries.py",
+    "src/study_tutor/knowledge/queries.py",
+    "tasks/design_approved/TASK-GSM-005-query-helpers.md",
+    "tests/unit/knowledge/test_queries.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/tests/unit/knowledge/test_queries.py"
+  ],
+  "summary": "12 tests passed, all quality gates passed",
+  "sdk_turns": {
+    "turns_used": 18,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "bdd_results": {
+    "scenarios_passed": 0,
+    "scenarios_failed": 0,
+    "scenarios_pending": 15,
+    "failures": [],
+    "pending": [
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_retrieving_a_learners_current_state_returns_identity_confidence_and_recent_context",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_recommending_topics_prioritises_weak_areas_the_learner_has_not_revisited_recently",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_a_learnersupplied_topic_override_bypasses_recommendation_ranking",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_recommending_topics_for_a_learner_with_no_completed_sessions_falls_back_to_baseline_confidence",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_recommending_topics_returns_the_requested_number_when_enough_are_available[1]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_recommending_topics_returns_the_requested_number_when_enough_are_available[3]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_recommending_topics_returns_the_requested_number_when_enough_are_available[6]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_recommending_more_topics_than_the_learner_has_available_returns_all_available",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_a_struggling_topic_studied_within_the_last_48_hours_is_excluded_from_recommendations",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_a_topic_last_studied_exactly_at_the_cooldown_boundary_is_eligible_for_recommendation",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_a_learnerstate_read_is_strictly_scoped_to_that_learners_group",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_retrieving_the_state_of_an_unknown_learner_returns_an_empty_profile_not_an_error",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_when_the_studentmodel_store_is_unreachable_learnerstate_reads_return_an_empty_profile",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_a_studentmodel_read_that_exceeds_its_timeout_returns_an_empty_profile",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.graphiti-student-model.test_graphiti_student_model",
+        "scenario_name": "test_facts_older_than_the_staleness_threshold_are_flagged_when_returned",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      }
+    ],
+    "feature_files": [
+      "features/graphiti-student-model/graphiti-student-model.feature"
+    ],
+    "tag": "@task:TASK-GSM-005"
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "get_student_state returns a fully-populated StudentState for Lilymay's seeded baseline",
+      "status": "complete",
+      "evidence": "get_student_state projects nodes/facts into StudentState (student_id, year_group, target_grade, subjects, current_texts, topic_confidences, recent_misconceptions, most_recent_session_id). Verified by test_get_student_state_happy_path_populates_all_fields which asserts every populated field. The Lilymay seeded-baseline integration test is gated on Synology FalkorDB and intentionally lives in tests/integration; it is not part of this unit-test pass.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "get_student_state(client=None) returns an empty StudentState(empty=True) without raising",
+      "status": "complete",
+      "evidence": "get_student_state short-circuits at the top with `if client is None: return StudentState(empty=True)`. test_get_student_state_returns_empty_when_client_is_none asserts the returned StudentState has empty=True.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Read-path timeout: get_student_state returns None + logs when underlying search exceeds 5s (mocked via slow search_nodes)",
+      "status": "complete",
+      "evidence": "Implementation wraps the gather of search_nodes/search_memory_facts in asyncio.wait_for(timeout=READ_TIMEOUT_SEC=5.0). On TimeoutError it logs event=student_state_read_timeout and returns None. test_get_student_state_returns_none_on_read_timeout monkeypatches READ_TIMEOUT_SEC to 0.05 and uses a slow inner sleeping 0.5s, asserting both the None return and the structured log event.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Stale-fact flag: facts older than 180 days are returned with stale=True (ASSUM-006)",
+      "status": "complete",
+      "evidence": "_build_student_state computes stale_cutoff = now - timedelta(days=stale_threshold_days) and sets state.stale=True whenever a TopicConfidence's last_revised_at predates the cutoff (the snapshot itself is still appended). test_get_student_state_flags_stale_when_facts_exceed_threshold seeds a topic at threshold+1 days old and asserts stale=True and that the topic is still returned.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "get_topic_recommendations returns 3 results for a learner with mixed-band topics",
+      "status": "complete",
+      "evidence": "test_topic_recommendations_returns_three_for_mixed_band_learner seeds 4 topics (1 struggling, 2 developing, 1 secure) all stale, then asserts len(recs)==3 and that the secure topic is excluded. Implementation collects struggling_stale + developing_misconception + developing_stale and slices to count=3.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "get_topic_recommendations excludes topics revised within 48h (cooldown per ASSUM-003)",
+      "status": "complete",
+      "evidence": "Implementation skips any TopicConfidence where last_revised_at >= cooldown_cutoff (now - cooldown_hours). test_topic_recommendations_excludes_topics_within_cooldown seeds a 47h-old topic and a 49h-old topic, asserts the 47h one is excluded and the 49h one is kept \u2014 covering the @boundary scenario.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "get_topic_recommendations prioritises struggling-stale > developing-misconception > developing-stale",
+      "status": "complete",
+      "evidence": "Implementation builds three separate buckets and concatenates them in that exact order before slicing. test_topic_recommendations_priority_ordering seeds the topics in non-priority order and asserts the returned [topic_name, reason] sequence is [Struggling/struggling_stale, DevMisc/developing_misconception, DevStale/developing_stale].",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "record_session_completion returns within 50ms (mocked write helper for unit test; real Synology integration test)",
+      "status": "complete",
+      "evidence": "Implementation never awaits the task returned by write_helper.schedule_write \u2014 it dispatches and returns. test_record_session_completion_returns_under_50ms_with_hanging_helper makes schedule_write return a task that sleeps 80s, then asserts elapsed < 50ms. The hanging task is cancelled in the test's finally block to avoid leaks.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "record_session_completion(client=None) is a no-op (no exception)",
+      "status": "complete",
+      "evidence": "Implementation early-returns when client is None \u2014 write_helper is never called. test_record_session_completion_is_noop_when_client_is_none verifies helper.schedule_write.assert_not_called() under client=None.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "All search_* calls in this module use group_ids constructed from STUDENT_GROUP_PREFIX etc. \u2014 never bare string literals",
+      "status": "complete",
+      "evidence": "Implementation constructs `group_ids = [f\"{STUDENT_GROUP_PREFIX}{student_id}\"]` and passes the variable to search_nodes / search_memory_facts. The happy-path test additionally asserts the recorded call.group_ids equals [f\"{STUDENT_GROUP_PREFIX}lilymay\"].",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-011",
+      "criterion_text": "Group-id discipline lint: AST scan asserts no search_nodes(...) or search_memory_facts(...) call inside this module passes a literal string for group_ids",
+      "status": "complete",
+      "evidence": "test_no_literal_string_group_ids_in_search_calls AST-walks queries.py, finds every Call whose attribute name is search_nodes or search_memory_facts, and asserts neither the first positional arg nor the group_ids kwarg is an ast.Constant string. Currently 0 violations.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-012",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Both new files compile cleanly (12 unit tests pass, full suite 222/222). pyproject.toml does not configure a lint/format gate beyond pytest; code follows PEP 8 (type hints, docstrings, no bare excepts, no dead code). The full pytest run is the only CI-gate active in this repo and it is green.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 56.75070862498251
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 242.8706579169957
+    }
+  ]
+}

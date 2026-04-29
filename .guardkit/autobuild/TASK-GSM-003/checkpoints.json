@@ -1,0 +1,33 @@
+{
+  "task_id": "TASK-GSM-003",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "a8f2730690451279afb99ea90e96e7f7d8ebd62a",
+      "timestamp": "2026-04-29T16:29:35.604596",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": false
+    },
+    {
+      "turn": 2,
+      "commit_hash": "82230a383d124c5dcc32b1815da1fefc10218e85",
+      "timestamp": "2026-04-29T16:36:20.057291",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 2 complete (tests: pass)",
+      "from_prior_run": false
+    },
+    {
+      "turn": 3,
+      "commit_hash": "91bf2a04d94d8c1f1ea48e246e260bd7e3642c31",
+      "timestamp": "2026-04-29T16:52:54.514392",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 3 complete (tests: pass)",
+      "from_prior_run": false
+    }
+  ],
+  "last_updated": "2026-04-29T16:52:54.514489"
+}

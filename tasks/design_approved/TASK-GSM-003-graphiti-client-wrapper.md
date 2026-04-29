@@ -1,32 +1,39 @@
 ---
-id: TASK-GSM-003
-title: "Implement Graphiti client wrapper with lazy import and graceful degradation"
-task_type: feature
-parent_review: TASK-REV-7DC0
-feature_id: FEAT-1773
-wave: 2
-implementation_mode: task-work
 complexity: 4
-estimated_minutes: 90
-status: backlog
-priority: high
-created: 2026-04-27T00:00:00Z
-updated: 2026-04-27T00:00:00Z
-dependencies:
-  - TASK-GSM-001
-  - TASK-GSM-002
-tags: [graphiti, client, lazy-import, graceful-degradation, falkordb]
 consumer_context:
-  - task: TASK-GSM-001
-    consumes: PydanticEntities
-    framework: "Pydantic v2 (BaseModel)"
-    driver: "pydantic"
-    format_note: "Client returns / accepts entity instances; type imports from student_model.py"
-  - task: TASK-GSM-001
-    consumes: GroupIdConstants
-    framework: "string constants"
-    driver: "stdlib"
-    format_note: "All search/write calls must pass group_ids constructed from STUDENT_GROUP_PREFIX / SUBJECT_GROUP_PREFIX / FLEET_GROUP_ID — no raw string literals matching these patterns elsewhere"
+- consumes: PydanticEntities
+  driver: pydantic
+  format_note: Client returns / accepts entity instances; type imports from student_model.py
+  framework: Pydantic v2 (BaseModel)
+  task: TASK-GSM-001
+- consumes: GroupIdConstants
+  driver: stdlib
+  format_note: All search/write calls must pass group_ids constructed from STUDENT_GROUP_PREFIX
+    / SUBJECT_GROUP_PREFIX / FLEET_GROUP_ID — no raw string literals matching these
+    patterns elsewhere
+  framework: string constants
+  task: TASK-GSM-001
+created: 2026-04-27 00:00:00+00:00
+dependencies:
+- TASK-GSM-001
+- TASK-GSM-002
+estimated_minutes: 90
+feature_id: FEAT-1773
+id: TASK-GSM-003
+implementation_mode: task-work
+parent_review: TASK-REV-7DC0
+priority: high
+status: design_approved
+tags:
+- graphiti
+- client
+- lazy-import
+- graceful-degradation
+- falkordb
+task_type: feature
+title: Implement Graphiti client wrapper with lazy import and graceful degradation
+updated: 2026-04-27 00:00:00+00:00
+wave: 2
 ---
 
 # Task: Implement Graphiti client wrapper with lazy import and graceful degradation

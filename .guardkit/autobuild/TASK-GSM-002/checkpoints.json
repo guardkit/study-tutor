@@ -1,0 +1,15 @@
+{
+  "task_id": "TASK-GSM-002",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "4a22fe58b75b68a3855593da3133bfd8d151fb23",
+      "timestamp": "2026-04-29T16:17:09.219264",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": false
+    }
+  ],
+  "last_updated": "2026-04-29T16:17:09.219469"
+}

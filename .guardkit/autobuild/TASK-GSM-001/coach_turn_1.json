@@ -1,0 +1,134 @@
+{
+  "task_id": "TASK-GSM-001",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/knowledge/test_student_model.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/knowledge/test_student_model.py::test_student_schema_dump_shape PASSED [ 96%]\ntests/unit/knowledge/test_student_model.py::test_text_schema_dump_shape PASSED [ 97%]\ntests/unit/knowledge/test_student_model.py::test_assessment_objective_schema_dump_shape PASSED [ 98%]\ntests/unit/knowledge/test_student_model.py::test_entity_round_trip_equality PASSED [100%]\n============================== 80 passed in 0.06s ==============================",
+      "duration_seconds": 0.6305007934570312
+    },
+    "requirements": {
+      "criteria_total": 6,
+      "criteria_met": 6,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Seven entity classes defined as `pydantic.BaseModel` subclasses with field types matching scope-doc tables",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Defined Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence as Pydantic v2 BaseModel subclasses (via shared _StudentModelBase). Field types match the scope-doc tables in phase-1-scope.md \u00a7FEAT-PH1-001 and the TASK-GSM-001 scope (e.g. Topic.ao_refs is list[str], TopicConfidence.percentage is int with ge/le bounds, Text.kind is Literal['primary','secondary','context']). Tests parametrise over all seven classes asserting BaseModel inheritance, required-field validation, schema dump shape and round-trip equality.",
+      "notes": "Defined Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence as Pydantic v2 BaseModel subclasses (via shared _StudentModelBase). Field types match the scope-doc tables in phase-1-scope.md \u00a7FEAT-PH1-001 and the TASK-GSM-001 scope (e.g. Topic.ao_refs is list[str], TopicConfidence.percentage is int with ge/le bounds, Text.kind is Literal['primary','secondary','context']). Tests parametrise over all seven classes asserting BaseModel inheritance, required-field validation, schema dump shape and round-trip equality."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Six relationship constants defined as string literals (`STUDIES`, `WORKING_ON`, `HAS_TEXT`, `COVERS`, `ASSESSED_BY`, `HAS_CONFIDENCE`)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Six module-level string constants exported with values matching their names. test_relationship_constants_match_scope_doc, test_relationship_constants_are_strings, and test_relationship_constants_are_distinct verify the values, types, and uniqueness.",
+      "notes": "Six module-level string constants exported with values matching their names. test_relationship_constants_match_scope_doc, test_relationship_constants_are_strings, and test_relationship_constants_are_distinct verify the values, types, and uniqueness."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Three group-id constants (`STUDENT_GROUP_PREFIX`, `SUBJECT_GROUP_PREFIX`, `FLEET_GROUP_ID`) exposed as module-level constants",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "STUDENT_GROUP_PREFIX='student:', SUBJECT_GROUP_PREFIX='subject:', FLEET_GROUP_ID='fleet:appmilla' all exposed at module scope and re-exported via __all__. test_group_id_constant_values asserts the exact values; test_group_id_prefixes_compose_to_expected_format checks the composition pattern (f'{STUDENT_GROUP_PREFIX}lilymay' == 'student:lilymay').",
+      "notes": "STUDENT_GROUP_PREFIX='student:', SUBJECT_GROUP_PREFIX='subject:', FLEET_GROUP_ID='fleet:appmilla' all exposed at module scope and re-exported via __all__. test_group_id_constant_values asserts the exact values; test_group_id_prefixes_compose_to_expected_format checks the composition pattern (f'{STUDENT_GROUP_PREFIX}lilymay' == 'student:lilymay')."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`confidence_band_for(percentage: int) -> str` helper returns the correct band per ASSUM-001 thresholds",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "confidence_band_for uses a descending-threshold table (90/70/40/0) so boundaries are exact: 0-39 struggling, 40-69 developing, 70-89 secure, 90-100 mastered. Tests cover all four boundaries (0,1,39,40,50,69,70,80,89,90,95,100), a full sweep over 0..100 to confirm closure under the four bands, and out-of-range rejection (-1, 101, 200, -100) raises ValueError. Return type is the ConfidenceBand Literal alias which Python treats as str.",
+      "notes": "confidence_band_for uses a descending-threshold table (90/70/40/0) so boundaries are exact: 0-39 struggling, 40-69 developing, 70-89 secure, 90-100 mastered. Tests cover all four boundaries (0,1,39,40,50,69,70,80,89,90,95,100), a full sweep over 0..100 to confirm closure under the four bands, and out-of-range rejection (-1, 101, 200, -100) raises ValueError. Return type is the ConfidenceBand Literal alias which Python treats as str."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Module docstring documents the cross-repo divergence: study-tutor uses `fleet:appmilla` per phase-1-scope.md (specialist-agent uses `appmilla-fleet` \u2014 see ASSUM-008)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "The module docstring contains a dedicated 'Cross-repo divergence (per ASSUM-008)' paragraph that names both 'fleet:appmilla' and 'appmilla-fleet', cites phase-1-scope.md as the source convention, identifies specialist-agent as the sibling repo with the divergent convention, and warns against silent harmonisation. The FLEET_GROUP_ID constant has a matching inline NOTE that points back to the docstring. test_module_docstring_documents_cross_repo_divergence asserts all four required strings are present in __doc__.",
+      "notes": "The module docstring contains a dedicated 'Cross-repo divergence (per ASSUM-008)' paragraph that names both 'fleet:appmilla' and 'appmilla-fleet', cites phase-1-scope.md as the source convention, identifies specialist-agent as the sibling repo with the divergent convention, and warns against silent harmonisation. The FLEET_GROUP_ID constant has a matching inline NOTE that points back to the docstring. test_module_docstring_documents_cross_repo_divergence asserts all four required strings are present in __doc__."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "No ruff/black/flake8/isort tool configuration is declared in pyproject.toml (only [tool.hatch.*] and [tool.pytest.ini_options]) or .claude/settings.json (which is empty {}). The project is on the language-agnostic 'default' GuardKit template and quality-gates.md notes coverage/lint enforcement is opt-in for this template. With no project-configured lint, the criterion reduces to: source files compile and import cleanly, which is verified by the 80 student-model tests plus the cross-cutting suite (150 passed). test_student_model_module_does_not_import_graphiti_core also asserts the module is stack-agnostic per the \u00a74 contract.",
+      "notes": "No ruff/black/flake8/isort tool configuration is declared in pyproject.toml (only [tool.hatch.*] and [tool.pytest.ini_options]) or .claude/settings.json (which is empty {}). The project is on the language-agnostic 'default' GuardKit template and quality-gates.md notes coverage/lint enforcement is opt-in for this template. With no project-configured lint, the criterion reduces to: source files compile and import cleanly, which is verified by the 80 student-model tests plus the cross-cutting suite (150 passed). test_student_model_module_does_not_import_graphiti_core also asserts the module is stack-agnostic per the \u00a74 contract."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Seven entity classes defined as `pydantic.BaseModel` subclasses with field types matching scope-doc tables",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Defined Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence as Pydantic v2 BaseModel subclasses (via shared _StudentModelBase). Field types match the scope-doc tables in phase-1-scope.md \u00a7FEAT-PH1-001 and the TASK-GSM-001 scope (e.g. Topic.ao_refs is list[str], TopicConfidence.percentage is int with ge/le bounds, Text.kind is Literal['primary','secondary','context']). Tests parametrise over all seven classes asserting BaseModel inheritance, required-field validation, schema dump shape and round-trip equality.",
+        "notes": "Defined Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence as Pydantic v2 BaseModel subclasses (via shared _StudentModelBase). Field types match the scope-doc tables in phase-1-scope.md \u00a7FEAT-PH1-001 and the TASK-GSM-001 scope (e.g. Topic.ao_refs is list[str], TopicConfidence.percentage is int with ge/le bounds, Text.kind is Literal['primary','secondary','context']). Tests parametrise over all seven classes asserting BaseModel inheritance, required-field validation, schema dump shape and round-trip equality."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Six relationship constants defined as string literals (`STUDIES`, `WORKING_ON`, `HAS_TEXT`, `COVERS`, `ASSESSED_BY`, `HAS_CONFIDENCE`)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Six module-level string constants exported with values matching their names. test_relationship_constants_match_scope_doc, test_relationship_constants_are_strings, and test_relationship_constants_are_distinct verify the values, types, and uniqueness.",
+        "notes": "Six module-level string constants exported with values matching their names. test_relationship_constants_match_scope_doc, test_relationship_constants_are_strings, and test_relationship_constants_are_distinct verify the values, types, and uniqueness."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Three group-id constants (`STUDENT_GROUP_PREFIX`, `SUBJECT_GROUP_PREFIX`, `FLEET_GROUP_ID`) exposed as module-level constants",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "STUDENT_GROUP_PREFIX='student:', SUBJECT_GROUP_PREFIX='subject:', FLEET_GROUP_ID='fleet:appmilla' all exposed at module scope and re-exported via __all__. test_group_id_constant_values asserts the exact values; test_group_id_prefixes_compose_to_expected_format checks the composition pattern (f'{STUDENT_GROUP_PREFIX}lilymay' == 'student:lilymay').",
+        "notes": "STUDENT_GROUP_PREFIX='student:', SUBJECT_GROUP_PREFIX='subject:', FLEET_GROUP_ID='fleet:appmilla' all exposed at module scope and re-exported via __all__. test_group_id_constant_values asserts the exact values; test_group_id_prefixes_compose_to_expected_format checks the composition pattern (f'{STUDENT_GROUP_PREFIX}lilymay' == 'student:lilymay')."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`confidence_band_for(percentage: int) -> str` helper returns the correct band per ASSUM-001 thresholds",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "confidence_band_for uses a descending-threshold table (90/70/40/0) so boundaries are exact: 0-39 struggling, 40-69 developing, 70-89 secure, 90-100 mastered. Tests cover all four boundaries (0,1,39,40,50,69,70,80,89,90,95,100), a full sweep over 0..100 to confirm closure under the four bands, and out-of-range rejection (-1, 101, 200, -100) raises ValueError. Return type is the ConfidenceBand Literal alias which Python treats as str.",
+        "notes": "confidence_band_for uses a descending-threshold table (90/70/40/0) so boundaries are exact: 0-39 struggling, 40-69 developing, 70-89 secure, 90-100 mastered. Tests cover all four boundaries (0,1,39,40,50,69,70,80,89,90,95,100), a full sweep over 0..100 to confirm closure under the four bands, and out-of-range rejection (-1, 101, 200, -100) raises ValueError. Return type is the ConfidenceBand Literal alias which Python treats as str."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Module docstring documents the cross-repo divergence: study-tutor uses `fleet:appmilla` per phase-1-scope.md (specialist-agent uses `appmilla-fleet` \u2014 see ASSUM-008)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The module docstring contains a dedicated 'Cross-repo divergence (per ASSUM-008)' paragraph that names both 'fleet:appmilla' and 'appmilla-fleet', cites phase-1-scope.md as the source convention, identifies specialist-agent as the sibling repo with the divergent convention, and warns against silent harmonisation. The FLEET_GROUP_ID constant has a matching inline NOTE that points back to the docstring. test_module_docstring_documents_cross_repo_divergence asserts all four required strings are present in __doc__.",
+        "notes": "The module docstring contains a dedicated 'Cross-repo divergence (per ASSUM-008)' paragraph that names both 'fleet:appmilla' and 'appmilla-fleet', cites phase-1-scope.md as the source convention, identifies specialist-agent as the sibling repo with the divergent convention, and warns against silent harmonisation. The FLEET_GROUP_ID constant has a matching inline NOTE that points back to the docstring. test_module_docstring_documents_cross_repo_divergence asserts all four required strings are present in __doc__."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "No ruff/black/flake8/isort tool configuration is declared in pyproject.toml (only [tool.hatch.*] and [tool.pytest.ini_options]) or .claude/settings.json (which is empty {}). The project is on the language-agnostic 'default' GuardKit template and quality-gates.md notes coverage/lint enforcement is opt-in for this template. With no project-configured lint, the criterion reduces to: source files compile and import cleanly, which is verified by the 80 student-model tests plus the cross-cutting suite (150 passed). test_student_model_module_does_not_import_graphiti_core also asserts the module is stack-agnostic per the \u00a74 contract.",
+        "notes": "No ruff/black/flake8/isort tool configuration is declared in pyproject.toml (only [tool.hatch.*] and [tool.pytest.ini_options]) or .claude/settings.json (which is empty {}). The project is on the language-agnostic 'default' GuardKit template and quality-gates.md notes coverage/lint enforcement is opt-in for this template. With no project-configured lint, the criterion reduces to: source files compile and import cleanly, which is verified by the 80 student-model tests plus the cross-cutting suite (150 passed). test_student_model_module_does_not_import_graphiti_core also asserts the module is stack-agnostic per the \u00a74 contract."
+      }
+    ]
+  },
+  "issues": [],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 47 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 0/5200 tokens\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}
