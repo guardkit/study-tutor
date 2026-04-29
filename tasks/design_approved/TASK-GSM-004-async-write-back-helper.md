@@ -1,32 +1,41 @@
 ---
-id: TASK-GSM-004
-title: "Implement shared async fire-and-forget Graphiti write helper"
-task_type: feature
-parent_review: TASK-REV-7DC0
-feature_id: FEAT-1773
-wave: 2
-implementation_mode: task-work
 complexity: 6
-estimated_minutes: 150
-status: backlog
-priority: high
-created: 2026-04-27T00:00:00Z
-updated: 2026-04-27T00:00:00Z
-dependencies:
-  - TASK-GSM-001
-  - TASK-GSM-002
-tags: [graphiti, async, fire-and-forget, cc-13, ddr-002, security, prompt-injection]
 consumer_context:
-  - task: TASK-GSM-002
-    consumes: EpisodeTypes
-    framework: "Pydantic v2 (BaseModel)"
-    driver: "pydantic"
-    format_note: "Helper accepts EpisodeBase instances and serialises via to_graphiti_episode_body() before passing to add_episode"
-  - task: TASK-GSM-001
-    consumes: GroupIdConstants
-    framework: "string constants"
-    driver: "stdlib"
-    format_note: "Helper requires explicit group_ids: list[str] (no defaults). Validation rejects empty list and any string not prefixed with student:/subject:/fleet:"
+- consumes: EpisodeTypes
+  driver: pydantic
+  format_note: Helper accepts EpisodeBase instances and serialises via to_graphiti_episode_body()
+    before passing to add_episode
+  framework: Pydantic v2 (BaseModel)
+  task: TASK-GSM-002
+- consumes: GroupIdConstants
+  driver: stdlib
+  format_note: 'Helper requires explicit group_ids: list[str] (no defaults). Validation
+    rejects empty list and any string not prefixed with student:/subject:/fleet:'
+  framework: string constants
+  task: TASK-GSM-001
+created: 2026-04-27 00:00:00+00:00
+dependencies:
+- TASK-GSM-001
+- TASK-GSM-002
+estimated_minutes: 150
+feature_id: FEAT-1773
+id: TASK-GSM-004
+implementation_mode: task-work
+parent_review: TASK-REV-7DC0
+priority: high
+status: design_approved
+tags:
+- graphiti
+- async
+- fire-and-forget
+- cc-13
+- ddr-002
+- security
+- prompt-injection
+task_type: feature
+title: Implement shared async fire-and-forget Graphiti write helper
+updated: 2026-04-27 00:00:00+00:00
+wave: 2
 ---
 
 # Task: Implement shared async fire-and-forget Graphiti write helper

@@ -1,0 +1,7 @@
+{
+  "tests_run": 23,
+  "tests_failed": 0,
+  "coverage_pct": 90.0,
+  "output_summary": "23/23 passed for tests/unit/knowledge/test_graphiti_client.py; coverage 90% on src/study_tutor/knowledge/graphiti_client.py",
+  "quality_gates_passed": true
+}
