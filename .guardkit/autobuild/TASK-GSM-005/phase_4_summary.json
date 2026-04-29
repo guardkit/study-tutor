@@ -1,0 +1,7 @@
+{
+  "tests_run": 222,
+  "tests_failed": 0,
+  "coverage_pct": 92.0,
+  "output_summary": "222/222 pytest passed (12 new in test_queries.py); src/study_tutor/knowledge/queries.py line coverage 92% (173 stmts, 13 missing)",
+  "quality_gates_passed": true
+}

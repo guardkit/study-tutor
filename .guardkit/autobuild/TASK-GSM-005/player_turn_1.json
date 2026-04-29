@@ -1,0 +1,170 @@
+{
+  "task_id": "TASK-GSM-005",
+  "turn": 1,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GSM-004/checkpoints.json",
+    "tasks/backlog/TASK-GSM-005-query-helpers.md"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-GSM-005-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GSM-005/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GSM-005/task_work_results.json",
+    ".guardkit/autobuild/TASK-GSM-005/turn_context.json",
+    ".guardkit/bdd/TASK-GSM-005_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/.guardkit/autobuild/TASK-GSM-005/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/src/study_tutor/knowledge/queries.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/tests/unit/knowledge/test_queries.py",
+    "src/study_tutor/knowledge/queries.py",
+    "tasks/design_approved/TASK-GSM-005-query-helpers.md",
+    "tests/unit/knowledge/test_queries.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-1773/tests/unit/knowledge/test_queries.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001 happy-path StudentState population",
+    "AC-002 client=None returns StudentState(empty=True)",
+    "AC-003 read-path timeout returns None + structured log",
+    "AC-004 stale-fact flag (ASSUM-006)",
+    "AC-005 mixed-band returns 3 recommendations",
+    "AC-006 cooldown exclusion at 48h boundary",
+    "AC-007 priority ordering",
+    "AC-008 record_session_completion <50ms with hanging helper",
+    "AC-009 record_session_completion(client=None) no-op",
+    "AC-010 group_ids constructed from STUDENT_GROUP_PREFIX",
+    "AC-011 AST lint enforces no literal-string group_ids",
+    "AC-012 full pytest suite green (lint/format gate)"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 18,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 12,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "get_student_state returns a fully-populated StudentState for Lilymay's seeded baseline",
+      "status": "complete",
+      "evidence": "get_student_state projects nodes/facts into StudentState (student_id, year_group, target_grade, subjects, current_texts, topic_confidences, recent_misconceptions, most_recent_session_id). Verified by test_get_student_state_happy_path_populates_all_fields which asserts every populated field. The Lilymay seeded-baseline integration test is gated on Synology FalkorDB and intentionally lives in tests/integration; it is not part of this unit-test pass.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "get_student_state(client=None) returns an empty StudentState(empty=True) without raising",
+      "status": "complete",
+      "evidence": "get_student_state short-circuits at the top with `if client is None: return StudentState(empty=True)`. test_get_student_state_returns_empty_when_client_is_none asserts the returned StudentState has empty=True.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Read-path timeout: get_student_state returns None + logs when underlying search exceeds 5s (mocked via slow search_nodes)",
+      "status": "complete",
+      "evidence": "Implementation wraps the gather of search_nodes/search_memory_facts in asyncio.wait_for(timeout=READ_TIMEOUT_SEC=5.0). On TimeoutError it logs event=student_state_read_timeout and returns None. test_get_student_state_returns_none_on_read_timeout monkeypatches READ_TIMEOUT_SEC to 0.05 and uses a slow inner sleeping 0.5s, asserting both the None return and the structured log event.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Stale-fact flag: facts older than 180 days are returned with stale=True (ASSUM-006)",
+      "status": "complete",
+      "evidence": "_build_student_state computes stale_cutoff = now - timedelta(days=stale_threshold_days) and sets state.stale=True whenever a TopicConfidence's last_revised_at predates the cutoff (the snapshot itself is still appended). test_get_student_state_flags_stale_when_facts_exceed_threshold seeds a topic at threshold+1 days old and asserts stale=True and that the topic is still returned.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "get_topic_recommendations returns 3 results for a learner with mixed-band topics",
+      "status": "complete",
+      "evidence": "test_topic_recommendations_returns_three_for_mixed_band_learner seeds 4 topics (1 struggling, 2 developing, 1 secure) all stale, then asserts len(recs)==3 and that the secure topic is excluded. Implementation collects struggling_stale + developing_misconception + developing_stale and slices to count=3.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "get_topic_recommendations excludes topics revised within 48h (cooldown per ASSUM-003)",
+      "status": "complete",
+      "evidence": "Implementation skips any TopicConfidence where last_revised_at >= cooldown_cutoff (now - cooldown_hours). test_topic_recommendations_excludes_topics_within_cooldown seeds a 47h-old topic and a 49h-old topic, asserts the 47h one is excluded and the 49h one is kept \u2014 covering the @boundary scenario.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "get_topic_recommendations prioritises struggling-stale > developing-misconception > developing-stale",
+      "status": "complete",
+      "evidence": "Implementation builds three separate buckets and concatenates them in that exact order before slicing. test_topic_recommendations_priority_ordering seeds the topics in non-priority order and asserts the returned [topic_name, reason] sequence is [Struggling/struggling_stale, DevMisc/developing_misconception, DevStale/developing_stale].",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "record_session_completion returns within 50ms (mocked write helper for unit test; real Synology integration test)",
+      "status": "complete",
+      "evidence": "Implementation never awaits the task returned by write_helper.schedule_write \u2014 it dispatches and returns. test_record_session_completion_returns_under_50ms_with_hanging_helper makes schedule_write return a task that sleeps 80s, then asserts elapsed < 50ms. The hanging task is cancelled in the test's finally block to avoid leaks.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "record_session_completion(client=None) is a no-op (no exception)",
+      "status": "complete",
+      "evidence": "Implementation early-returns when client is None \u2014 write_helper is never called. test_record_session_completion_is_noop_when_client_is_none verifies helper.schedule_write.assert_not_called() under client=None.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "All search_* calls in this module use group_ids constructed from STUDENT_GROUP_PREFIX etc. \u2014 never bare string literals",
+      "status": "complete",
+      "evidence": "Implementation constructs `group_ids = [f\"{STUDENT_GROUP_PREFIX}{student_id}\"]` and passes the variable to search_nodes / search_memory_facts. The happy-path test additionally asserts the recorded call.group_ids equals [f\"{STUDENT_GROUP_PREFIX}lilymay\"].",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-011",
+      "criterion_text": "Group-id discipline lint: AST scan asserts no search_nodes(...) or search_memory_facts(...) call inside this module passes a literal string for group_ids",
+      "status": "complete",
+      "evidence": "test_no_literal_string_group_ids_in_search_calls AST-walks queries.py, finds every Call whose attribute name is search_nodes or search_memory_facts, and asserts neither the first positional arg nor the group_ids kwarg is an ast.Constant string. Currently 0 violations.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-012",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Both new files compile cleanly (12 unit tests pass, full suite 222/222). pyproject.toml does not configure a lint/format gate beyond pytest; code follows PEP 8 (type hints, docstrings, no bare excepts, no dead code). The full pytest run is the only CI-gate active in this repo and it is green.",
+      "test_file": "tests/unit/knowledge/test_queries.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/queries.py"
+      ]
+    }
+  ]
+}

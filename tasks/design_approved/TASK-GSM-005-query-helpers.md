@@ -1,42 +1,54 @@
 ---
-id: TASK-GSM-005
-title: "Implement student-model query helpers"
-task_type: feature
-parent_review: TASK-REV-7DC0
-feature_id: FEAT-1773
-wave: 3
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 150
-status: backlog
-priority: high
-created: 2026-04-27T00:00:00Z
-updated: 2026-04-27T00:00:00Z
-dependencies:
-  - TASK-GSM-003
-  - TASK-GSM-004
-tags: [graphiti, queries, recommendations, scoping, ddr-003, planner]
 consumer_context:
-  - task: TASK-GSM-003
-    consumes: GraphitiClient
-    framework: "graphiti-core async client"
-    driver: "graphiti-core"
-    format_note: "Helpers receive GraphitiClient | None. When client is None, all read helpers return empty/safe defaults; record_session_completion is a no-op (returns immediately)."
-  - task: TASK-GSM-003
-    consumes: FalkorDBConnection
-    framework: "graphiti-core (FalkorDB driver)"
-    driver: "graphiti-core"
-    format_note: "Search calls use search_nodes / search_memory_facts via the wrapped client; group_ids are mandatory positional argument"
-  - task: TASK-GSM-004
-    consumes: SharedAsyncWriteHelper
-    framework: "asyncio fire-and-forget"
-    driver: "asyncio"
-    format_note: "record_session_completion calls helper.schedule_write(group_ids, episode, flush_id='F3') — does NOT await the returned task. Caller-facing path returns within 2s per ADR-ARCH-019."
-  - task: TASK-GSM-001
-    consumes: GroupIdConstants
-    framework: "string constants"
-    driver: "stdlib"
-    format_note: "All search calls construct group_ids from STUDENT_GROUP_PREFIX / SUBJECT_GROUP_PREFIX / FLEET_GROUP_ID — no raw string literals"
+- consumes: GraphitiClient
+  driver: graphiti-core
+  format_note: Helpers receive GraphitiClient | None. When client is None, all read
+    helpers return empty/safe defaults; record_session_completion is a no-op (returns
+    immediately).
+  framework: graphiti-core async client
+  task: TASK-GSM-003
+- consumes: FalkorDBConnection
+  driver: graphiti-core
+  format_note: Search calls use search_nodes / search_memory_facts via the wrapped
+    client; group_ids are mandatory positional argument
+  framework: graphiti-core (FalkorDB driver)
+  task: TASK-GSM-003
+- consumes: SharedAsyncWriteHelper
+  driver: asyncio
+  format_note: record_session_completion calls helper.schedule_write(group_ids, episode,
+    flush_id='F3') — does NOT await the returned task. Caller-facing path returns
+    within 2s per ADR-ARCH-019.
+  framework: asyncio fire-and-forget
+  task: TASK-GSM-004
+- consumes: GroupIdConstants
+  driver: stdlib
+  format_note: All search calls construct group_ids from STUDENT_GROUP_PREFIX / SUBJECT_GROUP_PREFIX
+    / FLEET_GROUP_ID — no raw string literals
+  framework: string constants
+  task: TASK-GSM-001
+created: 2026-04-27 00:00:00+00:00
+dependencies:
+- TASK-GSM-003
+- TASK-GSM-004
+estimated_minutes: 150
+feature_id: FEAT-1773
+id: TASK-GSM-005
+implementation_mode: task-work
+parent_review: TASK-REV-7DC0
+priority: high
+status: design_approved
+tags:
+- graphiti
+- queries
+- recommendations
+- scoping
+- ddr-003
+- planner
+task_type: feature
+title: Implement student-model query helpers
+updated: 2026-04-27 00:00:00+00:00
+wave: 3
 ---
 
 # Task: Implement student-model query helpers
