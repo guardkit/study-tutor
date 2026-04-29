@@ -1,0 +1,112 @@
+{
+  "task_id": "TASK-GSM-001",
+  "timestamp": "2026-04-29T16:17:41.065676",
+  "completed": true,
+  "success": true,
+  "implementation_mode": "direct",
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 1,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": true,
+    "quality_gates_relaxed": true,
+    "all_passed": true
+  },
+  "files_modified": [],
+  "files_created": [
+    "src/study_tutor/knowledge/student_model.py",
+    "tests/unit/knowledge/__init__.py",
+    "tests/unit/knowledge/test_student_model.py"
+  ],
+  "tests_written": [
+    "tests/unit/knowledge/test_student_model.py"
+  ],
+  "requirements_addressed": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005",
+    "AC-006"
+  ],
+  "requirements_met": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005",
+    "AC-006"
+  ],
+  "summary": "Direct mode implementation completed successfully",
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] Seven entity classes defined as `pydantic.BaseModel` subclasses with field types matching scope-doc tables",
+      "status": "complete",
+      "evidence": "Defined Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence as Pydantic v2 BaseModel subclasses (via shared _StudentModelBase). Field types match the scope-doc tables in phase-1-scope.md \u00a7FEAT-PH1-001 and the TASK-GSM-001 scope (e.g. Topic.ao_refs is list[str], TopicConfidence.percentage is int with ge/le bounds, Text.kind is Literal['primary','secondary','context']). Tests parametrise over all seven classes asserting BaseModel inheritance, required-field validation, schema dump shape and round-trip equality.",
+      "test_file": "tests/unit/knowledge/test_student_model.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/student_model.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] Six relationship constants defined as string literals (`STUDIES`, `WORKING_ON`, `HAS_TEXT`, `COVERS`, `ASSESSED_BY`, `HAS_CONFIDENCE`)",
+      "status": "complete",
+      "evidence": "Six module-level string constants exported with values matching their names. test_relationship_constants_match_scope_doc, test_relationship_constants_are_strings, and test_relationship_constants_are_distinct verify the values, types, and uniqueness.",
+      "test_file": "tests/unit/knowledge/test_student_model.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/student_model.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] Three group-id constants (`STUDENT_GROUP_PREFIX`, `SUBJECT_GROUP_PREFIX`, `FLEET_GROUP_ID`) exposed as module-level constants",
+      "status": "complete",
+      "evidence": "STUDENT_GROUP_PREFIX='student:', SUBJECT_GROUP_PREFIX='subject:', FLEET_GROUP_ID='fleet:appmilla' all exposed at module scope and re-exported via __all__. test_group_id_constant_values asserts the exact values; test_group_id_prefixes_compose_to_expected_format checks the composition pattern (f'{STUDENT_GROUP_PREFIX}lilymay' == 'student:lilymay').",
+      "test_file": "tests/unit/knowledge/test_student_model.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/student_model.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] `confidence_band_for(percentage: int) -> str` helper returns the correct band per ASSUM-001 thresholds",
+      "status": "complete",
+      "evidence": "confidence_band_for uses a descending-threshold table (90/70/40/0) so boundaries are exact: 0-39 struggling, 40-69 developing, 70-89 secure, 90-100 mastered. Tests cover all four boundaries (0,1,39,40,50,69,70,80,89,90,95,100), a full sweep over 0..100 to confirm closure under the four bands, and out-of-range rejection (-1, 101, 200, -100) raises ValueError. Return type is the ConfidenceBand Literal alias which Python treats as str.",
+      "test_file": "tests/unit/knowledge/test_student_model.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/student_model.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "[ ] Module docstring documents the cross-repo divergence: study-tutor uses `fleet:appmilla` per phase-1-scope.md (specialist-agent uses `appmilla-fleet` \u2014 see ASSUM-008)",
+      "status": "complete",
+      "evidence": "The module docstring contains a dedicated 'Cross-repo divergence (per ASSUM-008)' paragraph that names both 'fleet:appmilla' and 'appmilla-fleet', cites phase-1-scope.md as the source convention, identifies specialist-agent as the sibling repo with the divergent convention, and warns against silent harmonisation. The FLEET_GROUP_ID constant has a matching inline NOTE that points back to the docstring. test_module_docstring_documents_cross_repo_divergence asserts all four required strings are present in __doc__.",
+      "test_file": "tests/unit/knowledge/test_student_model.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/student_model.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "[ ] All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "No ruff/black/flake8/isort tool configuration is declared in pyproject.toml (only [tool.hatch.*] and [tool.pytest.ini_options]) or .claude/settings.json (which is empty {}). The project is on the language-agnostic 'default' GuardKit template and quality-gates.md notes coverage/lint enforcement is opt-in for this template. With no project-configured lint, the criterion reduces to: source files compile and import cleanly, which is verified by the 80 student-model tests plus the cross-cutting suite (150 passed). test_student_model_module_does_not_import_graphiti_core also asserts the module is stack-agnostic per the \u00a74 contract.",
+      "test_file": "tests/unit/knowledge/test_student_model.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/student_model.py",
+        "tests/unit/knowledge/test_student_model.py",
+        "tests/unit/knowledge/__init__.py"
+      ]
+    }
+  ]
+}
