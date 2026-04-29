@@ -24,10 +24,17 @@ from pydantic import BaseModel, ConfigDict
 
 # Discriminator literals used across all concrete episode classes.
 # Names must match the scope-doc spec exactly (see TASK-GSM-002).
+#
+# ``seed_baseline`` (TASK-GSM-006): used by the one-off Lilymay seeding
+# script to push baseline entity descriptions (Student / Subject / Text /
+# Topic / AssessmentObjective) through the same shared write helper as
+# every other flush point — keeping the CC-13 single-call-site invariant
+# intact even at seed time.
 EpisodeKind = Literal[
     "session_completed",
     "topic_confidence_updated",
     "misconception_observed",
+    "seed_baseline",
 ]
 
 
@@ -149,10 +156,39 @@ class MisconceptionObservedEpisode(EpisodeBase):
         )
 
 
+class SeedBaselineEpisode(EpisodeBase):
+    """One-off baseline-entity payload emitted by the Lilymay seeding script.
+
+    Carries a single entity description (Student / Subject / Text / Topic /
+    AssessmentObjective) plus the deterministic natural-language projection
+    that Graphiti's extraction LLM consumes. Routed through the shared write
+    helper with ``flush_id="SEED"`` so the seeding script honours CC-13
+    (the single-call-site audit) without bypassing the helper.
+    """
+
+    episode_kind: Literal["seed_baseline"] = "seed_baseline"
+    entity_kind: Literal[
+        "student",
+        "subject",
+        "text",
+        "topic",
+        "assessment_objective",
+    ]
+    entity_name: str
+    description: str
+
+    def to_graphiti_episode_body(self) -> str:
+        return (
+            f"Baseline {self.entity_kind} '{self.entity_name}': "
+            f"{self.description}"
+        )
+
+
 __all__ = [
     "EpisodeKind",
     "EpisodeBase",
     "SessionCompletedEpisode",
     "TopicConfidenceUpdatedEpisode",
     "MisconceptionObservedEpisode",
+    "SeedBaselineEpisode",
 ]
