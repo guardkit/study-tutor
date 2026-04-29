@@ -1,7 +1,7 @@
 {
-  "tests_run": 23,
+  "tests_run": 24,
   "tests_failed": 0,
   "coverage_pct": 90.0,
-  "output_summary": "23/23 passed in tests/unit/knowledge/test_graphiti_client.py; 90% line coverage on src/study_tutor/knowledge/graphiti_client.py (10 missing of 105 stmts)",
+  "output_summary": "23/23 unit tests pass in tests/unit/knowledge/test_graphiti_client.py @ 90% line cov; new BDD bridge collects @task:TASK-GSM-003 scenario (1 pending, tolerated)",
   "quality_gates_passed": true
 }
