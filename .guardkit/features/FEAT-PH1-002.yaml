@@ -4,7 +4,7 @@ description: 'Phase 1 deterministic rule-based session planner (FEAT-PH1-002): S
   shape, rules 1/3/4 active, rules 2/5 stubs, rule-6 fallback, MCP integration with
   tutor_start_session, graceful degradation when FEAT-PH1-001 helpers are unavailable.'
 created: '2026-04-29T17:20:44.415206'
-status: planned
+status: passed
 complexity: 6
 estimated_tasks: 7
 tasks:
@@ -13,20 +13,36 @@ tasks:
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-001-session-plan-and-baseline.md
   complexity: 3
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-04-29T20:17:27.397398'
+  completed_at: '2026-04-29T20:22:19.171675'
 - id: TASK-DSP-002
   name: Rule protocol PlannerContext and Candidate types
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-002-rule-protocol-and-context.md
   complexity: 3
   dependencies:
   - TASK-DSP-001
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-04-29T20:22:19.185239'
+  completed_at: '2026-04-29T20:29:19.557087'
 - id: TASK-DSP-003
   name: Rule 1 learner override and Rule 3 weakest stale topic
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-003-rule-1-and-rule-3.md
@@ -34,20 +50,36 @@ tasks:
   dependencies:
   - TASK-DSP-001
   - TASK-DSP-002
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 3
+    final_decision: approved
+    error: null
+  turns_completed: 3
+  current_turn: 0
+  started_at: '2026-04-29T20:29:19.570598'
+  completed_at: '2026-04-29T21:23:31.132353'
 - id: TASK-DSP-004
   name: Rule 4 unrevisited misconception and Rule 2/5 stubs
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-004-rule-4-and-stubs.md
   complexity: 5
   dependencies:
   - TASK-DSP-002
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-04-29T20:29:19.573712'
+  completed_at: '2026-04-29T21:23:31.136159'
 - id: TASK-DSP-005
   name: plan_session pipeline and rule-6 fallback
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-005-pipeline-and-rule-6.md
@@ -55,20 +87,36 @@ tasks:
   dependencies:
   - TASK-DSP-003
   - TASK-DSP-004
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-04-29T21:23:31.150547'
+  completed_at: '2026-04-29T21:34:18.637005'
 - id: TASK-DSP-006
   name: Wire plan_session into tutor_start_session and graceful-degradation boundary
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-006-mcp-adapter-and-degradation.md
   complexity: 6
   dependencies:
   - TASK-DSP-005
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-04-29T21:34:18.651090'
+  completed_at: '2026-04-29T22:01:45.168810'
 - id: TASK-DSP-007
   name: BDD scenario execution gap tests and IMPLEMENTATION-GUIDE update
   file_path: tasks/backlog/deterministic-session-planner/TASK-DSP-007-bdd-scenarios-and-guide.md
@@ -76,9 +124,14 @@ tasks:
   dependencies:
   - TASK-DSP-006
   status: pending
-  description: ''
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result: null
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: null
 orchestration:
   parallel_groups:
   - - TASK-DSP-001
@@ -91,14 +144,30 @@ orchestration:
   estimated_duration_minutes: 479
   recommended_parallel: 2
 smoke_gates:
-  # R3 feature-level smoke oracle (TASK-SMK-F703A schema).
-  # Fires AFTER waves 5 and 6, when the MCP adapter is wired and
-  # end-to-end smoke scenarios become runnable. Earlier waves are
-  # gated by the per-task Coach.
-  # The four @smoke scenarios exercise rule-1, rule-3, rule-4, and
-  # MCP integration end-to-end - exactly the composition that
-  # per-task tests cannot see.
-  after_wave: [5, 6]
-  command: pytest -m "feat-ph1-002 and smoke" -x --no-cov
+  after_wave:
+  - 5
+  - 6
+  # TASK-DSP-009: marker uses underscore form because pytest's -m expression
+  # is evaluated as Python; hyphens would parse as subtraction and silently
+  # match nothing. See tests/smoke/test_session_planner.py on
+  # autobuild/FEAT-PH1-002.
+  command: pytest -m "feat_ph1_002 and smoke" -x --no-cov
   expected_exit: 0
   timeout: 60
+execution:
+  started_at: '2026-04-29T20:17:27.366920'
+  completed_at: '2026-04-29T22:01:46.058291'
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
+  total_turns: 10
+  tasks_completed: 6
+  tasks_failed: 0
+  current_wave: 5
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  last_updated: '2026-04-29T22:01:45.172759'
+  archived_at: null
+  archived_to: null
