@@ -2,6 +2,10 @@
 ## Phase: P0 reserved (CC-11) — schemas frozen here; in-process bus wired in P1
 ## Source of truth: docs/architecture/domain-model.md §8.2
 ## Generated: 2026-04-26 by /system-design (bias-to-defaults, Phase 0 scope)
+## Refreshed: 2026-04-27 by /system-design --focus="Tutoring" — sweep stale
+##   ADR-ARCH-003 reference in delivery_semantics.rationale; align to
+##   ADR-ARCH-019 every-write-point fire-and-forget; cross-reference DDR-003
+##   (session.completed emits on state transition, not on Graphiti write success).
 ##
 ## Delivery: in-process only (no NATS, no external broker). Subscribers MUST
 ## use the deepagents 0.5.3 AsyncSubAgent boundary or equivalent async hook
@@ -181,9 +185,24 @@ delivery_semantics:
   durability: at-most-once
   retry: none
   dead_letter: none
+  emit_decoupled_from_graphiti_write: true
   rationale: |
     Single-user posture (ADR-ARCH-014) plus async Graphiti write-back at
-    session-end (ADR-ARCH-003) make heavy delivery guarantees unnecessary.
+    every write point (ADR-ARCH-019, supersedes session-end-only ADR-ARCH-003;
+    CC-13 in ARCH-018) make heavy delivery guarantees unnecessary. Per
+    DDR-003 (docs/design/decisions/DDR-003-session-completed-emits-on-state-transition.md),
+    session.{started, turn_completed, completed} all emit on the relevant
+    state transition — never on Graphiti write acknowledgement — because
+    every Graphiti write at every site is fire-and-forget per ARCH-019 and
+    failures are log-only. The events bus is the consumer-facing source of
+    truth; the SessionEpisode in Graphiti is a secondary persistence
+    artefact whose absence is observable on the next session-status read
+    but does not block the event bus.
+
     A consumer crash on session.completed is an observable defect, not a
-    silent data-loss event — the SessionEpisode in Graphiti will be missing
-    and surface on the next session-status read.
+    silent data-loss event. Likewise, a Graphiti add_episode failure is
+    logged structurally but does not retry on the caller path and does not
+    surface to the MCP handler — the 27 Apr 2026 latency spike measured
+    add_episode median 78.98s, making any synchronous wait on the caller
+    path infeasible (~15× the 5s SR-08 threshold and ~39× the
+    tutor_session_end 2s budget).

@@ -1611,5 +1611,167 @@ Run /system-design — it will detect and report the design-artefact staleness f
 When /feature-spec for FEAT-PH1-001 runs, point it at ADR-ARCH-019 (not ARCH-003) and let it pick up the broadened scope for Coach misconception logging and Planner topic-confidence updates.
 
 
+/system-design --focus="MCP Transport" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/architecture/decisions/ADR-ARCH-017-tutor-start-session-sync-classification.md \
+  --context docs/research/ideas/graphiti-latency-spike-results.md
+
+✅ /system-design --focus="MCP Transport" complete
+Updated artefacts:
+
+
+docs/design/
+├── README.md                                              (§3 + §5 + §7 + §8 refreshed)
+├── contracts/
+│   └── API-mcp-transport.md                               (§1 + §5 + §6 + §10; new §5.5 + §5.6)
+├── models/
+│   └── DM-mcp-transport.md                                (§1 + §2 + §6 + §10; new I-MCP8 + I-MCP9)
+├── mcp-tools.json                                         (design_decisions block; new description_field_semantics; tutor_session_end description)
+└── decisions/
+    └── DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md   (NEW)
+Contradiction detection: ✓ No contradictions against the 19 architecture ADRs.
+OpenAPI validation: N/A — no REST surface (per ADR-ARCH-008; unchanged).
+C4 L3 review gate: N/A — MCP Transport has 3 internal components, threshold (>3) not met.
+JSON validation: ✓ mcp-tools.json parses; tool list and decision references intact.
+
+Out-of-focus stale references (flagged by ADR-018/019, not swept this run):
+
+API-tutoring.md §3.4 (still cites ADR-ARCH-003 directly)
+events-schema.yaml (ADR-ARCH-003 reference)
+CC-14 (num_ctx / num_predict) coverage in DM-tutoring.md / DM-inference-runtime.md
+Recommend /system-design --focus="Tutoring" and /system-design --focus="Inference Runtime" next to finish closing those.
+
+Recommended next steps:
+
+Confirm Graphiti seeding (above) — or defer.
+When implementing the next Phase 1 PR that touches src/study_tutor/mcp/server.py, add the DDR-001 substring test and the I-MCP8 handler-latency test documented in API-mcp-transport.md §10 and DM-mcp-transport.md §6.
+Run /system-design --focus="Tutoring" to close the remaining stale references in the Tutoring contract (tutor_session_end row + events-schema).
+
+
+/system-design --focus="Tutoring" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/research/ideas/graphiti-latency-spike-results.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ SYSTEM DESIGN COMPLETE — Tutoring (refresh)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Modified: docs/design/
+  ├── README.md                              (refresh log + DDR-002/003 + C4 L3 row)
+  ├── contracts/
+  │   └── API-tutoring.md                    (Δ1–Δ6 + Δ9: ADR-019/CC-13 alignment, F1/F2/F3 references, DDR-001/002/003 cross-refs)
+  ├── models/
+  │   └── DM-tutoring.md                     (Δ7–Δ9: I-T7 invariant, §11 flush points, persistence narrative)
+  └── events-schema.yaml                     (Δ10: ARCH-003 → ARCH-019; emit_decoupled flag; DDR-003 rationale)
+
+Created:
+  ├── decisions/
+  │   ├── DDR-002-coach-async-subagent-owns-graphiti-writes.md
+  │   └── DDR-003-session-completed-emits-on-state-transition.md
+  └── diagrams/
+      └── tutoring-c4-l3.md                  (8-component C4 L3, approved at gate)
+
+Out of scope (still pending):
+  • DM-inference-runtime.md / API-inference-runtime.md — CC-14 invariants
+    Recommended: /system-design --focus="Inference Runtime"
+
+Contradiction detection: ✓ no conflicts vs 19 architecture ADRs
+C4 L3 review gate: ✓ approved
+OpenAPI validation: N/A (no REST surface in Phase 0; ADR-ARCH-008)
+
+
+
+/system-design --focus="Inference Runtime" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md
+
+
+✅ SYSTEM DESIGN COMPLETE — /system-design --focus="Inference Runtime" (2026-04-27 PM late)
+Closes the last outstanding ADR-018/019 stale-reference item flagged in docs/design/README.md §5 / §7.6.
+
+Files updated / created
+
+docs/design/
+├── README.md                                 (logged 2026-04-27 PM-late refresh; closed Inference Runtime sweep)
+├── contracts/
+│   └── API-inference-runtime.md              (Δ1–Δ5: header refresh; §4 split client/Modelfile; §5 invariants 6 & 7; §7.2 CC-14 smoke tests; §8/§9 out-of-scope + open question)
+├── models/
+│   └── DM-inference-runtime.md               (Δ6–Δ8: §4 split; I-IR7 / I-IR8 invariants; §6 Modelfile relationship; §8 out-of-scope alignment)
+└── decisions/
+    └── DDR-004-num-ctx-modelfile-owned-not-client.md  (NEW — Modelfile-vs-client locus; CC-14 conformance via two-part smoke test)
+Design decisions captured
+DDR-004 — num_ctx is owned by the Ollama Modelfile, not by LLMClient. CC-14 conformance is enforced by a smoke test (ollama show <model> --modelfile | grep PARAMETER and runner-log inspection of llama_new_context_with_model: n_ctx = N), not by a per-request client check. OLLAMA_NUM_PREDICT (env var, default 2048) is the operator override for num_predict, not the CC-14 floor (≥ 1500 — Modelfile-default).
+Contradiction detection
+✓ No contradictions against the 19 architecture ADRs or DDR-001/002/003. Deltas implement ADR-ARCH-018's CC-14 mandate; non-Ollama-provider extension recorded as an open question rather than a conflict.
+
+C4 L3 review gate
+Skipped. Inference Runtime confirmed ≤ 3 internal components (LLMClient + provider-resolution helpers + lazy httpx-on-Ollama path; the Modelfile is a configuration artefact). Threshold not met.
+
+OpenAPI validation
+Skipped. No REST surface in Inference Runtime (it has no external protocol surface — internal Python interface only).
+
+
+/feature-spec "Graphiti Student Model — entities, relationships, episodes, query helpers, seeding script, async write-back" \
+  --from docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/phase-1-build-plan.md \
+  --context docs/research/ideas/phase-0-validation.md \
+  --context docs/research/ideas/graphiti-latency-spike-results.md \
+  --context domains/gcse-english/GOAL.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --context docs/design/decisions/DDR-002-coach-async-subagent-owns-graphiti-writes.md \
+  --context docs/design/decisions/DDR-003-session-completed-emits-on-state-transition.md \
+  --context /Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/tools/graphiti_client.py \
+  --context /Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/tools/graphiti_query.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE SPEC COMPLETE: Graphiti Student Model
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files written:
+
+features/graphiti-student-model/graphiti-student-model.feature
+features/graphiti-student-model/graphiti-student-model_assumptions.yaml
+features/graphiti-student-model/graphiti-student-model_summary.md
+Scenarios: 38 total
+@key-example: 8   @boundary: 9
+@negative: 7      @edge-case: 14
+@smoke: 4         @regression: 0
+
+Assumptions: 8 total
+high: 4 (auto-proceed)
+medium: 3 (Coach review recommended)
+low: 1 (human review required)
+
+REVIEW REQUIRED: 1 low-confidence assumption needs verification
+
+ASSUM-007 — process-shutdown grace period of 30 seconds. See assumptions YAML for verification notes.
+Deferred: 0 scenario groups
+
+Architectural anchors honoured: ADR-ARCH-019 (every-write-point async), DDR-002 (Coach owns own writes), DDR-003 (event-emit decoupled from write success), CC-13, LES1 §3 (graceful module load).
+
+Cross-repo discrepancy surfaced: fleet:appmilla (scope doc) vs appmilla-fleet (specialist-agent) — study-tutor follows scope doc, recorded in ASSUM-008.
+
+Next steps:
+
+
+Review: features/graphiti-student-model/graphiti-student-model.feature
+Pass to feature-plan:
+  /feature-plan "Graphiti Student Model" \
+    --context features/graphiti-student-model/graphiti-student-model_summary.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/feature-plan "Graphiti Student Model" \
+    --context features/graphiti-student-model/graphiti-student-model_summary.md
+
+
+
+
 
 

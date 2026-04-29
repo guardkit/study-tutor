@@ -1,0 +1,97 @@
+id: FEAT-1773
+name: Graphiti Student Model
+description: 'Persistent knowledge-graph-backed student model: 7 Pydantic entities
+  + 6 relationships, 3 episode types, lazy-import Graphiti client wrapper, single
+  shared fire-and-forget write helper (CC-13/DDR-002), 3 query helpers (state/recommendations/session-completion),
+  and Lilymay baseline seeding script. Honours ADR-ARCH-019 + DDR-002 + DDR-003.'
+created: '2026-04-27T22:37:53.161295'
+status: planned
+complexity: 5
+estimated_tasks: 6
+tasks:
+- id: TASK-GSM-001
+  name: Define Pydantic entities and relationships
+  file_path: tasks/backlog/graphiti-student-model/TASK-GSM-001-pydantic-entities-relationships.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-GSM-002
+  name: Define Pydantic episode types
+  file_path: tasks/backlog/graphiti-student-model/TASK-GSM-002-episode-types.md
+  complexity: 2
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 22
+- id: TASK-GSM-003
+  name: Implement Graphiti client wrapper
+  file_path: tasks/backlog/graphiti-student-model/TASK-GSM-003-graphiti-client-wrapper.md
+  complexity: 4
+  dependencies:
+  - TASK-GSM-001
+  - TASK-GSM-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-GSM-004
+  name: Implement shared async fire-and-forget write helper
+  file_path: tasks/backlog/graphiti-student-model/TASK-GSM-004-async-write-back-helper.md
+  complexity: 6
+  dependencies:
+  - TASK-GSM-001
+  - TASK-GSM-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-GSM-005
+  name: Implement student-model query helpers
+  file_path: tasks/backlog/graphiti-student-model/TASK-GSM-005-query-helpers.md
+  complexity: 5
+  dependencies:
+  - TASK-GSM-003
+  - TASK-GSM-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-GSM-006
+  name: Write Lilymay baseline seeding script
+  file_path: tasks/backlog/graphiti-student-model/TASK-GSM-006-seeding-script.md
+  complexity: 3
+  dependencies:
+  - TASK-GSM-005
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+orchestration:
+  parallel_groups:
+  - - TASK-GSM-001
+    - TASK-GSM-002
+  - - TASK-GSM-003
+    - TASK-GSM-004
+  - - TASK-GSM-005
+  - - TASK-GSM-006
+  estimated_duration_minutes: 326
+  recommended_parallel: 2
+smoke_gates:
+  after_wave_1:
+    # Wave 1 ships pure-data modules; assert they import cleanly + entity construction works
+    - python -c "from study_tutor.knowledge.student_model import Student, Subject, Text, Topic, AssessmentObjective, Misconception, TopicConfidence, STUDENT_GROUP_PREFIX, SUBJECT_GROUP_PREFIX, FLEET_GROUP_ID; assert FLEET_GROUP_ID == 'fleet:appmilla'"
+    - python -c "from study_tutor.knowledge.episodes import EpisodeBase, SessionCompletedEpisode, TopicConfidenceUpdatedEpisode, MisconceptionObservedEpisode; assert 'episode_kind' in EpisodeBase.model_fields"
+  after_wave_2:
+    # Wave 2 ships substrate; assert client wrapper module-loads without graphiti-core, and CC-13 single-call-site invariant holds
+    - python -c "from study_tutor.knowledge.graphiti_client import GraphitiConnectionConfig; cfg = GraphitiConnectionConfig(falkor_host='localhost', falkor_port=6379, database='t', embedder_url='http://x:8001'); assert cfg.timeout_seconds == 5.0"
+    - bash -c 'count=$(git grep -nE "add_episode\\s*\\(" -- src/ | wc -l | tr -d " "); test "$count" = "1" || (echo "CC-13 violation: expected exactly 1 add_episode call site, found $count" && exit 1)'
+  after_wave_3:
+    # Wave 3 ships query helpers; assert the three async helpers are importable + the F3 contract is callable with client=None as a no-op
+    - python -c "from study_tutor.knowledge.queries import get_student_state, get_topic_recommendations, record_session_completion; assert callable(get_student_state) and callable(get_topic_recommendations) and callable(record_session_completion)"
+  after_wave_4:
+    # Wave 4 ships seeding; assert script is a callable module + has the verification-gate import
+    - python -c "import scripts.seed_student_model as s; assert hasattr(s, 'require_client_or_exit')"

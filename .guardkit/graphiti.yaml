@@ -1,4 +1,4 @@
-project_id: study-tutor
+project_id: study_tutor
 enabled: true
 graph_store: falkordb
 falkordb_host: whitestocks

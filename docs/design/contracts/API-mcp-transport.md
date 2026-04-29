@@ -1,15 +1,16 @@
 # API Contract — MCP Transport
 
 **Bounded context:** MCP Transport
-**Phase:** P0 (live)
+**Phase:** P0 (live), with Phase 1 evolution under CC-13
 **Status:** Accepted — design captures live behaviour in `src/study_tutor/mcp/{server.py, adapter.py}` and `scripts/mcp-wrapper.sh`
 **Generated:** 2026-04-26 by `/system-design` (bias-to-defaults, Phase 0 scope)
+**Refreshed:** 2026-04-27 by `/system-design --focus="MCP Transport"` to absorb [ADR-ARCH-017](../../architecture/decisions/ADR-ARCH-017-tutor-start-session-sync-classification.md), [ADR-ARCH-018](../../architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md), [ADR-ARCH-019](../../architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md), and the [27 Apr 2026 Graphiti latency spike](../../research/ideas/graphiti-latency-spike-results.md) (`add_episode` median 78.98s).
 
 ---
 
 ## 1. Purpose
 
-MCP Transport is a **thin façade** owning the external protocol surface for AI agents. It enforces transport-layer invariants (SR-01 / SR-02 / SR-07 / CC-08) and turns the tutor into a discoverable, invokable system. The tools themselves and their behavioural contracts belong to **Tutoring** — see `API-tutoring.md`.
+MCP Transport is a **thin façade** owning the external protocol surface for AI agents. It enforces transport-layer invariants (SR-01 / SR-02 / SR-07 / CC-08 / CC-13) and turns the tutor into a discoverable, invokable system. The tools themselves and their behavioural contracts belong to **Tutoring** — see `API-tutoring.md`. CC-14 (runtime LLM parameters explicit) is owned by Inference Runtime / Tutoring; this contract notes only its presence on the cross-cutting checklist (see §5.5).
 
 This contract documents the **transport invariants** and **CLI surface**, not the per-tool semantics.
 
@@ -52,27 +53,34 @@ This contract documents the **transport invariants** and **CLI surface**, not th
 
 **Conformance check:** README's `claude_desktop_config.json` snippet uses the bash wrapper with absolute path. Spot-checked during the clean-machine walkthrough (FEAT-PO-003 Wednesday gate).
 
-## 5. Tool registration invariants (SR-07 / CC-07)
+## 5. Tool registration invariants (SR-07 / CC-07 / CC-13)
 
 1. **Tool description ≡ implementation contract.** A tool's MCP description string is the externally-visible contract. Behaviour must match. SR-07 disallows the "undefined middle" — every tool is **sync** (< 30s end-to-end) or **long-running** (returns a tracking ID immediately, behaviour exposed via a polled companion tool).
 2. **Sync ceiling is 30s.** Inherits from MCP client timeouts (Claude Desktop's 240s ceiling is a hard upper bound; the operational target is < 30s).
-3. **Long-running tools return a tracking ID in ≤ 1s** (CC-08). P0 has none after [decision D2 (2026-04-26)](../../research/ideas/phase-0-build-plan.md) reclassified `tutor_start_session` as sync.
+3. **Long-running tools return a tracking ID in ≤ 1s** (CC-08). P0 has none — `tutor_start_session` is sync per [ADR-ARCH-017](../../architecture/decisions/ADR-ARCH-017-tutor-start-session-sync-classification.md) (closes design decision D2 from the 2026-04-26 pass).
 4. **Phase-1 background work uses deepagents AsyncSubAgent.** Hand-rolled `asyncio.create_task(...)` is acceptable for the Phase-0 warm-up case (warm-up is fire-and-forget, not user-observable), but the Coach (P1) **must** use AsyncSubAgent (CC-12) per ADR-ARCH-012.
+5. **Graphiti write side-effects are implementation-internal (CC-13 / SR-07).** When Phase 1 adds Graphiti writes inside `tutor_turn` (mid-session: Coach misconceptions, planner topic-confidence updates) and `tutor_session_end` (session-end episode), those writes are **fire-and-forget at every write point** per [ADR-ARCH-019](../../architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md) (broadens the prior session-end-only ARCH-003 framing). The MCP tool description string for those tools **does not** enumerate the Graphiti write — see [DDR-001](../decisions/DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md). Empirical anchor: the [2026-04-27 Graphiti latency spike](../../research/ideas/graphiti-latency-spike-results.md) measured `add_episode` median **78.98s** — ~15× the 5s SR-08 threshold and ~26× the original DEC-08 1–3s assumption. Awaiting any such write on the caller path is a guaranteed SR-07 / CC-08 violation. Read-path reads (`search_nodes` median 0.07s) remain compatible with the sync classification of `tutor_start_session` / `tutor_session_status`.
 
-**Conformance check (recommended):** add a tool-contract test that introspects every registered MCP tool's description and asserts the classification keyword (`"sync"` or `"long-running"`) matches the handler's measured latency band over a sample.
+### 5.5 CC-14 (runtime LLM parameters) — pointer
+CC-14 (every Modelfile sets explicit `num_ctx` / `num_predict`, with smoke-test assertions via `ollama show` *and* runner-log inspection) is owned by **Inference Runtime** / **Tutoring**. MCP Transport carries it on its cross-cutting checklist for completeness only; the contract surface (tool descriptions, schemas, error envelope) does not change with CC-14.
 
-## 6. Tool inventory (P0)
+### 5.6 Phase 1 reversion-conditional rule (from ADR-ARCH-017)
+If a future Phase 1 measurement shows that the Graphiti student-model **read** at session start pushes `search_nodes` median > ~3s, `tutor_start_session` reverts to **long-running** and a `_status` / `_cancel` companion tool is added. The 27 Apr spike measured 0.07s — the condition is **not** triggered today. The reversion path is documented here so an `/arch-refine` flip is unsurprising rather than disruptive.
 
-The MCPAdapter registers exactly four tools, all **sync** post-D2:
+**Conformance check (recommended):** add a tool-contract test that introspects every registered MCP tool's description and asserts the classification keyword (`"sync"` or `"long-running"`) matches the handler's measured latency band over a sample. The same test should assert that no MCP tool description enumerates a Graphiti operation (CC-13 / DDR-001).
 
-| Tool | Class | Source |
-|---|---|---|
-| `tutor_start_session` | sync | `MCPAdapter.tutor_start_session` (warm-up via `asyncio.create_task`) |
-| `tutor_turn` | sync | `MCPAdapter.tutor_turn` (LLM call wrapped in `asyncio.to_thread`) |
-| `tutor_session_status` | sync | `MCPAdapter.tutor_session_status` |
-| `tutor_session_end` | sync | `MCPAdapter.tutor_session_end` (P1: triggers async Graphiti write inside; classification unchanged) |
+## 6. Tool inventory (P0 + P1 evolution)
 
-Per-tool input/output schemas live in `docs/design/mcp-tools.json` and `docs/design/contracts/API-tutoring.md §3`.
+The MCPAdapter registers exactly four tools, all **sync** per ADR-ARCH-017:
+
+| Tool | Class | Source | P1 Graphiti side-effects (per CC-13 / ADR-ARCH-019) |
+|---|---|---|---|
+| `tutor_start_session` | sync | `MCPAdapter.tutor_start_session` (warm-up via `asyncio.create_task`) | Reads student-model context (`search_nodes`, 0.07s — sync-safe). No writes. Reversion to long-running gated on §5.6 measurement. |
+| `tutor_turn` | sync | `MCPAdapter.tutor_turn` (LLM call wrapped in `asyncio.to_thread`) | **Mid-session writes are fire-and-forget at every write point** — Coach-observed misconceptions and planner topic-confidence updates use deepagents `AsyncSubAgent` (CC-12) or `asyncio.create_task` per ARCH-019. Tool description does not enumerate these writes (DDR-001). |
+| `tutor_session_status` | sync | `MCPAdapter.tutor_session_status` | Read-only. May read student-model state (sync-safe). |
+| `tutor_session_end` | sync | `MCPAdapter.tutor_session_end` | **Session-end Graphiti episode write is fire-and-forget** per ARCH-019 — no longer the single write point, but still a write point. Handler returns < 2s regardless of `add_episode` latency (78.98s median). Tool description does not enumerate this write (DDR-001). |
+
+Per-tool input/output schemas live in `docs/design/mcp-tools.json` and `docs/design/contracts/API-tutoring.md §3`. The tool **input/output schema set is unchanged** by ADR-019: the contract surface is identical to P0; only the implementation-internal write topology broadens.
 
 ## 7. Configuration surface
 
@@ -97,5 +105,6 @@ MCP Transport does not introduce its own error shape — handlers return the Tut
 ## 10. Open questions for downstream phases
 
 1. **P1 — HTTP transport.** If the dashboard (P2) or Reachy (P2 stretch) needs network access, decide between (a) HTTP MCP transport, (b) static export + read-only SDK, or (c) on-host-only SDK (Reachy). Currently leaning (b) per ARCHITECTURE.md §5.
-2. **P1 — long-running reclassification.** If `tutor_start_session` adds Graphiti reads at session start that exceed 1s, reverse decision D2 and re-add the long-running classification + companion polling contract.
+2. **P1 — long-running reclassification (RESOLVED for current spike measurement).** ADR-ARCH-017 §"Phase 1 reversion condition" sets the rule: revert iff `search_nodes` median > ~3s at session-start read. The 27 Apr spike measured 0.07s, so the condition does not fire today. Re-evaluate if the Phase-1 student-model read path adds entity hops or a co-located text retrieval that changes the latency shape.
 3. **P2 — multi-role.** If multi-subject expansion lands, the wrapper `--role` flag becomes load-bearing; today it is a no-op (`tutor` is the only registered role).
+4. **P1+ — tool-contract test for DDR-001.** Add a test that asserts no MCP tool description string contains substrings like "Graphiti", "FalkorDB", "episode", or "write-back" (case-insensitive). Cheaper than per-PR review and catches accidental SR-07 leakage as Phase 1 features add write sites.

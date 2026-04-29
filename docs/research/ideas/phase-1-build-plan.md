@@ -1,8 +1,8 @@
 # Phase 1 Build Plan — Three-Layer Architecture + Student Model
 
 ## For: Weekend build (26–27 April 2026) + weekday evenings 28 April – 1 May
-## Date: 17 April 2026 (last updated 23 April 2026 — FEAT-PH1-004 added from 23 Apr empirical findings)
-## Status: Pre-execution prerequisites partially landed (2026-04-27). Graphiti latency spike DONE — `add_episode` median 78.98s, `search_nodes` 0.07s ([graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md)). Architecture cross-cutting concerns extended: ADR-ARCH-018 (SR-08 → CC-13, SR-09 → CC-14, six → fourteen parity surfaces) and ADR-ARCH-019 (async Graphiti write-back at every write point; supersedes ADR-ARCH-003) accepted and seeded into `architecture_decisions`. Saturday-morning latency spike + Phase 0 validation gate items in this plan are partially pre-completed; remaining: Phase 0 validation gate write-up, then proceed to FEAT-PH1-001 schema work.
+## Date: 17 April 2026 (last updated 2026-04-27 PM late — Inference Runtime design refresh + DDR-004 landed; all ADR-018/019 stale-reference sweeps complete)
+## Status: Pre-execution prerequisites largely landed (2026-04-27). Graphiti latency spike DONE — `add_episode` median 78.98s, `search_nodes` 0.07s ([graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md)). Architecture cross-cutting concerns extended: ADR-ARCH-018 (SR-08 → CC-13, SR-09 → CC-14, six → fourteen parity surfaces) and ADR-ARCH-019 (async Graphiti write-back at every write point; supersedes ADR-ARCH-003) accepted and seeded into `architecture_decisions`. **All three Phase-0-context design refreshes complete:** (a) MCP Transport via `/system-design --focus="MCP Transport"` (AM) — new design rule [DDR-001](../../design/decisions/DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md) (no Graphiti enumeration in MCP descriptions; I-MCP8 / I-MCP9 invariants); (b) Tutoring via `/system-design --focus="Tutoring"` (PM) — [DDR-002](../../design/decisions/DDR-002-coach-async-subagent-owns-graphiti-writes.md) (Coach AsyncSubAgent owns its own writes), [DDR-003](../../design/decisions/DDR-003-session-completed-emits-on-state-transition.md) (`session.completed` emits on state transition, not write success), I-T7 invariant, 8-component C4 L3 diagram with F1/F2/F3 flush points; (c) Inference Runtime via `/system-design --focus="Inference Runtime"` (PM late) — [DDR-004](../../design/decisions/DDR-004-num-ctx-modelfile-owned-not-client.md) (`num_ctx` Modelfile-owned not `LLMClient`-owned; CC-14 conformance via two-part smoke test), I-IR7 / I-IR8 invariants, §4 client/Modelfile config split. All artefacts seeded into Graphiti. Saturday-morning latency spike + Phase 0 validation gate items in this plan are partially pre-completed; remaining: Phase 0 validation gate write-up, then proceed to FEAT-PH1-001 schema work.
 ## Repo: `study-tutor` (Phase 0 scaffolding already present)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (Ollama + embedder), Synology NAS over Tailscale (FalkorDB), Google Gemini (Graphiti entity extraction + Coach)
 ## Target completion: End of Friday 2 May 2026 (close of Week 2 of the 31-day burn)
@@ -30,7 +30,7 @@ Week 2 of the 31-day build. Turns the Phase 0 MCP-accessible single-LLM tutor in
 4. Player-Coach tutoring loop runs end-to-end
 5. Session completion writes to Graphiti
 6. Demo flow works end-to-end
-7. Six parity surfaces still green (SR-01..SR-07); SR-08 (async write-back) and **SR-09 (runtime LLM param assertion)** established. _Architecture-level establishment DONE 2026-04-27_ via ADR-ARCH-018 (CC-13 / CC-14 promotion) and ADR-ARCH-019 (async write-back broadened to every Graphiti write point). Phase 1 work that remains: structural conformance — every Graphiti write site routed through a fire-and-forget helper (CC-13), and CC-14 smoke tests landing per Modelfile change.
+7. Six parity surfaces still green (SR-01..SR-07); SR-08 (async write-back) and **SR-09 (runtime LLM param assertion)** established. _Architecture-level establishment DONE 2026-04-27_ via ADR-ARCH-018 (CC-13 / CC-14 promotion) and ADR-ARCH-019 (async write-back broadened to every Graphiti write point). _Design-level establishment DONE 2026-04-27_ across three focus runs: MCP Transport (I-MCP8 handler-latency invariant under Graphiti slowdowns; I-MCP9 no-Graphiti-enumeration substring rule); Tutoring (I-T7 fire-and-forget invariant + DDR-002 write ownership + DDR-003 event-emit-on-state-transition + 8-component C4 L3); Inference Runtime (DDR-004 `num_ctx` Modelfile-owned + I-IR7 / I-IR8 invariants + CC-14 two-part smoke test pattern). Phase 1 work that remains is **structural conformance in code**: (a) every Graphiti write site routed through a single fire-and-forget helper (CC-13 / DDR-002 — F1 owned by Coach AsyncSubAgent, F2 / F3 dispatched from Tutor handler); (b) **DDR-001 substring test** + **I-MCP8 handler-latency test** added to `tests/unit/mcp/`; (c) **DDR-003 event-emit-without-write test** added to `tests/integration/`; (d) **CC-14 Modelfile-parameter smoke test** + **CC-14 client-payload smoke test** (per DDR-004) added to `tests/smoke/` and `tests/unit/llm/`. All four test categories land alongside the FEAT-PH1-003 Player-Coach loop work.
 8. Technical write-up has content
 9. Phase 2 build plan drafted
 10. Phase 0 validation gate run
@@ -239,7 +239,9 @@ Use Tuesday evening for an honest review of tutoring quality. The demo video dep
 
 3. **File tightening tasks for Wednesday/Thursday.** Don't fix in-flight on Tuesday. Keep Tuesday observational; Wednesday does the fixes.
 
-**End-of-Tuesday state:** Known failure modes catalogued.
+4. **Bedrock validation go/no-go decision** (per [phase-0-validation.md §"What this changes in Phase 1" item 4](./phase-0-validation.md)). Phase 0 success criterion #3 is falsified-but-deferred under TASK-CDR-005. Decide tonight based on GB10's training schedule for the demo-capture window (11–17 May): if GB10 will be free, Bedrock can ride into Phase 2 as scope; if GB10 will be busy mid-demo-week, sequence FEAT-PO-004 (S3 upload + Bedrock import + LLM-client wiring) into a Wednesday or Thursday Phase 1 evening before the 4 May Phase 2 build-plan write-up. ~5 minutes of decision-making; outcome recorded in `phase-1-validation.md` seed on Friday.
+
+**End-of-Tuesday state:** Known failure modes catalogued; Bedrock timing decided.
 
 ---
 
@@ -288,6 +290,27 @@ Phase 1 ends. Phase 2 starts Saturday 3 May.
 ## GuardKit Command Sequence
 
 Phase 1 follows the same GuardKit pattern as Phase 0 — front-load the system-level commands, then per-feature spec-and-plan. Differs from Phase 0 in that the ARCHITECTURE.md and DESIGN.md already exist from Phase 0 and are *updated* in Phase 1 rather than regenerated.
+
+### Pre-execution invocations already run (2026-04-27)
+
+The following commands ran ahead of the Saturday wave to absorb Phase 0 design drift into the post-latency-spike picture. Captured here so Saturday morning starts with the picture aligned, not with re-runs.
+
+| Date | Command | Outcome |
+|---|---|---|
+| 2026-04-27 | `/arch-refine --adr=ADR-ARCH-009` (SR-08 → CC-13, SR-09 → CC-14) | ADR-ARCH-018 accepted; supersedes ADR-ARCH-009. Six → fourteen parity surfaces. |
+| 2026-04-27 | `/arch-refine --adr=ADR-ARCH-003` (broaden async write-back) | ADR-ARCH-019 accepted; supersedes ADR-ARCH-003. Async Graphiti write-back applies at every write point. |
+| 2026-04-27 AM | `/system-design --focus="MCP Transport"` | `API-mcp-transport.md`, `DM-mcp-transport.md`, `mcp-tools.json`, `design/README.md` refreshed. New: [`DDR-001`](../../design/decisions/DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md). New invariants I-MCP8 / I-MCP9. Contradiction detection ✓ against 19 ADRs. |
+| 2026-04-27 PM | `/system-design --focus="Tutoring"` | `API-tutoring.md`, `DM-tutoring.md`, `events-schema.yaml`, `design/README.md` refreshed (10 deltas). New: [`DDR-002`](../../design/decisions/DDR-002-coach-async-subagent-owns-graphiti-writes.md) (Coach owns own writes; F1/F2/F3 ownership pinned), [`DDR-003`](../../design/decisions/DDR-003-session-completed-emits-on-state-transition.md) (events decoupled from Graphiti write success). New: [`tutoring-c4-l3.md`](../../design/diagrams/tutoring-c4-l3.md) — 8-component diagram approved at mandatory review gate. New invariant I-T7. Contradiction detection ✓ against 19 ADRs. |
+| 2026-04-27 PM late | `/system-design --focus="Inference Runtime"` | `API-inference-runtime.md`, `DM-inference-runtime.md`, `design/README.md` refreshed (10 deltas; §4 client/Modelfile split). New: [`DDR-004`](../../design/decisions/DDR-004-num-ctx-modelfile-owned-not-client.md) (`num_ctx` Modelfile-owned not client-owned; CC-14 conformance via two-part smoke test — `ollama show … \| grep PARAMETER` + runner-log line `llama_new_context_with_model: n_ctx = N`). New invariants I-IR7 / I-IR8. C4 L3 skipped (≤ 3 components). Contradiction detection ✓ against 19 ADRs + 3 prior DDRs. **Closes the last outstanding ADR-018/019 stale-reference item.** |
+| 2026-04-27 | Graphiti seeding (complete for all three runs) | All ADRs + DDRs + design artefacts seeded sequentially across `architecture_decisions`, `project_design`, and `project_knowledge` groups. Tally: 4 DDRs (1 episode each) → `architecture_decisions`; 6 contracts/data-models (chunked: API-mcp-transport 11, API-tutoring 9, DM-tutoring 12, API-inference-runtime 10, plus single-episode DM-mcp-transport / DM-inference-runtime) + tutoring C4 L3 diagram + design README → `project_design` / `project_knowledge`. ~50 episodes total at ~79s each (~10 min wall-clock per batch with concurrency 3). YAML / JSON files (`events-schema.yaml`, `mcp-tools.json`) not directly seeded — no parser in `guardkit graphiti add-context`; content is referenced via the seeded `.md` artefacts. |
+
+### Outstanding pre-FEAT-PH1-001 items
+
+- **`/system-arch` Phase 1 update.** Not yet run — the architecture summary still describes Phase 1 in pre-spike terms (some Phase 1 row text refreshed in-place by ARCH-019 in `ARCHITECTURE.md` / `container.md` / `domain-model.md`, but the full `/system-arch` re-grounding hasn't been invoked). Lower priority now that all three Phase-0-context design refreshes have landed against the new ADRs without contradictions — the architectural foundation is consistent; the `/system-arch` re-run mostly produces narrative + assumption updates rather than substantive structural changes.
+- ~~**`/system-design` for Tutoring + Inference Runtime contexts.**~~ ✅ **DONE 2026-04-27 PM and PM late.** Tutoring closed via `/system-design --focus="Tutoring"` (DDR-002, DDR-003, I-T7, C4 L3 — see Pre-execution table above); Inference Runtime closed via `/system-design --focus="Inference Runtime"` (DDR-004, I-IR7, I-IR8 — see Pre-execution table above). FEAT-PH1-003 Coach loop spec can now land against fresh contracts; the structural conformance items (DDR-001 substring test, I-MCP8 / I-T7 handler-latency tests, DDR-003 event-emit-without-write test, CC-14 Modelfile + client-payload smoke tests per DDR-004) are listed as code work in success criterion #7.
+- **Phase 0 validation gate write-up.** Still owed (Saturday morning step 1 of the original plan).
+
+### Original Saturday-morning sequence (still applies for the Phase 1 system-level re-grounding)
 
 ```bash
 # Saturday 26 April morning, after spike + Phase 0 validation
@@ -385,6 +408,8 @@ Phase 1 follows the same GuardKit pattern as Phase 0 — front-load the system-l
 | `tests/integration/test_tutoring_loop.py` | FEAT-PH1-003 | NEW |
 | `tests/integration/test_rag_end_to_end.py` | FEAT-PH1-004 | NEW (Shakespeare → retrieve+verify; Inspector Calls → skip+analysis-mode) |
 | `tests/smoke/test_ollama_runtime_params.py` | SR-09 | NEW (asserts num_ctx and num_predict reach runner) |
+| `tests/unit/mcp/test_descriptions_no_graphiti_terms.py` | DDR-001 / I-MCP9 | NEW (substring test: no registered MCP tool description mentions graphiti / falkor / episode / write-back, case-insensitive) |
+| `tests/unit/mcp/test_handler_latency_under_graphiti_slowdown.py` | I-MCP8 / CC-13 | NEW (`tutor_turn` and `tutor_session_end` return within budget when the Graphiti write helper is patched to sleep ≥ 30s) |
 
 ### Modified files
 

@@ -2,11 +2,15 @@
   "$schema": "https://modelcontextprotocol.io/schemas/tool/v1",
   "study_tutor_version": "0.1.0",
   "phase": "P0",
-  "generated_at": "2026-04-26",
-  "generated_by": "/system-design (bias-to-defaults)",
+  "generated_at": "2026-04-27",
+  "generated_by": "/system-design --focus=\"MCP Transport\" (refresh)",
   "source_of_truth": "src/study_tutor/mcp/adapter.py",
+  "description_field_semantics": "The 'description' field for each tool below is the DESIGN-ARTEFACT description (carries rationale and Phase-1 evolution notes for human design readers). The LIVE REGISTERED tool description string passed to FastMCP.add_tool(...) lives in src/study_tutor/mcp/server.py and is intentionally minimal per DDR-001 — it does NOT enumerate Graphiti write side-effects, even though those side effects are present in the implementation. Do not copy the 'description' field from this JSON into server.py verbatim.",
   "design_decisions": {
-    "D2": "tutor_start_session classified as 'sync' (not 'long-running') per phase-0-build-plan.md punch-list item 7"
+    "ADR-ARCH-017": "tutor_start_session classified as 'sync' (closes prior design decision D2). Phase 1 reversion-conditional rule documented in API-mcp-transport.md §5.6.",
+    "ADR-ARCH-018": "Cross-cutting concerns extended with CC-13 (Graphiti async at every write point) and CC-14 (runtime LLM params explicit and asserted).",
+    "ADR-ARCH-019": "Async Graphiti write-back at every write point (broadens session-end-only ARCH-003); applies to tutor_turn (mid-session: Coach misconceptions, planner topic-confidence) and tutor_session_end (session-end episode).",
+    "DDR-001": "MCP tool descriptions do not enumerate Graphiti write side-effects, even after CC-13 broadens fire-and-forget writes to every write point. See docs/design/decisions/DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md."
   },
   "tools": [
     {
@@ -110,7 +114,7 @@
     {
       "name": "tutor_session_end",
       "classification": "sync",
-      "description": "Sync. Mark a tutoring session ended. Phase 0 flips status only; Phase 1 will trigger an async Graphiti write-back inside the handler (the side effect is implementation-internal per SR-07 and is not part of the user-visible contract).",
+      "description": "Sync. Mark a tutoring session ended. Returns within < 2s. Phase 0 flips status only; Phase 1 adds fire-and-forget persistence at every write point per CC-13 / ADR-ARCH-019, but those side effects are implementation-internal (SR-07 / DDR-001) and are not part of the user-visible contract.",
       "inputSchema": {
         "type": "object",
         "properties": {

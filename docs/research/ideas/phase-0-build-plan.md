@@ -2,7 +2,7 @@
 
 ## For: Weekend build (19–20 April 2026 + continuation through Friday 24 April)
 ## Date: 17 April 2026 (last updated 27 April 2026)
-## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017). Graphiti latency spike DONE 27 Apr — SR-08 elevated to CRITICAL; ARCH-017 sync classification confirmed with massive margin. SR-08 bundled `/arch-refine` DONE 27 Apr — ADR-ARCH-018 promotes SR-08 → CC-13 and SR-09 → CC-14 (six → fourteen parity surfaces); ADR-ARCH-019 broadens async write-back from session-end-only to every Graphiti write point. Both ADRs seeded into `architecture_decisions`.**
+## Status: **In-flight — weekend code work complete; close-out gates pending. /arch-refine D2 closed 27 Apr (ADR-ARCH-017). Graphiti latency spike DONE 27 Apr — SR-08 elevated to CRITICAL; ARCH-017 sync classification confirmed with massive margin. SR-08 bundled `/arch-refine` DONE 27 Apr — ADR-ARCH-018 promotes SR-08 → CC-13 and SR-09 → CC-14 (six → fourteen parity surfaces); ADR-ARCH-019 broadens async write-back from session-end-only to every Graphiti write point. MCP Transport design refresh DONE 27 Apr AM (DDR-001 + I-MCP8/I-MCP9). Tutoring design refresh DONE 27 Apr PM — DDR-002 (Coach AsyncSubAgent owns its own writes), DDR-003 (`session.completed` emits on state transition, not Graphiti write success), C4 L3 component diagram (8-component Tutoring container, F1/F2/F3 flush points), I-T7 fire-and-forget invariant. **Inference Runtime design refresh DONE 27 Apr PM late — DDR-004 (`num_ctx` is Modelfile-owned not `LLMClient`-owned; CC-14 conformance via two-part smoke test), I-IR7/I-IR8 invariants, §4 client/Modelfile config split. All ADR-018/019 stale-reference sweeps now complete.** All ADRs + DDRs + design artefacts seeded into Graphiti (`architecture_decisions` + `project_knowledge` + `project_design`).**
 ## Repo: `guardkit/study-tutor` (or equivalent — currently a near-empty repo at `/Users/richardwoollcott/Projects/appmilla_github/study-tutor`)
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (inference), Synology NAS over Tailscale (FalkorDB, Phase 1 only)
 ## Target completion: End of Friday 24 April 2026 (close of Week 1 of the 31-day burn)
@@ -49,6 +49,29 @@
    **In-session decisions (2026-04-26):**
    - **D1 — Tutoring schema P0-only.** The `TutorSession` data model artefact documents the Phase-0 shape only (`session_id, subject, topic, status, turns, started_at, ended_at`). P1 fields (`student_id`, `grade_target`, `paper`, `aos_scaffolded`, `rag_chunks_used`, `TurnFeedback`, `SessionSummary`) are deferred to a `/system-design --focus="Tutoring"` re-run when P1 wires Graphiti + Coach. Rationale: matches what's true in `src/study_tutor/session/tutor_session.py` today; avoids contract-drift before P1 implementation.
    - **D2 — `tutor_start_session` classified `sync`.** ✅ **CLOSED 2026-04-27 by `/arch-refine` → ADR-ARCH-017** (partially supersedes ADR-ARCH-008 SR-07 classification table). The design artefact classifies `tutor_start_session` as **sync** (returns `session_id` synchronously; warm-up LLM call is opportunistic fire-and-forget, not a polled long-running task). Architecture set, scope/build-plan docs, and the runtime MCP tool description in `src/study_tutor/mcp/server.py` all aligned. Phase 1 reversion path documented and conditional on the Graphiti latency spike (`phase-1-scope.md §"Graphiti latency spike"`): if `search_nodes` median > ~3s for the student-model read at session start, reclassify back to long-running and add the `_status`/`_cancel` companion. Both ADRs seeded into Graphiti `architecture_decisions` group.
+
+   **Addendum (2026-04-27) — MCP Transport design refresh after the latency spike + ADR-017/018/019:**
+   - `/system-design --focus="MCP Transport"` ran to absorb the three new ADRs and the 78.98s `add_episode` median into the design artefacts. Five deltas applied (D2 → ADR-017 wording; CC-13 + CC-14 added to invariants list; ADR-019 every-write-point broadening; latency-spike anchoring; `mcp-tools.json` description refresh). Updated: [`API-mcp-transport.md`](../../design/contracts/API-mcp-transport.md) (§1 + §5 + §6 + §10; new §5.5 + §5.6), [`DM-mcp-transport.md`](../../design/models/DM-mcp-transport.md) (§1 + §2 + §6 + §10; new I-MCP8 + I-MCP9), [`mcp-tools.json`](../../design/mcp-tools.json) (`design_decisions` block; new `description_field_semantics`; `tutor_session_end` description), [`design/README.md`](../../design/README.md) (§3 + §5 + §7 + §8). Contradiction detection ✓ against the 19 ADRs.
+   - **D3 — DDR-001 (NEW design rule).** [DDR-001](../../design/decisions/DDR-001-mcp-descriptions-do-not-enumerate-graphiti-writes.md) records that MCP tool description strings registered via `FastMCP.add_tool(...)` do **not** enumerate Graphiti write side-effects, even after CC-13 broadens fire-and-forget writes to every write point. Enforced by **I-MCP9** (substring test asserting no registered description mentions graphiti / falkor / episode / write-back, case-insensitive). Live registered descriptions in `src/study_tutor/mcp/server.py` already comply — DDR-001 codifies the existing implicit rule and prevents Phase 1 PR drift.
+   - **I-MCP8 (NEW invariant).** Handler-latency invariant under Graphiti slowdowns: `tutor_turn` and `tutor_session_end` must return within budget even when the Graphiti write helper sleeps ≥ 30s. Recommended unit test added to the FEAT-PH1-003 file list in [phase-1-build-plan.md](./phase-1-build-plan.md).
+   - **Out-of-focus stale references** (flagged by ADR-018/019, not swept in this MCP-Transport-focused run): `API-tutoring.md §3.4`, `events-schema.yaml`, CC-14 coverage in `DM-tutoring.md` / `DM-inference-runtime.md`. Closure path: `/system-design --focus="Tutoring"` and `/system-design --focus="Inference Runtime"` before FEAT-PH1-003 starts. **Tutoring closure: ✅ DONE 2026-04-27 PM (see addendum below).** Inference Runtime closure: still pending — see GuardKit Command Sequence for the ready-to-run invocation.
+   - **Graphiti seeding (in flight).** DDR-001 ✓ seeded (`architecture_decisions`, 1 episode). API-mcp-transport.md (11 chunks) + DM-mcp-transport.md (1 chunk) seeding to `project_design` running in background — wall-clock ~17 min at the measured `add_episode` median. `mcp-tools.json` not seeded (no JSON parser in `guardkit graphiti add-context`); markdown artefacts cite the spec by reference.
+
+   **Addendum (2026-04-27 PM) — Tutoring design refresh after the latency spike + ADR-018/019 + DDR-001:**
+   - `/system-design --focus="Tutoring"` ran to absorb ADR-019 (every-write-point fire-and-forget) and CC-13 into the Tutoring contracts, sweep the stale ADR-ARCH-003 references flagged by the MCP Transport refresh, and pin two design-level questions ARCH-019 left open (write ownership; event-emit timing). Ten deltas applied across [`API-tutoring.md`](../../design/contracts/API-tutoring.md), [`DM-tutoring.md`](../../design/models/DM-tutoring.md), and [`events-schema.yaml`](../../design/events-schema.yaml). Contradiction detection ✓ against the 19 ADRs.
+   - **D4 — DDR-002 (NEW design rule).** [DDR-002](../../design/decisions/DDR-002-coach-async-subagent-owns-graphiti-writes.md) — the Coach `AsyncSubAgent` owns its own Graphiti writes for misconception observations (flush point F1). The Tutor handler dispatches the planner topic-confidence write (F2) and the session-end episode (F3). All three flush points route through one shared Graphiti write helper; no aggregation, no batching. Prevents accidental session-scoped buffering being added later — the very alternative ARCH-019 §Alternatives explicitly rejected.
+   - **D5 — DDR-003 (NEW design rule).** [DDR-003](../../design/decisions/DDR-003-session-completed-emits-on-state-transition.md) — Shared Kernel B Tutoring events (`session.started`, `session.turn_completed`, `session.completed`) emit on the relevant state transition, **not** on Graphiti write success. The events bus and the Graphiti write helper are independent persistence/notification surfaces with independent failure modes. With 78.98s `add_episode` median, coupling event emit to write success would re-introduce a synchronous Graphiti dependency one step removed from the MCP handler — exactly what CC-13 forbids. `events-schema.yaml` `delivery_semantics` now carries `emit_decoupled_from_graphiti_write: true`.
+   - **I-T7 (NEW invariant).** Tutoring handlers MUST NOT await Graphiti acknowledgement on caller-facing paths. Every `add_episode` and entity-update site dispatches via `AsyncSubAgent` (CC-12 / ARCH-012) or `asyncio.create_task` (CC-13 / ARCH-019). Failures emit a structured log line; do not raise from the handler. Recommended unit test: handler-latency conformance — patch the Graphiti write helper to sleep ≥ 30s and assert `tutor_turn` p95 < 10s + `tutor_session_end` < 2s.
+   - **C4 L3 generated.** Tutoring container crossed the >3-internal-component threshold once Phase 1 components are added (8 components: SessionStore, TutorSession aggregate, Tutor Player, Coach AsyncSubAgent, Session Planner, RAG Retriever wrapper, Graphiti Write Helper, Events emitter). Mermaid diagram approved at the mandatory C4 L3 review gate: [`diagrams/tutoring-c4-l3.md`](../../design/diagrams/tutoring-c4-l3.md). All three flush points (F1/F2/F3) and the events-vs-helper separation (DDR-003) are visible as named edges.
+   - **F-id naming convention.** [`DM-tutoring.md §11`](../../design/models/DM-tutoring.md) introduces a flush-point taxonomy (`flush.F1` misconception, `flush.F2` topic-confidence, `flush.F3` session-end episode) so the recommended aggregate counter (open question 5 in `API-tutoring.md §9`) can dimension by site without parsing free text. A fourth flush site triggers reification of a `FlushPoint` value object — deferred until needed.
+   - **Graphiti seeding (complete).** 6 artefacts × ~79s = ~10min wall-clock; ran sequentially after the prior MCP-refresh batch finished. DDR-002 + DDR-003 → `architecture_decisions` (1 episode each). API-tutoring.md (9 chunks), DM-tutoring.md (12 chunks), tutoring-c4-l3.md (1 episode), README.md (1 episode, project_overview) → `project_knowledge`. **Total: 25 episodes added.** `events-schema.yaml` not seeded (YAML not supported by `add-context` parser; content is referenced via the seeded `.md` artefacts). One benign warning on README.md ("Missing 'architecture' section" — not relevant for a design index).
+   **Addendum (2026-04-27 PM late) — Inference Runtime design refresh after the latency spike + ADR-018 + DDR-001/002/003:**
+   - `/system-design --focus="Inference Runtime"` ran to absorb CC-14 (SR-09 — runtime LLM parameters explicit) into the Inference Runtime contract + data model and close the last outstanding ADR-018/019 stale-reference item flagged in the prior MCP Transport / Tutoring runs. Ten deltas applied across [`API-inference-runtime.md`](../../design/contracts/API-inference-runtime.md) (§4 split into 4.1 client-resident / 4.2 Modelfile-resident; §5 invariants 6 + 7; §7.2 CC-14 smoke-test rows; §8/§9 out-of-scope + open question for non-Ollama-provider extension) and [`DM-inference-runtime.md`](../../design/models/DM-inference-runtime.md) (mirrored §4 split; I-IR7 / I-IR8 invariants; §6 Modelfile relationship row; §8 alignment). Contradiction detection ✓ against the 19 ADRs + 3 prior DDRs.
+   - **D6 — DDR-004 (NEW design rule).** [DDR-004](../../design/decisions/DDR-004-num-ctx-modelfile-owned-not-client.md) — `num_ctx` is owned by the Ollama Modelfile, **not** by `LLMClient`. The client does not set `options.num_ctx` per request; only `options.num_predict` is set per request via `OLLAMA_NUM_PREDICT` (default 2048; CC-14 floor 1500). CC-14 conformance is a two-part smoke test: (a) `ollama show <model> --modelfile \| grep PARAMETER` returns the Modelfile literal at threshold; (b) Ollama runner log shows `llama_new_context_with_model: n_ctx = N` with `N ≥ 16384` from a real inference call — runner-log half is load-bearing because it catches Modelfile-vs-runner divergence. Rationale: `num_ctx` is per-model, model-load-time concern (KV-cache allocation), not a per-request tuning knob; persona split (Shakespeare = no-RAG vs Modern Texts = RAG mandatory) is a deployment decision per the [23 Apr OpenWebUI RAG findings §3e](./openwebui-rag-empirical-findings-2026-04-23.md). Earlier note in the GuardKit Command Sequence said "no new DDR expected" — superseded; the where-does-the-rule-live question that ADR-018 deliberately left to the design layer turned out to need its own pinning, hence DDR-004.
+   - **No new C4 L3 diagram.** Inference Runtime re-confirmed ≤ 3 internal components (`LLMClient` + provider-resolution helpers + lazy `httpx`-on-Ollama path; the Modelfile is a configuration artefact, not an internal component). Threshold not met; review gate skipped.
+   - **Cross-context pointer satisfied.** [DM-tutoring.md §6](../../design/models/DM-tutoring.md) carries a one-line cross-context pointer to the CC-14 invariant; the source of truth now lives in DM-inference-runtime.md §5 (I-IR7) + DDR-004, with no duplication. Tutoring inherits the guarantee through the `LLMClient` boundary.
+   - **Graphiti seeding (complete).** 3 artefacts × 1 episode each (after chunking: 12 episodes total) seeded sequentially after the prior Tutoring batch finished. API-inference-runtime.md (10 chunks, full_doc parser) → `project_design`. DM-inference-runtime.md (1 episode, 13 nodes / 13 edges) → `project_design`. DDR-004 (1 episode, 16 nodes / 18 edges, adr parser) → `architecture_decisions`. Two benign LLM-side warnings on DM seeding (`duplicate_facts idx out of range`); commit succeeded.
+   - **All ADR-018/019 stale-reference sweeps now closed.** No further `/system-design` runs are gated on ADR-018 or ADR-019.
 
 8. ~~**Phase 1 prep — Graphiti latency spike** (per `phase-1-scope.md §"Latency spike"`).~~ ✅ **DONE 2026-04-27** via `scripts/graphiti_latency_spike.py`. Three-hop stack measured: FalkorDB on whitestocks (Synology, Tailscale) + vLLM Qwen2.5-14B-FP8 on GB10:8000 (LLM extraction) + nomic-embed-text-v1.5 on GB10:8001 (embeddings). Full results in [graphiti-latency-spike-results.md](./graphiti-latency-spike-results.md).
 
@@ -434,6 +457,50 @@ After Saturday's domain docs are drafted (FEAT-PO-001 morning), kick off the Gua
 # plus the Shared Kernel B (Events) surface. Skip Knowledge & Curriculum,
 # Student Model, Gamification at the [S]kip checkpoint.
 
+# ──────────────────────────────────────────────────────────────────────────
+# Phase 0 design refresh runs after the 27 Apr Graphiti latency spike +
+# ADR-017 / ADR-018 / ADR-019:
+# ──────────────────────────────────────────────────────────────────────────
+
+# MCP Transport refresh (ran 2026-04-27 AM) — DDR-001 + I-MCP8/I-MCP9:
+/system-design --focus="MCP Transport" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/architecture/decisions/ADR-ARCH-017-tutor-start-session-sync-classification.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --context docs/research/ideas/graphiti-latency-spike-results.md
+
+# Tutoring refresh (ran 2026-04-27 PM) — DDR-002 + DDR-003 + I-T7 + C4 L3:
+/system-design --focus="Tutoring" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/research/ideas/graphiti-latency-spike-results.md
+
+# Inference Runtime refresh (ran 2026-04-27 PM late) — DDR-004 + I-IR7/I-IR8
+# + §4 client/Modelfile split. Closes the last ADR-018/019 stale-reference
+# sweep before FEAT-PH1-003 starts:
+/system-design --focus="Inference Runtime" \
+  --from docs/architecture/ARCHITECTURE.md \
+  --context docs/architecture/decisions/ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md
+# Outcome: API-inference-runtime.md and DM-inference-runtime.md updated to
+# carry CC-14 (num_ctx ≥ 16384 for RAG-enabled personas, num_predict ≥ 1500
+# for tutoring responses) at the right layer; CC-14 smoke-test pattern
+# documented (`ollama show <model> --modelfile | grep PARAMETER` + runner-log
+# inspection of `llama_new_context_with_model: n_ctx = N`).
+# ADR-018 is the carrier ADR (CC-14 origin); the 23 Apr OpenWebUI RAG
+# findings are the empirical evidence base (silent truncation under default
+# num_ctx=2048 with RAG active). The Graphiti latency spike was NOT relevant
+# here — that drives CC-13 (Tutoring/MCP), not CC-14 (Inference Runtime).
+# Surprise: the planning note "no new DDR expected" turned out wrong — the
+# where-does-the-rule-live question that ADR-018 deliberately left to the
+# design layer (Modelfile-resident vs client-resident) needed its own
+# pinning. DDR-004 records that LLMClient declines to own num_ctx; smoke
+# test is the conformance gate. See "Addendum (2026-04-27 PM late)" in
+# Item 7 above for the full delta list.
+
+# ──────────────────────────────────────────────────────────────────────────
 # Phase 1 re-runs (recommended Sat 26 Apr morning, after phase-1-scope.md is
 # drafted and the Graphiti spike has produced latency numbers — DEC-02/DEC-08):
 /system-design --focus="Knowledge & Curriculum" \
