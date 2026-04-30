@@ -44,10 +44,16 @@ async def _drain_warmups(adapter: MCPAdapter) -> None:
 
 async def test_start_session_returns_session_id(adapter: MCPAdapter) -> None:
     result = await adapter.tutor_start_session(
-        subject="English Literature", topic="Macbeth"
+        student_id="lilymay", topic_override="Macbeth"
     )
     assert "session_id" in result
-    assert len(result["session_id"]) == 36  # UUID4
+    # Phase 0 minted via ``str(uuid.uuid4())`` (36 chars including hyphens).
+    # TASK-DSP-006 keeps that format because the existing SessionStore
+    # owns id minting; the constraint that matters is "minted before the
+    # planner runs" (AC-002), not the textual format.
+    assert len(result["session_id"]) == 36
+    # TASK-DSP-006 — response gains a plan_summary alongside session_id.
+    assert "plan_summary" in result
     await _drain_warmups(adapter)
 
 
@@ -68,7 +74,7 @@ async def test_turn_generates_response(
 
     monkeypatch.setattr(llm_client.LLMClient, "generate", fake_generate)
 
-    started = await adapter.tutor_start_session(subject="English")
+    started = await adapter.tutor_start_session(student_id="lilymay")
     session_id = started["session_id"]
     await _drain_warmups(adapter)
 
@@ -83,7 +89,7 @@ async def test_turn_generates_response(
 
 
 async def test_session_end_flips_status(adapter: MCPAdapter) -> None:
-    started = await adapter.tutor_start_session(subject="English")
+    started = await adapter.tutor_start_session(student_id="lilymay")
     session_id = started["session_id"]
     await _drain_warmups(adapter)
 

@@ -66,4 +66,6 @@ pythonpath = ["src", "."]
 markers = [
     "seam: integration-contract seam tests between GuardKit tasks",
     "integration_contract: marks the specific contract under test (arg: contract name)",
+    "smoke: fast end-to-end-ish smoke tests run by autobuild smoke gates",
+    "feat_ph1_002: tests scoped to the Deterministic Session Planner feature (FEAT-PH1-002)",
 ]

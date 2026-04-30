@@ -1,0 +1,37 @@
+# Baseline-curriculum defaults for the deterministic session planner (DSP).
+#
+# When the student model is unavailable but a learner identity exists, the
+# planner draws topic + focus_aos from this file rather than synthesising
+# topic strings in code. The YAML lives at a stable read path so the
+# planner pipeline (TASK-DSP-005) and the negative-path tests can exercise
+# the baseline branch deterministically.
+#
+# Each entry MUST have:
+#   - topic_name:              str          — non-empty topic label
+#   - focus_aos:               list[str]    — non-empty subset of AO1..AO6
+#   - opening_prompt_template: str          — the tutor's first-turn prompt
+#
+# Phase 1 scope: AQA 8702 English Literature (Macbeth as anchor text).
+# Adding entries here is safe; reordering is too — the planner picks the
+# first entry deterministically for the no-state branch.
+
+entries:
+  - topic_name: "metaphor identification"
+    focus_aos: ["AO2"]
+    opening_prompt_template: >-
+      Let's warm up by spotting metaphors. Pick a short passage you know
+      well — what is being compared, and what effect does the comparison
+      create?
+
+  - topic_name: "dramatic irony in Macbeth"
+    focus_aos: ["AO1", "AO2"]
+    opening_prompt_template: >-
+      We're going to explore dramatic irony in Macbeth. Can you describe
+      a moment where the audience knows something the characters don't,
+      and explain why Shakespeare structured it that way?
+
+  - topic_name: "iambic pentameter"
+    focus_aos: ["AO2"]
+    opening_prompt_template: >-
+      Let's revise iambic pentameter. Read a line from Macbeth aloud —
+      where do the stresses fall, and how does the rhythm shape meaning?
