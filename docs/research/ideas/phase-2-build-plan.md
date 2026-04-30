@@ -3,7 +3,7 @@
 ## For: Weekend build (Saturday 2 – Sunday 3 May 2026) + weekday evenings 4–8 May + submission polish window 9–17 May
 ## Date: 30 April 2026 (Thursday — written one day ahead of `phase-2-scope.md`'s scheduled "Thursday 1 May" slot per hybrid cadence Rule 2; Phase 1's Thursday-evening Phase-2-planning slot moved up because three of four Phase 1 features had already landed by Wednesday and the fourth — FEAT-PH1-004 — was planned the same day; see `phase-1-build-plan.md §"Schedule recovery as of 2026-04-30"`).
 ## Date-label convention: the source docs (`phase-2-scope.md`, `phase-1-build-plan.md`) label 1 May as "Thursday" and slide each subsequent day one slot, treating 3-4 May as the weekend. Calendar-true: **30 April = Thursday, 1 May = Friday, 2-3 May = Saturday-Sunday, 18 May = Monday**. **This build plan uses calendar-true day labels throughout** so the day-by-day schedule maps cleanly onto real Saturdays and Sundays. Cross-references to source docs preserve the source's date strings (e.g. "Thursday 1 May" when quoting the scope) but my own scheduling uses calendar-true labels.
-## Status: **Drafted from scope while Phase 1 close-out is still in flight.** FEAT-PH1-001 + FEAT-PH1-002 + FEAT-PH1-003 merged. **FEAT-PH1-004 (Primary-Text RAG + Quote Verifier) PLANNED today as `FEAT-70A4`** — 7 subtasks across 5 waves in `tasks/backlog/primary-text-rag-and-quote-verifier/`, BDD scenarios `@task:`-tagged for R2 oracle activation, smoke gates wired between waves, AC-quality linter clean. Build pending — Friday 1 May evening if a clean autobuild run lands; Saturday 2 May morning otherwise. Phase-1 outcomes that feed this build plan are split into KNOWN (Graphiti latency spike done; SR-08 elevated to CRITICAL; three layers integrated) and **TBD (Coach calibration data, real turn p50/p95, end-to-end demo session)** — TBD items are flagged inline below with explicit revisit triggers.
+## Status: **Drafted from scope while Phase 1 close-out is still in flight.** FEAT-PH1-001 + FEAT-PH1-002 + FEAT-PH1-003 merged. **FEAT-PH1-004 (Primary-Text RAG + Quote Verifier) PLANNED today as `FEAT-70A4`** — 7 subtasks across 5 waves in `tasks/backlog/primary-text-rag-and-quote-verifier/`, BDD scenarios `@task:`-tagged for R2 oracle activation, smoke gates wired between waves, AC-quality linter clean. Build pending — Friday 1 May evening if a clean autobuild run lands; Saturday 2 May morning otherwise. **Reachy Mini "Scholar" delivery confirmed for Friday 8 May 2026** (Pollen Robotics dispatch text, received 30 April PM). This changes the Reachy posture from "uncertain hardware arrival" to "hardware arrives at the close of Phase 2 features track" — DEC-06 go/no-go gate moves from the speculative Sunday 3 May slot to **Saturday 9 May** (post-delivery unbox + SDK hello-world), and the **live Reachy demo segment moves from possible-fallback to likely outcome** (capture target Wednesday 13 May; future-vision segment becomes the late-stage fallback if integration is blocked). Phase-1 outcomes that feed this build plan are split into KNOWN (Graphiti latency spike done; SR-08 elevated to CRITICAL; three layers integrated; Reachy delivery confirmed) and **TBD (Coach calibration data, real turn p50/p95, end-to-end demo session, Reachy operational status post-unbox)** — TBD items are flagged inline below with explicit revisit triggers.
 ## Repo: `study-tutor` (Phase 1 codebase shipping — `src/study_tutor/{knowledge,planner,tutoring}/` populated).
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (Ollama + nomic-embed-text + bge-reranker-v2-m3), Synology NAS over Tailscale (FalkorDB), Google Gemini (Coach + Graphiti entity extraction).
 ## Target completion: End of Friday 8 May 2026 (close of Week 3). Submission polish through Saturday 16 May. **Hackathon submission deadline: Monday 18 May 23:59 UTC.**
@@ -18,7 +18,7 @@ Week 3 of the 31-day build. Layers retention mechanics on top of the working thr
 
 - Not a re-architecture (Phase 1's three-layer + Player-Coach + Graphiti story stays — Do-Not-Change in scope §)
 - Not a new dependency (everything Phase 2 needs — Graphiti, Gemini, Ollama, Claude Design — is already wired)
-- Not Reachy build work (gated to a separate stretch phase per DEC-06; the go/no-go gate on Sunday 3 May feeds Phase 2 demo content but Reachy code lives outside Phase 2)
+- Not Reachy *integration* code work (gated to a separate stretch phase per DEC-06; integration runs as a parallel thread starting Saturday 9 May post-delivery, outside Phase 2's day-by-day plan). **Reachy *capture* for the demo video IS in Phase 2's polish-track schedule** (Wednesday 13 May target) because it's video production, not integration code — but the underlying SDK / Graphiti-to-speech build is the parallel thread.
 - Not multi-student (Lilymay only — post-hackathon)
 - Not multi-subject (post-hackathon)
 - Not a React app, mobile app, or backend server (DEC-05; static HTML only)
@@ -34,7 +34,7 @@ Week 3 of the 31-day build. Layers retention mechanics on top of the working thr
 5. **Technical write-up finalised.** Real content in every section; architecture diagram present; 3000+ words. → Submission Polish track.
 6. **Submission form complete.** Fields filled, materials attached, confirmation received. → Submission Polish track.
 7. **Public repo gate-check passed.** Final sweep complete; nothing copyrighted committed; `.env.example` clean; parity surfaces still green. → Submission Polish track.
-8. **Reachy outcome final.** Live Reachy segment (if Sunday-3-May go/no-go passed) OR pre-recorded future-vision segment in the demo. → Demo video Session 4.
+8. **Reachy outcome final.** Live Reachy segment (capture target Wednesday 13 May, contingent on Saturday-9-May go/no-go passing post-unbox) OR pre-recorded future-vision segment if integration is blocked late. → Demo video Session 4.
 9. **Phase 2 validation gate run for Phase 1.** `phase-1-validation.md` produced early in Phase 2 reviewing what held / drifted / falsified. → Saturday 2 May morning.
 10. **Lilymay can articulate what this tool does for her.** Informal success marker. → No deliverable; observed during demo capture.
 
@@ -60,7 +60,7 @@ These are gates Phase 1 must close before Phase 2 weekend kicks off. If any are 
 ### Nice to have
 
 - [ ] Tech writeup Phase 1 section drafted with real content (low priority; defer-into-Phase-2 acceptable per Phase 1 G5).
-- [ ] **Reachy hardware status known** — Scholar arrived OR not. The DEC-06 go/no-go is a hard gate, but knowing the status one day early lets Saturday 2 May morning plan the Reachy thread with or without expecting a go.
+- [x] **Reachy hardware status known** — ✅ Scholar delivery confirmed for Friday 8 May 2026 (Pollen Robotics dispatch text 30 April PM). The DEC-06 go/no-go gate moves to Saturday 9 May (post-delivery, post-unbox); see "Day-by-day plan" Saturday 9 May entry. Reachy *integration* thread runs in parallel from Saturday 9 May → Tuesday 12 May, outside Phase 2's day-by-day. **Reachy thread runway is 10 days from delivery to submission** (8 May → 18 May) — feasible for the 30-second demo segment per the conversation starter doc, tight for anything more ambitious.
 
 ---
 
@@ -77,6 +77,7 @@ These are gates Phase 1 must close before Phase 2 weekend kicks off. If any are 
 | **Coach rubric six criteria including `quote_fidelity`** | ⏳ DEPENDS ON FEAT-PH1-004 (FEAT-70A4 planned today) | Branching note below: if FEAT-PH1-004 ships, the Coach evaluation produces six criterion scores; FEAT-PH2-001's confidence-update consumes the rubric output. If FEAT-PH1-004 defers, the Coach has 5 criteria with re-balanced weights and the same consumer pattern still works. |
 | **Graphiti student model schema** | ✅ MERGED — `Student`, `Subject`, `Text`, `Topic`, `AssessmentObjective`, `Misconception`, `TopicConfidence` plus six relationship constants | FEAT-PH2-001 adds **one new entity** (`GamificationState`) and **one new relationship** (`Student HAS_GAMIFICATION_STATE GamificationState`). Achievement and Quest entities are co-located with `GamificationState` rather than as separate Graphiti entities (lower cost, tighter cohesion). |
 | **Hybrid cadence Rule 3** | Phase-1-validation gate at Saturday 2 May morning, per cadence | Day 1 starts with the gate, not with code. ~30 min, captures held/drifted/falsified for the full Phase 1 set. |
+| **Reachy Mini delivery date** | ✅ CONFIRMED — Friday 8 May 2026 per Pollen Robotics dispatch text (30 April PM) | Hardware arrival no longer uncertain. DEC-06 go/no-go moves to Saturday 9 May (post-unbox + SDK hello-world). Live Reachy segment elevates from possible-fallback to likely-outcome; capture target Wednesday 13 May. Future-vision segment becomes the late-stage fallback only if integration is blocked by Tuesday 12 May. |
 
 ### What is TBD (revisit triggers below)
 
@@ -87,7 +88,7 @@ These are gates Phase 1 must close before Phase 2 weekend kicks off. If any are 
 | **Coach signal quality** | Determines whether topic-confidence updates use the Coach's per-turn `criterion_scores` directly OR a smoothed aggregate. Affects FEAT-PH2-001 §6.2 confidence-update rule. | Saturday 2 May morning: read Tuesday's Coach observations + any tuning notes. If signal is clean (consistent scoring patterns, low rejection-loop count), use direct mapping. If noisy, smooth across the session's turns. |
 | **Session-export JSON shape stability** | Phase 2 dashboard consumes this; if the shape moves during Phase 2, dashboard work re-runs. | Saturday 2 May late morning: codify the shape in `scripts/export_session.py` + write a frozen-shape contract test. From that moment on, the shape is fixed. |
 | **Claude Design output quality** | First time the frontend-design skill is asked to produce submission-quality dashboard HTML. Quality determines whether one polish evening is enough or whether a hand-coded fallback template is needed. | Tuesday 5 May evening: first-pass run. If quality is acceptable after one polish iteration, FEAT-PH2-002 lands as planned. If not, Wednesday 6 May falls back to a hand-coded HTML template with data substitution from the same JSON. |
-| **Reachy hardware status** | Scholar's arrival is uncertain. The DEC-06 go/no-go decides whether the demo carries a live Reachy segment or a pre-recorded future-vision segment. **Source-doc dating note:** DEC-06 names "4 May" as the gate; in calendar-true terms 4 May is a Monday, awkward as a gate slot. The natural calendar slot is Sunday 3 May (Phase 2 weekend Day 2). I schedule it there. If you prefer to honour DEC-06's literal date, slip to Monday 4 May evening — the only consequence is one fewer day of Reachy thread runway before the polish track starts. | Sunday 3 May (or Monday 4 May): dedicated decision slot. Four criteria from DEC-06: Scholar arrived + operational on home network + Python SDK exercised end-to-end + Tailscale path confirmed + minimal POC gamification → verbal-ack works. All four green → spin up Reachy thread as parallel work outside Phase 2. Any red → fall back to future-vision segment. |
+| **Reachy operational status post-unbox** | Hardware arrives Friday 8 May (confirmed). Operational status — onboard Pi 4 reachable on home WiFi, Python SDK responsive, Daemon up, basic head/eye animation works — is unknown until Saturday 9 May unbox. The DEC-06 go/no-go evaluates this. **Source-doc dating note:** DEC-06 names "4 May" as the gate, written when delivery was speculative. With confirmed delivery 8 May, the gate logically moves to **Saturday 9 May** (delivery-day-plus-one). | Saturday 9 May AM: dedicated unbox + go/no-go slot (~2-3h). Five criteria: hardware powers up + on home WiFi + MacBook reaches Daemon over LAN + Python SDK `pip install reachy_mini` + hello-world (head movement + speech) succeeds + minimal POC gamification → verbal-ack works. All five green → spin up Reachy *integration* thread as parallel work Sun 10 → Tue 12 May. Any red that can't be resolved Sat 9 May → fall back to future-vision segment captured Friday 15 May. |
 | **Lilymay availability for capture** | Demo video Session 1 (working-today, lowest-risk) needs Lilymay on-screen. Other sessions are Rich-only. | Each capture session day: confirm Lilymay's availability. If not, Rich-only segments still produce a complete video; Lilymay segments slip to next available evening. |
 
 ### Branching for FEAT-PH1-004 outcome
@@ -137,7 +138,7 @@ The build plan accommodates both Friday-evening outcomes for `FEAT-70A4`:
 
 FEAT-PH2-001 and FEAT-PH2-002 are sequential because the dashboard consumes `GamificationState` writes. FEAT-PH2-003 captures span Phase 2 — Session 1 (working-today) can run on Day 1 because Phase 1 is what's being captured; Sessions 2–4 require progressively more Phase 2 features in place.
 
-Reachy stretch work — if the Sunday-3-May go/no-go passes — runs as a **parallel thread outside Phase 2's day-by-day plan**. Its only Phase 2 artefact is a 30-second segment in the demo video.
+Reachy stretch work — if the Saturday-9-May go/no-go passes — runs as a **parallel thread outside Phase 2's day-by-day plan**, between delivery (Fri 8 May) and the live capture session (Wed 13 May). Its only Phase 2 artefacts are a 30-second segment in the demo video and a ~300-word section in the technical writeup.
 
 ---
 
@@ -218,9 +219,9 @@ This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Ru
 
 6. **Run /feature-build for FEAT-PH2-001 Wave 2** (~30 min, can run in background while capture runs). `TASK-PH2-G-002` rules module — pure functions, no I/O, fastest task to autobuild because the test surface is simple.
 
-#### Evening (~1h) — Reachy thread sanity check + commit
+#### Evening (~1h) — Commit + Reachy delivery-week prep
 
-7. **Reachy hardware status sanity check** (~30 min). Has Scholar arrived? Is it on the network? If yes, the DEC-06 go/no-go is on schedule for Sunday — confirm Sunday's availability for the dedicated Reachy thread. If no, the future-vision-segment plan is still in play; no Phase 2 disruption.
+7. **Reachy delivery-week prep** (~30 min). Delivery is confirmed for Friday 8 May (six days away). Quick check: has the Reachy Mini Quick Start guide been read? Is the Pollen Robotics SDK README (`pollen-robotics/reachy_mini`, branch `develop`) downloaded for offline reference? Is `reachy-integration-conversation-starter.md` open in a separate Claude Desktop window so the integration thread can spin up Saturday 9 May with full context loaded? Skip if all three are already true.
 
 8. **Commit Saturday work.** `chore: phase-2 day 1 — validation gate + arch refresh + FEAT-PH2-001 wave 1`.
 
@@ -233,7 +234,9 @@ This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Ru
 
 ---
 
-### Sunday 3 May (Phase 2 Day 2, ~5h) — FEAT-PH2-001 build-out + Reachy go/no-go
+### Sunday 3 May (Phase 2 Day 2, ~3h) — FEAT-PH2-001 build-out
+
+The original day plan reserved a 2h Reachy go/no-go slot here; with delivery confirmed for Friday 8 May the gate moves to Saturday 9 May, leaving Sunday lighter than originally planned. The freed time becomes recovery slack — useful given Saturday 2 May is a heavy 6h day. If Saturday's spec/plan slipped at all, Sunday's freed slot absorbs it.
 
 #### Morning (~2h) — FEAT-PH2-001 Waves 3 + 4
 
@@ -247,31 +250,20 @@ This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Ru
    - `GamificationState` written to Graphiti (via `get_student_state("lilymay")`)
    - Session-end response time still under budget (no new latency from rules computation)
 
-#### Afternoon (~2h) — Reachy DEC-06 go/no-go
+#### Afternoon (~1h) — FEAT-PH2-001 Wave 5 + tech-writeup gamification section
 
-4. **Reachy go/no-go gate** (~2h, calendar-Sunday slot — see source-doc dating note in the TBD table for why this is one day earlier than DEC-06's literal "4 May" string). Per DEC-06, the four criteria:
+4. **Run /feature-build for FEAT-PH2-001 Wave 5** (~30 min). `TASK-PH2-G-006` integration smoke. Closes the feature. Smoke gate runs `pytest -m "feat_ph2_001 and smoke" -x --no-cov`. Marker registration MUST use underscores (lesson from TASK-DSP-009 — hyphens parse as Python subtraction in pytest's `-m` expression).
 
-   - [ ] Scholar has arrived and is operational on the home network
-   - [ ] Python SDK exercised end-to-end (at least "hello world" verbal output)
-   - [ ] Tailscale or local-network path from MacBook to Scholar confirmed
-   - [ ] At least one minimal proof-of-concept gamification event triggers a Reachy verbal acknowledgement
+5. **Draft tech-writeup gamification section** (~30 min). Open `docs/submission/technical-writeup.md`. Add the gamification economy paragraph (referencing `docs/gamification/design.md`), the state-engine architecture paragraph (deterministic rules + async write-back), and one paragraph on why the design is rule-based not LLM-backed. Content first, edit later.
 
-   **All four green → "go"**: spin up the Reachy thread against `reachy-integration-conversation-starter.md` as a parallel work item OUTSIDE Phase 2's day-by-day plan. The integration follows its own scope/build-plan/spec/plan trajectory.
+#### Evening (~0-1h optional) — Reachy thread pre-reading
 
-   **Any red → "no-go"**: confirm the pre-recorded future-vision segment plan. Phase 2 absorbs no Reachy code; demo video Session 4 carries a 30s future-vision segment showing the conversation starter doc + a static mock-up of what the integration would look like.
-
-   **Outcome recorded** in a one-paragraph addendum to `phase-1-validation.md` (or a fresh `reachy-go-no-go-2026-05-03.md` — Rich's preference).
-
-#### Evening (~1h) — FEAT-PH2-001 Wave 5 + tech-writeup gamification section
-
-5. **Run /feature-build for FEAT-PH2-001 Wave 5** (~30 min). `TASK-PH2-G-006` integration smoke. Closes the feature. Smoke gate runs `pytest -m "feat_ph2_001 and smoke" -x --no-cov`. Marker registration MUST use underscores (lesson from TASK-DSP-009 — hyphens parse as Python subtraction in pytest's `-m` expression).
-
-6. **Draft tech-writeup gamification section** (~30 min). Open `docs/submission/technical-writeup.md`. Add the gamification economy paragraph (referencing `docs/gamification/design.md`), the state-engine architecture paragraph (deterministic rules + async write-back), and one paragraph on why the design is rule-based not LLM-backed. Content first, edit later.
+6. **Optional: re-read `reachy-integration-conversation-starter.md`** (~30 min). Hardware arrives Friday 8 May; integration thread starts Saturday 9 May. A re-read now means Saturday's unbox starts with full context loaded. Skip if Sunday energy is low.
 
 **End-of-Sunday state:**
 - FEAT-PH2-001 fully landed and integrated; smoke gate green
-- Reachy go/no-go decided; thread spun up (or future-vision plan confirmed)
 - Tech writeup gamification section drafted
+- Reachy integration context refreshed (optional)
 
 ---
 
@@ -368,7 +360,7 @@ This day is built for slack. If FEAT-PH2-001 didn't fully land Sunday, Monday ab
    - 0:00–0:30 — Working today (Lilymay using Open WebUI, captured Sat 2 May)
    - 0:30–1:30 — Architecture reveal (Player-Coach loop + Graphiti, captured Wed 6 May)
    - 1:30–2:30 — Gamification + dashboard walkthrough (captured Friday 8 May)
-   - 2:30–3:00 — Reachy segment (live if go-no-go passed; pre-recorded future-vision otherwise — captured Saturday 9 May or Friday 15 May)
+   - 2:30–3:00 — Reachy segment (live, captured Wednesday 13 May, contingent on Saturday-9-May go/no-go passing post-unbox; pre-recorded future-vision fallback captured Friday 15 May only if go/no-go failed or integration was blocked by Tuesday 12 May)
    - 3:00–3:30 — Vision and roadmap
 
 3. **Edit first cut combining Sessions 1 + 2** (~1h). 90 seconds of rough video assembled — working-today + architecture reveal. Establishes the editing tool / workflow. Music, captions, transitions can be deferred until the full cut.
@@ -391,11 +383,11 @@ This is the close of Week 3 and the close of Phase 2's feature track. From Satur
    - [ ] Gamification state engine lands ✓ FEAT-PH2-001 merged
    - [ ] Session-end response carries gamification events ✓ FEAT-PH2-001 TASK-PH2-G-004 verified
    - [ ] Dashboard renders real state ✓ FEAT-PH2-002 captured
-   - [ ] Demo video complete — IN PROGRESS (Sessions 1, 2, 3 captured; final cut + Reachy segment + vision segment + edit + upload Sat 10 onward)
+   - [ ] Demo video complete — IN PROGRESS (Sessions 1, 2, 3 captured; Reachy capture Wed 13 May, final cut + edit + upload over polish track)
    - [ ] Technical write-up finalised — DRAFT IN PROGRESS
    - [ ] Submission form complete — NOT STARTED (Sat 16 May)
    - [ ] Public repo gate-check passed — NOT STARTED (Fri 15 – Sat 16 May)
-   - [ ] Reachy outcome final — DECIDED Sun 3 May; capture pending
+   - [ ] Reachy outcome final — go/no-go DECIDED Sat 9 May (post-delivery); capture target Wed 13 May
    - [ ] Phase 2 validation gate — N/A (no Phase 3); fold into post-hackathon retrospective
    - [ ] Lilymay can articulate what this tool does — INFORMAL OBSERVATION
 
@@ -409,19 +401,50 @@ This is the close of Week 3 and the close of Phase 2's feature track. From Satur
 
 ## Submission Polish Track — Saturday 9 May → Saturday 16 May
 
-This is the back-half of the 31-day burn. No new feature work. Everything from here is shipping the artefacts.
+This is the back-half of the 31-day burn. No new Phase 2 feature work. Everything from here is shipping the artefacts. **The Reachy stretch thread runs in parallel across this track** — integration code lives outside Phase 2's day-by-day per DEC-06, but key Reachy milestones (delivery, unbox + go/no-go, capture session) are scheduled here because they touch demo-video production.
 
-### Saturday 9 May (~3h) — Tech writeup full pass + Reachy capture if applicable
+### Saturday 9 May (~4h) — **Reachy delivery-day-plus-one: unbox + DEC-06 go/no-go + tech writeup full pass**
 
-1. **Tech writeup first full draft** (~2h). All sections fleshed out from existing notes. Target 3000+ words. Sections per scope §"Submission Polish Track":
+Reachy Mini "Scholar" delivered Friday 8 May. Saturday is the first proper integration day. The morning opens the box and runs the gate; the afternoon is tech writeup work (no dependency on Reachy). If unbox blocks for some reason, the whole afternoon absorbs into Reachy debug; tech writeup slips to Sunday.
+
+#### Morning (~2-3h) — Reachy unbox + DEC-06 go/no-go gate
+
+1. **Unbox + power-on + onto home WiFi** (~30 min). Plug in, follow the Reachy Mini Quick Start, get Scholar onto the home WiFi. Confirm the onboard Pi 4 is reachable from MacBook on the LAN. (Per `reachy-integration-conversation-starter.md`, Tailscale is likely not needed inside the house — local network is enough.)
+
+2. **SDK install + hello-world** (~45 min). On MacBook, `pip install reachy_mini` per Pollen Robotics' SDK README (https://github.com/pollen-robotics/reachy_mini, branch `develop`). Run a minimal head-movement + speech script — the SDK's documented "hello world" pattern. Confirm Daemon-on-Pi receives the command and Scholar responds.
+
+3. **Tailscale path verification** (~15 min). If Lilymay's bedroom (where Scholar will live for the demo) is on a different WiFi segment than the MacBook, confirm the path works. (Likely OK — most homes have one WiFi network.) Otherwise document the workaround.
+
+4. **POC: gamification event → Reachy verbal-ack** (~45 min). Pull a stub `GamificationState` from Graphiti (or use a hand-built fixture if the Phase 2 gamification engine isn't seeded yet). Generate a simple speech response — *"Lilymay's at Level 6, with an 8-day streak"* — and pipe to Scholar's TTS. Confirm Scholar speaks the line. **This is the load-bearing POC for the demo segment.**
+
+5. **DEC-06 go/no-go evaluation** (~15 min). Five criteria (per the TBD table above):
+   - [ ] Hardware powered up
+   - [ ] Scholar on home WiFi, MacBook reaches Daemon over LAN
+   - [ ] Python SDK installs cleanly + hello-world (head + speech) succeeds
+   - [ ] Tailscale or local-network path confirmed for the demo capture location
+   - [ ] POC: gamification event → verbal-ack works
+
+   **All five green → GO**. Spin up the Reachy *integration* thread as parallel work Sun 10 → Tue 12 May. Per DEC-06, this thread sits outside Phase 2's day-by-day plan; it has its own conversation starter (`reachy-integration-conversation-starter.md`) which scopes the actual integration build (Graphiti queries → script selection → TTS → SDK calls).
+
+   **Any red that can't be resolved Saturday → NO-GO**. Fall back to future-vision segment captured Friday 15 May. Phase 2 absorbs no further Reachy work.
+
+   **Outcome recorded** in `reachy-go-no-go-2026-05-09.md` (one paragraph + the criteria checklist).
+
+#### Afternoon (~2h) — Tech writeup full pass
+
+6. **Tech writeup first full draft** (~2h). All sections fleshed out from existing notes. Target 3000+ words. Sections per scope §"Submission Polish Track":
    - Pipeline methodology with evidence (agentic-dataset-factory run metrics, fine-tune loss curves)
    - Architecture diagram (Mermaid or PNG via Claude Design)
    - Gamification design (cross-reference `docs/gamification/design.md`)
    - On-device vs Bedrock deployment with cost evidence
    - Evaluation section (what we measured / didn't measure)
    - Copyright and provenance (cross-reference `copyright-training-data-analysis.md`)
+   - **Reachy companion section** (new — ~300 words, refs `reachy-integration-conversation-starter.md` and `docs/gamification/design.md §9`)
 
-2. **Reachy capture (if go-no-go passed)** (~1h). Live Reachy segment for the demo: parent query scenario from `GCSE_Gamification_Research.md §3` ("How's Lilymay's revision going?"). Captured at home. **If go-no-go failed, future-vision segment captured Friday 15 May with the conversation starter doc + static mock-up.**
+**End-of-Saturday state:**
+- Reachy unboxed + go/no-go decided + outcome recorded
+- If GO: integration thread spun up; tech writeup includes a Reachy section
+- Tech writeup first full draft exists
 
 ### Sunday 10 May (~2h) — Tech writeup polish + architecture diagram
 
@@ -434,25 +457,46 @@ This is the back-half of the 31-day burn. No new feature work. Everything from h
    - The Graphiti async write surface
    - The gamification engine + dashboard
 
-### Monday 11 May (evening, ~1h) — Buffer / overflow
+### Monday 11 May (evening, ~1h) — Buffer / overflow + Reachy integration thread (parallel)
 
 This is buffer time. If anything from the polish track is behind, this evening absorbs it. If everything's on track, this evening is for any spec/plan TBD-resolution work — e.g. the `phase-2-validation.md` content if not done Friday.
 
-### Tuesday 12 May (evening, ~1h) — Demo video edit pass second cut
+**Parallel: Reachy integration thread (if go-no-go passed Saturday).** Per DEC-06, the integration runs as a separate work item against `reachy-integration-conversation-starter.md`, not as part of Phase 2's day-by-day. By end of Monday the target is: Graphiti `get_gamification_state(student_id)` query → script-selection logic (parent-query / near-unlocks / celebration scenarios from `docs/gamification/design.md §9.1`) → TTS string → Reachy SDK call. Aim for a working "How's Lilymay's revision going?" round-trip by Tuesday evening.
+
+### Tuesday 12 May (evening, ~1h) — Demo video edit pass second cut + Reachy integration polish (parallel)
 
 Combine all captured segments into a single 3–4 minute video. Add captions, music if any, transitions. Tool-of-Rich's-choice — not the place to learn video editing.
 
-### Wednesday 13 May (evening, ~1h) — Demo video polish
+**Parallel: Reachy integration polish.** Refine the round-trip from Monday: cleaner head/eye animation timing, multiple scenario scripts, error-fallback when Graphiti is slow. **Capture-readiness checkpoint Tuesday evening:** if the integration is solid enough to capture Wednesday, proceed. If brittle, push capture to Thursday and use Friday as the future-vision fallback day.
 
-Trim, balance audio, finalise captions, export at 1080p or 4K, name appropriately.
+### Wednesday 13 May (~2-3h) — **Reachy capture (live segment) + demo video polish**
 
-### Thursday 14 May (evening, ~1h) — Buffer + tech writeup final read
+This is the day the live Reachy demo segment gets captured, contingent on Saturday's go/no-go passing and Tuesday's integration capture-readiness checkpoint.
 
-Final read of the technical writeup; fix typos; verify all links; ensure compliance gate-check items are mentioned (`copyright-training-data-analysis.md` cross-reference, AQA exclusion etc.). Buffer for any last-minute capture.
+#### Capture session (~1.5h)
 
-### Friday 15 May (evening, ~1h) — Future-vision segment if Reachy fell through + repo gate-check
+1. **Set up the scene** (~30 min). Lilymay's bedroom or a neutral home setting. Scholar on a flat surface within arm's reach. MacBook running the integration code. Camera framing: Scholar in centre, slight angle to capture head movement; lighting consistent.
 
-1. **If Reachy go-no-go failed**: capture the future-vision segment now. 30 seconds, conversation starter doc + static mock-up + Rich narrating the future vision.
+2. **Run the parent-query scenario** (~30 min). Rich asks *"How's Lilymay's revision going?"* on-camera. Scholar responds — verbatim level title + streak + recent XP + one near-unlockable achievement. Multiple takes; pick the cleanest. Per `docs/gamification/design.md §9.1` and `GCSE_Gamification_Research.md §3`.
+
+3. **Optional: Lilymay-interaction take** (~30 min if available). Lilymay asks Scholar *"What achievements am I close to?"* — Scholar identifies 2-3 nearest unlockable achievements and suggests a targeted session. Bonus footage; not load-bearing for the 30-second segment.
+
+#### Demo video polish (~1h)
+
+4. **Polish edit pass** (~1h). Trim, balance audio, finalise captions, export at 1080p or 4K, name appropriately. Now the full 3-4 minute video has all five segments roughly in place.
+
+**End-of-Wednesday state:** Reachy live segment captured; demo video close to final cut. Friday's future-vision-fallback slot is now redundant (unless capture quality was unacceptable).
+
+### Thursday 14 May (evening, ~1h) — Buffer + tech writeup final read + post-hackathon-wishlist
+
+Final read of the technical writeup; fix typos; verify all links; ensure compliance gate-check items are mentioned (`copyright-training-data-analysis.md` cross-reference, AQA exclusion etc.). Buffer for any last-minute capture re-take if Wednesday was rough. Write `post-hackathon-wishlist.md` per scope §"Phase 2 as the last phase".
+
+### Friday 15 May (evening, ~1h) — Reachy backup capture / future-vision fallback + repo gate-check
+
+1. **Reachy outcome decision point**:
+   - **If Wednesday's Reachy capture was good**: skip the Reachy work today; proceed straight to repo gate-check.
+   - **If Wednesday's capture was marginal**: re-shoot today using the integration improvements from Thursday (if any).
+   - **If Saturday's go-no-go failed OR integration was blocked by Tuesday**: capture the future-vision segment now. 30 seconds — `reachy-integration-conversation-starter.md` doc on screen + static mock-up + Rich narrating the future vision. This is the documented DEC-06 fallback.
 
 2. **Public repo gate-check** (per scope §"Public repo gate-check"):
    - [ ] README stands on its own as a submission narrative
@@ -584,7 +628,7 @@ Phase 2 follows the same GuardKit pattern as Phases 0 and 1 — system-level com
 | `docs/research/ideas/phase-1-validation.md` | VALIDATION | NEW (finalised Sat 2 May AM from Friday seed) |
 | `docs/research/ideas/phase-2-validation.md` | VALIDATION | NEW (close-out, Fri 8 May or Sun 17 May) |
 | `docs/research/ideas/post-hackathon-wishlist.md` | Phase 2 close-out | NEW (per scope §"Phase 2 as the last phase") |
-| `docs/research/ideas/reachy-go-no-go-2026-05-03.md` | DEC-06 outcome | NEW (one-paragraph addendum, optional — may live in `phase-1-validation.md`) |
+| `docs/research/ideas/reachy-go-no-go-2026-05-09.md` | DEC-06 outcome | NEW (one paragraph + 5-criteria checklist, written Saturday 9 May post-unbox) |
 
 ### Modified files
 
@@ -622,7 +666,9 @@ Phase 2 follows the same GuardKit pattern as Phases 0 and 1 — system-level com
 | FEAT-PH1-004 doesn't ship Friday 1 May | Medium | Medium | Path B (5-criterion Coach + deferred verifier) is documented; Phase 2 build plan is unchanged in shape, only the demo narrative shifts |
 | Saturday 2 May validation gate surfaces a Phase 1 regression | Low | Medium | Saturday morning reserves 3h; if a fix takes more, FEAT-PH2-001 spec slips to evening; Sunday morning still has 2h for Wave 1 + 2 |
 | Claude Design first pass produces unacceptable HTML | Medium | Medium | Tuesday-evening fall-through to Wednesday; if Wednesday also marginal, Wednesday afternoon switches to hand-coded fallback (~1.5h work). Dashboard is video content, not a product surface — slight aesthetic compromise is acceptable |
-| Reachy hardware doesn't arrive / fails on Sunday 3 May go-no-go | Medium | Low | Future-vision segment plan is the documented fallback; demo loses the "live embodied" beat but keeps the conversation starter showing intent |
+| Reachy unbox blocks on Saturday 9 May (hardware DOA, network issue, SDK install fails) | Low | Low | Future-vision segment plan is the documented fallback; capture Friday 15 May. Demo loses the "live embodied" beat but keeps the conversation starter showing intent |
+| Reachy integration learning curve eats more than 3-4 days (Sun 10 → Wed 13 May) | Medium | Medium | Tuesday-evening capture-readiness checkpoint; if integration is brittle, push capture to Thursday and use Friday as the future-vision fallback day; if still blocked Friday, future-vision fallback ships |
+| Reachy delivery slips past Friday 8 May despite confirmation | Low | Medium | Future-vision fallback is the same as the integration-blocked path — capture Friday 15 May. The 10-day runway absorbs a 1-2 day slip; longer than that, the live segment is off the table for this submission |
 | Lilymay unavailable on Saturday 2 May for Session 1 capture | Low | Low | Session 1 (working-today) is the lowest-risk capture; can land any day in Phase 2 — Sunday, Monday evening, etc. |
 | Latency budget breached by gamification rules computation | Very Low | High | Rules are pure-functional and target sub-100ms; if profiling shows slower, the offending rule is moved to async-after-emit (loses session-end response visibility but preserves turn budget) |
 | `GamificationState` Graphiti write fails silently | Low | Medium | CC-13 / ADR-ARCH-019 — failure emits structured-log line; in-memory state is the source of truth for the MCP response so the user sees no failure; reconciliation on next session start (Phase 1 pattern) |
@@ -680,7 +726,8 @@ For ease of revisiting, all TBD items are listed here with their revisit trigger
 | Coach signal quality | Saturday 2 May AM | Direct mapping (per-criterion) confidence-update; fallback to smoothed if observed-noisy on Sun 3 May |
 | Session-export JSON shape | Saturday 2 May late AM | Codify scope §FEAT-PH2-002 §1 shape; frozen-shape contract test in TASK-PH2-D-001 |
 | Claude Design output quality | Tuesday 5 May evening | Acceptable → polish Wed; marginal → iterate Wed; unacceptable → hand-coded fallback Wed afternoon |
-| Reachy hardware status | Sunday 3 May (DEC-06 gate, calendar-Sunday slot — see source-doc dating note) | Future-vision segment captured Friday 15 May |
+| Reachy operational status post-unbox | Saturday 9 May AM (DEC-06 gate, post-delivery — delivery confirmed Friday 8 May) | Future-vision segment captured Friday 15 May |
+| Reachy integration capture-readiness | Tuesday 12 May evening (capture-readiness checkpoint) | If integration brittle → push capture Wed→Thu; if still blocked Friday → future-vision fallback |
 | Lilymay availability for capture sessions | Each capture session day | Slip to next available evening; Session 1 first because lowest-risk |
 | Tech writeup quality bar | Sunday 10 May polish | If under-quality, Monday 11 May buffer absorbs second polish pass |
 
@@ -695,28 +742,29 @@ All day labels are calendar-true for May 2026.
 | Thu | 30 Apr | (today) | This build plan written |
 | Fri | 1 May | (Phase 1) | Phase 1 close-out: FEAT-PH1-004 build outcome + `phase-1-validation.md` seed |
 | Sat | 2 May | 6 | **Phase 2 Day 1** — Validation gate + system-level refresh + FEAT-PH2-001 spec/plan/Wave 1 + capture Session 1 |
-| Sun | 3 May | 5 | **Phase 2 Day 2** — FEAT-PH2-001 Waves 3 + 4 + 5 + Reachy go/no-go + tech writeup gamification section |
+| Sun | 3 May | 3 | **Phase 2 Day 2** — FEAT-PH2-001 Waves 3 + 4 + 5 + tech writeup gamification section. _Reduced from 5h: the original Reachy go/no-go slot moved to Sat 9 May after delivery confirmation._ |
 | Mon | 4 May | 2 | FEAT-PH2-001 verification + multi-session run + tuning |
 | Tue | 5 May | 2 | FEAT-PH2-002 spec/plan + first Claude Design pass |
 | Wed | 6 May | 2 | Dashboard polish or fallback + capture Session 2 (architecture reveal) |
 | Thu | 7 May | 2 | FEAT-PH2-003 spec + demo script finalisation + first edit pass |
-| Fri | 8 May | 2 | Capture Session 3 (gamification + dashboard) + Phase 2 success criteria check + `phase-2-features-complete` tag |
+| **Fri** | **8 May** | **2** | **Capture Session 3 + Phase 2 success criteria check + `phase-2-features-complete` tag.** _Reachy Mini delivery during the day — receive + cursory power-on only; full unbox + setup deferred to Saturday so the Phase 2 close-out doesn't compete._ |
 | **Phase 2 features complete** |       |       | **End of Friday 8 May** |
-| Sat | 9 May | 3 | Tech writeup full draft + Reachy capture (if applicable) |
-| Sun | 10 May | 2 | Tech writeup polish + architecture diagram |
-| Mon | 11 May | 1 | Buffer / overflow |
-| Tue | 12 May | 1 | Demo video edit pass second cut |
-| Wed | 13 May | 1 | Demo video polish |
-| Thu | 14 May | 1 | Buffer + tech writeup final read + `post-hackathon-wishlist.md` |
-| Fri | 15 May | 1 | Future-vision segment if applicable + repo gate-check |
+| **Sat** | **9 May** | **4** | **Reachy unbox + DEC-06 go/no-go (AM, ~2-3h)** + tech writeup full draft (PM, ~2h). _Increased from 3h: Reachy unbox now lives here per delivery confirmation._ |
+| Sun | 10 May | 2 | Tech writeup polish + architecture diagram. _Reachy integration thread starts as parallel work (outside this row)._ |
+| Mon | 11 May | 1 | Buffer / overflow. _Parallel: Reachy integration round-trip target — "How's Lilymay's revision going?" working end-to-end._ |
+| Tue | 12 May | 1 | Demo video edit pass second cut. _Parallel: Reachy integration polish + capture-readiness checkpoint._ |
+| **Wed** | **13 May** | **2-3** | **Reachy live capture (~1.5h) + demo video polish (~1h).** _Live segment is captured today contingent on Sat-9-May go/no-go pass + Tue-12-May capture-readiness check._ |
+| Thu | 14 May | 1 | Buffer + tech writeup final read + `post-hackathon-wishlist.md`. _Reachy capture re-take if Wednesday was marginal._ |
+| Fri | 15 May | 1 | Future-vision fallback **only if needed** (Sat 9 go/no-go failed or Wed capture unusable) + repo gate-check |
 | Sat | 16 May | 2 | Demo upload + submission form + `submission-2026-05-18` tag + final read |
 | Sun | 17 May | <1 | Buffer day — only act on blockers |
 | Mon | 18 May | <1 | Submission deadline 23:59 UTC — no work scheduled if everything green |
-| **TOTAL** |  | **~33h** | Across 18 days |
+| **TOTAL** |  | **~33h** | Across 18 days (Phase 2 day-by-day). **Reachy integration thread runs in parallel Sat 9 → Tue 12 May, ~6-8h additional, outside this table per DEC-06.** |
 
 ---
 
 *Phase 2 build plan: 30 April 2026 (drafted one day ahead of `phase-2-scope.md`'s "Thursday 1 May" slot per hybrid cadence Rule 2; calendar-true 1 May is Friday — see Date-label convention at the top of this document).*
-*Consuming: `phase-2-scope.md`, `phase-1-build-plan.md` outcomes (where landed), `graphiti-latency-spike-results.md`, `docs/gamification/design.md`, `decisions-log-2026-04-17.md`, `planning-cadence-hybrid-approach.md`.*
-*Scheduled to be revised on Saturday 2 May morning if the Phase 1 validation gate surfaces drift not anticipated here.*
+*Revised: 30 April 2026 (PM) — Reachy Mini "Scholar" delivery confirmed for Friday 8 May per Pollen Robotics dispatch text. DEC-06 go/no-go gate moved from speculative Sunday 3 May slot to Saturday 9 May (post-delivery unbox). Live Reachy demo segment elevated from possible-fallback to likely outcome; capture target Wednesday 13 May. Sunday 3 May reduced from 5h to 3h; Saturday 9 May increased from 3h to 4h.*
+*Consuming: `phase-2-scope.md`, `phase-1-build-plan.md` outcomes (where landed), `graphiti-latency-spike-results.md`, `docs/gamification/design.md`, `decisions-log-2026-04-17.md`, `planning-cadence-hybrid-approach.md`, `reachy-integration-conversation-starter.md`.*
+*Scheduled to be revised on Saturday 2 May morning if the Phase 1 validation gate surfaces drift not anticipated here, and on Saturday 9 May AM if the Reachy unbox surfaces operational issues that change the integration runway.*
 *Target: hackathon-submission-complete by end of Saturday 16 May 2026. Submission deadline Monday 18 May 23:59 UTC.*
