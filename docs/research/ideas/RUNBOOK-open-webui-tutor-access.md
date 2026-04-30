@@ -1,11 +1,23 @@
 # Runbook: Open WebUI — GCSE Study Tutor Access for Lilymay
 
-**Status:** Not yet executed
+**Status:** Executed 2026-04-29 against Open WebUI 0.9.2 — all phases pass, browser test confirmed clean rendering
 **Purpose:** Deploy Open WebUI on the GB10 to give Lilymay a ChatGPT-style interface to the fine-tuned GCSE English tutor, with stretch-goal presets for other subjects.
 **Machine:** Dell DGX Spark GB10 (`promaxgb10-41b1`), 128 GB unified memory
 **Predecessor:** `RUNBOOK-fix-tutor-template-leak.md` (template leak resolved), `RESULTS-v3-production-deployment.md` (llama-swap production config)
 **Conversation starter:** `study-tutor/docs/research/ideas/study-tutor-access-conversation-starter.md`
 **Expected duration:** ~30 minutes (Docker pull + config + smoke test)
+
+## Execution notes (2026-04-29 run on Open WebUI 0.9.2)
+
+These deviations from the original runbook were needed and are now folded into the steps below — flagged inline with **EXEC NOTE** markers so future operators know which bits were learned the hard way:
+
+1. **System prompt file was missing.** `/opt/llama-swap/models/gemma4-tutor/system-prompt.txt` did not exist. The Modelfile contains only a chat template, no SYSTEM block. Recovered the canonical 811-byte prompt from `/home/richardwoollcott/fine-tuning/data/train.jsonl` (used in 1705/1736 training samples). Phase 0.2 now includes the recovery procedure.
+2. **Stale `open-webui` container blocked the new run.** A 2-month-old `open-webui:ollama` container existed in `Exited` state (different image, different volume names — `open-webui` and `open-webui-ollama`, not the new `open-webui-data`). Phase 1.1 now removes any pre-existing container by the same name before `docker run`.
+3. **Health-check loop in Phase 1.1 used a bad regex.** OWUI 0.9.2's `/api/health` returns the SPA HTML, not a JSON status. Replaced with HTTP-200-on-`/` probe.
+4. **`access_control` is a legacy field.** OWUI 0.9 boots with `migrate_access_control` and uses `access_grants` (a list of grant objects) instead. Empty `access_grants: []` makes a preset admin-only. The public-read pattern is `[{"principal_type":"user","principal_id":"*","permission":"read"}]`. Phase 2.3 and Phase 5.2 payloads now include this — without it, Lilymay sees zero models in the dropdown and chat returns `{"detail":"Model not found"}`.
+5. **`<think>...</think>` reasoning blocks leak through raw API.** The fine-tune was trained with literal `<think>` blocks in assistant outputs (visible in train.jsonl). The Jinja template fix from `RUNBOOK-fix-tutor-template-leak.md` only handles `<|channel>thought<channel|>` markers — different problem. Setting `reasoning_tags: ["<think>","</think>"]` in the preset's `params` makes OWUI's UI middleware extract them into a collapsible "Show thinking" panel. **The non-streaming `/api/chat/completions` passthrough still shows raw text — that's the API endpoint, not the UI render path.** Verified in browser 2026-04-29: clean rendering, reasoning collapsed by default. Phase 2.3 and Phase 5.2 now set this param.
+6. **Email validator rejects bare-host emails.** `lilymay@local` is rejected with "invalid email format". Use `lilymay@home.local` (or any RFC-shaped local domain). Phase 3.1 updated.
+7. **Open WebUI API endpoint is `/api/v1/models/create` for new presets and `/api/v1/models/model/update?id=<id>` for updates.** Both confirmed working on 0.9.2.
 
 ---
 
@@ -58,7 +70,9 @@ else
 fi
 ```
 
-### 0.2 Confirm the system prompt file exists
+### 0.2 Confirm the system prompt file exists (or recover it from training data)
+
+> **EXEC NOTE (2026-04-29):** This file was missing on the first run. The Modelfile at `/opt/llama-swap/models/gemma4-tutor/Modelfile` contains only a chat template, not a SYSTEM block. The fallback below recovers the canonical prompt from the training data — 1705/1736 samples share the same 811-byte system prompt, which is what the model was effectively conditioned on.
 
 ```bash
 SYSTEM_PROMPT_FILE="/opt/llama-swap/models/gemma4-tutor/system-prompt.txt"
@@ -66,11 +80,35 @@ if [ -f "$SYSTEM_PROMPT_FILE" ]; then
     echo "PASS: System prompt found at $SYSTEM_PROMPT_FILE"
     echo "Length: $(wc -c < "$SYSTEM_PROMPT_FILE") bytes, $(wc -l < "$SYSTEM_PROMPT_FILE") lines"
 else
-    echo "FAIL: System prompt not found at $SYSTEM_PROMPT_FILE"
-    echo ""
-    echo "This file should have been extracted from the Ollama Modelfile during v3 deployment."
-    echo "Check the Modelfile at /opt/llama-swap/models/gemma4-tutor/Modelfile and extract the SYSTEM block."
-    exit 1
+    echo "MISSING: attempting recovery from training data"
+    TRAIN_JSONL="/home/richardwoollcott/fine-tuning/data/train.jsonl"
+    if [ ! -f "$TRAIN_JSONL" ]; then
+        echo "FAIL: training data not found at $TRAIN_JSONL"
+        echo "Manually source the prompt (e.g. from GCSE_English_AI_Tutor_Proposal.docx) and write it to $SYSTEM_PROMPT_FILE"
+        exit 1
+    fi
+    python3 - <<'PY'
+import json, hashlib, pathlib
+counts, samples = {}, {}
+with open("/home/richardwoollcott/fine-tuning/data/train.jsonl") as f:
+    for line in f:
+        try: obj = json.loads(line)
+        except: continue
+        for m in obj.get("messages", []):
+            if m.get("role") == "system":
+                c = m.get("content", "")
+                h = hashlib.sha256(c.encode()).hexdigest()[:12]
+                counts[h] = counts.get(h, 0) + 1
+                samples.setdefault(h, c)
+                break
+if not counts:
+    raise SystemExit("No system prompts found in training data")
+dominant = max(counts, key=counts.get)
+prompt = samples[dominant].rstrip() + "\n"
+pathlib.Path("/opt/llama-swap/models/gemma4-tutor/system-prompt.txt").write_text(prompt)
+print(f"Recovered prompt {dominant} ({counts[dominant]}/{sum(counts.values())} samples, {len(prompt)} bytes)")
+PY
+    [ -f "$SYSTEM_PROMPT_FILE" ] && echo "PASS: recovered to $SYSTEM_PROMPT_FILE" || { echo "FAIL: recovery did not produce file"; exit 1; }
 fi
 ```
 
@@ -107,8 +145,17 @@ fi
 
 > ⚠️ **`--network host`** is used so Open WebUI can reach llama-swap on localhost:9000. This means Open WebUI binds directly to the host's port 8080. This is fine for a Tailscale-only machine — there's no external internet exposure.
 
+> **EXEC NOTE (2026-04-29):** A stale `open-webui` container from an earlier `open-webui:ollama` install (Feb 2026) blocked the new `docker run` with a name conflict. The pre-flight `docker rm` below handles this safely — stopped containers carry no data (volumes are separate, so `open-webui-data` is untouched). The wait loop in the original runbook used a `grep "true|ok|healthy"` regex against `/api/health`, but OWUI 0.9.2's `/api/health` returns the SPA HTML; we now poll HTTP-200-on-`/` instead.
+
 ```bash
 echo "=== Deploying Open WebUI ==="
+
+# Remove any stopped/stale container with the same name (data volumes are preserved)
+if docker ps -a --filter "name=^/open-webui$" --format '{{.Status}}' | grep -q .; then
+    echo "Removing pre-existing open-webui container (image: $(docker inspect open-webui --format='{{.Config.Image}}'))"
+    docker rm -f open-webui >/dev/null
+fi
+
 docker run -d \
     --name open-webui \
     --network host \
@@ -118,17 +165,17 @@ docker run -d \
     --restart unless-stopped \
     ghcr.io/open-webui/open-webui:main
 
-echo "Waiting for Open WebUI to start..."
-for i in $(seq 1 30); do
-    if curl -s --max-time 3 http://localhost:8080/api/health 2>/dev/null | grep -q "true\|ok\|healthy"; then
-        echo "  attempt $i: healthy"
+echo "Waiting for Open WebUI to start (image pull can take a few minutes on first run)..."
+for i in $(seq 1 60); do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8080 2>/dev/null)
+    if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+        echo "  attempt $i: HTTP $HTTP_CODE — ready"
         break
     fi
     echo "  attempt $i: not ready yet"
     sleep 5
 done
 
-# Final check
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 2>/dev/null)
 if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
     echo "PASS: Open WebUI is running on port 8080 (HTTP $HTTP_CODE)"
@@ -208,16 +255,17 @@ for m in data.get('data', []):
 
 ### 2.3 Create the model preset via API
 
+> **EXEC NOTE (2026-04-29):** Two payload fields are critical and were missing from the original runbook:
+> - **`access_grants`** with a public-read entry — without it, only the admin (creator) can see the preset; non-admin users get an empty model dropdown and chat returns `{"detail":"Model not found"}`. The legacy `access_control` field is auto-migrated by OWUI 0.9 into the new `access_grants` list and is no longer the right knob.
+> - **`reasoning_tags: ["<think>","</think>"]`** — the fine-tune emits literal `<think>...</think>` reasoning blocks (visible in train.jsonl). With this set, OWUI's UI middleware extracts them into a collapsible "Show thinking" panel; without it, raw tags appear in the chat. The Jinja template fix in `RUNBOOK-fix-tutor-template-leak.md` handles `<|channel>thought<channel|>` only — different problem, doesn't help here.
+
 ```bash
 echo "=== Creating GCSE English Tutor model preset ==="
 
-# Read the system prompt into a Python-safe variable and create the preset
 python3 - "$ADMIN_TOKEN" <<'PY'
 import sys, json, urllib.request, pathlib
 
 token = sys.argv[1]
-
-# Read system prompt from file
 system_prompt = pathlib.Path("/opt/llama-swap/models/gemma4-tutor/system-prompt.txt").read_text().strip()
 
 payload = {
@@ -231,8 +279,13 @@ payload = {
     "params": {
         "system": system_prompt,
         "temperature": 0.7,
-        "top_p": 0.9
-    }
+        "top_p": 0.9,
+        "reasoning_tags": ["<think>", "</think>"]
+    },
+    "access_grants": [
+        {"principal_type": "user", "principal_id": "*", "permission": "read"}
+    ],
+    "is_active": True
 }
 
 req = urllib.request.Request(
@@ -249,25 +302,28 @@ try:
     with urllib.request.urlopen(req) as resp:
         result = json.loads(resp.read())
         print(f"PASS: Model preset created — '{result.get('name', 'unknown')}'")
+        print(f"  access_grants: {len(result.get('access_grants') or [])} grant(s)")
+        print(f"  reasoning_tags: {result.get('params',{}).get('reasoning_tags')}")
 except urllib.error.HTTPError as e:
     body = e.read().decode()
     print(f"HTTP {e.code}: {body}")
     print("")
     if "already exists" in body.lower() or e.code == 409:
-        print("Preset may already exist. Update it via the admin panel or delete and re-create.")
+        print("Preset already exists — use POST /api/v1/models/model/update?id=gcse-english-tutor with the same payload to refresh it.")
     else:
-        print("Check the Open WebUI API docs for the correct endpoint/payload format.")
-        print("The API may have changed — fall back to creating the preset manually via the web UI:")
+        print("Fall back to creating the preset manually via the web UI:")
         print("  Workspace → Models → Create Model")
-        print(f"  Name: GCSE English Tutor")
-        print(f"  Base model: gemma4-tutor")
-        print(f"  System prompt: <paste from /opt/llama-swap/models/gemma4-tutor/system-prompt.txt>")
-        print(f"  Temperature: 0.7")
+        print("  Name: GCSE English Tutor")
+        print("  Base model: gemma4-tutor")
+        print("  System prompt: <paste from /opt/llama-swap/models/gemma4-tutor/system-prompt.txt>")
+        print("  Temperature: 0.7  Top-p: 0.9")
+        print("  Visibility: Public (Anyone with link / All users) — equivalent to access_grants public-read")
+        print("  Advanced → reasoning_tags: <think> </think>")
     sys.exit(1)
 PY
 ```
 
-> ⚠️ **API instability.** Open WebUI's API is not officially stable — endpoints and payload shapes change between versions. If the `POST /api/v1/models/create` call fails, fall back to creating the preset manually through the admin web UI at `http://localhost:8080`. The steps are: Workspace → Models → Create Model → fill in name, base model, system prompt, temperature. The conversation starter has the full manual steps.
+> ⚠️ **API stability.** Open WebUI's API is not officially stable — endpoints and payload shapes change between versions. The `/api/v1/models/create` and `/api/v1/models/model/update?id=<id>` endpoints are confirmed working on **0.9.2** (2026-04-29). If they fail on a future version, fall back to creating the preset manually through the admin web UI at `http://localhost:8080` (Workspace → Models → Create Model). Make sure to set visibility to public and add `<think>` / `</think>` to reasoning tags in the advanced params.
 
 ---
 
@@ -275,29 +331,31 @@ PY
 
 ### 3.1 Create the account
 
+> **EXEC NOTE (2026-04-29):** OWUI 0.9.2's email validator rejects bare-host emails like `lilymay@local` with `"The email format you entered is invalid"`. Use `lilymay@home.local` (or any RFC-shaped local domain — the email is just an identifier, no mail is sent).
+
 ```bash
 echo "=== Creating Lilymay's user account ==="
 
-# Generate a simple memorable password
 # Rich should share this with Lilymay directly
 LILYMAY_PASSWORD="Macbeth2026!"
+LILYMAY_EMAIL="lilymay@home.local"
 
 LILYMAY_RESPONSE=$(curl -s http://localhost:8080/api/v1/auths/add \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d "{
         \"name\": \"Lilymay\",
-        \"email\": \"lilymay@local\",
+        \"email\": \"$LILYMAY_EMAIL\",
         \"password\": \"$LILYMAY_PASSWORD\",
         \"role\": \"user\"
     }")
 
 if echo "$LILYMAY_RESPONSE" | python3 -c "import sys, json; d=json.load(sys.stdin); assert d.get('id') or d.get('email')" 2>/dev/null; then
-    echo "PASS: User account created for Lilymay (lilymay@local)"
+    echo "PASS: User account created for Lilymay ($LILYMAY_EMAIL)"
     echo ""
     echo "=== CREDENTIALS FOR LILYMAY ==="
     echo "URL:      http://promaxgb10-41b1:8080"
-    echo "Email:    lilymay@local"
+    echo "Email:    $LILYMAY_EMAIL"
     echo "Password: $LILYMAY_PASSWORD"
     echo "==============================="
     echo ""
@@ -306,9 +364,11 @@ else
     echo "User creation returned unexpected response:"
     echo "$LILYMAY_RESPONSE"
     echo ""
+    echo "Common cause: email validator rejected the address. Use a domain that contains a dot (e.g. lilymay@home.local)."
+    echo ""
     echo "Fall back to manual creation via admin panel:"
     echo "  Admin Panel → Users → Add User"
-    echo "  Name: Lilymay, Email: lilymay@local, Role: User"
+    echo "  Name: Lilymay, Email: $LILYMAY_EMAIL, Role: User"
 fi
 ```
 
@@ -335,7 +395,7 @@ echo "=== Smoke test: API round-trip through Open WebUI ==="
 # Log in as Lilymay to get her JWT
 LILYMAY_TOKEN=$(curl -s http://localhost:8080/api/v1/auths/signin \
     -H "Content-Type: application/json" \
-    -d "{\"email\": \"lilymay@local\", \"password\": \"$LILYMAY_PASSWORD\"}" \
+    -d "{\"email\": \"$LILYMAY_EMAIL\", \"password\": \"$LILYMAY_PASSWORD\"}" \
     | python3 -c "import sys, json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
 
 if [ -z "$LILYMAY_TOKEN" ] || [ "$LILYMAY_TOKEN" = "None" ]; then
@@ -375,9 +435,13 @@ echo ""
 
 ### 4.2 Check for template-token leaks
 
+> **EXEC NOTE (2026-04-29):** Two distinct leak categories — handle them separately:
+> - **Template/channel tokens** (`<|channel>`, `<channel|>`, `<|turn>`, `<turn|>`) — these are the original leak from `RUNBOOK-fix-tutor-template-leak.md`. They appearing means the Jinja template fix has regressed (check `--chat-template-file gemma4-tutor.jinja` is still active in llama-swap).
+> - **Reasoning tokens** (`<think>`, `</think>`) — these come from the training data and ARE expected in the raw API output. They get extracted by OWUI's UI middleware (rendered as a collapsible "Show thinking" panel) when `reasoning_tags: ["<think>","</think>"]` is set on the preset (see Phase 2.3). Don't fail the build on these — only fail if they appear in the **browser-rendered** chat. Verify in browser as part of step 4.3.
+
 ```bash
-echo "=== Checking for template-token leaks ==="
-LEAK_TOKENS="<|channel> <channel|> <think> </think> <|turn> <turn|>"
+echo "=== Checking for template-token leaks (channel/turn markers only) ==="
+LEAK_TOKENS="<|channel> <channel|> <|turn> <turn|>"
 LEAK_FOUND=false
 
 for TOKEN in $LEAK_TOKENS; do
@@ -395,21 +459,40 @@ if [ "$LEAK_FOUND" = true ]; then
     echo "Check: is the system prompt being double-applied (once in the Jinja template, once from Open WebUI)?"
     echo "Ref: RUNBOOK-fix-tutor-template-leak.md"
 else
-    echo "PASS: No template-token leaks detected."
+    echo "PASS: No channel/turn template-token leaks detected."
+fi
+
+echo ""
+echo "=== <think>/</think> reasoning tokens (informational) ==="
+if echo "$TUTOR_TEXT" | grep -qF "<think>"; then
+    echo "INFO: <think>...</think> blocks present in raw API response — expected."
+    echo "      OWUI's UI middleware will extract these into a collapsible panel."
+    echo "      Verify in browser at step 4.3 that they don't appear as raw tags in the chat view."
+else
+    echo "INFO: No <think> blocks in this response."
 fi
 ```
 
-### 4.3 Check response quality
+### 4.3 Check response quality (browser-based — required)
+
+> **EXEC NOTE (2026-04-29):** This step must include a real browser test, not just an API check. The `/api/chat/completions` API passthrough returns raw model output (including `<think>` blocks). The OWUI UI applies reasoning-tag extraction during the chat render path, so the user-visible result differs from the raw API output. Browser test confirmed clean rendering on 2026-04-29.
 
 ```bash
 echo "=== Checking response quality (manual) ==="
 echo ""
-echo "Verify the following manually from the tutor response above:"
+echo "Open http://promaxgb10-41b1:8080 in a browser, log in as Lilymay, and verify:"
 echo "  [ ] Response is encouraging and supportive"
 echo "  [ ] Response uses Socratic method (asks guiding questions rather than giving direct answers)"
 echo "  [ ] Response references AQA mark scheme criteria or exam technique"
 echo "  [ ] Response is age-appropriate for a Year 10 student"
 echo "  [ ] No technical jargon about models, APIs, or infrastructure"
+echo "  [ ] <think>...</think> blocks are NOT visible as raw text — they should be tucked inside"
+echo "      a collapsible 'Show thinking' / reasoning panel (collapsed by default)"
+echo "  [ ] No <|channel>, <|turn>, or other template tokens visible anywhere"
+echo ""
+echo "If <think> tags appear as raw text in the browser, the reasoning_tags param wasn't"
+echo "applied. Re-run the Phase 2.3 update payload (POST /api/v1/models/model/update) with"
+echo "params.reasoning_tags = [\"<think>\", \"</think>\"]."
 echo ""
 echo "If the response is flat, generic, or gives direct answers instead of guiding questions,"
 echo "verify the system prompt was correctly baked into the model preset."
@@ -554,6 +637,8 @@ ls -la "$SUBJECTS_DIR"
 
 ### 5.2 Create the presets
 
+> **EXEC NOTE (2026-04-29):** Same two fields as Phase 2.3 — `access_grants` (public-read) and `reasoning_tags` (`<think>`/`</think>`) — must be on every preset, otherwise non-admin users get an empty model dropdown and raw `<think>` tags in the chat.
+
 ```bash
 echo "=== Creating multi-subject model presets ==="
 
@@ -594,8 +679,13 @@ payload = {
     "params": {
         "system": system_prompt,
         "temperature": 0.7,
-        "top_p": 0.9
-    }
+        "top_p": 0.9,
+        "reasoning_tags": ["<think>", "</think>"]
+    },
+    "access_grants": [
+        {"principal_type": "user", "principal_id": "*", "permission": "read"}
+    ],
+    "is_active": True
 }
 
 req = urllib.request.Request(
@@ -636,20 +726,20 @@ rm -rf "$SUBJECTS_DIR"
 
 ## Phase 6: Decision gate
 
-| Step | Expected | Notes |
+| Step | Expected | 2026-04-29 result |
 |---|---|---|
-| P0.1: llama-swap serving gemma4-tutor | PASS | |
-| P0.2: System prompt file exists | PASS | |
-| P0.3: Port 8080 available | PASS | |
-| P0.4: Docker available | PASS | |
-| P1.1: Open WebUI container running | PASS | Health endpoint responds |
-| P1.2: Admin account created | PASS | rich@appmilla.com |
-| P2.3: English Tutor preset created | PASS | System prompt baked in |
-| P3.1: Lilymay account created | PASS | lilymay@local |
-| P4.1: Chat round-trip works | PASS | Response received through Open WebUI |
-| P4.2: No template-token leaks | PASS | No `<\|channel>`, `<think>`, etc. |
-| P4.3: Response quality acceptable | PASS (manual) | Socratic, encouraging, AQA-aware |
-| P5.2: Multi-subject presets (stretch) | PASS | 7/7 created |
+| P0.1: llama-swap serving gemma4-tutor | PASS | PASS |
+| P0.2: System prompt file exists | PASS | PASS *(after recovery from train.jsonl — file was missing)* |
+| P0.3: Port 8080 available | PASS | PASS |
+| P0.4: Docker available | PASS | PASS (v29.2.1) |
+| P1.1: Open WebUI container running | PASS | PASS (v0.9.2; stale `open-webui:ollama` container removed first) |
+| P1.2: Admin account created | PASS | PASS (rich@appmilla.com) |
+| P2.3: English Tutor preset created | PASS | PASS (system prompt baked in, `access_grants` public-read, `reasoning_tags` set) |
+| P3.1: Lilymay account created | PASS | PASS (lilymay@home.local — `lilymay@local` rejected by validator) |
+| P4.1: Chat round-trip works | PASS | PASS |
+| P4.2: No channel/turn template-token leaks | PASS | PASS — `<\|channel>`/`<\|turn>` clean. `<think>` blocks present in raw API (expected; extracted by UI middleware) |
+| P4.3: Response quality acceptable (browser) | PASS (manual) | **PASS — browser-tested by Rich 2026-04-29: Socratic, encouraging, AQA-aware, `<think>` blocks correctly tucked into collapsible reasoning panel** |
+| P5.2: Multi-subject presets (stretch) | PASS | PASS (7/7 created with `access_grants` + `reasoning_tags`) |
 
 ### All pass
 
