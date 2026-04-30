@@ -1926,6 +1926,7 @@ INFO:guardkit.orchestrator.review_summary:Review summary written to /Users/richa
 INFO:guardkit.orchestrator.feature_orchestrator:Feature orchestration complete: FEAT-PH1-002, status=completed, completed=7/7
 
 
+ /feature-complete FEAT-PH1-002
 
 
 /feature-spec "DeepAgents Tutoring Loop with Coach — Player-Coach integration, Coach rubric, session-end summary, async Graphiti write-back" \
