@@ -119,6 +119,6 @@ Wave 3 (sequential; depends on Waves 1 + 2):
 4. After Wave 1 lands, proceed to Wave 2: `/task-work TASK-DTL-002` and
    `/task-work TASK-DTL-003` in parallel.
 5. After Waves 1+2 land, proceed to Wave 3: `/task-work TASK-DTL-005`.
-6. Run smoke gate: `pytest -m "feat-ph1-003 and smoke" -x --no-cov`.
+6. Run smoke gate: `pytest -m "feat_ph1_003 and smoke" -x --no-cov` (underscore form — `feat-ph1-003` would parse as `feat - ph1 - 003` and silently match nothing, the TASK-DSP-008 trip-wire).
 
 Or autonomously: `/feature-build FEAT-PH1-003`.

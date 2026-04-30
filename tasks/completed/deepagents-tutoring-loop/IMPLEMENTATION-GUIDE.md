@@ -477,7 +477,7 @@ Coach validation cannot see:
 ```yaml
 smoke_gates:
   after_wave: [3]
-  command: pytest -m "feat-ph1-003 and smoke" -x --no-cov
+  command: pytest -m "feat_ph1_003 and smoke" -x --no-cov  # underscore form — pytest's -m is a Python expression; hyphens are parsed as subtraction (TASK-DSP-008 trip-wire)
   expected_exit: 0
   timeout: 60
 ```

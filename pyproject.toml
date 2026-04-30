@@ -68,4 +68,5 @@ markers = [
     "integration_contract: marks the specific contract under test (arg: contract name)",
     "smoke: fast end-to-end-ish smoke tests run by autobuild smoke gates",
     "feat_ph1_002: tests scoped to the Deterministic Session Planner feature (FEAT-PH1-002)",
+    "feat_ph1_003: tests scoped to the DeepAgents Tutoring Loop with Coach feature (FEAT-PH1-003)",
 ]
