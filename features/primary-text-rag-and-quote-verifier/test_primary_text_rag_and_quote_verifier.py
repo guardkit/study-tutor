@@ -1,6 +1,6 @@
 """pytest-bdd glue module for ``primary-text-rag-and-quote-verifier.feature``.
 
-This module exists for two reasons (mirroring the pattern set by
+This module exists for three reasons (mirroring the pattern set by
 ``features/deepagents-tutoring-loop/test_deepagents_tutoring_loop.py``):
 
 1. **Collection bridge**: GuardKit's ``bdd_runner`` invokes ``pytest`` with
@@ -11,7 +11,15 @@ This module exists for two reasons (mirroring the pattern set by
    which is exactly the BDD-oracle failure surfaced by the Coach gate on
    the previous turn (TASK-PRV-003 turn 1).
 
-2. **Step definitions for @task:TASK-PRV-003**: the 5 scenarios tagged
+2. **Step definitions for @task:TASK-PRV-002**: the 7 corpus-loader
+   scenarios tagged ``@task:TASK-PRV-002`` have step definitions in this
+   module — ingestion source-type inference, AQA refusal, in-copyright
+   refusal, empty folder, whitespace-only file, corrupted file resilience,
+   and path-traversal rejection. Steps drive the real
+   :func:`study_tutor.knowledge.corpus.load_corpus` so the BDD oracle
+   exercises the production loader, not a stub.
+
+3. **Step definitions for @task:TASK-PRV-003**: the 5 scenarios tagged
    ``@task:TASK-PRV-003`` in this feature file have step definitions in
    this module:
 
@@ -26,7 +34,7 @@ This module exists for two reasons (mirroring the pattern set by
    * ``@edge-case @retrieval @ao3`` (empty historical-context) — AO3-only
      short-circuit fires regardless of corpus folder contents.
 
-   Steps unique to other tasks (TASK-PRV-002 / -004 / -005 / -006) remain
+   Steps unique to other tasks (TASK-PRV-004 / -005 / -006) remain
    intentionally unbound — they appear as ``scenarios_pending`` and are
    tolerated by the Coach gate (``scenarios_failed == 0``).
 
@@ -420,3 +428,461 @@ def _then_metadata_embedder_unavailable(bdd_context: BddContext) -> None:
     assert decision.reason is REASON_EMBEDDER_TIMEOUT
     assert decision.mode == "analysis_mode"
     assert decision.retrieve is False
+
+
+# ===========================================================================
+# TASK-PRV-002 — Source-typed corpus loader scenarios
+# ===========================================================================
+#
+# Step definitions for the 7 scenarios tagged ``@task:TASK-PRV-002``. Each
+# scenario builds a small corpus tree under ``tmp_path`` and drives the real
+# :func:`study_tutor.knowledge.corpus.load_corpus`, then asserts on the
+# returned :class:`IngestResult` (chunks / refusals / skips). State is held
+# on a dedicated :class:`CorpusBddContext` so the corpus scenarios don't
+# collide with the retrieval-decision context above.
+# ---------------------------------------------------------------------------
+
+import os  # noqa: E402  -- kept here to localise corpus-section imports
+
+from study_tutor.knowledge.corpus import (  # noqa: E402
+    IngestResult,
+    RefusalReason,
+    SkipReason,
+    SOURCE_TYPE_FOLDERS,
+    load_corpus,
+)
+from study_tutor.knowledge.corpus_models import SourceType  # noqa: E402
+
+
+class CorpusBddContext:
+    """Per-scenario state for TASK-PRV-002 corpus-loader scenarios.
+
+    Holds the corpus root, a registry of files placed (so Then-steps can
+    name them), and the :class:`IngestResult` returned by ``load_corpus``.
+    Recreated per scenario by the :func:`corpus_context` fixture so one
+    scenario's filesystem state never leaks into the next.
+    """
+
+    def __init__(self, root: Path) -> None:
+        self.root: Path = root
+        # Map of logical role → on-disk path so Then-steps can refer to
+        # "the first file" / "the corrupted file" / etc. by intent.
+        self.files: dict[str, Path] = {}
+        # Outputs.
+        self.result: IngestResult | None = None
+
+    def make_skeleton(self) -> None:
+        """Create the four canonical source-type folders under root."""
+        for folder in SOURCE_TYPE_FOLDERS:
+            (self.root / folder).mkdir(parents=True, exist_ok=True)
+
+
+@pytest.fixture
+def corpus_context(tmp_path: Path) -> CorpusBddContext:
+    """Fresh corpus context per scenario.
+
+    ``tmp_path`` gives us a unique directory per scenario; we don't need
+    explicit teardown because pytest cleans the ``tmp_path`` tree itself.
+    """
+    ctx = CorpusBddContext(tmp_path)
+    ctx.make_skeleton()
+    return ctx
+
+
+def _result(corpus_context: CorpusBddContext) -> IngestResult:
+    """Helper: assert load_corpus has been invoked and return the result."""
+    assert corpus_context.result is not None, (
+        "load_corpus has not been called — When step did not run"
+    )
+    return corpus_context.result
+
+
+# ---------------------------------------------------------------------------
+# Given steps
+# ---------------------------------------------------------------------------
+
+
+# A small but realistic Standard-Ebooks-shaped Macbeth fixture used by
+# multiple corpus scenarios. Long enough to produce at least one chunk.
+_MACBETH_TEXT = (
+    "ACT I\n"
+    "Scene 1\n"
+    "A desert place. Thunder and lightning.\n"
+    "First Witch\n"
+    "When shall we three meet again\n"
+    "In thunder, lightning, or in rain?\n"
+    "Second Witch\n"
+    "When the hurlyburly's done,\n"
+    "When the battle's lost and won.\n"
+)
+_STUDY_GUIDE_TEXT = (
+    "York Notes on Macbeth: ambition is the central theme that drives "
+    "the protagonist toward his destruction.\n"
+)
+
+
+@given("a source file is placed under the primary text folder")
+def _given_primary_file(corpus_context: CorpusBddContext) -> None:
+    """Place a Macbeth play fixture under primary_text/."""
+    path = corpus_context.root / "primary_text" / "macbeth.txt"
+    path.write_text(_MACBETH_TEXT, encoding="utf-8")
+    corpus_context.files["primary"] = path
+
+
+@given("another source file is placed under the secondary study guide folder")
+def _given_secondary_study_guide_file(corpus_context: CorpusBddContext) -> None:
+    """Place a study-guide fixture under secondary_study_guide/."""
+    path = corpus_context.root / "secondary_study_guide" / "york_notes.txt"
+    path.write_text(_STUDY_GUIDE_TEXT, encoding="utf-8")
+    corpus_context.files["secondary_study_guide"] = path
+
+
+@given("the primary-text folder exists and is empty")
+def _given_empty_primary_text_folder(corpus_context: CorpusBddContext) -> None:
+    """The four-folder skeleton already exists; primary_text/ is empty."""
+    primary = corpus_context.root / "primary_text"
+    assert primary.is_dir()
+    # Sanity: no files inside (the corpus_context fixture creates only the
+    # four empty folders, so this is already true — but explicit is better).
+    assert not any(primary.iterdir()), (
+        "primary_text/ should start empty for this scenario"
+    )
+
+
+@given("a primary-text file exists but contains only whitespace")
+def _given_whitespace_only_file(corpus_context: CorpusBddContext) -> None:
+    """Place a whitespace-only file under primary_text/."""
+    path = corpus_context.root / "primary_text" / "blank.txt"
+    path.write_text("   \n\t\n  \n", encoding="utf-8")
+    corpus_context.files["whitespace"] = path
+
+
+@given(
+    "a file whose name matches an AQA past-paper, mark-scheme, "
+    "or examiner-report pattern is placed in the corpus"
+)
+def _given_aqa_file(corpus_context: CorpusBddContext) -> None:
+    """Place an AQA-pattern-named file under secondary_study_guide/."""
+    # Filename pattern is the refusal trigger; folder choice is incidental.
+    path = corpus_context.root / "secondary_study_guide" / "past_paper_2023.pdf"
+    path.write_text("AQA past paper content", encoding="utf-8")
+    corpus_context.files["aqa"] = path
+
+
+@given(
+    "an in-copyright modern set text is placed under the primary-text folder"
+)
+def _given_in_copyright_set_text(corpus_context: CorpusBddContext) -> None:
+    """Place an in-copyright-titled file under primary_text/."""
+    path = corpus_context.root / "primary_text" / "inspector_calls.txt"
+    path.write_text(
+        "An Inspector Calls full text — this must never be ingested in bulk.",
+        encoding="utf-8",
+    )
+    corpus_context.files["in_copyright"] = path
+
+
+@given("the primary-text folder contains one valid file and one corrupted file")
+def _given_valid_and_corrupted_files(corpus_context: CorpusBddContext) -> None:
+    """Place a valid Macbeth file alongside a non-UTF-8 corrupted file."""
+    valid = corpus_context.root / "primary_text" / "macbeth.txt"
+    valid.write_text(_MACBETH_TEXT, encoding="utf-8")
+    corpus_context.files["valid"] = valid
+    corrupted = corpus_context.root / "primary_text" / "corrupted.txt"
+    # Bytes that can't be decoded as UTF-8 → loader skips with
+    # SkipReason.CORRUPTED_FILE rather than crashing the walk.
+    corrupted.write_bytes(b"\xff\xfe\xfd\xfc \x80\x81\x82 invalid utf-8")
+    corpus_context.files["corrupted"] = corrupted
+
+
+@given(
+    "a source file whose resolved path lies outside the corpus root "
+    "is placed in the corpus"
+)
+def _given_path_traversal_file(corpus_context: CorpusBddContext) -> None:
+    """Install a symlink in primary_text/ that resolves outside the root.
+
+    A literal ``../etc/passwd`` filename is rejected by most filesystems,
+    so a symlink in the corpus pointing outside the root is the realistic
+    proxy for a path-traversal attempt. The loader's
+    ``Path.resolve(strict=True)`` + ``relative_to(root)`` chain catches it.
+    """
+    outside = corpus_context.root.parent / "outside_secret_for_bdd.txt"
+    outside.write_text("secret outside corpus root", encoding="utf-8")
+    link = corpus_context.root / "primary_text" / "passwd"
+    try:
+        os.symlink(outside, link)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks not supported on this platform")
+    corpus_context.files["traversal_link"] = link
+    corpus_context.files["traversal_target"] = outside
+
+
+# ---------------------------------------------------------------------------
+# When step — invoke the production corpus loader
+# ---------------------------------------------------------------------------
+
+
+@when("the corpus is loaded")
+def _when_corpus_loaded(corpus_context: CorpusBddContext) -> None:
+    """Drive the real :func:`load_corpus` against the scenario's root."""
+    corpus_context.result = load_corpus(corpus_context.root)
+
+
+# ---------------------------------------------------------------------------
+# Then steps — assert on the IngestResult
+# ---------------------------------------------------------------------------
+
+
+@then("chunks from the first file should carry the primary-text source type")
+def _then_first_file_primary_source_type(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The Macbeth file → at least one chunk with SourceType.PRIMARY_TEXT."""
+    primary_path = corpus_context.files["primary"]
+    chunks = [
+        c for c in _result(corpus_context).chunks
+        if c.source_path == str(primary_path)
+    ]
+    assert chunks, "expected chunks from the primary-text file"
+    assert all(c.source_type is SourceType.PRIMARY_TEXT for c in chunks)
+
+
+@then(
+    "chunks from the second file should carry the secondary study-guide "
+    "source type"
+)
+def _then_second_file_secondary_source_type(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The York Notes file → at least one chunk with SECONDARY_STUDY_GUIDE."""
+    secondary_path = corpus_context.files["secondary_study_guide"]
+    chunks = [
+        c for c in _result(corpus_context).chunks
+        if c.source_path == str(secondary_path)
+    ]
+    assert chunks, "expected chunks from the secondary-study-guide file"
+    assert all(
+        c.source_type is SourceType.SECONDARY_STUDY_GUIDE for c in chunks
+    )
+
+
+@then("no chunk should carry an unset or default source-type label")
+def _then_no_chunk_has_default_source_type(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """Every chunk's ``source_type`` is a real ``SourceType`` enum member."""
+    valid_values = {member.value for member in SourceType}
+    for chunk in _result(corpus_context).chunks:
+        assert isinstance(chunk.source_type, SourceType)
+        assert chunk.source_type.value in valid_values
+
+
+@then("no chunks should be emitted from that folder")
+def _then_no_chunks_from_folder(corpus_context: CorpusBddContext) -> None:
+    """Empty primary_text/ → zero chunks under the primary_text folder."""
+    primary_root = str(corpus_context.root / "primary_text")
+    chunks = [
+        c for c in _result(corpus_context).chunks
+        if c.source_path.startswith(primary_root)
+    ]
+    assert not chunks
+
+
+@then("the loader should report a successful ingestion summary")
+def _then_successful_ingestion_summary(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """``load_corpus`` returned an IngestResult — no exception bubbled."""
+    result = _result(corpus_context)
+    assert isinstance(result, IngestResult)
+    # ``chunks_created`` is the summary's load-bearing field.
+    assert result.chunks_created >= 0
+
+
+@then("no chunks should be emitted from that file")
+def _then_no_chunks_from_whitespace_file(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The whitespace-only file produced no chunks."""
+    target = corpus_context.files["whitespace"]
+    chunks = [
+        c for c in _result(corpus_context).chunks
+        if c.source_path == str(target)
+    ]
+    assert not chunks
+
+
+@then("the loader should record a structured log entry naming the skipped file")
+def _then_whitespace_skip_recorded(corpus_context: CorpusBddContext) -> None:
+    """A WHITESPACE_ONLY skip record exists naming the file."""
+    target = corpus_context.files["whitespace"]
+    skips = [
+        s for s in _result(corpus_context).skips
+        if s.reason is SkipReason.WHITESPACE_ONLY and s.path == str(target)
+    ]
+    assert skips, "expected whitespace-only skip record naming the file"
+
+
+@then("the file should not be ingested")
+def _then_file_not_ingested(corpus_context: CorpusBddContext) -> None:
+    """The candidate refused/rejected file is absent from chunks.
+
+    Resolves the candidate by precedence: AQA → in-copyright → traversal
+    link. Each scenario installs exactly one of these, so the lookup is
+    unambiguous.
+    """
+    candidate = (
+        corpus_context.files.get("aqa")
+        or corpus_context.files.get("in_copyright")
+        or corpus_context.files.get("traversal_link")
+    )
+    assert candidate is not None, "no refused-file candidate registered"
+    chunks = [
+        c for c in _result(corpus_context).chunks
+        if c.source_path == str(candidate)
+    ]
+    assert not chunks
+
+
+@then(
+    "the loader should record a structured refusal entry naming the "
+    "prohibited file"
+)
+def _then_aqa_refusal_recorded(corpus_context: CorpusBddContext) -> None:
+    """An AQA refusal record exists naming the file."""
+    target = corpus_context.files["aqa"]
+    refusals = [
+        r for r in _result(corpus_context).refusals
+        if r.reason is RefusalReason.AQA_ASSESSMENT_MATERIAL
+        and r.path == str(target)
+    ]
+    assert refusals, "expected AQA refusal naming the prohibited file"
+
+
+@then("the refusal should reference the publisher's prohibition")
+def _then_refusal_references_publisher_prohibition(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The AQA refusal detail string mentions the publisher's prohibition."""
+    aqa_refusals = [
+        r for r in _result(corpus_context).refusals
+        if r.reason is RefusalReason.AQA_ASSESSMENT_MATERIAL
+    ]
+    assert aqa_refusals
+    assert any(
+        "publisher prohibition" in r.detail.lower() for r in aqa_refusals
+    )
+
+
+@then(
+    "the loader should record a structured refusal naming the "
+    "in-copyright text"
+)
+def _then_incopyright_refusal_recorded(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """An IN_COPYRIGHT_TITLE refusal record exists naming the file."""
+    target = corpus_context.files["in_copyright"]
+    refusals = [
+        r for r in _result(corpus_context).refusals
+        if r.reason is RefusalReason.IN_COPYRIGHT_TITLE
+        and r.path == str(target)
+    ]
+    assert refusals, "expected in-copyright refusal naming the file"
+
+
+@then(
+    "the loader should advise that the only legitimate route is "
+    "per-student licensed material in a future phase"
+)
+def _then_incopyright_advises_phase_2(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The in-copyright refusal detail references the per-student Phase 2 path."""
+    refusals = [
+        r for r in _result(corpus_context).refusals
+        if r.reason is RefusalReason.IN_COPYRIGHT_TITLE
+    ]
+    assert refusals
+    assert any("phase 2" in r.detail.lower() for r in refusals), (
+        "in-copyright refusal must advise the per-student Phase 2 path"
+    )
+
+
+@then("chunks from the valid file should be emitted")
+def _then_valid_file_still_loads(corpus_context: CorpusBddContext) -> None:
+    """The valid Macbeth neighbour produced chunks despite the corrupted sibling."""
+    valid_path = corpus_context.files["valid"]
+    chunks = [
+        c for c in _result(corpus_context).chunks
+        if c.source_path == str(valid_path)
+    ]
+    assert chunks, "valid neighbour must still produce chunks"
+
+
+@then("the corrupted file should be skipped with a structured log entry")
+def _then_corrupted_file_skip_recorded(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """A CORRUPTED_FILE skip record exists naming the bad file."""
+    corrupted_path = corpus_context.files["corrupted"]
+    skips = [
+        s for s in _result(corpus_context).skips
+        if s.reason is SkipReason.CORRUPTED_FILE
+        and s.path == str(corrupted_path)
+    ]
+    assert skips, "expected corrupted-file skip naming the file"
+
+
+@then(
+    "the loader should report a successful ingestion summary that "
+    "names the skipped file"
+)
+def _then_summary_names_skipped_file(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The skipped file appears in the result's skips by path."""
+    corrupted_path = corpus_context.files["corrupted"]
+    result = _result(corpus_context)
+    assert isinstance(result, IngestResult)
+    assert any(s.path == str(corrupted_path) for s in result.skips)
+
+
+@then("the file should be rejected")
+def _then_traversal_file_rejected(corpus_context: CorpusBddContext) -> None:
+    """A PATH_TRAVERSAL refusal record exists for the symlink."""
+    link = corpus_context.files["traversal_link"]
+    refusals = [
+        r for r in _result(corpus_context).refusals
+        if r.reason is RefusalReason.PATH_TRAVERSAL
+        and r.path == str(link)
+    ]
+    assert refusals, "expected path-traversal refusal naming the symlink"
+
+
+@then(
+    "the loader should record a structured refusal naming the "
+    "path-traversal attempt"
+)
+def _then_traversal_refusal_named(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The path-traversal refusal record names the offending path."""
+    link = corpus_context.files["traversal_link"]
+    refusals = [
+        r for r in _result(corpus_context).refusals
+        if r.reason is RefusalReason.PATH_TRAVERSAL
+    ]
+    assert any(str(link) in r.path for r in refusals)
+
+
+@then("no chunks from that file should be emitted")
+def _then_no_chunks_from_traversal_file(
+    corpus_context: CorpusBddContext,
+) -> None:
+    """The traversal-target content never reaches the chunk list."""
+    target = corpus_context.files["traversal_target"]
+    assert all(
+        c.source_path != str(target) for c in _result(corpus_context).chunks
+    )

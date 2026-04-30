@@ -1,22 +1,6 @@
 {
   "task_id": "TASK-PRV-002",
-  "timestamp": "2026-04-30T16:59:41.227868",
-  "completed": true,
-  "phases": {
-    "phase_3": {
-      "detected": true,
-      "text": "Implementation (BDD step definitions for TASK-PRV-002)",
-      "completed": true
-    }
-  },
-  "quality_gates": {
-    "tests_passing": true,
-    "tests_passed": 7,
-    "tests_failed": 0,
-    "coverage": null,
-    "coverage_met": null,
-    "all_passed": true
-  },
+  "turn": 2,
   "files_modified": [
     ".claude/task-plans/TASK-PRV-002-implementation-plan.md",
     ".claude/task-plans/TASK-PRV-003-implementation-plan.md",
@@ -60,53 +44,33 @@
   "tests_written": [
     "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-70A4/features/primary-text-rag-and-quote-verifier/test_primary_text_rag_and_quote_verifier.py"
   ],
-  "summary": "7 tests passed, all quality gates passed",
-  "sdk_turns": {
-    "turns_used": 16,
-    "max_turns": 150,
-    "ceiling_hit": false
-  },
-  "bdd_results": {
-    "scenarios_passed": 7,
-    "scenarios_failed": 0,
-    "scenarios_pending": 0,
-    "failures": [],
-    "pending": [],
-    "feature_files": [
-      "features/primary-text-rag-and-quote-verifier/primary-text-rag-and-quote-verifier.feature"
-    ],
-    "tag": "@task:TASK-PRV-002"
-  },
-  "task_type": "feature",
-  "agent_invocations_validation": {
-    "status": "violation",
-    "expected_phases": 3,
-    "actual_invocations": 1,
-    "missing_phases": [
-      "4",
-      "5"
-    ],
-    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 1 completed invocations\n\nMissing phases:\n  - Phase 4 (Testing)\n  - Phase 5 (Code Review)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 3 (Phase 3): Implementation (BDD step definitions for TASK-PRV-002) (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
-  },
-  "plan_audit": {
-    "status": "skipped",
-    "severity": null,
-    "violations": 0,
-    "extra_files": [],
-    "missing_files": [],
-    "extra_dependencies": [],
-    "missing_dependencies": [],
-    "loc_variance_pct": null,
-    "discrepancies_count": 0,
-    "message": "no implementation plan on disk"
-  },
-  "unconfirmed_low_confidence_assumptions": {
-    "status": "ok",
-    "unconfirmed": [],
-    "files_scanned": 0,
-    "files_skipped": 0,
-    "message": null
-  },
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Coach BDD-oracle gate now passes for TASK-PRV-002 (7/7 scenarios bind and pass)",
+    "load_corpus(root: Path) -> IngestResult walks four canonical folders",
+    "Source-type inference from parent directory name; unknown folder \u2192 skip with warning",
+    "AQA refusal via filename regex with publisher-prohibition log line",
+    "In-copyright deny-list refusal with per-student Phase 2 path advisory",
+    "Path-traversal safety via Path.resolve(strict=True) + relative_to(root)",
+    "Resilience to corrupted files (UnicodeDecodeError/OSError \u2192 skip)",
+    "Whitespace-only file skip with structured log",
+    "Empty primary_text/ folder \u2192 zero chunks, no error",
+    "Citation-anchor inference for plays (PlayCitationAnchor) and novels (NovelCitationAnchor) with None fallback + structured warning",
+    "Chunker adapted from ADF (RecursiveCharacterTextSplitter shape, chunk_size=512, overlap=100)",
+    "CorpusChunk metadata includes source_type, text_name, citation_anchor",
+    "Seam test for TASK-PRV-001 integration contract"
+  ],
+  "requirements_remaining": [
+    "ChromaDB persistence under chroma/gcse-english/ \u2014 deferred (see concerns); requires chromadb dependency and an additional writer module"
+  ],
+  "sdk_turns_used": 16,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 7,
   "completion_promises": [
     {
       "criterion_id": "AC-001",
