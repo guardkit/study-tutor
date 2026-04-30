@@ -45,6 +45,7 @@ from study_tutor.session.tutor_session import (
     SessionStore,
     get_default_store,
 )
+from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,7 @@ class MCPAdapter:
         self,
         role_config: RoleConfig,
         store: SessionStore | None = None,
+        orchestrator_factory: Any = None,
     ) -> None:
         self._role = role_config
         self._store = store or get_default_store()
@@ -126,6 +128,13 @@ class MCPAdapter:
         # holds the immutable :class:`SessionPlan` produced by
         # :func:`plan_session` for subsequent ``tutor_turn`` consumption.
         self._plan_sessions: dict[str, SessionPlan] = {}
+        # TASK-DTL-003: optional per-turn orchestrator factory. When
+        # supplied, ``tutor_turn`` builds a fresh
+        # :class:`PlayerCoachOrchestrator` per call (per-session
+        # isolation invariant) and routes the turn through it. When
+        # ``None``, the Phase 0 single-LLM path is preserved so this
+        # change is backward-compatible.
+        self._orchestrator_factory = orchestrator_factory
 
     async def tutor_start_session(
         self,
@@ -241,10 +250,31 @@ class MCPAdapter:
                 "error_type": "SessionEnded",
             }
 
+        self._store.append_turn(session_id, "user", user_message)
+
+        # TASK-DTL-003: route through PlayerCoachOrchestrator when a
+        # factory is wired (production Phase 1 path). Per-turn
+        # construction guarantees concurrency isolation — two concurrent
+        # ``tutor_turn`` calls get two independent orchestrator
+        # instances and cannot contaminate each other's Coach
+        # observations.
+        if self._orchestrator_factory is not None:
+            orchestrator: PlayerCoachOrchestrator = self._orchestrator_factory()
+            turn_result = await orchestrator.run_turn(
+                session_state={"session_id": session_id},
+                learner_message=user_message,
+            )
+            self._store.append_turn(session_id, "tutor", turn_result.response)
+            return {
+                "tutor_response": turn_result.response,
+                "decision": turn_result.decision,
+                "attempts": turn_result.attempts,
+                "flagged_for_review": turn_result.flagged_for_review,
+                "duration_seconds": turn_result.duration_seconds,
+            }
+
         provider = player_model or _default_player_model()
         client = LLMClient(provider=provider)
-
-        self._store.append_turn(session_id, "user", user_message)
 
         # Generate in a worker thread so async MCP framework isn't blocked
         # by the synchronous httpx call inside LLMClient.generate().
