@@ -2035,6 +2035,159 @@ Or autonomously: /feature-build FEAT-PH1-003.
 GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-PH1-003 --verbose 
 
 
+════════════════════════════════════════════════════════════
+FEATURE RESULT: SUCCESS
+════════════════════════════════════════════════════════════
+
+Feature: FEAT-PH1-003 - DeepAgents Tutoring Loop with Coach
+Status: COMPLETED
+Tasks: 5/5 completed
+Total Turns: 7
+Duration: 68m 6s
+
+                                  Wave Summary
+╭────────┬──────────┬────────────┬──────────┬──────────┬──────────┬─────────────╮
+│  Wave  │  Tasks   │   Status   │  Passed  │  Failed  │  Turns   │  Recovered  │
+├────────┼──────────┼────────────┼──────────┼──────────┼──────────┼─────────────┤
+│   1    │    2     │   ✓ PASS   │    2     │    -     │    4     │      -      │
+│   2    │    2     │   ✓ PASS   │    2     │    -     │    2     │      -      │
+│   3    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+╰────────┴──────────┴────────────┴──────────┴──────────┴──────────┴─────────────╯
+
+Execution Quality:
+  Clean executions: 5/5 (100%)
+
+SDK Turn Ceiling:
+  Invocations: 5
+  Ceiling hits: 0/5 (0%)
+
+                                  Task Details
+╭──────────────────────┬────────────┬──────────┬─────────────────┬──────────────╮
+│ Task                 │ Status     │  Turns   │ Decision        │  SDK Turns   │
+├──────────────────────┼────────────┼──────────┼─────────────────┼──────────────┤
+│ TASK-DTL-001         │ SUCCESS    │    2     │ approved        │      17      │
+│ TASK-DTL-004         │ SUCCESS    │    2     │ approved        │      26      │
+│ TASK-DTL-002         │ SUCCESS    │    1     │ approved        │      37      │
+│ TASK-DTL-003         │ SUCCESS    │    1     │ approved        │      30      │
+│ TASK-DTL-005         │ SUCCESS    │    1     │ approved        │      37      │
+╰──────────────────────┴────────────┴──────────┴─────────────────┴──────────────╯
+
+Worktree: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-003
+Branch: autobuild/FEAT-PH1-003
+
+Next Steps:
+  1. Review: cd /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-003
+  2. Diff: git diff main
+  3. Merge: git checkout main && git merge autobuild/FEAT-PH1-003
+  4. Cleanup: guardkit worktree cleanup FEAT-PH1-003
+INFO:guardkit.cli.display:Final summary rendered: FEAT-PH1-003 - completed
+INFO:guardkit.orchestrator.review_summary:Review summary written to /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-PH1-003/review-summary.md
+✓ Review summary: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-PH1-003/review-summary.md
+INFO:guardkit.orchestrator.feature_orchestrator:Feature orchestration complete: FEAT-PH1-003, status=completed, completed=5/5
+
+
+
+
+
+
+/feature-spec "Primary-text RAG + source-typed quote verifier" \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/phase-1-build-plan.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md \
+  --context docs/research/ideas/cross-repo-rag-impact-analysis-2026-04-24.md \
+  --context docs/research/ideas/copyright-training-data-analysis.md \
+  --context src/study_tutor/knowledge/student_model.py \
+  --context tasks/completed/deepagents-tutoring-loop/TASK-DTL-002-rubric-and-quote-fidelity.md \
+  --context tasks/completed/deepagents-tutoring-loop/IMPLEMENTATION-GUIDE.md \
+  --context domains/gcse-english/GOAL.md \
+  --context domains/gcse-english/sources/README.md \
+  --context /Users/richardwoollcott/Projects/appmilla_github/agentic-dataset-factory/ingestion/chunker.py \
+  --context /Users/richardwoollcott/Projects/appmilla_github/agentic-dataset-factory/ingestion/models.py
+
+
+
+
+
+
+
+
+
+
+
+
+/feature-plan "Primary-Text RAG and Source-Typed Quote Verifier" \
+  --context features/primary-text-rag-and-quote-verifier/primary-text-rag-and-quote-verifier_summary.md \
+  --context features/primary-text-rag-and-quote-verifier/primary-text-rag-and-quote-verifier.feature \
+  --context features/primary-text-rag-and-quote-verifier/primary-text-rag-and-quote-verifier_assumptions.yaml \
+  --context docs/research/ideas/phase-1-scope.md \
+  --context docs/research/ideas/phase-1-build-plan.md \
+  --context docs/research/ideas/openwebui-rag-empirical-findings-2026-04-23.md \
+  --context docs/research/ideas/cross-repo-rag-impact-analysis-2026-04-24.md \
+  --context docs/research/ideas/copyright-training-data-analysis.md \
+  --context domains/gcse-english/GOAL.md \
+  --context domains/gcse-english/sources/README.md \
+  --context src/study_tutor/knowledge/student_model.py \
+  --context tasks/completed/deepagents-tutoring-loop/IMPLEMENTATION-GUIDE.md \
+  --context tasks/completed/deepagents-tutoring-loop/TASK-DTL-002-rubric-and-quote-fidelity.md \
+  --context /Users/richardwoollcott/Projects/appmilla_github/agentic-dataset-factory/ingestion/chunker.py \
+  --context /Users/richardwoollcott/Projects/appmilla_github/agentic-dataset-factory/ingestion/models.py
+
+
+Feature Planning Complete: FEAT-70A4
+Feature: Primary-Text RAG and Source-Typed Quote Verifier
+Phase: Phase 1 (FEAT-PH1-004)
+Status: Plan ready · all quality gates passed
+
+What was created
+Review artefacts
+TASK-REV-PRV4 — review task with Context A/B decisions logged
+.guardkit/reviews/TASK-REV-PRV4-review-report.md — full technical-options analysis + recommended approach
+Feature structure
+tasks/backlog/primary-text-rag-and-quote-verifier/
+README.md
+IMPLEMENTATION-GUIDE.md — data-flow + sequence + dependency diagrams + §4 Integration Contracts (3 contracts)
+7 subtask files (TASK-PRV-001 through TASK-PRV-007) with task_type, consumer_context, seam tests, and lint-compliance ACs
+Orchestration
+.guardkit/features/FEAT-70A4.yaml — 5 waves, smoke gates after waves 2/3/4
+Pre-flight validation: ✅ PASSED (7 tasks, 5 waves, 418 estimated minutes)
+AC-quality review: ✅ 0 unverifiable acceptance criteria
+BDD activation (R2)
+34 scenarios tagged across 5 tasks in primary-text-rag-and-quote-verifier.feature:
+TASK-PRV-005 (verifier): 16 scenarios
+TASK-PRV-002 (loader): 7
+TASK-PRV-003 (decision): 5
+TASK-PRV-004 (retrieval): 5
+TASK-PRV-006 (Coach handover): 1
+Wave plan
+Wave	Tasks	Notes
+1	TASK-PRV-001	Pydantic models foundation
+2 (parallel)	TASK-PRV-002, TASK-PRV-003	Loader + decision (different modules)
+3 (parallel)	TASK-PRV-004, TASK-PRV-005	Retrieval + verifier
+4	TASK-PRV-006	Coach handover seam
+5	TASK-PRV-007	Integration smoke + sources README
+Pre-implementation sign-offs (settled in review)
+All five low-confidence assumptions (ASSUM-008/009/010/011/013) and four medium-confidence assumptions (ASSUM-005/006/007/012/015) have mechanism-level resolutions documented. Open Question 3 (false-positive fuzzy correction) closed via primary-wins precedence + restricting fuzzy correction to primary-text source only.
+
+Next steps
+
+# Manual / interactive
+/task-work TASK-PRV-001                    # Wave 1
+# Wave 2 in parallel (Conductor recommended)
+/task-work TASK-PRV-002
+/task-work TASK-PRV-003
+# Wave 3 in parallel
+/task-work TASK-PRV-004
+/task-work TASK-PRV-005
+# Then sequentially
+/task-work TASK-PRV-006
+/task-work TASK-PRV-007
+
+# Or autonomous
+/feature-build FEAT-70A4
+This unblocks TASK-DTL-002 (quote_fidelity rubric criterion in FEAT-PH1-003) and clears the G1 critical-path gap in phase-1-build-plan.md ahead of the Friday 2 May target.
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-70A4 --verbose
 
 
 
