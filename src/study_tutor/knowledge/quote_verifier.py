@@ -201,6 +201,15 @@ class VerifierMetadata(_StrictModel):
     cross_text_events: list[CrossTextEvent] = Field(default_factory=list)
     shortenings: list[Shortening] = Field(default_factory=list)
     retrieval_skipped_reason: str | None = None
+    #: Set to ``True`` by the coach-handover seam (TASK-PRV-006) when
+    #: :func:`verify_quotes` raised and the orchestrator fell back to
+    #: passing the unannotated Player response to the Coach. Defaults to
+    #: ``False`` so existing callers (verify_quotes itself, fixtures)
+    #: never need to set it explicitly. The Coach's ``quote_fidelity``
+    #: criterion suppresses its down-rank when this flag is set, mirroring
+    #: the suppression policy already specified for
+    #: ``retrieval_skipped_reason``.
+    verifier_exception: bool = False
 
 
 # ---------------------------------------------------------------------------

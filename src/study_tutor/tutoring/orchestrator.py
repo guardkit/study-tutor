@@ -29,9 +29,25 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Literal, Protocol, runtime_checkable
 
+from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.tutoring.coach import CoachVerdict, RubricFeedback
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Coach-handover seam type alias (TASK-PRV-006)
+# ---------------------------------------------------------------------------
+
+#: Signature of the optional coach-handover callable wired into the
+#: orchestrator between Player and Coach. Given the Player's raw
+#: response and the opaque session_state, it returns
+#: ``(response_for_coach, verifier_metadata)``. Production wiring binds
+#: :func:`study_tutor.knowledge.coach_handover.apply_quote_verification`
+#: with corpus chunks / session_text_name / retrieval_skipped_reason
+#: derived from session_state at call time. Tests inject simple lambdas
+#: or stubs.
+CoachHandover = Callable[[str, Any], tuple[str, VerifierMetadata]]
 
 
 # ---------------------------------------------------------------------------
@@ -215,6 +231,14 @@ class TurnResult:
     flagged_for_review: bool
     flag_reason: str | None
     duration_seconds: float
+    #: Verifier output for the **released** response (i.e. the one in
+    #: :attr:`response`), surfaced so session-end summaries can include
+    #: per-turn verifier events (TASK-PRV-006). ``None`` when no
+    #: ``coach_handover`` was wired (legacy FEAT-PH1-003 callers) or
+    #: when the turn fell back before any Player response was produced
+    #: (Player-unavailable on first attempt). When the verifier raised,
+    #: the metadata's ``verifier_exception`` flag is ``True``.
+    verifier_metadata: VerifierMetadata | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -295,11 +319,15 @@ class _AttemptRecord:
 
     Frozen + per-attempt-instantiated so the lowest-scoring selection
     routine cannot accidentally mutate an earlier record while picking
-    the released reply.
+    the released reply. The :attr:`verifier_metadata` field captures
+    the verifier output for the *rewritten* response stored on
+    :attr:`response`, so on exhaustion the released attempt carries
+    its own verifier signal forward into :class:`TurnResult`.
     """
 
     response: str
     verdict: CoachVerdict
+    verifier_metadata: VerifierMetadata | None = None
 
 
 class PlayerCoachOrchestrator:
@@ -326,6 +354,7 @@ class PlayerCoachOrchestrator:
         player: PlayerLike,
         coach: CoachLike,
         quote_verifier: QuoteVerifierLike | None = None,
+        coach_handover: CoachHandover | None = None,
         on_flag: Callable[[str, dict[str, Any]], Awaitable[None] | None] | None = None,
         latency_budget_seconds: float = LATENCY_BUDGET_SECONDS,
         max_revision_attempts: int = MAX_REVISION_ATTEMPTS,
@@ -339,6 +368,17 @@ class PlayerCoachOrchestrator:
                 ``None`` the verifier step is skipped (used by tests
                 that don't need it; production wiring always supplies
                 one).
+            coach_handover: Optional callable wiring TASK-PRV-005's
+                :func:`verify_quotes` into the per-turn pipeline
+                (TASK-PRV-006). Given ``(player_response, session_state)``
+                it returns ``(response_for_coach, verifier_metadata)``.
+                When supplied, the orchestrator runs it after every
+                Player call (initial and revisions) and routes the
+                rewritten response to the Coach instead of the raw
+                Player text. ``None`` (the default) preserves the
+                FEAT-PH1-003 behaviour where the Coach sees the raw
+                Player response and ``TurnResult.verifier_metadata`` is
+                ``None``.
             on_flag: Optional sync-or-async callback invoked when a turn
                 is flagged for session-end review. The orchestrator does
                 NOT block on the callback's return — it is a write-only
@@ -358,6 +398,7 @@ class PlayerCoachOrchestrator:
         self._player = player
         self._coach = coach
         self._quote_verifier = quote_verifier
+        self._coach_handover = coach_handover
         self._on_flag = on_flag
         self._latency_budget_seconds = latency_budget_seconds
         self._max_revision_attempts = max_revision_attempts
@@ -424,7 +465,7 @@ class PlayerCoachOrchestrator:
 
         # First Player attempt.
         try:
-            first_response = await self._player.respond(
+            first_raw_response = await self._player.respond(
                 session_state=session_state,
                 learner_message=learner_message,
             )
@@ -434,21 +475,33 @@ class PlayerCoachOrchestrator:
                 reason=f"player_unavailable_first_attempt: {exc}",
             )
 
+        # Coach-handover seam (TASK-PRV-006): run quote verification on
+        # the Player response, then send the *rewritten* text to the
+        # Coach with structured VerifierMetadata alongside. When no
+        # handover is wired (FEAT-PH1-003 legacy callers / tests that
+        # don't need it), the response is passed through unchanged and
+        # ``verifier_metadata`` stays ``None``.
+        first_response, first_metadata = self._apply_coach_handover(
+            first_raw_response, session_state
+        )
+
         # Coach evaluation. If the Coach is unreachable here, we return
         # the Player's response under the unevaluated-turn fallback and
         # explicitly do NOT enter the revision loop (per the @negative
         # @fallback scenario; an absent Coach evaluation cannot drive
         # revision decisions).
         try:
-            first_verdict = await self._coach.evaluate(
+            first_verdict = await self._evaluate_with_metadata(
                 session_state=session_state,
                 learner_message=learner_message,
                 player_response=first_response,
+                verifier_metadata=first_metadata,
             )
         except Exception as exc:  # noqa: BLE001 — boundary catch
             return await self._fallback_coach_unreachable(
                 start=start,
                 response=first_response,
+                verifier_metadata=first_metadata,
                 exc=exc,
             )
 
@@ -463,18 +516,23 @@ class PlayerCoachOrchestrator:
                 attempts=1,
                 start=start,
                 flag_reason=None,
+                verifier_metadata=first_metadata,
             )
 
         # Below-threshold first attempt: enter the bounded revision loop.
         attempts: list[_AttemptRecord] = [
-            _AttemptRecord(response=first_response, verdict=first_verdict)
+            _AttemptRecord(
+                response=first_response,
+                verdict=first_verdict,
+                verifier_metadata=first_metadata,
+            )
         ]
         previous_response = first_response
         latest_feedback = list(first_verdict.rubric_feedback)
 
         for attempt_index in range(2, self._max_revision_attempts + 1):
             try:
-                revised_response = await self._player.revise(
+                revised_raw_response = await self._player.revise(
                     session_state=session_state,
                     learner_message=learner_message,
                     previous_response=previous_response,
@@ -496,11 +554,20 @@ class PlayerCoachOrchestrator:
                     exc=exc,
                 )
 
+            # Re-run the verifier on every revision: each revision is a
+            # fresh Player generation that may introduce new quotes the
+            # previous verification did not see (per TASK-PRV-006: the
+            # Coach must always evaluate the rewritten text).
+            revised_response, revised_metadata = self._apply_coach_handover(
+                revised_raw_response, session_state
+            )
+
             try:
-                revised_verdict = await self._coach.evaluate(
+                revised_verdict = await self._evaluate_with_metadata(
                     session_state=session_state,
                     learner_message=learner_message,
                     player_response=revised_response,
+                    verifier_metadata=revised_metadata,
                 )
             except Exception as exc:  # noqa: BLE001 — boundary catch
                 # Coach-unreachable mid-revision: same policy as
@@ -509,6 +576,7 @@ class PlayerCoachOrchestrator:
                 return await self._fallback_coach_unreachable(
                     start=start,
                     response=revised_response,
+                    verifier_metadata=revised_metadata,
                     exc=exc,
                 )
 
@@ -516,6 +584,7 @@ class PlayerCoachOrchestrator:
                 _AttemptRecord(
                     response=revised_response,
                     verdict=revised_verdict,
+                    verifier_metadata=revised_metadata,
                 )
             )
 
@@ -527,6 +596,7 @@ class PlayerCoachOrchestrator:
                     attempts=attempt_index,
                     start=start,
                     flag_reason=None,
+                    verifier_metadata=revised_metadata,
                 )
 
             previous_response = revised_response
@@ -550,11 +620,64 @@ class PlayerCoachOrchestrator:
             attempts=len(attempts),
             start=start,
             flag_reason=flag_reason,
+            verifier_metadata=lowest.verifier_metadata,
         )
 
     # ------------------------------------------------------------------
     # Fallback helpers
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Coach-handover helpers (TASK-PRV-006)
+    # ------------------------------------------------------------------
+
+    def _apply_coach_handover(
+        self, raw_response: str, session_state: Any
+    ) -> tuple[str, VerifierMetadata | None]:
+        """Run the configured handover, or pass-through if none is wired.
+
+        Returns ``(response_for_coach, verifier_metadata)``. When
+        ``coach_handover`` is ``None`` (legacy callers), the raw
+        response is returned unchanged with metadata ``None`` so existing
+        FEAT-PH1-003 tests see no behavioural change. When wired, the
+        callable's exceptions are *not* caught here — the handover's
+        own contract (TASK-PRV-006) is to absorb verifier exceptions
+        internally and return ``verifier_exception=True`` metadata; any
+        exception escaping the handover is a bug at the handover layer
+        and propagates to the caller for visibility.
+        """
+        if self._coach_handover is None:
+            return raw_response, None
+        return self._coach_handover(raw_response, session_state)
+
+    async def _evaluate_with_metadata(
+        self,
+        *,
+        session_state: Any,
+        learner_message: str,
+        player_response: str,
+        verifier_metadata: VerifierMetadata | None,
+    ) -> CoachVerdict:
+        """Call ``coach.evaluate`` forwarding ``verifier_metadata`` when present.
+
+        Older Coach adapters (FEAT-PH1-003 era) don't accept the
+        ``verifier_metadata`` keyword. We only include it in the call
+        when a handover actually produced one — that keeps existing
+        adapters working unchanged while letting TASK-DTL-002's
+        Coach implementation consume the structured metadata.
+        """
+        if verifier_metadata is not None:
+            return await self._coach.evaluate(
+                session_state=session_state,
+                learner_message=learner_message,
+                player_response=player_response,
+                verifier_metadata=verifier_metadata,
+            )
+        return await self._coach.evaluate(
+            session_state=session_state,
+            learner_message=learner_message,
+            player_response=player_response,
+        )
 
     async def _fallback_coach_unreachable(
         self,
@@ -562,6 +685,7 @@ class PlayerCoachOrchestrator:
         start: float,
         response: str,
         exc: BaseException,
+        verifier_metadata: VerifierMetadata | None = None,
     ) -> TurnResult:
         """Return the Player's response under the Coach-unreachable policy.
 
@@ -588,6 +712,7 @@ class PlayerCoachOrchestrator:
             attempts=1,
             start=start,
             flag_reason=flag_reason,
+            verifier_metadata=verifier_metadata,
         )
 
     async def _fallback_player_unavailable_mid_revision(
@@ -626,6 +751,7 @@ class PlayerCoachOrchestrator:
             attempts=len(attempts),
             start=start,
             flag_reason=flag_reason,
+            verifier_metadata=last.verifier_metadata,
         )
 
     def _fallback_player_unavailable_first_attempt(
@@ -682,6 +808,7 @@ class PlayerCoachOrchestrator:
         attempts: int,
         start: float,
         flag_reason: str | None,
+        verifier_metadata: VerifierMetadata | None = None,
     ) -> TurnResult:
         """Assemble a :class:`TurnResult`, applying the latency-budget flag.
 
@@ -719,6 +846,7 @@ class PlayerCoachOrchestrator:
             flagged_for_review=flag_reason is not None,
             flag_reason=flag_reason,
             duration_seconds=duration,
+            verifier_metadata=verifier_metadata,
         )
 
     async def _emit_flag(self, reason: str, extra: dict[str, Any]) -> None:
@@ -748,6 +876,7 @@ class PlayerCoachOrchestrator:
 __all__ = [
     "LATENCY_BUDGET_SECONDS",
     "MAX_REVISION_ATTEMPTS",
+    "CoachHandover",
     "CoachLike",
     "CoachUnavailableError",
     "OrchestratorConfigurationError",

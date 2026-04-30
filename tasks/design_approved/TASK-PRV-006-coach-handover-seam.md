@@ -1,41 +1,43 @@
 ---
-id: TASK-PRV-006
-title: Coach handover seam — wire verifier into PlayerCoachOrchestrator
-task_type: feature
-parent_review: TASK-REV-PRV4
-feature_id: FEAT-PRV4
-wave: 4
-implementation_mode: task-work
 complexity: 4
-estimated_minutes: 55
+consumer_context:
+- consumes: VerifierMetadata
+  driver: pydantic
+  format_note: Consumes the (rewritten_response, VerifierMetadata) tuple from verify_quotes;
+    rewritten response is what the Coach evaluates
+  framework: Pydantic v2 (BaseModel)
+  task: TASK-PRV-005
+- consumes: RetrievalDecision
+  driver: stdlib
+  format_note: Forwards RetrievalDecision.reason into VerifierMetadata.retrieval_skipped_reason
+    for Coach quote-fidelity suppression in AnalysisMode
+  framework: Python NamedTuple
+  task: TASK-PRV-003
 dependencies:
 - TASK-PRV-005
-status: pending
+estimated_minutes: 55
+feature_id: FEAT-PRV4
+id: TASK-PRV-006
+implementation_mode: task-work
+parent_review: TASK-REV-PRV4
 priority: high
+related_features:
+- FEAT-PH1-004
+- FEAT-PH1-003
+status: design_approved
 tags:
 - feat-ph1-004
 - feat-ph1-003
 - coach
 - handover
 - integration
-related_features:
-- FEAT-PH1-004
-- FEAT-PH1-003
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-consumer_context:
-- task: TASK-PRV-005
-  consumes: VerifierMetadata
-  framework: "Pydantic v2 (BaseModel)"
-  driver: pydantic
-  format_note: "Consumes the (rewritten_response, VerifierMetadata) tuple from verify_quotes; rewritten response is what the Coach evaluates"
-- task: TASK-PRV-003
-  consumes: RetrievalDecision
-  framework: "Python NamedTuple"
-  driver: stdlib
-  format_note: "Forwards RetrievalDecision.reason into VerifierMetadata.retrieval_skipped_reason for Coach quote-fidelity suppression in AnalysisMode"
+  status: pending
+title: Coach handover seam — wire verifier into PlayerCoachOrchestrator
+wave: 4
 ---
 
 # Task: Coach handover seam — wire verifier into PlayerCoachOrchestrator
