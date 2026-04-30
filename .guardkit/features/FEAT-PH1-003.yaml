@@ -7,7 +7,7 @@ description: 'Phase 1 Player-Coach evaluation loop (FEAT-PH1-003): Coach AsyncSu
   (DDR-002 F1), session-end summary with session.completed emit ordering (DDR-003)
   and F3 episode write, lifecycle race resolution and shutdown drain integration.'
 created: '2026-04-29T17:49:44.764911'
-status: planned
+status: completed
 complexity: 7
 estimated_tasks: 5
 tasks:
@@ -16,39 +16,71 @@ tasks:
   file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-001-coach-factory-structural-invariants.md
   complexity: 5
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-04-30T06:53:39.379585'
+  completed_at: '2026-04-30T07:28:37.728884'
 - id: TASK-DTL-002
   name: Coach rubric scoring and quote-fidelity integration
   file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-002-rubric-and-quote-fidelity.md
   complexity: 6
   dependencies:
   - TASK-DTL-001
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 90
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-04-30T07:28:37.742744'
+  completed_at: '2026-04-30T07:46:25.534980'
 - id: TASK-DTL-003
   name: Player-Coach orchestrator with bounded revision loop and concurrency isolation
   file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-003-orchestrator-revision-loop-concurrency.md
   complexity: 7
   dependencies:
   - TASK-DTL-001
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 120
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-04-30T07:28:37.745456'
+  completed_at: '2026-04-30T07:46:25.538223'
 - id: TASK-DTL-004
   name: Async write helper consumer for per-misconception writes (F1)
   file_path: tasks/backlog/deepagents-tutoring-loop/TASK-DTL-004-async-write-helper-consumer-misconceptions.md
   complexity: 5
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-04-30T06:53:39.382042'
+  completed_at: '2026-04-30T07:28:37.731617'
 - id: TASK-DTL-005
   name: Session-end summary, F3 episode write, session.completed emit, lifecycle race,
     and shutdown drain
@@ -57,10 +89,18 @@ tasks:
   dependencies:
   - TASK-DTL-003
   - TASK-DTL-004
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 90
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-04-30T07:46:25.552412'
+  completed_at: '2026-04-30T08:01:44.630869'
 orchestration:
   parallel_groups:
   - - TASK-DTL-001
@@ -71,17 +111,24 @@ orchestration:
   estimated_duration_minutes: 450
   recommended_parallel: 2
 smoke_gates:
-  # R3 feature-level smoke oracle (TASK-SMK-F703A schema).
-  # Fires AFTER wave 3, when tutor_session_end is wired end-to-end and
-  # the @smoke scenarios become runnable.
-  # The 5 @smoke scenarios in deepagents-tutoring-loop.feature exercise:
-  #   1. First-attempt accept (TASK-DTL-003 + TASK-DTL-001)
-  #   2. Below-threshold → revision → accept (TASK-DTL-003 + TASK-DTL-002)
-  #   3. Misconception persisted without blocking turn return (TASK-DTL-004 + DDR-002)
-  #   4. Session-end produces SessionCompletedEpisode (TASK-DTL-005)
-  #   5. session.completed emit ordering vs F3 (TASK-DTL-005 + DDR-003)
-  # Per-task Coach approval cannot see these compositions.
-  after_wave: [3]
+  after_wave:
+  - 3
   command: pytest -m "feat-ph1-003 and smoke" -x --no-cov
   expected_exit: 0
   timeout: 60
+  exit5_is_hard_fail: false
+execution:
+  started_at: '2026-04-30T06:53:39.313866'
+  completed_at: '2026-04-30T08:01:45.704922'
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-003
+  total_turns: 7
+  tasks_completed: 5
+  tasks_failed: 0
+  current_wave: 3
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  last_updated: '2026-04-30T08:01:44.634752'
+  archived_at: null
+  archived_to: null

@@ -1,6 +1,7 @@
 ---
 id: TASK-DTL-005
-title: Session-end summary, F3 episode write, session.completed emit, lifecycle race, and shutdown drain
+title: Session-end summary, F3 episode write, session.completed emit, lifecycle race,
+  and shutdown drain
 task_type: feature
 parent_review: TASK-REV-DTL3
 feature_id: FEAT-PH1-003
@@ -9,30 +10,60 @@ implementation_mode: task-work
 complexity: 6
 estimated_minutes: 90
 dependencies:
-  - TASK-DTL-003
-  - TASK-DTL-004
-status: backlog
-created: 2026-04-29T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+- TASK-DTL-003
+- TASK-DTL-004
+status: in_review
+created: 2026-04-29 00:00:00+00:00
+updated: 2026-04-29 00:00:00+00:00
 priority: high
-tags: [feat-ph1-003, session-end, F3, session-completed, events, drain, lifecycle, FEAT-PH1-003]
+tags:
+- feat-ph1-003
+- session-end
+- F3
+- session-completed
+- events
+- drain
+- lifecycle
+- FEAT-PH1-003
 related_features:
-  - FEAT-PH1-003
+- FEAT-PH1-003
 related_tasks:
-  - TASK-GSM-002  # Episode types — SessionCompletedEpisode shape
-  - TASK-GSM-004  # Async write helper — consumed for write_session_episode + drain
-  - TASK-DTL-003  # Orchestrator — needed for in-flight-turn detection at session end
-  - TASK-DTL-004  # Per-observation write dispatch shape — symmetric for F3
+- TASK-GSM-002
+- TASK-GSM-004
+- TASK-DTL-003
+- TASK-DTL-004
 consumer_context:
-  - task: TASK-GSM-004
-    consumes: GraphitiWriteHelper
-    framework: "Python asyncio + deepagents in-process events bus (CC-11)"
-    driver: "graphiti-core add_episode (median 78.98s) — fire-and-forget; helper.drain() coroutine for graceful shutdown"
-    format_note: "Helper MUST expose: write_session_episode(student_id, episode: SessionCompletedEpisode) -> None (coroutine, called via asyncio.create_task) and drain(timeout: float = GRAPHITI_DRAIN_WINDOW) -> None (coroutine awaited at shutdown). The drain window default is 5.0 seconds (ASSUM-011 resolution). The drain MUST be awaitable from the runtime shutdown hook; it returns when either all in-flight tasks finish or the timeout elapses."
+- task: TASK-GSM-004
+  consumes: GraphitiWriteHelper
+  framework: Python asyncio + deepagents in-process events bus (CC-11)
+  driver: "graphiti-core add_episode (median 78.98s) \u2014 fire-and-forget; helper.drain()\
+    \ coroutine for graceful shutdown"
+  format_note: 'Helper MUST expose: write_session_episode(student_id, episode: SessionCompletedEpisode)
+    -> None (coroutine, called via asyncio.create_task) and drain(timeout: float =
+    GRAPHITI_DRAIN_WINDOW) -> None (coroutine awaited at shutdown). The drain window
+    default is 5.0 seconds (ASSUM-011 resolution). The drain MUST be awaitable from
+    the runtime shutdown hook; it returns when either all in-flight tasks finish or
+    the timeout elapses.'
 test_results:
   status: pending
   coverage: null
   last_run: null
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-003
+  base_branch: main
+  started_at: '2026-04-30T07:46:25.564420'
+  last_updated: '2026-04-30T08:01:44.627339'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-30T07:46:25.564420'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Session-end summary, F3 episode write, session.completed emit, lifecycle race, and shutdown drain

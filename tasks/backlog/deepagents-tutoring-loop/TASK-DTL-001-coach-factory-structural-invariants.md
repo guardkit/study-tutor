@@ -9,26 +9,68 @@ implementation_mode: task-work
 complexity: 5
 estimated_minutes: 75
 dependencies: []
-status: backlog
-created: 2026-04-29T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+status: in_review
+created: 2026-04-29 00:00:00+00:00
+updated: 2026-04-29 00:00:00+00:00
 priority: high
-tags: [feat-ph1-003, deepagents, coach, factory, invariants, D5, two-provider, FEAT-PH1-003]
+tags:
+- feat-ph1-003
+- deepagents
+- coach
+- factory
+- invariants
+- D5
+- two-provider
+- FEAT-PH1-003
 related_features:
-  - FEAT-PH1-003
+- FEAT-PH1-003
 related_tasks:
-  - TASK-GSM-002  # Episode types — consumed in CoachVerdict for misconception payloads
-  - TASK-GSM-004  # Async write helper — Coach AsyncSubAgent receives the helper at construction
+- TASK-GSM-002
+- TASK-GSM-004
 consumer_context:
-  - task: TASK-GSM-004
-    consumes: GraphitiWriteHelper
-    framework: "deepagents 0.5.3 AsyncSubAgent (per ADR-ARCH-012)"
-    driver: "asyncio.create_task — fire-and-forget per CC-13"
-    format_note: "Helper's write_misconception(student_id, misconception_payload) coroutine MUST be invocable from inside the Coach AsyncSubAgent task surface without awaiting completion. The AsyncSubAgent passes the helper instance into the Coach via constructor injection; do not import the helper module-globally."
+- task: TASK-GSM-004
+  consumes: GraphitiWriteHelper
+  framework: deepagents 0.5.3 AsyncSubAgent (per ADR-ARCH-012)
+  driver: "asyncio.create_task \u2014 fire-and-forget per CC-13"
+  format_note: Helper's write_misconception(student_id, misconception_payload) coroutine
+    MUST be invocable from inside the Coach AsyncSubAgent task surface without awaiting
+    completion. The AsyncSubAgent passes the helper instance into the Coach via constructor
+    injection; do not import the helper module-globally.
 test_results:
   status: pending
   coverage: null
   last_run: null
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-003
+  base_branch: main
+  started_at: '2026-04-30T06:53:39.396841'
+  last_updated: '2026-04-30T07:28:37.726114'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: '- Advisory (non-blocking): task-work produced a report with 2 of 3
+      expected agent invocations. Missing phases: 3 (Implementation). Consider invoking
+      these agents via the Task tool to strengthen stack-specific quality:
+
+      - Phase 3: `the stack-specific Phase-3 specialist` (Implementation)
+
+      - BDD oracle: 1 scenario(s) failed during pytest-bdd execution. Implementation
+      does not satisfy the Gherkin specification.'
+    timestamp: '2026-04-30T06:53:39.396841'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-30T07:19:38.774792'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Coach factory and structural invariants
