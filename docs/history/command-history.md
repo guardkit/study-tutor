@@ -1883,7 +1883,47 @@ Two minor side effects worth noting: I had to collapse two multi-line And steps 
 
 GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-PH1-002 --verbose
 
+════════════════════════════════════════════════════════════
+FEATURE RESULT: SUCCESS
+════════════════════════════════════════════════════════════
 
+Feature: FEAT-PH1-002 - Deterministic Session Planner
+Status: COMPLETED
+Tasks: 7/7 completed
+Total Turns: 11
+Duration: 21m 55s
+
+                                  Wave Summary
+╭────────┬──────────┬────────────┬──────────┬──────────┬──────────┬─────────────╮
+│  Wave  │  Tasks   │   Status   │  Passed  │  Failed  │  Turns   │  Recovered  │
+├────────┼──────────┼────────────┼──────────┼──────────┼──────────┼─────────────┤
+│   1    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   2    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   3    │    2     │   ✓ PASS   │    2     │    -     │    5     │      -      │
+│   4    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   5    │    1     │   ✓ PASS   │    1     │    -     │    2     │      -      │
+│   6    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+╰────────┴──────────┴────────────┴──────────┴──────────┴──────────┴─────────────╯
+
+Execution Quality:
+  Clean executions: 7/7 (100%)
+
+SDK Turn Ceiling:
+  Invocations: 1
+  Ceiling hits: 0/1 (0%)
+
+Worktree: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
+Branch: autobuild/FEAT-PH1-002
+
+Next Steps:
+  1. Review: cd /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
+  2. Diff: git diff main
+  3. Merge: git checkout main && git merge autobuild/FEAT-PH1-002
+  4. Cleanup: guardkit worktree cleanup FEAT-PH1-002
+INFO:guardkit.cli.display:Final summary rendered: FEAT-PH1-002 - completed
+INFO:guardkit.orchestrator.review_summary:Review summary written to /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-PH1-002/review-summary.md
+✓ Review summary: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-PH1-002/review-summary.md
+INFO:guardkit.orchestrator.feature_orchestrator:Feature orchestration complete: FEAT-PH1-002, status=completed, completed=7/7
 
 
 

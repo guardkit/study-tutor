@@ -276,3 +276,7 @@ stderr.log
 
 # Per-machine Claude Code overrides
 .claude/settings.local.json
+
+# GuardKit local-only archive (per /feature-complete spec)
+.guardkit/archive/
+
