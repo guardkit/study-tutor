@@ -1,0 +1,7 @@
+{
+  "tests_run": 19,
+  "tests_failed": 0,
+  "coverage_pct": 98.0,
+  "output_summary": "pytest tests/unit/knowledge/test_retrieval.py: 19 passed, 0 failed, 98% line coverage on src/study_tutor/knowledge/retrieval.py (1 miss: line 165, no-op probe).",
+  "quality_gates_passed": true
+}

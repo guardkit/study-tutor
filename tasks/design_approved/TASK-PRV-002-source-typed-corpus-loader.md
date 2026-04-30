@@ -1,35 +1,36 @@
 ---
-id: TASK-PRV-002
-title: Source-typed corpus loader with copyright refusal
-task_type: feature
-parent_review: TASK-REV-PRV4
-feature_id: FEAT-PRV4
-wave: 2
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 75
+consumer_context:
+- consumes: SourceTypedCorpus
+  driver: pydantic
+  format_note: CorpusChunk + CitationAnchor union (kind-discriminated) consumed verbatim
+    — citation_anchor is None for non-primary chunks
+  framework: Pydantic v2 (BaseModel + discriminated union)
+  task: TASK-PRV-001
 dependencies:
 - TASK-PRV-001
-status: pending
+estimated_minutes: 75
+feature_id: FEAT-PRV4
+id: TASK-PRV-002
+implementation_mode: task-work
+parent_review: TASK-REV-PRV4
 priority: high
+related_features:
+- FEAT-PH1-004
+status: design_approved
 tags:
 - feat-ph1-004
 - corpus
 - ingestion
 - copyright
 - chunker
-related_features:
-- FEAT-PH1-004
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-consumer_context:
-- task: TASK-PRV-001
-  consumes: SourceTypedCorpus
-  framework: "Pydantic v2 (BaseModel + discriminated union)"
-  driver: pydantic
-  format_note: "CorpusChunk + CitationAnchor union (kind-discriminated) consumed verbatim — citation_anchor is None for non-primary chunks"
+  status: pending
+title: Source-typed corpus loader with copyright refusal
+wave: 2
 ---
 
 # Task: Source-typed corpus loader with copyright refusal

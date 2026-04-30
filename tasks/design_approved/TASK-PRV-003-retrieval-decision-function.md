@@ -1,37 +1,38 @@
 ---
-id: TASK-PRV-003
-title: Dynamic retrieval-decision function (R2 + R3)
-task_type: feature
-parent_review: TASK-REV-PRV4
-feature_id: FEAT-PRV4
-wave: 2
-implementation_mode: task-work
 complexity: 4
-estimated_minutes: 50
+consumer_context:
+- consumes: SourceTypedCorpus
+  driver: pydantic
+  format_note: Consumes SourceType enum to query primary-text presence by source_type
+    filter
+  framework: Pydantic v2 (BaseModel)
+  task: TASK-PRV-001
 dependencies:
 - TASK-PRV-001
-status: pending
+estimated_minutes: 50
+feature_id: FEAT-PRV4
+id: TASK-PRV-003
+implementation_mode: task-work
+parent_review: TASK-REV-PRV4
 priority: high
+related_features:
+- FEAT-PH1-004
+- FEAT-PH1-002
+- FEAT-PH1-003
+status: design_approved
 tags:
 - feat-ph1-004
 - retrieval
 - decision
 - ao3-bypass
 - analysis-mode
-related_features:
-- FEAT-PH1-004
-- FEAT-PH1-002
-- FEAT-PH1-003
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-consumer_context:
-- task: TASK-PRV-001
-  consumes: SourceTypedCorpus
-  framework: "Pydantic v2 (BaseModel)"
-  driver: pydantic
-  format_note: "Consumes SourceType enum to query primary-text presence by source_type filter"
+  status: pending
+title: Dynamic retrieval-decision function (R2 + R3)
+wave: 2
 ---
 
 # Task: Dynamic retrieval-decision function (R2 + R3)
