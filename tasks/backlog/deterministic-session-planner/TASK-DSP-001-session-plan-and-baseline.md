@@ -10,7 +10,34 @@ complexity: 3
 dependencies: []
 estimated_minutes: 60
 priority: high
-tags: [phase-1, planner, session-plan, baseline, declarative]
+tags:
+- phase-1
+- planner
+- session-plan
+- baseline
+- declarative
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
+  base_branch: main
+  started_at: '2026-04-29T20:17:27.408118'
+  last_updated: '2026-04-29T20:22:19.169095'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-29T20:17:27.408118'
+    player_summary: Added the planner subpackage with the immutable SessionPlan Pydantic
+      v2 model (frozen=True, extra='forbid'), a load_curriculum_defaults() helper
+      that reads the new src/study_tutor/planner/data/curriculum_defaults.yaml via
+      importlib.resources, and the _baseline_plan(learner_state_available) helper.
+      Both branches set rule_selected='baseline' and fallback_used='baseline'; the
+      no-state branch uses a code-baked topic + opening prompt so the planner can
+      degrade safely even if the YAML is missing, whil
+    player_success: true
+    coach_success: true
 ---
 
 # Task: SessionPlan dataclass and BaselineSession helper

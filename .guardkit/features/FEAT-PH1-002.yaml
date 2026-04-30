@@ -4,7 +4,7 @@ description: 'Phase 1 deterministic rule-based session planner (FEAT-PH1-002): S
   shape, rules 1/3/4 active, rules 2/5 stubs, rule-6 fallback, MCP integration with
   tutor_start_session, graceful degradation when FEAT-PH1-001 helpers are unavailable.'
 created: '2026-04-29T17:20:44.415206'
-status: passed
+status: completed
 complexity: 6
 estimated_tasks: 7
 tasks:
@@ -123,15 +123,18 @@ tasks:
   complexity: 5
   dependencies:
   - TASK-DSP-006
-  status: pending
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-04-29T22:57:19.702781'
+  completed_at: '2026-04-29T23:19:10.214167'
 orchestration:
   parallel_groups:
   - - TASK-DSP-001
@@ -147,27 +150,25 @@ smoke_gates:
   after_wave:
   - 5
   - 6
-  # TASK-DSP-009: marker uses underscore form because pytest's -m expression
-  # is evaluated as Python; hyphens would parse as subtraction and silently
-  # match nothing. See tests/smoke/test_session_planner.py on
-  # autobuild/FEAT-PH1-002.
   command: pytest -m "feat_ph1_002 and smoke" -x --no-cov
   expected_exit: 0
   timeout: 60
+  exit5_is_hard_fail: false
 execution:
   started_at: '2026-04-29T20:17:27.366920'
-  completed_at: '2026-04-29T22:01:46.058291'
+  completed_at: '2026-04-29T23:19:11.243256'
   worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
-  total_turns: 10
-  tasks_completed: 6
+  total_turns: 11
+  tasks_completed: 7
   tasks_failed: 0
-  current_wave: 5
+  current_wave: 6
   completed_waves:
   - 1
   - 2
   - 3
   - 4
   - 5
-  last_updated: '2026-04-29T22:01:45.172759'
+  - 6
+  last_updated: '2026-04-29T23:19:10.218391'
   archived_at: null
   archived_to: null

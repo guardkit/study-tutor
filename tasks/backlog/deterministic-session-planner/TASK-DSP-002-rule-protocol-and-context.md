@@ -7,10 +7,37 @@ feature_id: FEAT-PH1-002
 wave: 1
 implementation_mode: direct
 complexity: 3
-dependencies: [TASK-DSP-001]
+dependencies:
+- TASK-DSP-001
 estimated_minutes: 45
 priority: high
-tags: [phase-1, planner, protocol, declarative]
+tags:
+- phase-1
+- planner
+- protocol
+- declarative
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
+  base_branch: main
+  started_at: '2026-04-29T20:22:19.192191'
+  last_updated: '2026-04-29T20:29:19.554570'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-29T20:22:19.192191'
+    player_summary: "Added src/study_tutor/planner/protocols.py with three public\
+      \ surfaces: (1) Rule as a runtime_checkable typing.Protocol whose only member\
+      \ is __call__(self, ctx: PlannerContext) -> Candidate | None \u2014 pure structural\
+      \ typing, no inheritance required; (2) Candidate as a frozen=True dataclass\
+      \ carrying topic_name, rule_source (Literal 'rule-1' | 'rule-3' | 'rule-4' |\
+      \ 'rule-6'), confidence_percentage (float | None for off-curriculum overrides),\
+      \ related_misconceptions, and rationale_fragment; (3) Planner"
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Rule protocol, PlannerContext, and Candidate types

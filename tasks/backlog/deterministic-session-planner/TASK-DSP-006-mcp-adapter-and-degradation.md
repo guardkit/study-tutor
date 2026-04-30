@@ -7,21 +7,58 @@ feature_id: FEAT-PH1-002
 wave: 4
 implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-DSP-005]
+dependencies:
+- TASK-DSP-005
 estimated_minutes: 120
 priority: high
-tags: [phase-1, planner, mcp, tutor-start-session, latency, graceful-degradation]
+tags:
+- phase-1
+- planner
+- mcp
+- tutor-start-session
+- latency
+- graceful-degradation
 consumer_context:
-  - task: TASK-DSP-005
-    consumes: plan_session
-    framework: "MCP server adapter (study_tutor.mcp.tools)"
-    driver: "MCP Python SDK over stdio"
-    format_note: >
-      plan_session is awaited inside asyncio.wait_for with a 2s outer
-      guard at the MCP adapter (ASSUM-006, signed off 2026-04-29). The
-      inner 5s read timeout in plan_session (ASSUM-007, signed off
-      2026-04-29) wraps the FEAT-PH1-001 reads. Outer 2s is the binding
-      constraint by design.
+- task: TASK-DSP-005
+  consumes: plan_session
+  framework: MCP server adapter (study_tutor.mcp.tools)
+  driver: MCP Python SDK over stdio
+  format_note: 'plan_session is awaited inside asyncio.wait_for with a 2s outer guard
+    at the MCP adapter (ASSUM-006, signed off 2026-04-29). The inner 5s read timeout
+    in plan_session (ASSUM-007, signed off 2026-04-29) wraps the FEAT-PH1-001 reads.
+    Outer 2s is the binding constraint by design.
+
+    '
+status: in_review
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-PH1-002
+  base_branch: main
+  started_at: '2026-04-29T21:34:18.659294'
+  last_updated: '2026-04-29T22:01:45.165893'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 All modified files pass project-configured lint/format\
+      \ checks"
+    timestamp: '2026-04-29T21:34:18.659294'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-04-29T21:52:58.044611'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Wire plan_session into tutor_start_session and graceful-degradation boundary
