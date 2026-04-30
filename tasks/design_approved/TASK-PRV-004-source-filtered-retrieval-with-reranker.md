@@ -1,41 +1,43 @@
 ---
-id: TASK-PRV-004
-title: Source-filtered retrieval with reranker degradation
-task_type: feature
-parent_review: TASK-REV-PRV4
-feature_id: FEAT-PRV4
-wave: 3
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 70
+consumer_context:
+- consumes: SourceTypedCorpus
+  driver: chromadb
+  format_note: 'ChromaDB collection filtered via where={''source_type'': ..., ''text_name'':
+    ...} returns CorpusChunk-shaped records'
+  framework: ChromaDB (where filter on source_type + text_name metadata)
+  task: TASK-PRV-002
+- consumes: RetrievalDecision
+  driver: stdlib
+  format_note: Skip retrieval if RetrievalDecision.retrieve == False; pass reason
+    into turn metadata
+  framework: Python NamedTuple
+  task: TASK-PRV-003
 dependencies:
 - TASK-PRV-002
 - TASK-PRV-003
-status: pending
+estimated_minutes: 70
+feature_id: FEAT-PRV4
+id: TASK-PRV-004
+implementation_mode: task-work
+parent_review: TASK-REV-PRV4
 priority: high
+related_features:
+- FEAT-PH1-004
+status: design_approved
 tags:
 - feat-ph1-004
 - retrieval
 - chromadb
 - reranker
 - resilience
-related_features:
-- FEAT-PH1-004
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-consumer_context:
-- task: TASK-PRV-002
-  consumes: SourceTypedCorpus
-  framework: "ChromaDB (where filter on source_type + text_name metadata)"
-  driver: chromadb
-  format_note: "ChromaDB collection filtered via where={'source_type': ..., 'text_name': ...} returns CorpusChunk-shaped records"
-- task: TASK-PRV-003
-  consumes: RetrievalDecision
-  framework: "Python NamedTuple"
-  driver: stdlib
-  format_note: "Skip retrieval if RetrievalDecision.retrieve == False; pass reason into turn metadata"
+  status: pending
+title: Source-filtered retrieval with reranker degradation
+wave: 3
 ---
 
 # Task: Source-filtered retrieval with reranker degradation
