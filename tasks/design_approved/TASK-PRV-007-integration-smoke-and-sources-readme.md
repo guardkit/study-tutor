@@ -1,30 +1,30 @@
 ---
-id: TASK-PRV-007
-title: Integration smoke + sources README update
-task_type: testing
-parent_review: TASK-REV-PRV4
-feature_id: FEAT-PRV4
-wave: 5
-implementation_mode: task-work
 complexity: 3
-estimated_minutes: 45
 dependencies:
 - TASK-PRV-004
 - TASK-PRV-005
 - TASK-PRV-006
-status: pending
+estimated_minutes: 45
+feature_id: FEAT-PRV4
+id: TASK-PRV-007
+implementation_mode: task-work
+parent_review: TASK-REV-PRV4
 priority: high
+related_features:
+- FEAT-PH1-004
+status: design_approved
 tags:
 - feat-ph1-004
 - testing
 - integration
 - documentation
-related_features:
-- FEAT-PH1-004
+task_type: testing
 test_results:
-  status: pending
   coverage: null
   last_run: null
+  status: pending
+title: Integration smoke + sources README update
+wave: 5
 ---
 
 # Task: Integration smoke + sources README update
