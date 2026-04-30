@@ -1,17 +1,24 @@
 ---
-id: TASK-PRV-005
-title: Source-typed quote verifier with four match types
-task_type: feature
-parent_review: TASK-REV-PRV4
-feature_id: FEAT-PRV4
-wave: 3
-implementation_mode: task-work
 complexity: 6
-estimated_minutes: 100
+consumer_context:
+- consumes: SourceTypedCorpus
+  driver: pydantic
+  format_note: Reads CorpusChunk.citation_anchor directly from chunk metadata; never
+    re-parses chunk text to construct citations
+  framework: Pydantic v2 (BaseModel + discriminated union)
+  task: TASK-PRV-002
 dependencies:
 - TASK-PRV-002
-status: pending
+estimated_minutes: 100
+feature_id: FEAT-PRV4
+id: TASK-PRV-005
+implementation_mode: task-work
+parent_review: TASK-REV-PRV4
 priority: high
+related_features:
+- FEAT-PH1-004
+- FEAT-PH1-003
+status: design_approved
 tags:
 - feat-ph1-004
 - verifier
@@ -19,19 +26,13 @@ tags:
 - source-typed
 - safety
 - fuzzy-correction
-related_features:
-- FEAT-PH1-004
-- FEAT-PH1-003
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-consumer_context:
-- task: TASK-PRV-002
-  consumes: SourceTypedCorpus
-  framework: "Pydantic v2 (BaseModel + discriminated union)"
-  driver: pydantic
-  format_note: "Reads CorpusChunk.citation_anchor directly from chunk metadata; never re-parses chunk text to construct citations"
+  status: pending
+title: Source-typed quote verifier with four match types
+wave: 3
 ---
 
 # Task: Source-typed quote verifier with four match types
