@@ -280,3 +280,7 @@ stderr.log
 # GuardKit local-only archive (per /feature-complete spec)
 .guardkit/archive/
 
+# GuardKit Graphiti query log (rotated, local-only diagnostics)
+.guardkit/graphiti-query-log.jsonl
+.guardkit/graphiti-query-log.jsonl.1
+
