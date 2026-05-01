@@ -2420,8 +2420,62 @@ INFO:guardkit.orchestrator.feature_orchestrator:Feature orchestration complete: 
 
 
 
+can we create the phase-2-build-plan now before we have actually implemented FEAT-70A4? Or is it safer to wait for that to build first?
+Drafting now is the safer-than-it-sounds option, because the contracts FEAT-70A4 will produce — VerifierMetadata, RetrievalDecision, source-type chunk shape — are already documented in the IMPLEMENTATION-GUIDE before implementation, so Phase 2's "what does this build on" surface is settled. The original Phase 1 plan also schedules this for Thursday (today) precisely so that drafting and the Friday FEAT-70A4 finish run in parallel rather than serially.
+
+The tradeoff: anything that depends on Phase 1 empirical outcomes — Coach calibration, real turn latencies, ingestion-pipeline integration friction, observed misconception patterns — should be flagged as "to revise after Phase 1 closes" rather than locked in. So: draft it now, but with explicit "TBD after Phase 1 measures X" markers wherever the plan would otherwise pretend to know something it can't yet.
+
+Want me to read phase-2-scope.md and draft a phase-2-build-plan.md skeleton in that shape?
+
+yes please proceed use extra thinking/don't rush let's get this right first time
+
+Phase 2 Build Plan Drafted
+File: docs/research/ideas/phase-2-build-plan.md — 8,494 words, 32 sections.
+
+Verification
+All 10 phase-2-scope.md success criteria explicitly addressed (gamification engine, session-end response, dashboard, demo video, tech writeup, submission form, repo gate-check, Reachy outcome, validation gate, Lilymay informal marker)
+8 TBD markers consolidated with revisit triggers + default-if-unresolved fallbacks
+All day labels calendar-true for May 2026 — 30 April = Thursday, 1 May = Friday, 2-3 May = Saturday-Sunday, 18 May = Monday. The scope and Phase-1-build-plan have a slight date-label drift (they call 1 May "Thursday"); I noted this explicitly at the top under "Date-label convention" and used calendar-true throughout my own scheduling so the day-by-day plan maps onto real Saturdays and Sundays
+Branching for FEAT-PH1-004 outcome — Path A (verifier ships) and Path B (5-criterion fallback) both accommodated; Phase 2 build plan structure is identical under either
+Reachy go/no-go scheduled for the natural calendar slot Sunday 3 May with a note that DEC-06's literal "4 May" string can be honoured by slipping to Monday evening
+Day-by-day shape
+Sat 2 May — Validation gate + system-arch refresh + FEAT-PH2-001 spec/plan/Wave 1 + Session 1 capture (working-today)
+Sun 3 May — FEAT-PH2-001 Waves 3–5 + Reachy go/no-go + tech writeup gamification section
+Mon 4 May — FEAT-PH2-001 verification + multi-session run
+Tue 5 May — FEAT-PH2-002 spec + first Claude Design pass
+Wed 6 May — Dashboard polish OR fallback + Session 2 capture (architecture reveal)
+Thu 7 May — FEAT-PH2-003 spec + demo script + first edit pass
+Fri 8 May — Session 3 capture + Phase 2 close-out tag
+Sat 9 May → Sat 16 May — Polish track (tech writeup, demo edit, repo gate-check, submission form, Reachy capture if applicable)
+Sun 17 May / Mon 18 May — Buffer + deadline
+Three load-bearing TBD-revisit triggers
+Friday 1 May evening — FEAT-PH1-004 build outcome → Path A or Path B
+Saturday 2 May AM — Real turn p50/p95 + Coach signal quality (from Phase 1 demo session log)
+Tuesday 5 May evening — Claude Design quality bar → polish iteration vs hand-coded fallback
+The plan is revisable on Saturday 2 May morning if the validation gate surfaces drift not anticipated here.
 
 
+Thanks I've just had a text message to confirm delivery of the first Reachy Mini robot for Friday 8th May - please can you revisit the build plan with that additonal scope/context
+
+
+Summary of the Reachy revision
+Material changes:
+
+Go/no-go gate moves from speculative Sunday 3 May → Saturday 9 May (post-delivery unbox + SDK hello-world). Five evaluation criteria with hardware-state focus.
+Live Reachy segment elevates from possible-fallback to likely-outcome. Capture target Wednesday 13 May (~1.5h capture session, parent-query scenario).
+Future-vision segment becomes the late-stage fallback only if Saturday's go/no-go fails or integration is blocked by Tuesday's capture-readiness checkpoint.
+Reachy integration thread runs in parallel Sat 9 → Tue 12 May per DEC-06 — outside Phase 2's day-by-day, ~6-8h additional outside the table.
+Schedule deltas:
+
+Sun 3 May: 5h → 3h (Reachy slot freed for recovery slack)
+Sat 9 May: 3h → 4h (Reachy unbox AM + tech writeup PM)
+Wed 13 May: 1h → 2-3h (Reachy capture + demo video polish)
+Fri 15 May: now contingent on Wed capture quality
+Risk register updated — dropped "hardware doesn't arrive" (resolved); added "unbox blocks DOA", "integration learning curve > 4 days", "delivery slips past 8 May despite confirmation".
+
+10-day Reachy thread runway from delivery to submission deadline — feasible for the 30-second demo segment per the conversation starter doc, tight for anything more ambitious.
+
+Want me to push, or hold for review?
 
 
 
