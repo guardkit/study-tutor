@@ -2190,6 +2190,235 @@ This unblocks TASK-DTL-002 (quote_fidelity rubric criterion in FEAT-PH1-003) and
 GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-70A4 --verbose
 
 
+════════════════════════════════════════════════════════════
+FEATURE RESULT: FAILED
+════════════════════════════════════════════════════════════
+
+Feature: FEAT-70A4 - Primary-Text RAG and Source-Typed Quote Verifier
+Status: FAILED
+Tasks: 3/7 completed
+Total Turns: 5
+Duration: 27m 22s
+
+                                  Wave Summary                                   
+╭────────┬──────────┬────────────┬──────────┬──────────┬──────────┬─────────────╮
+│  Wave  │  Tasks   │   Status   │  Passed  │  Failed  │  Turns   │  Recovered  │
+├────────┼──────────┼────────────┼──────────┼──────────┼──────────┼─────────────┤
+│   1    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   2    │    2     │   ✓ PASS   │    2     │    -     │    4     │      -      │
+╰────────┴──────────┴────────────┴──────────┴──────────┴──────────┴─────────────╯
+
+Execution Quality:
+  Clean executions: 3/3 (100%)
+
+SDK Turn Ceiling:
+  Invocations: 2
+  Ceiling hits: 0/2 (0%)
+
+                                  Task Details                                   
+╭──────────────────────┬────────────┬──────────┬─────────────────┬──────────────╮
+│ Task                 │ Status     │  Turns   │ Decision        │  SDK Turns   │
+├──────────────────────┼────────────┼──────────┼─────────────────┼──────────────┤
+│ TASK-PRV-001         │ SUCCESS    │    1     │ approved        │      -       │
+│ TASK-PRV-002         │ SUCCESS    │    2     │ approved        │      16      │
+│ TASK-PRV-003         │ SUCCESS    │    2     │ approved        │      19      │
+╰──────────────────────┴────────────┴──────────┴─────────────────┴──────────────╯
+
+Worktree: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-70A4
+Branch: autobuild/FEAT-70A4
+
+Next Steps:
+  1. Review failed tasks: cd /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-70A4
+  2. Check status: guardkit autobuild status FEAT-70A4
+  3. Resume: guardkit autobuild feature FEAT-70A4 --resume
+INFO:guardkit.cli.display:Final summary rendered: FEAT-70A4 - failed
+INFO:guardkit.orchestrator.review_summary:Review summary written to /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-70A4/review-summary.md
+✓ Review summary: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-70A4/review-summary.md
+INFO:guardkit.orchestrator.feature_orchestrator:Feature orchestration complete: FEAT-70A4, status=failed, completed=3/7
+
+
+
+/task-create please create a review task to anlayse the failed autobuild feature run in /home/richardwoollcott/Projects/appmilla_github/study-tutor/docs/history/autobuild-FEAT-70A4-failed-history.md
+
+
+✅ Task Created: TASK-REV-AB7A
+
+📋 Task Details
+Title: Analyze failed autobuild run for FEAT-70A4 (Primary-Text RAG + Quote Verifier)
+Type: review (diagnostic, standard depth)
+Priority: high
+Status: backlog
+Tags: [autobuild, post-mortem, FEAT-70A4, smoke-gate, parallel-contention, diagnostic]
+Complexity: 5
+
+📑 Source artefact
+docs/history/autobuild-FEAT-70A4-failed-history.md (869 lines)
+
+🔍 Failure surfaces scoped for review
+1. Post-wave-2 smoke-gate exit=127 (interpreter/import-path mismatch suspected)
+2. Wave-2 parallel-contention warning on TASK-PRV-002 (independent tests skipped)
+3. Conditional-approval policy fit for a pure-Python loader feature
+4. Recurring Coach SDK message-reader fatal errors
+5. Missing seam/contract tests for cross-boundary work
+
+📁 File Location
+tasks/backlog/TASK-REV-AB7A-analyze-failed-autobuild-feat-70a4.md
+
+Next Steps:
+1. Review task scope and acceptance criteria
+2. When ready: /task-review TASK-REV-AB7A --mode=diagnostic
+3. After [A]/[I]/[R]/[C] decision: /task-complete TASK-REV-AB7A
+The task captures all five diagnostic threads — exit=127 on the post-wave-2 smoke gate is the headline failure (wave 1+2 had already passed), with the parallel-contention conditional-approval rule and the missing seam tests as secondary concerns worth ruling on before any resume.
+
+/task-review TASK-REV-AB7A --mode=diagnostic
+
+
+Diagnostic complete. Report written to .claude/reviews/TASK-REV-AB7A-report.md.
+
+REVIEW COMPLETE — TASK-REV-AB7A
+Mode: diagnostic | Depth: standard | Findings: 5 | Recommendations: 5 fix subtasks
+
+Two compounding root causes (both reproduced locally)
+Smoke gate exit=127 — FEAT-70A4.yaml invokes bare python; Ubuntu 24 ships only python3. The bootstrap venv at .guardkit/venv/bin/python was correctly built with an editable install of study-tutor, but guardkit.orchestrator.smoke_gates doesn't honour coach_pytest_interpreter. I reproduced exit=127 from a clean shell and confirmed the venv copy passes (Appendix A).
+Wave-2 "parallel contention" was source-file contention — TASK-PRV-002 and TASK-PRV-003 both wrote step definitions to the same 888-line BDD glue file features/primary-text-rag-and-quote-verifier/test_primary_text_rag_and_quote_verifier.py. Independent verification ran a combined pytest against an inconsistent file. Coach's conditional-approval rule fired with requires_infra=[] — a signal the rule should have treated as "not infra contention, don't auto-approve."
+Most concerning finding (latent)
+Both PRV-002 and PRV-003 task files contained explicit ## Seam Tests sections with full code stubs. Players ignored them. Coach flagged "no seam/contract/boundary tests detected" 4× but didn't block. We have approved code whose contracts (consumed by PRV-004/005/006) have never been verified.
+
+Decision Options
+[A]ccept	File findings only. Worktree stays preserved; you apply fixes manually.
+[I]mplement	Create FEAT-FIX-AB7A with 5 subtasks (smoke-gate pin, 2 parallel seam-test backfills, wave-3 serialisation, autobuild resume). ~50 min edits + ~25 min wall-clock. Recommended.
+[R]evise	Deepen analysis — e.g. run PRV-002/003 seam tests now to settle whether conditional approval was sound.
+[C]ancel	Discard. Not recommended; diagnosis is settled.
+5 upstream-guardkit findings (smoke_gates interpreter resolution, conditional-approval requires_infra=[] rule, planner overlap detection, seam-test blocking, SDK reader transport noise) are filed in §9 of the report — out of scope for this fix feature.
+
+Your choice [A/I/R/C]?
+
+autobuild-FEAT-70A4-failed-history.md
+[R]evise are the suggested tasks for this repo or guardkit? Please dig deeper and trace the execution flow across system and technological boundaries and creatre C4 sequence diagrams to validate your findings. We need to ensure no regressions are introduced into autobuild as we have a lot of critical development to do
+
+
+Addendum written: .claude/reviews/TASK-REV-AB7A-addendum-source-traced.md
+
+REVIEW REVISED — Source-Traced + C4 Diagrams
+Scope answer (the question you asked first)
+All 5 FIX-AB7A- subtasks land in THIS repo. Zero require guardkit changes.*
+
+Layer	Tasks	Files
+THIS repo (study-tutor)	FIX-AB7A-001 (smoke-gate pin), 002 (PRV-002 seam), 003 (PRV-003 seam), 004 (wave serialisation), 005 (resume)	.guardkit/features/FEAT-70A4.yaml + 2 new test files
+GuardKit upstream (separate repo)	GK-UPSTREAM-1..5	filed for the future, do not block resume
+GuardKit is editable-installed at /home/richardwoollcott/Projects/appmilla_github/guardkit — I read the active source.
+
+What the source confirmed (3 critical findings)
+Smoke-gate is uniquely broken. smoke_gates.run_smoke_gate(config, cwd, wave_number) has no interpreter parameter and subprocess.run(...) at line 163 has no env= argument. Every other GuardKit shell-out does inject the venv PATH (e.g., coach_validator.py:2452). And the build_venv_env helper at command_models.py:79-96 only checks .venv/bin, while bootstrap creates .guardkit/venv/bin — so the helper would have returned None even if smoke_gates had called it. Two compounding upstream defects.
+
+The existing TASK-ABFIX-005 isolation cannot fix our parallel-contention class. It snapshots the worktree to a tempdir to defend against concurrent mutation during test execution. Both PRV-002 and PRV-003 had committed conflicting edits to the shared 888-line BDD glue before either Coach phase started — the snapshot preserved the contaminated state. No upstream rule change would have caught this; serialisation is the durable fix.
+
+The conditional-approval parallel_contention branch at coach_validator.py:861-866 does NOT check requires_infra — by design (TASK-ABFIX-005 deliberately broadened it). Sound for transient infra contention, unsound for source-file conflicts. Our fix sidesteps the whole rule by removing the source of the conflict (serialise wave 3).
+
+Diagrams included in addendum
+§1 C4 L1 System Context — shows the worktree as a shared-write hazard and smoke-gate as the only consumer that bypasses the venv
+§2 Bootstrap → Smoke-Gate Sequence — proves the interpreter mismatch with verbatim source quotes
+§3 Wave-2 Parallel Sequence — proves the BDD-glue file contention pattern
+§4 Conditional-Approval Decision Tree — shows which branch fired and why
+§5 Resume-with-fixes Sequence — proves the local fix is byte-for-byte non-regressive for other features
+Pre-resume gate conditions (now mandatory, see §6 of addendum)
+5 commands the operator runs in this repo before --resume. If any fail (especially the seam tests), do NOT resume — escalate to a code-fix subtask. This is the safety net the conditional-approval rule didn't provide.
+
+Decision options (re-presented)
+[A]ccept	File findings; manual fix later.
+[I]mplement	Spawn FEAT-FIX-AB7A with 5 subtasks (all local). Optionally also draft text for the 5 GK-UPSTREAM-* GitHub issues against the guardkit repo. Recommended.
+[R]evise again	Further drilling. Suggest: read the actual diff in the BDD glue file between turn-1 and turn-2 commits to prove the file-contention hypothesis with a literal three-way merge view.
+[C]ancel	Discard. Not recommended.
+Your choice [A/I/R/C]? (And: do you want the GK-UPSTREAM-* issue drafts bundled if you choose [I]?)
+
+TASK-REV-AB7A-addendum-source-traced.md
+[I]mplement and can you use the task toll to invoke /task-create on the guardkit repo directly-I don't bother with github issues
+
+
+[I]mplement Complete
+What was created
+In this repo (study-tutor) — FEAT-FIX-AB7A
+Parent review task moved: tasks/in_review/TASK-REV-AB7A-analyze-failed-autobuild-feat-70a4.md — status: review_complete, decision: implement, linked to feat-fix-ab7a folder
+Implementation feature folder: tasks/backlog/feat-fix-ab7a/
+README.md
+IMPLEMENTATION-GUIDE.md — wave plan + pre-resume verification commands
+TASK-FIX-AB7A-001 — pin smoke-gate interpreter (wave 1, direct, ~5 min)
+TASK-FIX-AB7A-002 — backfill PRV-002 seam test (wave 2, task-work, ~20 min)
+TASK-FIX-AB7A-003 — backfill PRV-003 seam test (wave 2, task-work, ~20 min)
+TASK-FIX-AB7A-004 — serialise wave 3 (wave 3, direct, ~10 min)
+TASK-FIX-AB7A-005 — resume autobuild (wave 4, manual, ~25 min wall-clock)
+In the guardkit repo — 5 upstream tasks (high → low priority)
+Task	Priority	What
+TASK-FIX-A7B1	high	smoke_gates: honour bootstrap venv interpreter
+TASK-FIX-A7B2	high	tighten parallel_contention conditional approval (detect source-file conflicts)
+TASK-FIX-A7B3	medium	/feature-plan: warn/auto-serialise on wave-internal source overlap
+TASK-FIX-A7B4	medium	Coach should BLOCK (not warn) on planned-but-unimplemented seam tests
+TASK-FIX-A7B5	low	investigate Claude Agent SDK message-reader transport failures
+All five live at /home/richardwoollcott/Projects/appmilla_github/guardkit/tasks/backlog/TASK-FIX-A7B*.md, follow the local convention (external_reference block, task_type: bugfix, AC-NNN numbering), and cite verified file:line refs in active guardkit source. No git operations performed — they're sitting in the repo's own backlog ready for the guardkit team to pick up.
+
+Recommended next step
+
+/task-work TASK-FIX-AB7A-001
+Then waves 2–4 per IMPLEMENTATION-GUIDE.md. The seam-test gate between wave 3 and wave 4 is mandatory — if either seam test fails locally, halt and triage before resume. That's the safety net the conditional-approval rule didn't provide.
+
+
+════════════════════════════════════════════════════════════
+FEATURE RESULT: SUCCESS
+════════════════════════════════════════════════════════════
+
+Feature: FEAT-70A4 - Primary-Text RAG and Source-Typed Quote Verifier
+Status: COMPLETED
+Tasks: 7/7 completed
+Total Turns: 9
+Duration: 54m 59s
+
+                                  Wave Summary                                   
+╭────────┬──────────┬────────────┬──────────┬──────────┬──────────┬─────────────╮
+│  Wave  │  Tasks   │   Status   │  Passed  │  Failed  │  Turns   │  Recovered  │
+├────────┼──────────┼────────────┼──────────┼──────────┼──────────┼─────────────┤
+│   1    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   2    │    2     │   ✓ PASS   │    2     │    -     │    4     │      -      │
+│   3    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   4    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   5    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+│   6    │    1     │   ✓ PASS   │    1     │    -     │    1     │      -      │
+╰────────┴──────────┴────────────┴──────────┴──────────┴──────────┴─────────────╯
+
+Execution Quality:
+  Clean executions: 7/7 (100%)
+
+SDK Turn Ceiling:
+  Invocations: 4
+  Ceiling hits: 0/4 (0%)
+
+                                  Task Details                                   
+╭──────────────────────┬────────────┬──────────┬─────────────────┬──────────────╮
+│ Task                 │ Status     │  Turns   │ Decision        │  SDK Turns   │
+├──────────────────────┼────────────┼──────────┼─────────────────┼──────────────┤
+│ TASK-PRV-001         │ SKIPPED    │    1     │ already_comple… │      -       │
+│ TASK-PRV-002         │ SKIPPED    │    2     │ already_comple… │      -       │
+│ TASK-PRV-003         │ SKIPPED    │    2     │ already_comple… │      -       │
+│ TASK-PRV-004         │ SUCCESS    │    1     │ approved        │      30      │
+│ TASK-PRV-005         │ SUCCESS    │    1     │ approved        │      26      │
+│ TASK-PRV-006         │ SUCCESS    │    1     │ approved        │      48      │
+│ TASK-PRV-007         │ SUCCESS    │    1     │ approved        │      37      │
+╰──────────────────────┴────────────┴──────────┴─────────────────┴──────────────╯
+
+Worktree: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-70A4
+Branch: autobuild/FEAT-70A4
+
+Next Steps:
+  1. Review: cd /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-70A4
+  2. Diff: git diff main
+  3. Merge: git checkout main && git merge autobuild/FEAT-70A4
+  4. Cleanup: guardkit worktree cleanup FEAT-70A4
+INFO:guardkit.cli.display:Final summary rendered: FEAT-70A4 - completed
+INFO:guardkit.orchestrator.review_summary:Review summary written to /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-70A4/review-summary.md
+✓ Review summary: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/autobuild/FEAT-70A4/review-summary.md
+INFO:guardkit.orchestrator.feature_orchestrator:Feature orchestration complete: FEAT-70A4, status=completed, completed=7/7
+
+
+
 
 
 

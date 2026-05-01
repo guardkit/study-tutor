@@ -1,0 +1,120 @@
+---
+id: TASK-FIX-AB7A-001b
+title: "Install [dev] extras in smoke gate and switch to `python -m pytest` (supersedes 001 AC2)"
+task_type: feature
+parent_review: TASK-REV-AB7A
+feature_id: FEAT-FIX-AB7A
+wave: 1
+implementation_mode: direct
+complexity: 1
+estimated_minutes: 8
+dependencies:
+  - TASK-FIX-AB7A-001
+supersedes: TASK-FIX-AB7A-001
+status: completed
+priority: high
+created: 2026-04-30T00:00:00Z
+updated: 2026-04-30T00:00:00Z
+completed: 2026-04-30T00:00:00Z
+previous_state: in_review
+completed_location: tasks/completed/feat-fix-ab7a/
+tags: [autobuild, smoke-gate, venv, pytest, FEAT-70A4, follow-up]
+test_results:
+  status: passed
+  coverage: null
+  last_run: 2026-04-30T00:00:00Z
+  passed: 253
+  failed: 0
+  notes: "Smoke gate command executed in worktree: 253 passed in 8.80s, exit=0. pytest 9.0.3 confirmed installed in .guardkit/venv."
+---
+
+# Task: Install [dev] extras in smoke gate and switch to `python -m pytest`
+
+## Description
+
+TASK-FIX-AB7A-001 correctly replaced bare `python` and `pytest` with `.guardkit/venv/bin/python` and `.guardkit/venv/bin/pytest`, which fixed the original `exit=127` for the import line. But its AC2 verification revealed a second-order issue: **the worktree venv has no pytest installed**.
+
+GuardKit's bootstrap (`environment_bootstrap.py`) runs `pip install -e .`, which installs only base dependencies. `study-tutor`'s pyproject.toml defines a `[dev]` optional-dependencies group that contains `pytest>=9.0.2`, `pytest-asyncio`, `pytest-cov`, and `pytest-bdd` — but the bootstrap doesn't install extras. So `.guardkit/venv/bin/pytest` doesn't exist as a binary, and `import pytest` fails from the venv interpreter.
+
+The Coach validator's gates passed during the original failed run because Coach uses `sys.executable -m pytest` (`coach_validator.py:1733`) — where `sys.executable` is GuardKit's own Python, which has pytest. The smoke gate runs in a separate `shell=True` subprocess and has no path to that interpreter.
+
+**Fix:** prepend an idempotent `pip install -e ".[dev]"` to the smoke gate command, and switch the test invocation from `.guardkit/venv/bin/pytest` to `.guardkit/venv/bin/python -m pytest`. The latter is the pytest-recommended idiom and works whether pytest is installed as a binary or only as a library.
+
+## Scope
+
+- Edit `.guardkit/features/FEAT-70A4.yaml` `smoke_gates.command` block.
+- Prepend a quiet, idempotent `pip install -e ".[dev]"` line.
+- Replace `.guardkit/venv/bin/pytest tests/unit/knowledge/ -x -q` with `.guardkit/venv/bin/python -m pytest tests/unit/knowledge/ -x -q`.
+- No other changes to the YAML.
+
+## Out of Scope
+
+- Wave plan changes (TASK-FIX-AB7A-004).
+- Upstream guardkit fix to install extras at bootstrap time (filed as a separate upstream task in the guardkit repo).
+- Changing other features' YAMLs (this is a per-feature workaround until upstream lands).
+
+## Acceptance Criteria
+
+- [ ] After edit, the `smoke_gates.command` block reads (preserving `set -e` and indentation):
+      ```
+      set -e
+      .guardkit/venv/bin/python -m pip install --quiet --disable-pip-version-check -e ".[dev]"
+      .guardkit/venv/bin/python -c "from study_tutor.knowledge.corpus_models import CorpusChunk, CitationAnchor, SourceType, PlayCitationAnchor, NovelCitationAnchor"
+      .guardkit/venv/bin/python -m pytest tests/unit/knowledge/ -x -q
+      ```
+- [ ] The literal command runs cleanly from a fresh shell at the worktree cwd:
+      ```
+      cd .guardkit/worktrees/FEAT-70A4
+      /bin/bash -c 'set -e
+      .guardkit/venv/bin/python -m pip install --quiet --disable-pip-version-check -e ".[dev]"
+      .guardkit/venv/bin/python -c "from study_tutor.knowledge.corpus_models import CorpusChunk, CitationAnchor, SourceType, PlayCitationAnchor, NovelCitationAnchor"
+      .guardkit/venv/bin/python -m pytest tests/unit/knowledge/ -x -q'
+      echo "exit=$?"
+      ```
+      and exits 0.
+- [ ] After this task completes, `.guardkit/venv/bin/python -c "import pytest; print(pytest.__version__)"` returns ≥9.0.2 (the [dev] install was effective).
+- [ ] No other field in `FEAT-70A4.yaml` is changed (verify via `git diff .guardkit/features/FEAT-70A4.yaml` since 001 — only smoke_gates.command should differ).
+- [ ] YAML still parses (`python3 -c "import yaml; yaml.safe_load(open('.guardkit/features/FEAT-70A4.yaml'))"`).
+- [ ] Once AC2/3 pass, retroactively transition TASK-FIX-AB7A-001 from `blocked` to `completed` (the original AC2 of 001 effectively passes via this task's installation).
+
+## Test Requirements
+
+- Acceptance criteria #2 and #3 are the verification.
+
+## Implementation Notes
+
+**Why `--quiet --disable-pip-version-check`:** keeps the smoke-gate output focused on test results. The install is fast (~2-5s when already installed; ~30s on first invocation) and quiet output prevents noise in transcripts.
+
+**Why `python -m pytest` instead of installing the binary:** `.guardkit/venv/bin/pytest` is an entry-point shim generated by setuptools/pip. Whether it ships depends on subtle install flags. `python -m pytest` is the canonical, install-flag-independent idiom and is recommended in the pytest docs themselves.
+
+**Why install as `-e ".[dev]"` and not just `pytest`:** the [dev] extras include `pytest-asyncio`, `pytest-bdd`, and `pytest-cov`, all of which study-tutor's tests depend on. Installing just bare `pytest` would leave hidden gaps (e.g. async tests would fail to collect).
+
+**Idempotency cost:** pip install is idempotent — re-running it when packages are already installed takes ~2s for the dependency resolution check. The smoke gate runs at most once per wave (3 invocations across waves 2, 3, 4). Total overhead: <10s across the entire feature build.
+
+**Why this stays inside FEAT-FIX-AB7A scope:** TASK-FIX-AB7A-001 was correctly scoped to fix the interpreter resolution; this task is the natural extension once the deeper environment gap surfaced. The alternative — re-opening 001 and broadening its scope — would muddle the audit trail. Splitting cleanly preserves which fix did what.
+
+## Test Execution Log
+
+### Acceptance Criteria Verification (2026-04-30)
+
+**AC1 — YAML edit shape**: PASS. `.guardkit/features/FEAT-70A4.yaml` smoke_gates.command now reads:
+```
+set -e
+.guardkit/venv/bin/python -m pip install --quiet --disable-pip-version-check -e ".[dev]"
+.guardkit/venv/bin/python -c "from study_tutor.knowledge.corpus_models import CorpusChunk, CitationAnchor, SourceType, PlayCitationAnchor, NovelCitationAnchor"
+.guardkit/venv/bin/python -m pytest tests/unit/knowledge/ -x -q
+```
+
+**AC2 — Literal command runs cleanly**: PASS. From `.guardkit/worktrees/FEAT-70A4`:
+```
+253 passed in 8.80s
+exit=0
+```
+
+**AC3 — pytest installed**: PASS. `.guardkit/venv/bin/python -c "import pytest; print(pytest.__version__)"` → `9.0.3` (≥9.0.2 required).
+
+**AC4 — No other YAML field changed**: PASS. `git diff .guardkit/features/FEAT-70A4.yaml` shows only the smoke_gates.command block was modified by this task (the `after_wave` list-style change and other diff lines pre-date 001b — they came from earlier autobuild emissions).
+
+**AC5 — YAML still parses**: PASS. `python3 -c "import yaml; yaml.safe_load(open('.guardkit/features/FEAT-70A4.yaml'))"` returns no errors.
+
+**AC6 — Retroactively complete TASK-FIX-AB7A-001**: PASS. File moved from `tasks/blocked/feat-fix-ab7a/` to `tasks/completed/feat-fix-ab7a/`; status flipped to `completed` with state_transition_reason recording that AC2 passes retroactively via 001b.
