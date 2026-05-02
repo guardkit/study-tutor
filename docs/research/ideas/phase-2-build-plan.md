@@ -3,7 +3,7 @@
 ## For: Weekend build (Saturday 2 – Sunday 3 May 2026) + weekday evenings 4–8 May + submission polish window 9–17 May
 ## Date: 30 April 2026 (Thursday — written one day ahead of `phase-2-scope.md`'s scheduled "Thursday 1 May" slot per hybrid cadence Rule 2; Phase 1's Thursday-evening Phase-2-planning slot moved up because three of four Phase 1 features had already landed by Wednesday and the fourth — FEAT-PH1-004 — was planned the same day; see `phase-1-build-plan.md §"Schedule recovery as of 2026-04-30"`).
 ## Date-label convention: the source docs (`phase-2-scope.md`, `phase-1-build-plan.md`) label 1 May as "Thursday" and slide each subsequent day one slot, treating 3-4 May as the weekend. Calendar-true: **30 April = Thursday, 1 May = Friday, 2-3 May = Saturday-Sunday, 18 May = Monday**. **This build plan uses calendar-true day labels throughout** so the day-by-day schedule maps cleanly onto real Saturdays and Sundays. Cross-references to source docs preserve the source's date strings (e.g. "Thursday 1 May" when quoting the scope) but my own scheduling uses calendar-true labels.
-## Status: **Drafted from scope while Phase 1 close-out is still in flight.** FEAT-PH1-001 + FEAT-PH1-002 + FEAT-PH1-003 merged. **FEAT-PH1-004 (Primary-Text RAG + Quote Verifier) PLANNED today as `FEAT-70A4`** — 7 subtasks across 5 waves in `tasks/backlog/primary-text-rag-and-quote-verifier/`, BDD scenarios `@task:`-tagged for R2 oracle activation, smoke gates wired between waves, AC-quality linter clean. Build pending — Friday 1 May evening if a clean autobuild run lands; Saturday 2 May morning otherwise. **Reachy Mini "Scholar" delivery confirmed for Friday 8 May 2026** (Pollen Robotics dispatch text, received 30 April PM). This changes the Reachy posture from "uncertain hardware arrival" to "hardware arrives at the close of Phase 2 features track" — DEC-06 go/no-go gate moves from the speculative Sunday 3 May slot to **Saturday 9 May** (post-delivery unbox + SDK hello-world), and the **live Reachy demo segment moves from possible-fallback to likely outcome** (capture target Wednesday 13 May; future-vision segment becomes the late-stage fallback if integration is blocked). Phase-1 outcomes that feed this build plan are split into KNOWN (Graphiti latency spike done; SR-08 elevated to CRITICAL; three layers integrated; Reachy delivery confirmed) and **TBD (Coach calibration data, real turn p50/p95, end-to-end demo session, Reachy operational status post-unbox)** — TBD items are flagged inline below with explicit revisit triggers.
+## Status: **In flight as of 2026-05-02 (Saturday 2 May AM — Phase 2 Day 1).** Phase 1 close-out gate run; FEAT-PH1-001 + FEAT-PH1-002 + FEAT-PH1-003 merged; FEAT-PH1-004 (Primary-Text RAG + Quote Verifier) shipped as `FEAT-70A4` (Path A confirmed; merge commit `6eb41a7`); 6-criterion Coach with `quote_fidelity=0.20` live. The validation gate (`phase-1-validation.md`) **falsified Phase 1 G2 + G3 + G4 + G5 + G6 + G13** — root cause: `get_client()` does not wire an LLM client / embedder / cross-encoder into `Graphiti(...)`, so graphiti-core defaults to OpenAI and 401s. Three associated API drifts (read API, write API, group-id colon→dash) patched in-flight (commit `a210472`). The remaining LLM-wiring gap defers to **`TASK-PH2-GR-001` (Graphiti runtime integration repair)** — the Phase-2 leading task, must land before FEAT-PH2-001 spec + plan. **Reachy Mini "Scholar" delivery confirmed for Friday 8 May 2026** (Pollen Robotics dispatch text, received 30 April PM); DEC-06 go/no-go gate at Saturday 9 May; live Reachy demo segment is the likely outcome (capture target Wednesday 13 May). TBD items remaining: Coach calibration data, real turn p50/p95 (capturable once `TASK-PH2-GR-001` AC-006 lands), Reachy operational status post-unbox.
 ## Repo: `study-tutor` (Phase 1 codebase shipping — `src/study_tutor/{knowledge,planner,tutoring}/` populated).
 ## Machine: MacBook Pro M2 Max (primary), GB10 over Tailscale (Ollama + nomic-embed-text + bge-reranker-v2-m3), Synology NAS over Tailscale (FalkorDB), Google Gemini (Coach + Graphiti entity extraction).
 ## Target completion: End of Friday 8 May 2026 (close of Week 3). Submission polish through Saturday 16 May. **Hackathon submission deadline: Monday 18 May 23:59 UTC.**
@@ -46,11 +46,13 @@ These are gates Phase 1 must close before Phase 2 weekend kicks off. If any are 
 
 ### Must be green by Friday 1 May evening (Phase 1 close-out)
 
-- [ ] **FEAT-PH1-004 status decided** — either (a) shipped (FEAT-70A4 autobuild green; verifier integrated into Coach pipeline at `src/study_tutor/tutoring/orchestrator.py`) OR (b) deferred to Phase 2 with the 5-criterion Coach fallback documented in `phase-1-validation.md`. Phase 2 build plan accommodates BOTH outcomes — see "Branching for FEAT-PH1-004 outcome" below.
-- [ ] **Lilymay seeded against Synology FalkorDB** — `python scripts/seed_student_model.py --student lilymay` ran clean; `get_student_state("lilymay")` returns the expected baseline (see Phase 1 G2). FEAT-PH2-001 cannot be exercised without seeded state.
-- [ ] **End-to-end demo session via MCP run at least once** (Phase 1 G3) — `tutor_start_session` → 5–7× `tutor_turn` → `tutor_session_end` from Claude Desktop, with at least one Coach revision observed and a `session_completed` episode written to Graphiti. Without this, Phase 2 is building gamification rules against a session lifecycle that's never produced a real summary.
-- [ ] **Six parity surfaces SR-01..SR-07 still green; SR-08 + SR-09 honoured.** No regression from Phase 1 work.
-- [ ] **`phase-1-validation.md` seeded** — at least the four-paragraph outline (held / drifted / falsified / changes-current-phase). Saturday 2 May morning's first task finalises it; the seed has to exist Friday evening.
+_Gate actually run on Saturday 2 May (slipped one day). Status snapshot below; full audit in [`phase-1-validation.md`](./phase-1-validation.md)._
+
+- [x] **FEAT-PH1-004 status decided** — ✅ **Path A (shipped).** FEAT-70A4 finalized at commit `6eb41a7`; verifier integrated into orchestrator at `src/study_tutor/tutoring/orchestrator.py:460-461`; six-criterion rubric live with `quote_fidelity=0.20`. PRV-001..007 all in `tasks/completed/`.
+- [ ] **Lilymay seeded against Synology FalkorDB** — ❌ **Falsified.** Three API drifts surfaced and were patched in-flight (read API, write API, group-id format colon→dash) but the underlying root cause — `get_client()` not wiring an LLM client / embedder / cross-encoder, so graphiti-core defaults to OpenAI and 401s with the placeholder `OPENAI_API_KEY=not_needed` — defers to **`TASK-PH2-GR-001` Graphiti runtime integration repair** (new Phase-2 leading task; see Day 1 morning step 3 below).
+- [ ] **End-to-end demo session via MCP run at least once** (Phase 1 G3) — ❌ **Falsified.** Same root cause as Gate 2; `tutor_start_session` calls `get_student_state` through the same broken client path. Unblocked by `TASK-PH2-GR-001`.
+- [x] **Six parity surfaces SR-01..SR-07 still green; SR-08 + SR-09 honoured.** ✅ **Green.** 695/696 unit + smoke + integration tests pass (the one failure is a pre-existing dev-machine `mypy`-on-system-Python env issue from FEAT-PH1-002, not a regression). SR-08 / SR-09 honoured at architecture and design layers per ADR-ARCH-018 / ADR-ARCH-019.
+- [x] **`phase-1-validation.md` seeded** — ✅ **Done** (slipped to Saturday 2 May AM but landed ahead of FEAT-PH2-001 spec work). Captures the held / drifted / falsified / changes-current-phase split with the falsification cluster (G2 + G3 + G4 + G5 + G6 + G13) traced to the single LLM-wiring root cause.
 
 ### Should be green; can absorb on Saturday morning if not
 
@@ -91,15 +93,17 @@ These are gates Phase 1 must close before Phase 2 weekend kicks off. If any are 
 | **Reachy operational status post-unbox** | Hardware arrives Friday 8 May (confirmed). Operational status — onboard Pi 4 reachable on home WiFi, Python SDK responsive, Daemon up, basic head/eye animation works — is unknown until Saturday 9 May unbox. The DEC-06 go/no-go evaluates this. **Source-doc dating note:** DEC-06 names "4 May" as the gate, written when delivery was speculative. With confirmed delivery 8 May, the gate logically moves to **Saturday 9 May** (delivery-day-plus-one). | Saturday 9 May AM: dedicated unbox + go/no-go slot (~2-3h). Five criteria: hardware powers up + on home WiFi + MacBook reaches Daemon over LAN + Python SDK `pip install reachy_mini` + hello-world (head movement + speech) succeeds + minimal POC gamification → verbal-ack works. All five green → spin up Reachy *integration* thread as parallel work Sun 10 → Tue 12 May. Any red that can't be resolved Sat 9 May → fall back to future-vision segment captured Friday 15 May. |
 | **Lilymay availability for capture** | Demo video Session 1 (working-today, lowest-risk) needs Lilymay on-screen. Other sessions are Rich-only. | Each capture session day: confirm Lilymay's availability. If not, Rich-only segments still produce a complete video; Lilymay segments slip to next available evening. |
 
-### Branching for FEAT-PH1-004 outcome
+### Branching for FEAT-PH1-004 outcome — RESOLVED
 
-The build plan accommodates both Friday-evening outcomes for `FEAT-70A4`:
+✅ **Path A confirmed at the close-out gate run (2026-05-02).** FEAT-PH1-004 shipped via FEAT-70A4 (merge commit `6eb41a7`). Phase 2 starts with a 6-criterion Coach; `quote_fidelity=0.20` weight live in [`src/study_tutor/tutoring/coach/rubric.py`](../../../src/study_tutor/tutoring/coach/rubric.py). FEAT-PH2-001 confidence-update logic consumes all six criteria. Demo-video architecture-reveal segment can name the verifier explicitly as a differentiator.
 
-**Path A (FEAT-PH1-004 ships):** Phase 2 starts with a 6-criterion Coach. FEAT-PH2-001 confidence-update logic consumes all six criteria including `quote_fidelity`. The dashboard's `topic_confidence` heat-map reflects per-AO scores from the Coach. Demo video architecture-reveal segment names the verifier explicitly as a differentiator.
+The Path B branch (5-criterion fallback) is no longer load-bearing and is preserved below only for audit-trail reasons.
 
-**Path B (FEAT-PH1-004 defers):** Phase 2 starts with a 5-criterion Coach (rubric weights re-balanced to sum to 1.0 — the change documented in `phase-1-validation.md`). FEAT-PH2-001 confidence-update logic consumes five criteria; behaviour is unchanged from Path A's perspective at the gamification engine boundary. The dashboard renders identically. Demo video architecture-reveal segment frames the verifier as Phase 3 / post-hackathon work; the source-typed quote-verifier story moves from a built differentiator to a designed-and-deferred differentiator. Less compelling, but credible.
+<details>
+<summary>Path B (no longer in force) — FEAT-PH1-004 deferred to Phase 2</summary>
 
-**Rich's discretion at the Friday-evening checkpoint.** Both paths are clean.
+Phase 2 would have started with a 5-criterion Coach (rubric weights re-balanced to sum to 1.0). FEAT-PH2-001 confidence-update logic would have consumed five criteria; behaviour unchanged from Path A's perspective at the gamification engine boundary. The dashboard would have rendered identically. Demo video architecture-reveal segment would have framed the verifier as Phase 3 / post-hackathon work.
+</details>
 
 ---
 
@@ -107,8 +111,9 @@ The build plan accommodates both Friday-evening outcomes for `FEAT-70A4`:
 
 | # | Feature | Depends On | Complexity | Days | Status |
 |---|---------|------------|------------|------|---------|
-| VALIDATION | Phase 1 validation gate | Phase 1 closed Fri 1 May | 1/10 (document) | Sat 2 May AM | ⏳ Not started — outline seeded Fri |
-| FEAT-PH2-001 | Gamification state engine + session-lifecycle integration | FEAT-PH1-001 (schema), FEAT-PH1-003 (session-end pipeline), FEAT-PH1-004 outcome (Path A or B) | 6/10 | Sat 2 – Mon 4 May | ⏳ Scope only; spec + plan + build during Phase 2 |
+| VALIDATION | Phase 1 validation gate | Phase 1 closed Fri 1 May | 1/10 (document) | Sat 2 May AM | ✅ Done — `phase-1-validation.md` landed |
+| TASK-PH2-GR-001 | Graphiti runtime integration repair (Gemini LLM + GB10 embedder + cross-encoder wiring; live-graphiti smoke test; re-run seed; run end-to-end MCP demo) | Phase 1 validation gate | 6/10 | Sat 2 May AM/PM (may slip to Sun 3 May) | ⏳ Backlog — leading task ahead of FEAT-PH2-001 |
+| FEAT-PH2-001 | Gamification state engine + session-lifecycle integration | TASK-PH2-GR-001 (live get_student_state + add_episode), FEAT-PH1-001 (schema), FEAT-PH1-003 (session-end pipeline), FEAT-PH1-004 (Path A — 6-criterion Coach live) | 6/10 | Sat 2 – Mon 4 May (Wave 1 may slip to Sun 3 May depending on TASK-PH2-GR-001 finish) | ⏳ Scope only; spec + plan + build during Phase 2 |
 | FEAT-PH2-002 | Static HTML dashboard via Claude Design + session-export script | FEAT-PH2-001 (`GamificationState` written) | 4/10 | Tue 5 – Wed 6 May | ⏳ Scope only |
 | FEAT-PH2-003 | Demo video production (script + capture + edit + upload) | FEAT-PH2-001 + FEAT-PH2-002 + Phase 1 stable | 5/10 | Thu 7 – Sat 16 May (capture spans days) | ⏳ Scope only |
 | POLISH-WRITEUP | Technical write-up finalisation (3000+ words, architecture diagram, evidence) | Each FEAT as it lands | 3/10 | Continuous Sat 9 May → Fri 15 May | ⏳ Phase 1 sections drafted; Phase 2 sections written as features land |
@@ -118,10 +123,14 @@ The build plan accommodates both Friday-evening outcomes for `FEAT-70A4`:
 **Dependency chain:**
 
 ```
-[Phase 1 close-out + FEAT-PH1-004 outcome] ──► VALIDATION (Sat AM)
+[Phase 1 close-out + FEAT-PH1-004 Path A] ───► VALIDATION (Sat 2 May AM)         ✅ done
                                                     │
                                                     ▼
-                                              FEAT-PH2-001 (Sat PM → Mon eve)
+                                              TASK-PH2-GR-001 (Sat AM/PM, may slip Sun)
+                                              graphiti runtime integration repair
+                                                    │
+                                                    ▼
+                                              FEAT-PH2-001 (Sat PM/eve → Mon eve)
                                                     │
                                                     ▼
                                               FEAT-PH2-002 (Tue eve → Wed eve)
@@ -146,13 +155,15 @@ Reachy stretch work — if the Saturday-9-May go/no-go passes — runs as a **pa
 
 The plan is structured in two tracks. The **feature track** runs Saturday 2 May → Friday 8 May (close of Week 3). The **submission polish track** runs Saturday 9 May → Saturday 16 May, with the submission deadline on Monday 18 May 23:59 UTC (Sunday 17 May is buffer-only). Submission polish steals at most one evening per weekday during the feature track for tech-writeup content as features land — content first, polish later.
 
-### Saturday 2 May (Phase 2 Day 1, full day, ~6h) — Validation gate + FEAT-PH2-001 spec & plan + capture working-today
+### Saturday 2 May (Phase 2 Day 1, full day, ~6h) — Validation gate + TASK-PH2-GR-001 + FEAT-PH2-001 spec & plan + capture working-today
 
 This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Rule 3, the morning is the validation gate; per scope §FEAT-PH2-003 the lowest-risk capture (working-today with Lilymay) lands today because Phase 1 is what's being captured and Phase 2 hasn't introduced any risk yet.
 
-#### Morning (~3h) — Phase-1 validation gate + Phase 2 system-level re-grounding
+**Plan amendment after the Sat-2-May validation gate run:** the gate falsified Phase 1 G2/G3/G4/G5/G6/G13 (LLM/embedder not wired into `get_client()`; details in `phase-1-validation.md`). The repair lands as `TASK-PH2-GR-001` ahead of FEAT-PH2-001 spec/plan. If the repair finishes Saturday afternoon, FEAT-PH2-001 spec/plan + Wave 1 still ship Saturday — the day compresses by ~2h but stays inside Saturday. If the repair slips into Sunday, FEAT-PH2-001 Wave 1 slips one day and the rest of Phase 2 rolls in unchanged (the freed Sunday Reachy slot — see Sunday 3 May entry — absorbs the slip).
 
-1. **Run Phase 1 validation gate** (~30 min). Open `phase-1-validation.md` (seeded Friday). Mark each Phase 1 success criterion (1–14) green/yellow/red against shipped reality. Mark each `phase-1-scope.md §Do-Not-Change` item as held/drifted/falsified. Close out the four headings (held / drifted / falsified / changes-current-phase). Commit. **Output:** finalised `phase-1-validation.md`.
+#### Morning (~3h) — Phase-1 validation gate + Phase 2 system-level re-grounding + TASK-PH2-GR-001 spec & plan
+
+1. **Run Phase 1 validation gate** (~30 min). ✅ **DONE 2026-05-02.** `phase-1-validation.md` landed; held/drifted/falsified/changes-current-phase split captured; falsification cluster traced to LLM-wiring root cause.
 
 2. **Update architecture and design for Phase 2 scope** (~1h):
 
@@ -183,7 +194,24 @@ This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Ru
 
    Expected output: ARCHITECTURE.md and DESIGN.md updated to add the gamification subsystem (one new entity, one new relationship, one new write-helper method, one event-stream sink). No invariants change. CC-13 (single-call-site write helper) and CC-14 (runtime LLM param assertion) still apply.
 
-3. **Spec + plan FEAT-PH2-001** (~1.5h):
+3. **Spec + plan + build TASK-PH2-GR-001 (Graphiti runtime integration repair)** (~30 min spec/plan + ~half day build, may run partly in background; LLM-bound seed adds ~30 min):
+
+   ```bash
+   /feature-spec "Graphiti runtime integration repair — wire Gemini LLM client + GB10 embedder + cross-encoder into get_client(); add live-graphiti smoke test; re-run Lilymay seed; run end-to-end MCP demo session" \
+     --context tasks/backlog/TASK-PH2-GR-001-graphiti-runtime-integration-repair.md \
+     --context docs/research/ideas/phase-1-validation.md \
+     --context src/study_tutor/knowledge/graphiti_client.py \
+     --context src/study_tutor/knowledge/queries.py \
+     --context src/study_tutor/knowledge/async_write.py \
+     --context scripts/seed_student_model.py
+
+   /feature-plan "Graphiti runtime integration repair" \
+     --context features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair_summary.md
+   ```
+
+   Expected output: ~5 subtasks across 4 waves matching the implementation hint in the task file (`pyproject` extra → `get_client` wiring → live smoke test → re-run seed + verification → end-to-end MCP demo). Run via `/feature-build` once the plan lands; the seed-runtime wave is LLM-bound (~30 min) and can run in the background while step 4 (FEAT-PH2-001 spec/plan) starts. **Acceptance gate:** AC-005 (Lilymay baseline persists) and AC-006 (end-to-end MCP demo with Coach revision + `session_completed` episode visible via `mcp__graphiti__get_episodes`) are both green; `phase-1-validation.md` flips G2/G3/G4/G5/G6/G13 from Falsified to Held.
+
+4. **Spec + plan FEAT-PH2-001** (~1.5h):
 
    ```bash
    /feature-spec "Gamification State Engine — XP/level/streak/achievement rules, GamificationState entity, session-lifecycle integration, event-stream sink" \
@@ -213,20 +241,21 @@ This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Ru
 
 #### Afternoon (~2h) — FEAT-PH2-001 Wave 1 + capture working-today
 
-4. **Run Wave 1 of FEAT-PH2-001 (`TASK-PH2-G-001`)** (~30 min). Pydantic models are foundation. Direct mode (complexity 2). Verify with import + a Pydantic round-trip test.
+5. **Run Wave 1 of FEAT-PH2-001 (`TASK-PH2-G-001`)** (~30 min). Pydantic models are foundation. Direct mode (complexity 2). Verify with import + a Pydantic round-trip test. _Gating note: only start Wave 1 once `TASK-PH2-GR-001` has cleared at minimum AC-001 (Gemini LLM client wired) and AC-002 (embedder wired) — entity-shape work doesn't strictly need the runtime live, but the next wave does, so it's cleaner to wait._
 
-5. **Capture working-today video segment with Lilymay** (~1h). 30s of video is the Session 1 deliverable per scope §FEAT-PH2-003. Lilymay opens Open WebUI, asks a Macbeth question, the tutor responds with verbatim Shakespeare + AO labelling + Socratic close — the real session, captured as evidence of "this is what works today before any Phase 2 layering." Lowest-risk capture because it doesn't depend on any Phase 2 code. **If Lilymay isn't available today, this slips to Sunday or any subsequent day — Session 1 can land anytime in Phase 2.**
+6. **Capture working-today video segment with Lilymay** (~1h). 30s of video is the Session 1 deliverable per scope §FEAT-PH2-003. Lilymay opens Open WebUI, asks a Macbeth question, the tutor responds with verbatim Shakespeare + AO labelling + Socratic close — the real session, captured as evidence of "this is what works today before any Phase 2 layering." Lowest-risk capture because it doesn't depend on any Phase 2 code. **If Lilymay isn't available today, this slips to Sunday or any subsequent day — Session 1 can land anytime in Phase 2.** Note: this capture uses the existing Open WebUI front-end and does not depend on `TASK-PH2-GR-001` landing.
 
-6. **Run /feature-build for FEAT-PH2-001 Wave 2** (~30 min, can run in background while capture runs). `TASK-PH2-G-002` rules module — pure functions, no I/O, fastest task to autobuild because the test surface is simple.
+7. **Run /feature-build for FEAT-PH2-001 Wave 2** (~30 min, can run in background while capture runs). `TASK-PH2-G-002` rules module — pure functions, no I/O, fastest task to autobuild because the test surface is simple.
 
 #### Evening (~1h) — Commit + Reachy delivery-week prep
 
-7. **Reachy delivery-week prep** (~30 min). Delivery is confirmed for Friday 8 May (six days away). Quick check: has the Reachy Mini Quick Start guide been read? Is the Pollen Robotics SDK README (`pollen-robotics/reachy_mini`, branch `develop`) downloaded for offline reference? Is `reachy-integration-conversation-starter.md` open in a separate Claude Desktop window so the integration thread can spin up Saturday 9 May with full context loaded? Skip if all three are already true.
+8. **Reachy delivery-week prep** (~30 min). Delivery is confirmed for Friday 8 May (six days away). Quick check: has the Reachy Mini Quick Start guide been read? Is the Pollen Robotics SDK README (`pollen-robotics/reachy_mini`, branch `develop`) downloaded for offline reference? Is `reachy-integration-conversation-starter.md` open in a separate Claude Desktop window so the integration thread can spin up Saturday 9 May with full context loaded? Skip if all three are already true.
 
-8. **Commit Saturday work.** `chore: phase-2 day 1 — validation gate + arch refresh + FEAT-PH2-001 wave 1`.
+9. **Commit Saturday work.** `chore: phase-2 day 1 — validation gate + TASK-PH2-GR-001 + arch refresh + FEAT-PH2-001 wave 1`.
 
-**End-of-Saturday state:**
-- Phase 1 validation gate run; `phase-1-validation.md` finalised
+**End-of-Saturday state (target — slips one day if `TASK-PH2-GR-001` doesn't finish Saturday):**
+- ✅ Phase 1 validation gate run; `phase-1-validation.md` landed (already true at start of day)
+- TASK-PH2-GR-001 landed: Gemini + GB10 + cross-encoder wired into `get_client`; live-graphiti smoke test green; Lilymay seed persisted; end-to-end MCP demo session run with Coach revision + `session_completed` episode visible; `phase-1-validation.md` G2/G3/G4/G5/G6/G13 flipped Falsified → Held
 - Architecture + design refreshed for Phase 2; no invariant drift detected
 - FEAT-PH2-001 spec + plan landed; subtask structure in `tasks/backlog/gamification-state-engine/`
 - FEAT-PH2-001 Wave 1 (Pydantic models) done; Wave 2 (rules module) running or done
@@ -721,8 +750,9 @@ For ease of revisiting, all TBD items are listed here with their revisit trigger
 
 | TBD | Revisit trigger | Default if unresolved |
 |-----|-----------------|------------------------|
-| FEAT-PH1-004 build outcome | Friday 1 May evening | Path B (5-criterion Coach); document deferral |
-| Real turn p50/p95 latency | Saturday 2 May AM (after Phase 1 demo session log) | Assume budget OK; rules computation strictly < 100ms |
+| FEAT-PH1-004 build outcome | Friday 1 May evening | ✅ **Resolved 2026-05-01: Path A (shipped).** 6-criterion Coach live with `quote_fidelity=0.20`. |
+| **Graphiti runtime integration (Gemini LLM + GB10 embedder + cross-encoder wiring)** | Saturday 2 May AM (validation gate run) | ❌ **Falsified 2026-05-02 — defers to TASK-PH2-GR-001** as Phase-2 leading task. Without this, FEAT-PH2-001 cannot be exercised end-to-end against live Graphiti. |
+| Real turn p50/p95 latency | After TASK-PH2-GR-001 AC-006 (end-to-end MCP demo) lands | Assume budget OK; rules computation strictly < 100ms; capture actual numbers in `phase-1-validation.md` once observable |
 | Coach signal quality | Saturday 2 May AM | Direct mapping (per-criterion) confidence-update; fallback to smoothed if observed-noisy on Sun 3 May |
 | Session-export JSON shape | Saturday 2 May late AM | Codify scope §FEAT-PH2-002 §1 shape; frozen-shape contract test in TASK-PH2-D-001 |
 | Claude Design output quality | Tuesday 5 May evening | Acceptable → polish Wed; marginal → iterate Wed; unacceptable → hand-coded fallback Wed afternoon |
@@ -741,7 +771,7 @@ All day labels are calendar-true for May 2026.
 |-----|------|-------|--------------|
 | Thu | 30 Apr | (today) | This build plan written |
 | Fri | 1 May | (Phase 1) | Phase 1 close-out: FEAT-PH1-004 build outcome + `phase-1-validation.md` seed |
-| Sat | 2 May | 6 | **Phase 2 Day 1** — Validation gate + system-level refresh + FEAT-PH2-001 spec/plan/Wave 1 + capture Session 1 |
+| Sat | 2 May | 6 | **Phase 2 Day 1** — Validation gate ✅ + TASK-PH2-GR-001 (Graphiti runtime repair) + system-level refresh + FEAT-PH2-001 spec/plan/Wave 1 + capture Session 1. _If TASK-PH2-GR-001 slips, Wave 1 + Session 1 stay on Saturday; Wave 2+ rolls to Sunday absorbing the freed Reachy-go-no-go slot._ |
 | Sun | 3 May | 3 | **Phase 2 Day 2** — FEAT-PH2-001 Waves 3 + 4 + 5 + tech writeup gamification section. _Reduced from 5h: the original Reachy go/no-go slot moved to Sat 9 May after delivery confirmation._ |
 | Mon | 4 May | 2 | FEAT-PH2-001 verification + multi-session run + tuning |
 | Tue | 5 May | 2 | FEAT-PH2-002 spec/plan + first Claude Design pass |
