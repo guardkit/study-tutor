@@ -112,7 +112,8 @@ Phase 2 would have started with a 5-criterion Coach (rubric weights re-balanced 
 | # | Feature | Depends On | Complexity | Days | Status |
 |---|---------|------------|------------|------|---------|
 | VALIDATION | Phase 1 validation gate | Phase 1 closed Fri 1 May | 1/10 (document) | Sat 2 May AM | ✅ Done — `phase-1-validation.md` landed |
-| TASK-PH2-GR-001 | Graphiti runtime integration repair (Gemini LLM + GB10 embedder + cross-encoder wiring; live-graphiti smoke test; re-run seed; run end-to-end MCP demo) | Phase 1 validation gate | 6/10 | Sat 2 May AM/PM (may slip to Sun 3 May) | ⏳ Backlog — leading task ahead of FEAT-PH2-001 |
+| TASK-PH2-GR-001 | Graphiti runtime integration repair (local-only LLM + embedder via llama-swap on GB10:9000 — _no cloud APIs per DECISION-DF-001_; mirrors guardkit's canonical wiring; loads from `.guardkit/graphiti.yaml`; live-graphiti smoke test; re-run seed; run end-to-end MCP demo) | Phase 1 validation gate | 5/10 | Sat 2 May AM/PM (may slip to Sun 3 May) | ⏳ Backlog — leading task ahead of FEAT-PH2-001 |
+| TASK-PH2-GR-002 | _Discussion-starter, post-hackathon._ Extract shared Graphiti core library across study-tutor, guardkit, specialist-agent (~13 fleet repos converging on the same `OpenAIGenericClient`/`OpenAIEmbedder` + `.guardkit/graphiti.yaml` pattern). | TASK-PH2-GR-001 | 8/10 | Post-submission (after 18 May) | ⏳ Backlog — debt-reduction follow-up |
 | FEAT-PH2-001 | Gamification state engine + session-lifecycle integration | TASK-PH2-GR-001 (live get_student_state + add_episode), FEAT-PH1-001 (schema), FEAT-PH1-003 (session-end pipeline), FEAT-PH1-004 (Path A — 6-criterion Coach live) | 6/10 | Sat 2 – Mon 4 May (Wave 1 may slip to Sun 3 May depending on TASK-PH2-GR-001 finish) | ⏳ Scope only; spec + plan + build during Phase 2 |
 | FEAT-PH2-002 | Static HTML dashboard via Claude Design + session-export script | FEAT-PH2-001 (`GamificationState` written) | 4/10 | Tue 5 – Wed 6 May | ⏳ Scope only |
 | FEAT-PH2-003 | Demo video production (script + capture + edit + upload) | FEAT-PH2-001 + FEAT-PH2-002 + Phase 1 stable | 5/10 | Thu 7 – Sat 16 May (capture spans days) | ⏳ Scope only |
@@ -194,22 +195,26 @@ This is the day the Phase 1→Phase 2 boundary is crossed. Per hybrid cadence Ru
 
    Expected output: ARCHITECTURE.md and DESIGN.md updated to add the gamification subsystem (one new entity, one new relationship, one new write-helper method, one event-stream sink). No invariants change. CC-13 (single-call-site write helper) and CC-14 (runtime LLM param assertion) still apply.
 
-3. **Spec + plan + build TASK-PH2-GR-001 (Graphiti runtime integration repair)** (~30 min spec/plan + ~half day build, may run partly in background; LLM-bound seed adds ~30 min):
+3. **Spec + plan + build TASK-PH2-GR-001 (Graphiti runtime integration repair — local-only via llama-swap)** (~30 min spec/plan + ~half day build, may run partly in background; LLM-bound seed adds ~30 min):
 
    ```bash
-   /feature-spec "Graphiti runtime integration repair — wire Gemini LLM client + GB10 embedder + cross-encoder into get_client(); add live-graphiti smoke test; re-run Lilymay seed; run end-to-end MCP demo session" \
+   /feature-spec "Graphiti runtime integration repair — wire local LLM (Qwen2.5-14B FP8 via llama-swap on GB10:9000) + local embedder (nomic-embed via llama-swap) into get_client() using guardkit's canonical OpenAIGenericClient/OpenAIEmbedder pattern; load config from .guardkit/graphiti.yaml; reject cloud providers per DECISION-DF-001; add live-graphiti smoke test; re-run Lilymay seed; run end-to-end MCP demo session" \
      --context tasks/backlog/TASK-PH2-GR-001-graphiti-runtime-integration-repair.md \
      --context docs/research/ideas/phase-1-validation.md \
      --context src/study_tutor/knowledge/graphiti_client.py \
      --context src/study_tutor/knowledge/queries.py \
      --context src/study_tutor/knowledge/async_write.py \
-     --context scripts/seed_student_model.py
+     --context scripts/seed_student_model.py \
+     --context .guardkit/graphiti.yaml \
+     --context ../guardkit/guardkit/knowledge/graphiti_client.py \
+     --context ../guardkit/docs/research/dgx-spark/README.md \
+     --context ../guardkit/docs/research/dgx-spark/RESULTS-v3-production-deployment.md
 
    /feature-plan "Graphiti runtime integration repair" \
      --context features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair_summary.md
    ```
 
-   Expected output: ~5 subtasks across 4 waves matching the implementation hint in the task file (`pyproject` extra → `get_client` wiring → live smoke test → re-run seed + verification → end-to-end MCP demo). Run via `/feature-build` once the plan lands; the seed-runtime wave is LLM-bound (~30 min) and can run in the background while step 4 (FEAT-PH2-001 spec/plan) starts. **Acceptance gate:** AC-005 (Lilymay baseline persists) and AC-006 (end-to-end MCP demo with Coach revision + `session_completed` episode visible via `mcp__graphiti__get_episodes`) are both green; `phase-1-validation.md` flips G2/G3/G4/G5/G6/G13 from Falsified to Held.
+   Expected output: ~5 subtasks across 4 waves matching the implementation hint in the task file (YAML loader + DECISION-DF-001 guard → `_build_llm_client`/`_build_embedder` mirrors of guardkit's pattern → live smoke test → re-run seed + verification → end-to-end MCP demo). Run via `/feature-build` once the plan lands; the seed-runtime wave is LLM-bound (~30 min) and can run in the background while step 4 (FEAT-PH2-001 spec/plan) starts. **Acceptance gate:** AC-006 (Lilymay baseline persists) and AC-007 (end-to-end MCP demo with Coach revision + `session_completed` episode visible via `mcp__graphiti__get_episodes`) are both green; `phase-1-validation.md` flips G2/G3/G4/G5/G6/G13 from Falsified to Held. **Hard constraint:** no `OPENAI_API_KEY` / `GOOGLE_API_KEY` reads on the wired path; `llm_provider in ("openai", "gemini")` raises `ValueError` per DECISION-DF-001 (the £30/3-day Gemini-spend incident referenced in `guardkit/docs/research/dgx-spark/README.md`).
 
 4. **Spec + plan FEAT-PH2-001** (~1.5h):
 
