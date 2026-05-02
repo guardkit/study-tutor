@@ -36,6 +36,7 @@ import logging
 import os
 import re
 import time
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from study_tutor.knowledge.episodes import EpisodeBase
@@ -149,6 +150,35 @@ def _validate_group_ids(group_ids: list[str]) -> None:
                 f"group_id {gid!r} does not match the prefix discipline "
                 f"(student:/subject:/fleet:appmilla)"
             )
+
+
+def _add_episode_kwargs(
+    *,
+    name: str,
+    episode_body: str,
+    flush_id: str,
+    group_id: str | None,
+) -> dict[str, Any]:
+    """Build the kwargs dict for graphiti-core 0.29's ``add_episode``.
+
+    Hoisted out so :meth:`GraphitiWriteHelper._perform_write` stays
+    auditable (CC-13: a single ``add_episode`` call site in src/)
+    and so tests can assert on the call shape without instantiating a
+    helper. ``flush_id`` rides in ``source_description`` rather than as
+    a first-class parameter because graphiti-core has no flush-id slot;
+    keeping it greppable here preserves the audit-trail property the
+    structured logs already rely on.
+    """
+    from graphiti_core.nodes import EpisodeType
+
+    return {
+        "name": name,
+        "episode_body": episode_body,
+        "source": EpisodeType.json,
+        "source_description": f"flush:{flush_id}:{name}",
+        "reference_time": datetime.now(timezone.utc),
+        "group_id": group_id,
+    }
 
 
 def _resolve_default_grace_sec(default: int = DEFAULT_SHUTDOWN_GRACE_SEC) -> int:
@@ -378,13 +408,22 @@ class GraphitiWriteHelper:
         try:
             body = episode.to_graphiti_episode_body()
             assert self._client is not None  # narrowed by schedule_write
-            # === The single CC-13-protected call site ===
-            await self._client.add_episode(
+            # graphiti-core 0.29 takes a single ``group_id``; Phase 1 only
+            # ever writes one partition per call site (per-student or
+            # subject-scoped), so the first entry is canonical. The full
+            # validated list is preserved in the structured log below for
+            # auditability. ``flush_id`` is folded into ``source_description``
+            # since the API has no first-class flush-id parameter — that
+            # keeps CC-13 audit logs trivially greppable.
+            primary_group_id = group_ids[0] if group_ids else None
+            kwargs = _add_episode_kwargs(
                 name=episode_kind,
                 episode_body=body,
-                group_ids=group_ids,
                 flush_id=flush_id,
+                group_id=primary_group_id,
             )
+            # === The single CC-13-protected call site ===
+            await self._client.add_episode(**kwargs)
         except BaseException as exc:  # noqa: BLE001 -- log-only failure required by ADR-ARCH-019
             latency_ms = int((time.monotonic() - start) * 1000)
             logger.warning(

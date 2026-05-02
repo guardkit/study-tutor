@@ -51,7 +51,7 @@ Manual verification
 After running, drop into Claude Desktop with the Graphiti MCP wired up and
 issue::
 
-    search_nodes(query="Lilymay", group_ids=["student:lilymay"])
+    search_nodes(query="Lilymay", group_ids=["student-lilymay"])
 
 The Student entity should be returned with the attributes seeded below.
 """

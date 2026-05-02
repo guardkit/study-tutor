@@ -26,18 +26,22 @@ Relationships (``Source RELATIONSHIP Target`` semantics):
 - ``Topic ASSESSED_BY AssessmentObjective``
 - ``Student HAS_CONFIDENCE TopicConfidence`` — carries percentage + band.
 
-Group-id conventions (per ``phase-1-scope.md §FEAT-PH1-001`` "Group IDs"):
+Group-id conventions (per ``phase-1-scope.md §FEAT-PH1-001`` "Group IDs",
+adapted for graphiti-core 0.29's ``[A-Za-z0-9_-]``-only validator):
 
-- ``student:<student_id>`` — student-specific episodes/entities.
-- ``subject:<subject_slug>`` — curriculum-level (not per-student).
-- ``fleet:appmilla`` — fleet-wide knowledge scope (rare writes from tutor).
+- ``student-<student_id>`` — student-specific episodes/entities.
+- ``subject-<subject_slug>`` — curriculum-level (not per-student).
+- ``fleet-appmilla`` — fleet-wide knowledge scope (rare writes from tutor).
 
 Cross-repo divergence (per ASSUM-008):
-    study-tutor follows ``phase-1-scope.md`` and uses ``fleet:appmilla``
-    (colon-separated). The sibling specialist-agent repo uses
-    ``appmilla-fleet`` (no colon). The split is intentional and documented
-    here so future cross-repo features that share group identifiers know
-    they must reconcile the convention. Do not "harmonise" silently.
+    study-tutor's scope doc originally specified ``fleet:appmilla``
+    (colon-separated). graphiti-core 0.29's ``GroupIdValidationError``
+    rejects colons so the runtime constant migrated to
+    ``fleet-appmilla``. The sibling specialist-agent repo uses
+    ``appmilla-fleet`` (different word order). The split is intentional
+    and documented here so future cross-repo features that share group
+    identifiers know they must reconcile the convention. Do not
+    "harmonise" silently.
 
 Confidence bands (per ASSUM-001, confirmed):
     0–39 struggling · 40–69 developing · 70–89 secure · 90–100 mastered.
@@ -54,19 +58,27 @@ from pydantic import BaseModel, ConfigDict, Field
 # Group-id constants
 # ---------------------------------------------------------------------------
 
-#: Prefix for per-student group identifiers, producing ``student:<student_id>``.
-STUDENT_GROUP_PREFIX: str = "student:"
+#: Prefix for per-student group identifiers, producing
+#: ``student-<student_id>``. graphiti-core 0.29's
+#: ``GroupIdValidationError`` rejects any character outside
+#: ``[A-Za-z0-9_-]``, so the original ``phase-1-scope.md`` ``student:``
+#: convention had to drop the colon at integration time. The dash form
+#: keeps the "namespace then payload" readability the colon gave us.
+STUDENT_GROUP_PREFIX: str = "student-"
 
-#: Prefix for per-subject (curriculum-level) group identifiers,
-#: producing ``subject:<subject_slug>``.
-SUBJECT_GROUP_PREFIX: str = "subject:"
+#: Prefix for per-subject (curriculum-level) group identifiers, producing
+#: ``subject-<subject_slug>``. Same dash-vs-colon constraint as
+#: ``STUDENT_GROUP_PREFIX``.
+SUBJECT_GROUP_PREFIX: str = "subject-"
 
 #: Fleet-wide knowledge scope used for cross-product/cross-role writes.
 #:
 #: NOTE — cross-repo divergence: specialist-agent uses ``appmilla-fleet``
-#: (no colon). study-tutor uses the ``phase-1-scope.md`` convention. See the
-#: module docstring and ASSUM-008.
-FLEET_GROUP_ID: str = "fleet:appmilla"
+#: (no colon). study-tutor's ``phase-1-scope.md`` originally specified
+#: ``fleet:appmilla`` but graphiti-core 0.29's group-id validator rejects
+#: colons (``[A-Za-z0-9_-]`` only) so the runtime constant is the
+#: dash-form ``fleet-appmilla``. See the module docstring and ASSUM-008.
+FLEET_GROUP_ID: str = "fleet-appmilla"
 
 
 # ---------------------------------------------------------------------------

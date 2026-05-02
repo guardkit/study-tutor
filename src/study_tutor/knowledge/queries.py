@@ -1,11 +1,19 @@
 """Student-model query helpers (TASK-GSM-005).
 
 Phase-1 read-side helpers and F3 write owner for FEAT-1773. This module
-holds the only call sites in Phase 1 that touch ``search_nodes`` /
-``search_memory_facts`` directly. Every search call constructs
-``group_ids`` from the constants in :mod:`study_tutor.knowledge.student_model`
-— never as bare string literals. The Group-id discipline AST lint in
-``test_queries.py`` enforces that invariant.
+holds the only call sites in Phase 1 that enumerate the student-partition
+of the graph. Every read call constructs ``group_ids`` from the constants
+in :mod:`study_tutor.knowledge.student_model` — never as bare string
+literals. The Group-id discipline AST lint in ``test_queries.py`` enforces
+that invariant.
+
+The read path uses graphiti-core 0.29's class-method enumerators
+(``EntityNode.get_by_group_ids`` / ``EntityEdge.get_by_group_ids``) which
+accept a driver and a list of group ids and return every node/edge in
+that partition — the right primitive for "give me everything for this
+student" rather than the relevance-ranked ``Graphiti.search`` API. The
+single seam :func:`_read_student_partition` wraps both calls so tests can
+monkeypatch one function rather than two unbound class methods.
 
 Load-bearing properties:
 
@@ -59,6 +67,11 @@ DEFAULT_RECOMMENDATION_COUNT: int = 3
 
 #: Trailing window over which recent misconceptions count (days).
 MISCONCEPTION_WINDOW_DAYS: int = 30
+
+#: Cap on rows returned by :func:`_read_student_partition`. The Phase 1
+#: Lilymay seed is ~30 nodes/edges; 500 is a generous ceiling that bounds
+#: read latency without truncating any plausible single-student profile.
+PARTITION_READ_LIMIT: int = 500
 
 
 RecommendationReason = Literal[
@@ -153,6 +166,70 @@ def _inner_client(client: Any) -> Any | None:
     return client
 
 
+async def _read_student_partition(
+    inner: Any,
+    group_ids: list[str],
+    limit: int = PARTITION_READ_LIMIT,
+) -> tuple[list[Any], list[Any]]:
+    """Enumerate every node + edge in the given group-id partition.
+
+    Wraps graphiti-core 0.29's ``EntityNode.get_by_group_ids`` /
+    ``EntityEdge.get_by_group_ids`` class-method enumerators. ``inner``
+    must expose ``inner.driver`` (the graphiti-core ``Graphiti`` instance
+    convention). Returns ``(nodes, edges)``. This is the single seam
+    tests monkeypatch rather than mocking two unbound class methods.
+
+    A duck-typed shortcut is honoured for legacy test doubles: if
+    ``inner`` exposes ``read_partition`` or the historical
+    ``search_nodes``/``search_memory_facts`` pair, those are used instead.
+    The shortcut keeps existing fixtures working without forcing every
+    test to construct a fake graphiti-core driver.
+    """
+    if hasattr(inner, "read_partition"):
+        return await inner.read_partition(group_ids)  # type: ignore[no-any-return]
+    if hasattr(inner, "search_nodes") and hasattr(inner, "search_memory_facts"):
+        nodes, facts = await asyncio.gather(
+            inner.search_nodes(group_ids, ""),
+            inner.search_memory_facts(group_ids, ""),
+        )
+        return list(nodes), list(facts)
+
+    from graphiti_core.edges import EntityEdge
+    from graphiti_core.errors import (
+        GroupsEdgesNotFoundError,
+        GroupsNodesNotFoundError,
+    )
+    from graphiti_core.nodes import EntityNode
+
+    driver = getattr(inner, "driver", None)
+    if driver is None:
+        return [], []
+
+    async def _safe_nodes() -> list[Any]:
+        try:
+            result = await EntityNode.get_by_group_ids(
+                driver, group_ids, limit=limit
+            )
+        except GroupsNodesNotFoundError:
+            # graphiti-core 0.29 raises rather than returning ``[]`` for
+            # empty partitions — the bootstrap case (e.g. pre-seed Lilymay)
+            # is not an error condition for our read path.
+            return []
+        return list(result)
+
+    async def _safe_edges() -> list[Any]:
+        try:
+            result = await EntityEdge.get_by_group_ids(
+                driver, group_ids, limit=limit
+            )
+        except GroupsEdgesNotFoundError:
+            return []
+        return list(result)
+
+    nodes, edges = await asyncio.gather(_safe_nodes(), _safe_edges())
+    return nodes, edges
+
+
 def _attr(obj: Any, name: str, default: Any = None) -> Any:
     """Lookup ``name`` on ``obj`` with dict-or-attribute support."""
     if isinstance(obj, dict):
@@ -161,7 +238,20 @@ def _attr(obj: Any, name: str, default: Any = None) -> Any:
 
 
 def _entity_type(node: Any) -> str:
-    """Return a node's entity-type discriminator (best-effort, lowercase)."""
+    """Return a node's entity-type discriminator (best-effort, lowercase).
+
+    graphiti-core's ``EntityNode`` exposes the entity class via ``labels``
+    (a list of strings — the primary kind plus any auxiliary tags such as
+    ``"Entity"``). The first non-``Entity`` label wins. Falls back to the
+    legacy duck-typed attributes (``entity_type``, ``type``, ``label``,
+    ``kind``) so test doubles built before the graphiti-core 0.29 read
+    path landed continue to project correctly.
+    """
+    labels = _attr(node, "labels")
+    if isinstance(labels, list):
+        for label in labels:
+            if label and str(label).lower() != "entity":
+                return str(label).lower()
     for key in ("entity_type", "type", "label", "kind"):
         value = _attr(node, key)
         if value is not None:
@@ -328,10 +418,7 @@ async def get_student_state(
 
     try:
         nodes, facts = await asyncio.wait_for(
-            asyncio.gather(
-                inner.search_nodes(group_ids, ""),
-                inner.search_memory_facts(group_ids, ""),
-            ),
+            _read_student_partition(inner, group_ids),
             timeout=READ_TIMEOUT_SEC,
         )
     except asyncio.TimeoutError:

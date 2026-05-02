@@ -153,11 +153,16 @@ class TestScheduleWriteValid:
         assert isinstance(task, asyncio.Task)
         await task
         assert len(client.calls) == 1
-        # The single add_episode call carries the expected kwargs.
+        # The single add_episode call carries the graphiti-core 0.29 kwargs:
+        # ``group_id`` (singular) plus ``source_description`` carrying the
+        # flush-id audit string. ``reference_time`` and ``source`` are
+        # required by graphiti-core 0.29 — we just check they're present.
         _args, kwargs = client.calls[0]
         assert kwargs["name"] == "session_completed"
-        assert kwargs["flush_id"] == "F3"
-        assert kwargs["group_ids"] == valid_groups
+        assert kwargs["group_id"] == valid_groups[0]
+        assert kwargs["source_description"] == "flush:F3:session_completed"
+        assert "reference_time" in kwargs
+        assert "source" in kwargs
         assert "Student lilymay completed session sess-001" in kwargs["episode_body"]
 
     @pytest.mark.asyncio
@@ -324,7 +329,7 @@ class TestValidation:
         [
             "learner:lilymay",  # wrong prefix
             "lilymay",  # no prefix
-            "fleet:not-appmilla",  # wrong fleet constant
+            "fleet-not-appmilla",  # wrong fleet constant
             "",  # empty string
         ],
     )

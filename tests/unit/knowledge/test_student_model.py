@@ -306,9 +306,12 @@ def test_relationship_constants_are_distinct() -> None:
 # ---------------------------------------------------------------------------
 
 def test_group_id_constant_values() -> None:
-    assert STUDENT_GROUP_PREFIX == "student:"
-    assert SUBJECT_GROUP_PREFIX == "subject:"
-    assert FLEET_GROUP_ID == "fleet:appmilla"
+    # Dash form (not colon) — graphiti-core 0.29's GroupIdValidationError
+    # rejects characters outside [A-Za-z0-9_-]. See student_model.py
+    # constant comments.
+    assert STUDENT_GROUP_PREFIX == "student-"
+    assert SUBJECT_GROUP_PREFIX == "subject-"
+    assert FLEET_GROUP_ID == "fleet-appmilla"
 
 
 def test_group_id_constants_are_strings() -> None:
@@ -318,8 +321,8 @@ def test_group_id_constants_are_strings() -> None:
 
 
 def test_group_id_prefixes_compose_to_expected_format() -> None:
-    assert f"{STUDENT_GROUP_PREFIX}lilymay" == "student:lilymay"
-    assert f"{SUBJECT_GROUP_PREFIX}gcse-english" == "subject:gcse-english"
+    assert f"{STUDENT_GROUP_PREFIX}lilymay" == "student-lilymay"
+    assert f"{SUBJECT_GROUP_PREFIX}gcse-english" == "subject-gcse-english"
 
 
 # ---------------------------------------------------------------------------
@@ -368,7 +371,10 @@ def test_confidence_band_for_rejects_out_of_range(bad_value: int) -> None:
 def test_module_docstring_documents_cross_repo_divergence() -> None:
     docstring = student_model_module.__doc__ or ""
     # Must mention both conventions and the source of the convention.
-    assert "fleet:appmilla" in docstring
+    # Either form ("fleet:appmilla" historic / "fleet-appmilla" current)
+    # is accepted to keep the assertion stable across the dash-form
+    # migration triggered by graphiti-core 0.29's group-id validator.
+    assert "fleet:appmilla" in docstring or "fleet-appmilla" in docstring
     assert "appmilla-fleet" in docstring
     # Must mention the upstream specification.
     assert "phase-1-scope.md" in docstring

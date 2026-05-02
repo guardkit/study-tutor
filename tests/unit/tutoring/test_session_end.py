@@ -261,7 +261,7 @@ class TestEmitBeforeCreateTask:
         helper.schedule_write.assert_called_once()
         kwargs = helper.schedule_write.call_args.kwargs
         assert kwargs["flush_id"] == "F3"
-        assert kwargs["group_ids"] == ["student:lilymay"]
+        assert kwargs["group_ids"] == ["student-lilymay"]
         assert isinstance(kwargs["episode"], SessionCompletedEpisode)
 
     async def test_session_completed_emitted_even_when_f3_write_fails(self) -> None:
@@ -409,7 +409,7 @@ class TestConcurrencyCoexistence:
             confidence_band_at_observation="developing",
         )
         f1_task = helper.schedule_write(
-            group_ids=["student:lilymay"],
+            group_ids=["student-lilymay"],
             episode=f1_episode,
             flush_id="F1",
         )
@@ -579,7 +579,7 @@ class TestShutdownDrain:
                 confidence_band_at_observation="developing",
             )
             helper.schedule_write(
-                group_ids=["student:lilymay"], episode=episode, flush_id="F1"
+                group_ids=["student-lilymay"], episode=episode, flush_id="F1"
             )
         assert helper.in_flight_count == 3
 
@@ -609,7 +609,7 @@ class TestShutdownDrain:
             confidence_band_at_observation="developing",
         )
         helper.schedule_write(
-            group_ids=["student:lilymay"], episode=episode, flush_id="F1"
+            group_ids=["student-lilymay"], episode=episode, flush_id="F1"
         )
 
         with caplog.at_level("WARNING"):

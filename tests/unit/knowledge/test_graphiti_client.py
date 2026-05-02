@@ -475,6 +475,8 @@ def test_group_id_constants_format():
         SUBJECT_GROUP_PREFIX,
     )
 
-    assert STUDENT_GROUP_PREFIX == "student:"
-    assert SUBJECT_GROUP_PREFIX == "subject:"
-    assert FLEET_GROUP_ID == "fleet:appmilla"
+    # Dash form per graphiti-core 0.29's group-id validator. See
+    # ``student_model.py`` constant comments.
+    assert STUDENT_GROUP_PREFIX == "student-"
+    assert SUBJECT_GROUP_PREFIX == "subject-"
+    assert FLEET_GROUP_ID == "fleet-appmilla"
