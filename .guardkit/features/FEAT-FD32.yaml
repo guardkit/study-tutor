@@ -1,0 +1,84 @@
+id: FEAT-FD32
+name: Graphiti Runtime Integration Repair
+description: Wire local LLM + embedder via llama-swap (no cloud APIs); re-seed Lilymay;
+  flip Phase 1 G2/G3/G4/G5/G6/G13 from Falsified to Held.
+created: '2026-05-02T10:51:08.942192'
+status: planned
+complexity: 5
+estimated_tasks: 5
+tasks:
+- id: TASK-GR-LOAD
+  name: Wave 1 — YAML loader and DECISION-DF-001 guard
+  file_path: tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-LOAD-yaml-loader-and-decision-df-001-guard.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-GR-WIRE
+  name: Wave 2 — Build LLM client and embedder with cross-encoder sentinel
+  file_path: tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-WIRE-build-llm-client-and-embedder-with-cross-encoder-sentinel.md
+  complexity: 5
+  dependencies:
+  - TASK-GR-LOAD
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-GR-SMOK
+  name: Wave 3 — Live-graphiti smoke test
+  file_path: tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-SMOK-graphiti-runtime-smoke-test.md
+  complexity: 4
+  dependencies:
+  - TASK-GR-WIRE
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-GR-SEED
+  name: Wave 4 — Re-seed Lilymay and flip Phase 1 gate
+  file_path: tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-SEED-reseed-lilymay-and-flip-phase-1-gate.md
+  complexity: 4
+  dependencies:
+  - TASK-GR-SMOK
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-GR-DEMO
+  name: Wave 5 — End-to-end MCP tutor session
+  file_path: tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md
+  complexity: 3
+  dependencies:
+  - TASK-GR-SEED
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+orchestration:
+  parallel_groups:
+  - - TASK-GR-LOAD
+  - - TASK-GR-WIRE
+  - - TASK-GR-SMOK
+  - - TASK-GR-SEED
+  - - TASK-GR-DEMO
+  estimated_duration_minutes: 258
+  recommended_parallel: 1
+
+# After Wave 2 (wired client) and Wave 3 (smoke test), run the always-on
+# constructor-shape test as a composition gate. This is exactly the bug class
+# this feature exists to repair — any future wave that re-introduces the
+# silent OpenAI default would be caught here, not 30+ tasks downstream.
+# Honours the F5/F7 review-report findings: constructor-shape test runs in CI
+# without Tailscale, so the gate is portable.
+smoke_gates:
+  after_wave: [2, 3]
+  command: |
+    set -e
+    pytest tests/smoke/test_graphiti_live_smoke.py::test_constructor_shape_no_cloud_defaults \
+           tests/smoke/test_graphiti_live_smoke.py::test_kwarg_drift_detection \
+           tests/smoke/test_graphiti_live_smoke.py::test_openai_api_key_never_read \
+           -x -q
+  expected_exit: 0
+  timeout: 120

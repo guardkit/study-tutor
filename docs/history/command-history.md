@@ -2479,4 +2479,133 @@ Want me to push, or hold for review?
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/feature-spec "Graphiti runtime integration repair — wire local LLM + embedder via llama-swap on GB10:9000 (no cloud APIs per DECISION-DF-001); load config from .guardkit/graphiti.yaml; mirror guardkit's canonical OpenAIGenericClient/OpenAIEmbedder pattern; re-seed Lilymay; run end-to-end MCP demo" \
+  --context tasks/backlog/TASK-PH2-GR-001-graphiti-runtime-integration-repair.md \
+  --context docs/research/ideas/phase-1-validation.md \
+  --context src/study_tutor/knowledge/graphiti_client.py \
+  --context src/study_tutor/knowledge/queries.py \
+  --context src/study_tutor/knowledge/async_write.py \
+  --context src/study_tutor/knowledge/student_model.py \
+  --context src/study_tutor/knowledge/episodes.py \
+  --context scripts/seed_student_model.py \
+  --context tests/unit/knowledge/test_async_write.py \
+  --context .guardkit/graphiti.yaml \
+  --context ../guardkit/guardkit/knowledge/graphiti_client.py \
+  --context ../guardkit/docs/research/dgx-spark/README.md \
+  --context ../guardkit/docs/research/dgx-spark/RESULTS-v3-production-deployment.md \
+  --context ../guardkit/docs/research/dgx-spark/llama-swap-config.yaml
+
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE SPEC COMPLETE: Graphiti Runtime Integration Repair
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files written:
+  features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair.feature
+  features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair_assumptions.yaml
+  features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair_summary.md
+
+Scenarios: 24 total (22 blocks; 2 outlines × 2 examples)
+  @key-example: 5    @boundary: 4
+  @negative: 5       @edge-case: 11
+  @smoke: 6          @regression: 1
+
+Group breakdown:
+  A Key examples · 5    B Boundary · 4    C Negative · 4
+  D Edge cases · 5      E Security · 2    F Concurrency · 2
+  G Integration · 2
+
+Assumptions: 3 total
+  high: 0
+  medium: 3 (Coach review recommended)
+  low: 0
+
+Dropped after review: 3 (tutor-turn budget, smoke-test budget, rate-limit
+burst size) — moved to implementer_hints in the assumptions manifest.
+
+Deferred: 0
+
+Next steps:
+  Review:  features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair.feature
+  Pass to feature-plan:
+    /feature-plan "Graphiti Runtime Integration Repair" \
+      --context features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair_summary.md \
+      --context tasks/backlog/TASK-PH2-GR-001-graphiti-runtime-integration-repair.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+
+
+/feature-plan "Graphiti Runtime Integration Repair" \
+  --context features/graphiti-runtime-integration-repair/graphiti-runtime-integration-repair_summary.md \
+  --context tasks/backlog/TASK-PH2-GR-001-graphiti-runtime-integration-repair.md
+
+Feature Planning Complete: FEAT-FD32
+Feature: Graphiti Runtime Integration Repair
+Review: TASK-REV-GR1A (78/100, complete)
+Parent task: TASK-PH2-GR-001 (now linked to feature + 5 subtasks)
+
+Generated artefacts
+Artifact	Path
+Feature YAML	.guardkit/features/FEAT-FD32.yaml
+Implementation guide (with Mermaid + §4)	tasks/backlog/graphiti-runtime-integration-repair/IMPLEMENTATION-GUIDE.md
+README	tasks/backlog/graphiti-runtime-integration-repair/README.md
+Review report	.claude/reviews/TASK-REV-GR1A-review-report.md
+Wave structure (5 waves, sequential)
+Wave	Task	task_type	Complexity
+1	TASK-GR-LOAD	feature	4
+2	TASK-GR-WIRE	feature	5
+3	TASK-GR-SMOK	testing	4
+4	TASK-GR-SEED	feature	4
+5	TASK-GR-DEMO	feature	3
+Pipeline checks
+✅ Mermaid diagrams (data flow + integration sequence + task dependency graph) present in IMPLEMENTATION-GUIDE.md
+✅ §4 Integration Contracts: 4 contracts (GraphitiConnectionConfig, WiredGraphitiClient, LilymaySeed, MCP session episode)
+✅ Seam test stubs in every consumer task (TASK-GR-WIRE, TASK-GR-SMOK, TASK-GR-SEED, TASK-GR-DEMO)
+✅ consumer_context blocks on all consumer tasks
+✅ task_type field on every task (CoachValidator profile selection works)
+✅ Lint compliance AC on every feature/refactor task
+✅ AC-quality linter: 0 unverifiable ACs detected
+✅ Pre-flight validation: FeatureLoader.validate_feature() returns no issues
+✅ smoke_gates: configured to fire constructor-shape tests after Waves 2 and 3 (catches the silent-default bug class this whole feature exists to repair)
+✅ Step 11 BDD-linker: status=skipped, reason=all_tagged (idempotency — all 24 scenarios already @task:TASK-PH2-GR-001)
+Next steps
+
+# Sequential (recommended for first run)
+/task-work TASK-GR-LOAD
+
+# Or autobuild (per Q2 = D)
+/feature-build FEAT-FD32
+Wave 5 (TASK-GR-DEMO) is human-in-the-loop and requires Claude Desktop with the study-tutor MCP server — autobuild will pause for the live session per AC-DEMO-01.
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-FD32 --verbose
+
+
+
+
+
+
 GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-1773 --verbose 

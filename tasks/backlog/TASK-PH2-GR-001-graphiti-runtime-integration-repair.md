@@ -17,6 +17,14 @@ blocks:
 related:
 - TASK-PH2-GR-002
 - guardkit:docs/research/dgx-spark/TASK-graphiti-yaml-endpoint-migration.md
+review_task: TASK-REV-GR1A
+feature_id: FEAT-FD32
+subtasks:
+- TASK-GR-LOAD   # Wave 1 — YAML loader + DECISION-DF-001 guard
+- TASK-GR-WIRE   # Wave 2 — _build_llm_client + _build_embedder + cross-encoder sentinel
+- TASK-GR-SMOK   # Wave 3 — Smoke test (constructor-shape + env-gated live)
+- TASK-GR-SEED   # Wave 4 — Re-seed Lilymay + flip G2/G3
+- TASK-GR-DEMO   # Wave 5 — End-to-end MCP demo + flip G4/G5/G6/G13
 tags:
 - graphiti
 - llm-wiring
