@@ -98,4 +98,56 @@ Captured here for the audit trail; this is a snapshot of where the five items la
 
 ---
 
-*Doc lives at `docs/research/ideas/phase-1-validation.md`. Revisit at the close of the "Graphiti runtime integration repair" task to flip the falsified G2/G3/G4/G5/G6 entries to held — at which point Phase 1 is structurally complete on its own terms, even though the close-out exercise crossed the calendar boundary.*
+## Wave 4 (TASK-GR-SEED) outcome — 2026-05-03
+
+**Result: G2 / G3 remain Falsified — gate flip deferred.**
+
+The wired-client repair (Wave 2 / TASK-PH2-GR-001) cleared the OpenAI 401 root cause, but a second blocker surfaced when Wave 4 ran the seed against live FalkorDB. **G2/G3 cannot honestly flip to Held in this wave** — the evidence required by AC-SEED-05 (Student entity readable via `mcp__graphiti__search_nodes`; populated `StudentState` from `get_student_state`) is not present.
+
+### Evidence
+
+- **Seed runs attempted in Wave 4:** four (`seed_run_1` … `seed_run_4` under `.guardkit/autobuild/TASK-GR-SEED/logs/`). Run 4 (start `2026-05-03T06:45:25Z`, end `2026-05-03T07:49:39Z`, wall-clock **~64 min** — anomaly per AC-SEED-07's ≥45 min threshold; risk-register note added below) reached the summary line `seeded Lilymay baseline (subjects=0, confidences=0, succeeded_writes=6)`. The repeated `INFO openai._base_client: Retrying request to /chat/completions in …s` and `WARNING study_tutor.knowledge.async_write: graphiti write failed` lines in `seed_run_4.log` show the GB10 vLLM endpoint returning HTTP 429 (Too Many Requests) under the `chunk_extraction_concurrency` fan-out — only 6 of the 25 planned `add_episode` calls cleared the rate-limiter.
+- **Read-back evidence (`.venv/bin/python .guardkit/autobuild/TASK-GR-SEED/verify_lilymay.py`, captured into `.guardkit/autobuild/TASK-GR-SEED/logs/verify_lilymay_turn3.json`):**
+  ```json
+  {
+    "ac_seed_03_get_student_state": {
+      "empty": false,
+      "year_group": null,
+      "target_grade": null,
+      "subjects": [],
+      "topic_confidences": []
+    },
+    "ac_seed_02_student_lilymay_nodes": []
+  }
+  ```
+  `EntityNode.get_by_group_ids(driver, ["student-lilymay"], limit=20)` returns `[]`. `get_student_state(client, "lilymay")` returns a non-error `StudentState` but with `year_group=None`, `target_grade=None`, empty `subjects`, empty `topic_confidences` — the partial-write set did not persist any Student-bearing nodes that the read API can recover. **G2 evidence absent; G3 evidence absent.**
+
+### Risk-register entry for Wave 5 planning (AC-SEED-07 follow-up)
+
+- **R-WAVE5-01 — Provider rate-limit cap dominates seed wall-clock.** GB10 vLLM endpoint (`http://promaxgb10-41b1:9000/v1`) issues HTTP 429 well before the 25-write fan-out completes; `chunk_extraction_concurrency: 4` amplifies the contention rather than easing it. Two mitigations to consider before Wave 5:
+  1. Force `chunk_extraction_concurrency: 1` for seed runs (already serial via `helper.drain()`; the inner concurrency is the LLM-side fan-out per `add_episode`).
+  2. Switch the seed to MacBook ollama (`qwen2.5:14b-instruct-q4_K_M`) when available — the 78s/`add_episode` median is slower per-call but avoids the shared-vLLM rate cap.
+- **R-WAVE5-02 — `succeeded_writes` counter remains misleading.** As called out under G2 above, the seed-script summary line counts non-abandoned tasks rather than confirmed FalkorDB writes. Wave 5 should either (a) post-flush `EntityNode.get_by_group_ids` and assert non-empty before declaring success, or (b) wire the helper to count actual `add_episode` returns. Tracking as a **TASK-GR-SEED follow-up** in the integration-repair backlog.
+
+### What Wave 4 did deliver
+
+- Confirmed Wave 2's wiring fix (no more `openai.AuthenticationError`; LLM calls reach the configured GB10 vLLM endpoint and return 200s for the writes that beat the rate-limiter).
+- Captured deterministic, repeatable read-back evidence via `verify_lilymay.py` so future waves can re-verify by re-running one script.
+- Established that the persistence gap is not a wiring issue but a rate-limit + counter-accuracy issue — narrowing Wave 5's investigation surface.
+
+### Status of AC-SEED-XX (TASK-GR-SEED)
+
+| AC | Status | Notes |
+|---|---|---|
+| AC-SEED-01 | ❌ Falsified | Run 4 reported `succeeded_writes=6` (not 25); read-back shows 0 persisted nodes. |
+| AC-SEED-02 | ❌ Falsified | `EntityNode.get_by_group_ids(driver, ["student-lilymay"])` → `[]`. |
+| AC-SEED-03 | ❌ Falsified | `get_student_state(client, "lilymay")` returns `empty=false` but all fields null/empty. |
+| AC-SEED-04 | ⚠️ Not exercised | Idempotency not re-tested because the first-run baseline is itself empty. |
+| AC-SEED-05 | ❌ Cannot flip | G2 + G3 evidence absent (see Evidence above). G4/G5/G6/G13 remain Falsified pending Wave 5. |
+| AC-SEED-06 | ✅ Not needed | No `Connection closed by server` escalation observed; `GRAPH.DELETE` not triggered. |
+| AC-SEED-07 | ✅ Captured | Run-4 wall-clock 64 min; anomaly noted; R-WAVE5-01 / R-WAVE5-02 risk entries added above. |
+| AC-SEED-08 | ⚠️ Not run | Lint/format pass not exercised in this wave; only this validation doc was edited. |
+
+---
+
+*Doc lives at `docs/research/ideas/phase-1-validation.md`. Revisit at the close of the Wave 5 follow-up (provider rate-limit mitigation + `succeeded_writes` counter accuracy) to flip the falsified G2/G3/G4/G5/G6 entries to held — at which point Phase 1 is structurally complete on its own terms, even though the close-out exercise crossed the calendar boundary.*

@@ -1,6 +1,7 @@
 ---
 id: TASK-GR-SEED
-title: "Wave 4 — Re-seed Lilymay against live FalkorDB; flip Phase 1 G2/G3/G4/G5/G6/G13 from Falsified to Held"
+title: "Wave 4 \u2014 Re-seed Lilymay against live FalkorDB; flip Phase 1 G2/G3/G4/G5/G6/G13\
+  \ from Falsified to Held"
 task_type: feature
 parent_review: TASK-REV-GR1A
 parent_task: TASK-PH2-GR-001
@@ -10,26 +11,69 @@ implementation_mode: task-work
 complexity: 4
 estimated_minutes: 60
 dependencies:
-  - TASK-GR-SMOK
-status: backlog
+- TASK-GR-SMOK
+status: blocked
 priority: critical
-created: 2026-05-02T00:00:00+00:00
-updated: 2026-05-02T00:00:00+00:00
+created: 2026-05-02 00:00:00+00:00
+updated: 2026-05-02 00:00:00+00:00
 tags:
-  - graphiti
-  - seed
-  - falkordb
-  - phase-1-gate-flip
-  - phase-2
+- graphiti
+- seed
+- falkordb
+- phase-1-gate-flip
+- phase-2
 related:
-  - TASK-PH2-GR-001
-  - TASK-GSM-006
+- TASK-PH2-GR-001
+- TASK-GSM-006
 consumer_context:
-  - task: TASK-GR-WIRE
-    consumes: WiredGraphitiClient
-    framework: "scripts/seed_student_model.py + graphiti-core 0.29"
-    driver: "FalkorDB on Synology (whitestocks:6379) via wired Graphiti instance"
-    format_note: "Seed script consumes a wired Graphiti client (non-None llm_client + embedder, sentinel cross_encoder); uses helper.drain() for serial writes; group_id format 'student-lilymay' (post-a210472 normalisation)."
+- task: TASK-GR-WIRE
+  consumes: WiredGraphitiClient
+  framework: scripts/seed_student_model.py + graphiti-core 0.29
+  driver: FalkorDB on Synology (whitestocks:6379) via wired Graphiti instance
+  format_note: Seed script consumes a wired Graphiti client (non-None llm_client +
+    embedder, sentinel cross_encoder); uses helper.drain() for serial writes; group_id
+    format 'student-lilymay' (post-a210472 normalisation).
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32
+  base_branch: main
+  started_at: '2026-05-03T07:17:55.973271'
+  last_updated: '2026-05-03T08:27:38.895129'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: '- Advisory (non-blocking): task-work produced a report with 2 of 3
+      expected agent invocations. Missing phases: 3 (Implementation). Consider invoking
+      these agents via the Task tool to strengthen stack-specific quality:
+
+      - Phase 3: `the stack-specific Phase-3 specialist` (Implementation)
+
+      - Tests did not pass during task-work execution'
+    timestamp: '2026-05-03T07:17:55.973271'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-SEED-02** \u2014 `mcp__graphiti__search_nodes(query=\"\
+      Lilymay\", group_ids=[\"student-lilymay\"])` returns\n  \u2022 AC-SEED-03**\
+      \ \u2014 `get_student_state(client, \"lilymay\")` (the existing helper from\
+      \ `student_model.py`) \n  \u2022 AC-SEED-05** \u2014 `docs/research/ideas/phase-1-validation.md`\
+      \ is updated:\n  \u2022 AC-SEED-06** \u2014 Stale-index cleanup if needed: if\
+      \ `Connection closed by server` warnings escalate int\n  \u2022 AC-SEED-07**\
+      \ \u2014 Wall-clock for the seed run captured. Expected ~30 min on MacBook ollama\
+      \ (78s/`add_ep\n  (1 more)"
+    timestamp: '2026-05-03T07:43:05.474764'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Wave 4 — Re-seed Lilymay; flip Phase 1 gate

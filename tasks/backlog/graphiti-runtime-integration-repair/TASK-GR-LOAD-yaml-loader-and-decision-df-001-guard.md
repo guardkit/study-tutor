@@ -1,6 +1,7 @@
 ---
 id: TASK-GR-LOAD
-title: "Wave 1 — YAML loader for .guardkit/graphiti.yaml + DECISION-DF-001 cloud-provider guard"
+title: "Wave 1 \u2014 YAML loader for .guardkit/graphiti.yaml + DECISION-DF-001 cloud-provider\
+  \ guard"
 task_type: feature
 parent_review: TASK-REV-GR1A
 parent_task: TASK-PH2-GR-001
@@ -10,20 +11,120 @@ implementation_mode: task-work
 complexity: 4
 estimated_minutes: 30
 dependencies: []
-status: backlog
+status: blocked
 priority: critical
-created: 2026-05-02T00:00:00+00:00
-updated: 2026-05-02T00:00:00+00:00
+created: 2026-05-02 00:00:00+00:00
+updated: 2026-05-02 00:00:00+00:00
 tags:
-  - graphiti
-  - config
-  - yaml-loader
-  - decision-df-001
-  - dark-factory
-  - phase-2
+- graphiti
+- config
+- yaml-loader
+- decision-df-001
+- dark-factory
+- phase-2
 related:
-  - TASK-PH2-GR-001
-  - TASK-PH2-GR-002
+- TASK-PH2-GR-001
+- TASK-PH2-GR-002
+autobuild_state:
+  current_turn: 4
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32
+  base_branch: main
+  started_at: '2026-05-02T11:47:19.891835'
+  last_updated: '2026-05-02T12:32:03.189743'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Tests failed\
+      \ due to infrastructure/environment issues (not code defects). Test command:\
+      \ pytest tests/unit/knowledge/test_graphiti_client.py tests/unit/knowledge/test_graphiti_config_loader.py\
+      \ -v --tb=short. Remediation options: (1) Add mock fixtures for external services,\
+      \ (2) Use SQLite for test database, (3) Mark integration tests with @pytest.mark.integration\
+      \ and exclude via -m 'not integration'. Error detail: Error detail:\n    assert\
+      \ result.returncode == 0, (\nE   AssertionError: subprocess failed: stdout=''\
+      \ stderr='Traceback (most recent call last):\\n  File \"<string>\", line 4,\
+      \ in <module>\\n    import study_tutor.knowledge.graphiti_client as mod\\nModuleNotFoundError:\
+      \ No module named \\'study_tutor\\'\\n'\nE   assert 1 == 0\nE    +  where 1\
+      \ = CompletedProcess(args=['/usr/local/bin/python3', '-c', \"\\nimport sys\\\
+      nsys.modules['graphiti_core'] = None  # simulate absent dependency\\nimport\
+      \ study_tutor.knowledg...:\n  Error detail:\n    assert result.returncode ==\
+      \ 0, (\nE   AssertionError: subprocess failed: stdout='' stderr='Traceback (most\
+      \ recent call last):\\n  File \"<string>\", line 4, in <module>\\n    import\
+      \ study_tutor.knowledge.graphiti_client as mod\\nModuleNotFoundError: No module\
+      \ named \\'study_tutor\\'\\n'\nE   assert 1 == 0\nE    +  where 1 = CompletedProcess(args=['/usr/local/bin/python3',\
+      \ '-c', \"\\nimport sys\\nsys.modules['graphiti_core'] = None  # simulate absent\
+      \ dependency\\nimport study_tutor.knowledge.graphiti_client as mod\\ncfg = mod.GraphitiConnectionConfig(\\\
+      n    falkor_host='h', falkor_port=1, database='d',\\n    embedder_url='http://x',\\\
+      n)\\nprint('OK', cfg.timeout_seconds)\\n\"], returncode=1, stdout='', stderr='Traceback\
+      \ (most recent call last):\\n  File \"<string>\", line 4, in <module>\\n   \
+      \ import study_tutor.knowledge.graphiti_client as mod\\nModuleNotFoundError:\
+      \ No module named \\'study_tutor\\'\\n').returncode\n===========================\
+      \ short test summary info ============================\n..."
+    timestamp: '2026-05-02T11:47:19.891835'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path:\
+      \ Path = Path(\".guardkit/graphiti.yaml\")) -> Grap\n  \u2022 AC-LOAD-02** \u2014\
+      \ Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`,\
+      \ \n  \u2022 AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider\
+      \ in (\"openai\", \"gemini\")` raises `Va\n  \u2022 AC-LOAD-04** \u2014 Dataclass\
+      \ extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_bas\n\
+      \  \u2022 AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"\
+      ` is changed to `\"vllm\"`. Default `ll\n  (3 more)"
+    timestamp: '2026-05-02T12:04:45.814572'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 3
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path:\
+      \ Path = Path(\".guardkit/graphiti.yaml\")) -> Grap\n  \u2022 AC-LOAD-02** \u2014\
+      \ Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`,\
+      \ \n  \u2022 AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider\
+      \ in (\"openai\", \"gemini\")` raises `Va\n  \u2022 AC-LOAD-04** \u2014 Dataclass\
+      \ extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_bas\n\
+      \  \u2022 AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"\
+      ` is changed to `\"vllm\"`. Default `ll\n  (3 more)"
+    timestamp: '2026-05-02T12:15:27.853375'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 4
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path:\
+      \ Path = Path(\".guardkit/graphiti.yaml\")) -> Grap\n  \u2022 AC-LOAD-02** \u2014\
+      \ Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`,\
+      \ \n  \u2022 AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider\
+      \ in (\"openai\", \"gemini\")` raises `Va\n  \u2022 AC-LOAD-04** \u2014 Dataclass\
+      \ extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_bas\n\
+      \  \u2022 AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"\
+      ` is changed to `\"vllm\"`. Default `ll\n  (3 more)"
+    timestamp: '2026-05-02T12:23:30.867059'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Wave 1 — YAML loader + DECISION-DF-001 guard

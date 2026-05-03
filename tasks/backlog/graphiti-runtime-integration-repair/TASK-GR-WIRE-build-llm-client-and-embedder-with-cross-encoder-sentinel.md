@@ -1,6 +1,7 @@
 ---
 id: TASK-GR-WIRE
-title: "Wave 2 — Build LLM client + embedder via OpenAIGenericClient/OpenAIEmbedder; install cross-encoder sentinel"
+title: "Wave 2 \u2014 Build LLM client + embedder via OpenAIGenericClient/OpenAIEmbedder;\
+  \ install cross-encoder sentinel"
 task_type: feature
 parent_review: TASK-REV-GR1A
 parent_task: TASK-PH2-GR-001
@@ -10,27 +11,64 @@ implementation_mode: task-work
 complexity: 5
 estimated_minutes: 60
 dependencies:
-  - TASK-GR-LOAD
-status: backlog
+- TASK-GR-LOAD
+status: in_review
 priority: critical
-created: 2026-05-02T00:00:00+00:00
-updated: 2026-05-02T00:00:00+00:00
+created: 2026-05-02 00:00:00+00:00
+updated: 2026-05-02 00:00:00+00:00
 tags:
-  - graphiti
-  - llm-wiring
-  - embedder
-  - llama-swap
-  - cross-encoder
-  - decision-df-001
-  - phase-2
+- graphiti
+- llm-wiring
+- embedder
+- llama-swap
+- cross-encoder
+- decision-df-001
+- phase-2
 related:
-  - TASK-PH2-GR-001
+- TASK-PH2-GR-001
 consumer_context:
-  - task: TASK-GR-LOAD
-    consumes: GraphitiConnectionConfig
-    framework: "graphiti-core 0.29 (OpenAI-compatible local inference)"
-    driver: "OpenAIGenericClient + OpenAIEmbedder (graphiti_core.llm_client.openai_generic + graphiti_core.embedder.openai)"
-    format_note: "config.llm_provider in ('vllm','ollama') and config.embedding_provider in ('vllm','ollama'); cloud providers must already have been rejected at load time."
+- task: TASK-GR-LOAD
+  consumes: GraphitiConnectionConfig
+  framework: graphiti-core 0.29 (OpenAI-compatible local inference)
+  driver: OpenAIGenericClient + OpenAIEmbedder (graphiti_core.llm_client.openai_generic
+    + graphiti_core.embedder.openai)
+  format_note: config.llm_provider in ('vllm','ollama') and config.embedding_provider
+    in ('vllm','ollama'); cloud providers must already have been rejected at load
+    time.
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32
+  base_branch: main
+  started_at: '2026-05-02T13:13:40.777257'
+  last_updated: '2026-05-02T13:37:07.684157'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-WIRE-01** \u2014 `_build_llm_client(config: GraphitiConnectionConfig)\
+      \ -> OpenAIGenericClient` returns \n  \u2022 AC-WIRE-02** \u2014 `_build_embedder(config:\
+      \ GraphitiConnectionConfig) -> OpenAIEmbedder` returns `OpenAI\n  \u2022 AC-WIRE-03**\
+      \ \u2014 `_build_cross_encoder_sentinel()` returns an object whose every attribute\
+      \ access rais\n  \u2022 AC-WIRE-04** \u2014 `get_client(config)` is updated\
+      \ to:\n  \u2022 AC-WIRE-06** \u2014 graphiti-core version pinned in `pyproject.toml`\
+      \ to `>=0.29,<0.30` (per parent-task r\n  (3 more)"
+    timestamp: '2026-05-02T13:13:40.777257'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-02T13:28:06.549118'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Wave 2 — Build LLM client + embedder + cross-encoder sentinel

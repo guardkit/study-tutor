@@ -1,6 +1,7 @@
 ---
 id: TASK-GR-DEMO
-title: "Wave 5 — End-to-end MCP tutor session via Claude Desktop; close G3/G4/G5/G6/G13 with live evidence"
+title: "Wave 5 \u2014 End-to-end MCP tutor session via Claude Desktop; close G3/G4/G5/G6/G13\
+  \ with live evidence"
 task_type: feature
 parent_review: TASK-REV-GR1A
 parent_task: TASK-PH2-GR-001
@@ -10,31 +11,78 @@ implementation_mode: task-work
 complexity: 3
 estimated_minutes: 45
 dependencies:
-  - TASK-GR-SEED
-status: backlog
+- TASK-GR-SEED
+status: blocked
 priority: critical
-created: 2026-05-02T00:00:00+00:00
-updated: 2026-05-02T00:00:00+00:00
+created: 2026-05-02 00:00:00+00:00
+updated: 2026-05-02 00:00:00+00:00
 tags:
-  - graphiti
-  - mcp
-  - tutor-session
-  - phase-1-gate-closure
-  - human-in-the-loop
-  - phase-2
+- graphiti
+- mcp
+- tutor-session
+- phase-1-gate-closure
+- human-in-the-loop
+- phase-2
 related:
-  - TASK-PH2-GR-001
+- TASK-PH2-GR-001
 consumer_context:
-  - task: TASK-GR-WIRE
-    consumes: WiredGraphitiClient
-    framework: "MCP server (study-tutor) consumed by Claude Desktop"
-    driver: "tutor_start_session / tutor_turn / tutor_session_end MCP handlers"
-    format_note: "MCP handlers obtain their Graphiti client via load_graphiti_config_from_yaml() + get_client(); the wired client must succeed against the same .guardkit/graphiti.yaml the seed used in Wave 4."
-  - task: TASK-GR-SEED
-    consumes: LilymaySeed
-    framework: "MCP tutor handlers reading from the same FalkorDB"
-    driver: "get_student_state(client, 'lilymay') called inside tutor_start_session"
-    format_note: "Live FalkorDB rows in group_id='student-lilymay' written by Wave 4; Wave 5 reads them at session start."
+- task: TASK-GR-WIRE
+  consumes: WiredGraphitiClient
+  framework: MCP server (study-tutor) consumed by Claude Desktop
+  driver: tutor_start_session / tutor_turn / tutor_session_end MCP handlers
+  format_note: MCP handlers obtain their Graphiti client via load_graphiti_config_from_yaml()
+    + get_client(); the wired client must succeed against the same .guardkit/graphiti.yaml
+    the seed used in Wave 4.
+- task: TASK-GR-SEED
+  consumes: LilymaySeed
+  framework: MCP tutor handlers reading from the same FalkorDB
+  driver: get_student_state(client, 'lilymay') called inside tutor_start_session
+  format_note: Live FalkorDB rows in group_id='student-lilymay' written by Wave 4;
+    Wave 5 reads them at session start.
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32
+  base_branch: main
+  started_at: '2026-05-03T10:32:08.626351'
+  last_updated: '2026-05-03T11:10:30.129919'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-DEMO-01** \u2014 A live MCP tutor session is conducted\
+      \ from Claude Desktop with the user as the human-\n  \u2022 AC-DEMO-02** \u2014\
+      \ A `session_completed` episode is written to Graphiti and is visible via `mcp__graphit\n\
+      \  \u2022 AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from\
+      \ session>\", group_ids=[\"student-lilyma\n  \u2022 AC-DEMO-04** \u2014 Turn-level\
+      \ latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all\n\
+      \  \u2022 AC-DEMO-05** \u2014 `phase-1-validation.md` updated:\n  (2 more)"
+    timestamp: '2026-05-03T10:32:08.626351'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-DEMO-01** \u2014 A live MCP tutor session is conducted\
+      \ from Claude Desktop with the user as the human-\n  \u2022 AC-DEMO-02** \u2014\
+      \ A `session_completed` episode is written to Graphiti and is visible via `mcp__graphit\n\
+      \  \u2022 AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from\
+      \ session>\", group_ids=[\"student-lilyma\n  \u2022 AC-DEMO-04** \u2014 Turn-level\
+      \ latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all\n\
+      \  \u2022 AC-DEMO-05** \u2014 `phase-1-validation.md` updated:\n  (2 more)"
+    timestamp: '2026-05-03T10:40:43.306852'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Wave 5 — End-to-end MCP tutor session

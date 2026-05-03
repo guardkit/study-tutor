@@ -1,6 +1,7 @@
 ---
 id: TASK-GR-SMOK
-title: "Wave 3 — Live-graphiti smoke test (constructor-shape always-on + env-gated FalkorDB round-trip)"
+title: "Wave 3 \u2014 Live-graphiti smoke test (constructor-shape always-on + env-gated\
+  \ FalkorDB round-trip)"
 task_type: testing
 parent_review: TASK-REV-GR1A
 parent_task: TASK-PH2-GR-001
@@ -10,25 +11,61 @@ implementation_mode: task-work
 complexity: 4
 estimated_minutes: 45
 dependencies:
-  - TASK-GR-WIRE
-status: backlog
+- TASK-GR-WIRE
+status: in_review
 priority: critical
-created: 2026-05-02T00:00:00+00:00
-updated: 2026-05-02T00:00:00+00:00
+created: 2026-05-02 00:00:00+00:00
+updated: 2026-05-02 00:00:00+00:00
 tags:
-  - graphiti
-  - smoke-test
-  - integration-test
-  - regression-prevention
-  - phase-2
+- graphiti
+- smoke-test
+- integration-test
+- regression-prevention
+- phase-2
 related:
-  - TASK-PH2-GR-001
+- TASK-PH2-GR-001
 consumer_context:
-  - task: TASK-GR-WIRE
-    consumes: WiredGraphitiClient
-    framework: "pytest + graphiti-core 0.29 (real client, optional FalkorDB transport)"
-    driver: "pytest fixtures with stubbed graphiti_core + env-gated live FalkorDB"
-    format_note: "Real Graphiti instance with non-None llm_client (OpenAIGenericClient), non-None embedder (OpenAIEmbedder), and cross_encoder being the DECISION-DF-001 sentinel (RuntimeError on any attribute access)."
+- task: TASK-GR-WIRE
+  consumes: WiredGraphitiClient
+  framework: pytest + graphiti-core 0.29 (real client, optional FalkorDB transport)
+  driver: pytest fixtures with stubbed graphiti_core + env-gated live FalkorDB
+  format_note: Real Graphiti instance with non-None llm_client (OpenAIGenericClient),
+    non-None embedder (OpenAIEmbedder), and cross_encoder being the DECISION-DF-001
+    sentinel (RuntimeError on any attribute access).
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32
+  base_branch: main
+  started_at: '2026-05-02T17:13:56.379063'
+  last_updated: '2026-05-02T17:26:43.700419'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`.\
+      \ Conventional `tests/sm\n  \u2022 AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults`\
+      \ runs unconditionally (no env-var gate). St\n  \u2022 AC-SMOK-03** \u2014 `test_kwarg_drift_detection`\
+      \ \u2014 same fake-Graphiti capture pattern, but explicitly ass\n  \u2022 AC-SMOK-04**\
+      \ \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\n\
+      \  \u2022 AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`,\
+      \ calls \n  (2 more)"
+    timestamp: '2026-05-02T17:13:56.379063'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-02T17:19:24.876695'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Wave 3 — Live-graphiti smoke test
