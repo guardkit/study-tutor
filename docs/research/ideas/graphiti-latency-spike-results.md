@@ -29,3 +29,35 @@ Each operation: 1 warm-up (untimed) + 3 timed runs against a throwaway `group_id
 - `search_memory_facts`: [0.08, 0.08, 0.07] s
 
 _Spike group `latency-spike-2026-04-27` was cleaned up after the run (see stderr log if anything was left behind)._
+
+---
+
+## Phase 2 Wave 5 measurement — _Pending: live evidence_
+
+**Status:** scaffold added by TASK-GR-DEMO autobuild Wave-5 turn; live numbers to be pasted in by the operator who conducts the AC-DEMO-01 Claude Desktop session. **Do not interpret this section's placeholder values as observed data** — until the row below names a real session id, this subsection is a structural reservation, not a measurement.
+
+| Field | Value | Source |
+|---|---|---|
+| Session id | _pending_ | `tutor_start_session` return value |
+| Turn count | _pending_ (5–7) | length of `tutor_turn_complete` log lines |
+| Topic chosen | _pending_ (mid-range, 0.5–0.7 baseline) | operator notes |
+| `tutor_turn` p50 (s) | _pending_ | median of `elapsed_ms` across all turns |
+| `tutor_turn` p95 (s) | _pending_ | linear interpolation; for 7 turns ≈ value-7 |
+| Coach revision observed | _pending_ (Y/N) | operator-recorded turn index |
+| MCP server log path | _pending_ | `study-tutor-mcp.log` excerpt for replay |
+
+### Recipe (for the operator)
+
+Per the task's `## Implementation Notes` — grep the MCP server log:
+
+```bash
+grep '"event":"tutor_turn_complete"' study-tutor-mcp.log | jq -r '.elapsed_ms' | sort -n
+```
+
+Compute p50 (median of 5–7 values) and p95 (linear interpolation; for 7 turns ≈ the seventh value). Don't bootstrap or use a stats library — these are tiny samples; report point values. Paste the sorted list into the table above in place of `_pending_`.
+
+### Cross-references
+
+- TASK-GR-DEMO `## Acceptance Criteria` AC-DEMO-04 (the AC that consumes this section).
+- `docs/research/ideas/phase-1-validation.md §"Phase 2 Wave 5 — Operator handoff"` (sibling scaffold).
+

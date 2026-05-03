@@ -1,0 +1,102 @@
+{
+  "task_id": "TASK-GR-DEMO",
+  "turn": 1,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GR-SEED/checkpoints.json",
+    "tasks/backlog/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-GR-DEMO-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GR-DEMO/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/turn_context.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-DEMO/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/tests/integration/test_lilymay_seed_seam.py",
+    "tasks/design_approved/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md",
+    "tests/integration/test_lilymay_seed_seam.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/tests/integration/test_lilymay_seed_seam.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Seam test stub from task '## Seam Tests' section landed verbatim at tests/integration/test_lilymay_seed_seam.py \u2014 pins the LilymaySeed integration contract (producer chain TASK-GR-WIRE \u2192 TASK-GR-SEED \u2192 consumed here) for autobuild traceability."
+  ],
+  "requirements_remaining": [
+    "AC-DEMO-01: Conduct live 5\u20137-turn MCP tutor session via Claude Desktop with at least one observed Coach revision. Human-in-the-loop only.",
+    "AC-DEMO-02: Verify session_completed episode written + visible via mcp__graphiti__get_episodes(group_ids=['student-lilymay']). Requires live FalkorDB + completed AC-DEMO-01.",
+    "AC-DEMO-03: Verify post-session topic_confidences delta via mcp__graphiti__search_nodes. Requires live FalkorDB + completed AC-DEMO-01 with mid-range topic chosen.",
+    "AC-DEMO-04: Capture p50/p95 of tutor_turn wall-clock; append to phase-1-validation.md and graphiti-latency-spike-results.md under 'Phase 2 Wave 5 measurement'. Requires live session log.",
+    "AC-DEMO-05: Flip G3/G4/G5/G6/G13 from 'Falsified' to 'Held' in phase-1-validation.md with pasted session-log + Coach-revision excerpts. Requires live evidence.",
+    "AC-DEMO-06: Move TASK-PH2-GR-001 from backlog/ to completed/ once AC-DEMO-05 lands. Sequential follow-up.",
+    "AC-DEMO-07: Lint/format check the two modified validation docs zero-error. Sequential follow-up after AC-DEMO-04 + AC-DEMO-05 doc edits land."
+  ],
+  "sdk_turns_used": 26,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 1,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-DEMO-01",
+      "criterion_text": "A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence: tutor_start_session(student_id='lilymay') returns a session id and the loaded StudentState; 5\u20137 \u00d7 tutor_turn(...) exchanges with at least one Coach revision; tutor_session_end(session_id=...) returns successfully.",
+      "status": "uncertain",
+      "evidence": "Cannot be performed by autobuild \u2014 this AC is the human-in-the-loop demo conducted from Claude Desktop. The task's '## Test Requirements' section explicitly states 'Operational acceptance via live MCP transcript, not unit tests... There is no automated test harness for Claude Desktop performs a 5\u20137 turn tutoring session with a real LLM at the back \u2014 that's the AC-DEMO-01 manual verification.' What I delivered for autobuild traceability is the seam test at tests/integration/test_lilymay_seed_seam.py (lifted verbatim from the task's '## Seam Tests' section), which pins the runtime contract the live demo will exercise (wired client + Lilymay seed compose end-to-end). The seam is gated behind STUDY_TUTOR_LIVE_GRAPHITI_SMOKE so it skips cleanly under autobuild.",
+      "test_file": "tests/integration/test_lilymay_seed_seam.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-02",
+      "criterion_text": "A session_completed episode is written to Graphiti and is visible via mcp__graphiti__get_episodes(group_ids=['student-lilymay']). The episode body contains the session id, the turn count, and a summary suitable for replay.",
+      "status": "uncertain",
+      "evidence": "Downstream of AC-DEMO-01 \u2014 only verifiable after a live session has been conducted and the session_completed episode has been written. The handler that does this write (record_session_completion \u2192 GraphitiWriteHelper.schedule_write \u2192 _perform_write \u2192 add_episode) already exists from the FEAT-PO-002 cluster and is independently unit-tested; this AC asserts the live round-trip. No autobuild action available.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-03",
+      "criterion_text": "mcp__graphiti__search_nodes(query='<topic from session>', group_ids=['student-lilymay']) returns updated topic_confidences reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.)",
+      "status": "uncertain",
+      "evidence": "Downstream of AC-DEMO-01. Operator must pick a mid-range (0.5\u20130.7 baseline confidence) topic during the live session so the post-session delta is detectable. No autobuild action available.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-04",
+      "criterion_text": "Turn-level latency captured. Record p50 and p95 of tutor_turn wall-clock across all 5\u20137 turns. Append to docs/research/ideas/phase-1-validation.md and to docs/research/ideas/graphiti-latency-spike-results.md under a 'Phase 2 Wave 5 measurement' subsection.",
+      "status": "uncertain",
+      "evidence": "Requires the live session log emitted by tutor_turn ('event':'tutor_turn_complete' lines with elapsed_ms field, instrumentation already shipped by FEAT-PO-002). The grep + jq + percentile-by-hand recipe is documented in the task's '## Implementation Notes'. No autobuild action available because there are no turns to measure.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-05",
+      "criterion_text": "phase-1-validation.md updated: G3 flips 'Falsified'\u2192'Held'; G4 flips with pasted MCP session-log excerpt; G5 flips with pasted Coach-revised-turn excerpt; G6 flips with pasted mcp__graphiti__get_episodes JSON; G13 flips with session log + p50/p95 latency.",
+      "status": "uncertain",
+      "evidence": "Doc-update AC that depends on the live evidence captured by AC-DEMO-01..04. Modifying the validation doc with placeholder text would corrupt the audit trail (the doc's premise is that every status flip is backed by a real artifact), so I deliberately did not edit phase-1-validation.md. The operator who runs the live demo will paste the real excerpts.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-06",
+      "criterion_text": "Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from backlog/ to completed/, and FEAT-PH2-001 (gamification) is unblocked.",
+      "status": "uncertain",
+      "evidence": "Sequential follow-up to AC-DEMO-05. Until the validation-doc gates flip to 'Held' with real evidence, moving TASK-PH2-GR-001 to completed/ would be premature. No autobuild action available.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-07",
+      "criterion_text": "All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Vacuously satisfied for this autobuild turn: no docs were modified, so there is nothing to lint. The Python file I added (tests/integration/test_lilymay_seed_seam.py) follows project conventions (PEP 8, type hints via 'from __future__ import annotations', docstrings, pytest markers consistent with pyproject.toml's [tool.pytest.ini_options].markers). pytest collects + skips the test cleanly with no warnings. When the operator lands the doc edits for AC-DEMO-04/05, they will re-run lint on those two files.",
+      "test_file": "tests/integration/test_lilymay_seed_seam.py",
+      "implementation_files": [
+        "tests/integration/test_lilymay_seed_seam.py"
+      ]
+    }
+  ]
+}

@@ -17,6 +17,14 @@ dependencies = [
     "python-dotenv>=1.0",
     "mcp>=1.0",
     "httpx>=0.27",
+    # TASK-GR-WIRE / AC-WIRE-06 (FEAT-FD32, 2026-05-02): pin graphiti-core to
+    # the 0.29 minor. The ``OpenAIGenericClient`` constructor surface drifted
+    # between 0.28 and 0.29 (model_size kwarg + LLMConfig signature shifts),
+    # so a wider range would re-introduce the silent-OpenAI-default failure
+    # mode this feature exists to fix. Wave 3's smoke test is the trip-wire
+    # for the next drift; until that test exists, the version bound is the
+    # only line of defence.
+    "graphiti-core>=0.29,<0.30",
 ]
 
 [project.scripts]

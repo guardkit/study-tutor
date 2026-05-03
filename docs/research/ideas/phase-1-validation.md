@@ -151,3 +151,59 @@ The wired-client repair (Wave 2 / TASK-PH2-GR-001) cleared the OpenAI 401 root c
 ---
 
 *Doc lives at `docs/research/ideas/phase-1-validation.md`. Revisit at the close of the Wave 5 follow-up (provider rate-limit mitigation + `succeeded_writes` counter accuracy) to flip the falsified G2/G3/G4/G5/G6 entries to held — at which point Phase 1 is structurally complete on its own terms, even though the close-out exercise crossed the calendar boundary.*
+
+---
+
+## Phase 2 Wave 5 — Operator handoff (_Pending: live evidence_)
+
+**Status:** scaffold added by TASK-GR-DEMO autobuild Wave-5 turn; the gate flips themselves remain in `Falsified` above until the operator who conducts the live AC-DEMO-01 Claude Desktop session pastes the real artifacts into the rows below. **Do not read this subsection as an asserted status change** — every row currently says `_pending_` because the live demo has not yet been conducted. The flip from "Falsified" to "Held" must happen in the section above this line, with citations into the rows below as the supporting evidence.
+
+### Why this scaffold exists
+
+TASK-GR-DEMO's `## Acceptance Criteria` (AC-DEMO-05) requires this doc to record:
+- G3 flip + cite read-back-through-MCP evidence,
+- G4 flip + paste a session-log excerpt,
+- G5 flip + paste a Coach-revised-turn excerpt,
+- G6 flip + paste a `mcp__graphiti__get_episodes` JSON,
+- G13 flip + cite session log + p50/p95 latency.
+
+Autobuild can structurally reserve where each excerpt lands; it cannot conduct the live session that produces them. Keeping this scaffold separate from the `Held` / `Falsified` / `Drifted` blocks above preserves the audit-trail invariant that every status flip is backed by a real artifact, not by a placeholder.
+
+### Operator checklist
+
+| Gate | Evidence required | Paste location |
+|---|---|---|
+| G3 | `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returning a populated Student entity *via the MCP boundary* (not just via the seed script). | row below: G3 |
+| G4 | `tutor_start_session` → 5–7 `tutor_turn` → `tutor_session_end` transcript excerpt. | row below: G4 |
+| G5 | A turn where the Coach disagreed with the initial Player reply and the corrected reply is what reached the user. | row below: G5 |
+| G6 | `mcp__graphiti__get_episodes(group_ids=["student-lilymay"])` JSON containing the `session_completed` episode written by the demo. | row below: G6 |
+| G13 | Session log + p50/p95 from the latency-results sibling doc. | row below: G13 |
+
+| Gate | Excerpt / artifact | Source |
+|---|---|---|
+| G3 (read-back via MCP) | _pending_ | `mcp__graphiti__search_nodes` |
+| G4 (session round-trip) | _pending_ | session transcript |
+| G5 (Coach revision) | _pending_ | Coach-revised turn excerpt |
+| G6 (`session_completed` episode) | _pending_ | `mcp__graphiti__get_episodes` JSON |
+| G13 (latency + log) | _pending_ | sibling doc + transcript |
+
+### Pre-flight checklist (before opening the session)
+
+Per the task's `## Implementation Notes`:
+
+1. Confirm Wave-4 seed: `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returns a Student entity.
+2. Confirm `get_student_state(client, "lilymay")` returns non-empty (covered by `tests/integration/test_lilymay_seed_seam.py` once `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE` is set on the host).
+3. Confirm Claude Desktop's MCP config points at the study-tutor server and is reachable.
+4. Confirm the LLM endpoint is up (`curl http://promaxgb10-41b1:9000/v1/models` or the MacBook fallback URL).
+
+If any pre-flight fails, fix and re-run before opening the session — don't push through and pollute the evidence trail.
+
+### Coach-revision rule
+
+AC-DEMO-01.2 explicitly requires "at least one Coach revision observed". If the Coach never disagrees in 7 turns, that's evidence the Coach calibration is too lax — note it for the FEAT-PH2-001 follow-up but flag the wave as Held only if a revision is observed. Re-conduct the session with a more challenging topic if no revision occurs.
+
+### Cross-references
+
+- TASK-GR-DEMO `## Acceptance Criteria` (the upstream contract).
+- `docs/research/ideas/graphiti-latency-spike-results.md §"Phase 2 Wave 5 measurement"` (sibling scaffold for AC-DEMO-04).
+- `tests/integration/test_lilymay_seed_seam.py` (the Wave-5 seam pinning the runtime contract this demo exercises).

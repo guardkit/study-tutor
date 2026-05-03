@@ -1,0 +1,9 @@
+{
+  "turn": 2,
+  "feedback_from_turn": 1,
+  "feedback_summary": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-\n  \u2022 AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphit\n  \u2022 AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilyma\n  \u2022 AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all\n  \u2022 AC-DEMO-05** \u2014 `phase-1-validation.md` updated:\n  (2 more)",
+  "must_fix": [],
+  "should_fix": [],
+  "validation_results": {},
+  "raw_feedback": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-\n  \u2022 AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphit\n  \u2022 AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilyma\n  \u2022 AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all\n  \u2022 AC-DEMO-05** \u2014 `phase-1-validation.md` updated:\n  (2 more)"
+}

@@ -60,6 +60,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -73,9 +74,11 @@ from study_tutor.knowledge.episodes import (
     TopicConfidenceUpdatedEpisode,
 )
 from study_tutor.knowledge.graphiti_client import (
+    DEFAULT_GRAPHITI_YAML_PATH,
     GraphitiClient,
     GraphitiConnectionConfig,
     get_client,
+    load_graphiti_config_from_yaml,
 )
 from study_tutor.knowledge.queries import get_student_state
 from study_tutor.knowledge.student_model import (
@@ -510,6 +513,60 @@ def _seed_initial_topic_confidences(
 # ---------------------------------------------------------------------------
 
 
+#: Env var override for the per-batch drain budget used by
+#: :func:`seed_lilymay`. Sized for seed-time bulk loads (one-off, ~25
+#: writes) rather than the 30s handler-tear-down grace exposed by
+#: :data:`async_write.DEFAULT_SHUTDOWN_GRACE_SEC`.
+_SEED_BATCH_DRAIN_ENV: str = "GRAPHITI_SEED_BATCH_DRAIN_SEC"
+
+#: Default seed-time drain budget per entity-type batch (seconds).
+#: 600s comfortably covers a 6-episode batch at vLLM extraction
+#: wall-time of ~30-90s per episode.
+DEFAULT_SEED_BATCH_DRAIN_SEC: int = 600
+
+
+def _resolve_seed_batch_drain_sec() -> int:
+    """Resolve the per-batch drain budget from env or default.
+
+    Mirrors the parse-and-warn shape of
+    :func:`async_write._resolve_default_grace_sec`: a non-positive or
+    non-integer value falls back to the default with a structured warning
+    so misconfiguration is observable in production logs.
+    """
+    raw = os.environ.get(_SEED_BATCH_DRAIN_ENV)
+    if raw is None:
+        return DEFAULT_SEED_BATCH_DRAIN_SEC
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning(
+            "ignoring non-integer %s=%r; using default %d",
+            _SEED_BATCH_DRAIN_ENV,
+            raw,
+            DEFAULT_SEED_BATCH_DRAIN_SEC,
+            extra={
+                "event": "seeding_batch_drain_env_invalid",
+                "raw_value": raw,
+                "fallback": DEFAULT_SEED_BATCH_DRAIN_SEC,
+            },
+        )
+        return DEFAULT_SEED_BATCH_DRAIN_SEC
+    if value <= 0:
+        logger.warning(
+            "ignoring non-positive %s=%d; using default %d",
+            _SEED_BATCH_DRAIN_ENV,
+            value,
+            DEFAULT_SEED_BATCH_DRAIN_SEC,
+            extra={
+                "event": "seeding_batch_drain_env_invalid",
+                "raw_value": raw,
+                "fallback": DEFAULT_SEED_BATCH_DRAIN_SEC,
+            },
+        )
+        return DEFAULT_SEED_BATCH_DRAIN_SEC
+    return value
+
+
 def _is_already_seeded(state: Any) -> bool:
     """True iff a previous seed clearly landed for Lilymay.
 
@@ -559,16 +616,64 @@ async def seed_lilymay(
         return EXIT_OK
 
     # ---- Schedule every write through the shared helper ------------------
+    #
+    # TASK-GR-SEED (2026-05-02): drain between each entity-type batch, not
+    # just at the end. Background: schedule_write is fire-and-forget by
+    # design (CC-13 / ADR-ARCH-019 handler-budget contract), so calling all
+    # six batch helpers without intermediate drains dispatches all ~25
+    # episodes concurrently. Each episode in turn triggers ~3-4 internal
+    # graphiti-core LLM extraction calls — multiplied across 25 in-flight
+    # episodes that's ~75-100 concurrent vLLM requests, which exceeds the
+    # GB10 vLLM queue cap and 429-rate-limits every write. Draining between
+    # batches keeps the in-flight count to one batch's worth at a time
+    # (≤6 episodes), which fits comfortably inside vLLM's queue while
+    # preserving the seed's existing CC-13 invariants — every write still
+    # routes through helper.schedule_write under flush_id="SEED", and the
+    # final drain still runs as the catch-all.
+    #
+    # The intermediate drains use a generous per-batch timeout (the
+    # GRAPHITI_SEED_BATCH_DRAIN_SEC env var, default 600s) because vLLM
+    # extraction wall-time per episode is highly variable (5-90s) and the
+    # 30s default shutdown_grace is sized for handler-budget tear-down,
+    # not seed-time bulk loads.
     now = _now_utc()
+    batch_drain_sec = _resolve_seed_batch_drain_sec()
+
+    async def _drain_batch(label: str) -> None:
+        succeeded, abandoned = await helper.drain(timeout_sec=batch_drain_sec)
+        logger.info(
+            "seeding batch drained",
+            extra={
+                "event": "seeding_batch_drained",
+                "batch": label,
+                "succeeded": succeeded,
+                "abandoned": abandoned,
+            },
+        )
+        if abandoned > 0:
+            # Surface a hard-fail on the first batch that loses writes
+            # rather than soldiering on through five more batches that
+            # will drop the same way.
+            raise RuntimeError(
+                f"seeding batch {label!r} abandoned {abandoned} of "
+                f"{succeeded + abandoned} writes after {batch_drain_sec}s "
+                "drain — investigate vLLM queue saturation before retrying"
+            )
+
     _seed_student(helper, now=now)
+    await _drain_batch("student")
     _seed_subjects(helper)
+    await _drain_batch("subjects")
     _seed_texts(helper)
+    await _drain_batch("texts")
     _seed_assessment_objectives(helper)
+    await _drain_batch("assessment_objectives")
     _seed_topics(helper)
+    await _drain_batch("topics")
     _seed_initial_topic_confidences(helper, now=now)
 
     # ---- Drain in-flight tasks before exit -------------------------------
-    succeeded, abandoned = await helper.drain()
+    succeeded, abandoned = await helper.drain(timeout_sec=batch_drain_sec)
     if abandoned > 0:
         logger.error(
             "seeding pending writes abandoned at shutdown",
@@ -619,7 +724,15 @@ async def main(argv: list[str] | None = None) -> int:
     tests can drive the whole flow with a single ``await``.
     """
     args = _parse_args(argv)
-    config = load_config(args.config_path)
+    # TASK-GR-LOAD / AC-LOAD-07: prefer the canonical YAML loader so the
+    # DECISION-DF-001 cloud-provider guard runs at config-load time. The
+    # legacy ``load_config`` path is retained only for the
+    # ``--config-path`` override + its existing test surface (which uses
+    # the in-script ``DEFAULT_CONFIG`` schema with ``falkor_host`` keys).
+    if args.config_path is None:
+        config = load_graphiti_config_from_yaml(DEFAULT_GRAPHITI_YAML_PATH)
+    else:
+        config = load_config(args.config_path)
 
     client = await get_client(config)
     # ``require_client_or_exit`` raises ``SystemExit(2)`` when client is None.

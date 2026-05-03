@@ -1,0 +1,185 @@
+{
+  "task_id": "TASK-GR-SMOK",
+  "turn": 3,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "skipped",
+      "test_output_summary": "Independent test verification skipped (tests not required for testing tasks)",
+      "duration_seconds": 0.0
+    },
+    "requirements": {
+      "criteria_total": 7,
+      "criteria_met": 0,
+      "all_criteria_met": false,
+      "missing": [
+        "AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/smoke/` location aligns with the existing project layout (see `tests/` siblings).",
+        "AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). Stubs `_load_graphiti_core` to return a fake `Graphiti` class that captures init kwargs. Asserts:",
+        "AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg *names* are present: `graph_driver`, `llm_client`, `embedder`, `cross_encoder`. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg. (Closes the parent's `@regression` BDD scenario.)",
+        "AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\"STUDY_TUTOR_LIVE_GRAPHITI_SMOKE\") != \"1\", reason=\"live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable\")`. When enabled, the test:",
+        "AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls `_build_llm_client(config)` and `_build_embedder(config)`, asserts `client.config.api_key != \"poison-must-not-leak\"`. (Direct AC-LOAD-03 / AC-WIRE-05 enforcement at the test layer.)",
+        "AC-SMOK-06** \u2014 CC-13 regex audit (the existing single-`add_episode(`-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings.",
+        "AC-SMOK-07** \u2014 CI configuration (whether GitHub Actions, Conductor, or local pre-commit) does NOT set `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1`. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring."
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/smoke/` location aligns with the existing project layout (see `tests/` siblings).",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-001",
+      "notes": "No completion promise for AC-001"
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). Stubs `_load_graphiti_core` to return a fake `Graphiti` class that captures init kwargs. Asserts:",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-002",
+      "notes": "No completion promise for AC-002"
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg *names* are present: `graph_driver`, `llm_client`, `embedder`, `cross_encoder`. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg. (Closes the parent's `@regression` BDD scenario.)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-003",
+      "notes": "No completion promise for AC-003"
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\"STUDY_TUTOR_LIVE_GRAPHITI_SMOKE\") != \"1\", reason=\"live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable\")`. When enabled, the test:",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-004",
+      "notes": "No completion promise for AC-004"
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls `_build_llm_client(config)` and `_build_embedder(config)`, asserts `client.config.api_key != \"poison-must-not-leak\"`. (Direct AC-LOAD-03 / AC-WIRE-05 enforcement at the test layer.)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-005",
+      "notes": "No completion promise for AC-005"
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "AC-SMOK-06** \u2014 CC-13 regex audit (the existing single-`add_episode(`-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-006",
+      "notes": "No completion promise for AC-006"
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "AC-SMOK-07** \u2014 CI configuration (whether GitHub Actions, Conductor, or local pre-commit) does NOT set `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1`. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-007",
+      "notes": "No completion promise for AC-007"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/smoke/` location aligns with the existing project layout (see `tests/` siblings).",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-001",
+        "notes": "No completion promise for AC-001"
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). Stubs `_load_graphiti_core` to return a fake `Graphiti` class that captures init kwargs. Asserts:",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-002",
+        "notes": "No completion promise for AC-002"
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg *names* are present: `graph_driver`, `llm_client`, `embedder`, `cross_encoder`. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg. (Closes the parent's `@regression` BDD scenario.)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-003",
+        "notes": "No completion promise for AC-003"
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\"STUDY_TUTOR_LIVE_GRAPHITI_SMOKE\") != \"1\", reason=\"live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable\")`. When enabled, the test:",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-004",
+        "notes": "No completion promise for AC-004"
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls `_build_llm_client(config)` and `_build_embedder(config)`, asserts `client.config.api_key != \"poison-must-not-leak\"`. (Direct AC-LOAD-03 / AC-WIRE-05 enforcement at the test layer.)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-005",
+        "notes": "No completion promise for AC-005"
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "AC-SMOK-06** \u2014 CC-13 regex audit (the existing single-`add_episode(`-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-006",
+        "notes": "No completion promise for AC-006"
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "AC-SMOK-07** \u2014 CI configuration (whether GitHub Actions, Conductor, or local pre-commit) does NOT set `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1`. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-007",
+        "notes": "No completion promise for AC-007"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/smoke/` location aligns with the existing project layout (see `tests/` siblings).",
+        "AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). Stubs `_load_graphiti_core` to return a fake `Graphiti` class that captures init kwargs. Asserts:",
+        "AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg *names* are present: `graph_driver`, `llm_client`, `embedder`, `cross_encoder`. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg. (Closes the parent's `@regression` BDD scenario.)",
+        "AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\"STUDY_TUTOR_LIVE_GRAPHITI_SMOKE\") != \"1\", reason=\"live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable\")`. When enabled, the test:",
+        "AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls `_build_llm_client(config)` and `_build_embedder(config)`, asserts `client.config.api_key != \"poison-must-not-leak\"`. (Direct AC-LOAD-03 / AC-WIRE-05 enforcement at the test layer.)",
+        "AC-SMOK-06** \u2014 CC-13 regex audit (the existing single-`add_episode(`-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings.",
+        "AC-SMOK-07** \u2014 CI configuration (whether GitHub Actions, Conductor, or local pre-commit) does NOT set `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1`. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring."
+      ]
+    }
+  ],
+  "rationale": "Missing 7 acceptance criteria: AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/smoke/` location aligns with the existing project layout (see `tests/` siblings)., AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). Stubs `_load_graphiti_core` to return a fake `Graphiti` class that captures init kwargs. Asserts:, AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg *names* are present: `graph_driver`, `llm_client`, `embedder`, `cross_encoder`. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg. (Closes the parent's `@regression` BDD scenario.), AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\"STUDY_TUTOR_LIVE_GRAPHITI_SMOKE\") != \"1\", reason=\"live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable\")`. When enabled, the test:, AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls `_build_llm_client(config)` and `_build_embedder(config)`, asserts `client.config.api_key != \"poison-must-not-leak\"`. (Direct AC-LOAD-03 / AC-WIRE-05 enforcement at the test layer.), AC-SMOK-06** \u2014 CC-13 regex audit (the existing single-`add_episode(`-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings., AC-SMOK-07** \u2014 CI configuration (whether GitHub Actions, Conductor, or local pre-commit) does NOT set `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1`. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1907/7892 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- REFERS_TO\n- HAS_PROPERTY\n- IDENTIFIES_PARALLEL_WORK\n- ASSIGNS_TASK_TO\n- DISPLAYS_PARALLEL_GROUP_COUNT_IN\n\n### \u26a0\ufe0f Warnings\n- IS_IMPLEMENTED_AS\n- CALLS\n\n### \ud83c\udfad Role Constraints\n- RUNS_TESTS_BEFORE_REPORTING\n- REQUIRES_ASK_BEFORE\n- MUST_RUN\n- HAS_ROLE_MUST_DO\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- WHEN_TO_USE\n- HAS_METADATA\n\n\n## Previous Turn Summary (Turn 2)\n**What was attempted**: Implementation attempt\n**Player decision**: feedback\n**Coach decision**: feedback\n**Coach feedback**: - Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/sm\n  \u2022 AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). St\n  \u2022 AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly ass\n  \u2022 AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\n  \u2022 AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls \n  (2 more)\n\n**Acceptance Criteria Status**:\n  \u2717 AC-001: rejected\n  \u2717 AC-002: rejected\n  \u2717 AC-003: rejected\n  \u2717 AC-004: rejected\n  \u2717 AC-005: rejected\n  \u2717 AC-006: rejected\n  \u2717 AC-007: rejected",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

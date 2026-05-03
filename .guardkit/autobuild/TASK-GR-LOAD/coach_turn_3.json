@@ -1,0 +1,203 @@
+{
+  "task_id": "TASK-GR-LOAD",
+  "turn": 3,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/knowledge/test_graphiti_client.py tests/unit/knowledge/test_graphiti_config_loader.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/knowledge/test_graphiti_config_loader.py::test_missing_file_raises PASSED [ 91%]\ntests/unit/knowledge/test_graphiti_config_loader.py::test_unknown_yaml_keys_ignored PASSED [ 94%]\ntests/unit/knowledge/test_graphiti_config_loader.py::test_missing_required_keys_raises_validation_error PASSED [ 97%]\ntests/unit/knowledge/test_graphiti_config_loader.py::test_non_mapping_yaml_raises_value_error PASSED [100%]\n============================== 35 passed in 0.29s ==============================",
+      "duration_seconds": 0.8857951164245605
+    },
+    "requirements": {
+      "criteria_total": 8,
+      "criteria_met": 0,
+      "all_criteria_met": false,
+      "missing": [
+        "AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path: Path = Path(\".guardkit/graphiti.yaml\")) -> GraphitiConnectionConfig` exists in `src/study_tutor/knowledge/graphiti_client.py`. Reads the YAML and projects the canonical fields into the runtime model: `falkordb_host`, `falkordb_port`, `timeout`, `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions` (when present), `chunk_extraction_concurrency`.",
+        "AC-LOAD-02** \u2014 Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`, `GRAPHITI_ENABLED` (and analogous LLM/embedder vars) per the YAML's documented contract. Tested with `monkeypatch.setenv`.",
+        "AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider in (\"openai\", \"gemini\")` raises `ValueError(\"cloud LLM providers disabled per DECISION-DF-001\")` with a structured log line `event=cloud_provider_rejected llm_provider=<value>`. Same for `embedding_provider == \"openai\"`.",
+        "AC-LOAD-04** \u2014 Dataclass extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions`, `chunk_extraction_concurrency`. Existing fields (`falkor_host`, `falkor_port`, `database`, `embedder_url`, `timeout_seconds`) preserved for backwards-compat with the in-flight Phase-1 fixes (`a210472`, `78d3498`, `732672c`).",
+        "AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"` is changed to `\"vllm\"`. Default `llm_model: str = \"gemini-2.5-pro\"` changed to `\"qwen-graphiti\"`. (Cleans up F2 from the review report \u2014 defaults can no longer leak Gemini even if a caller bypasses the loader.)",
+        "AC-LOAD-06** \u2014 Unit tests cover: happy path (YAML loads), env-var override, cloud-provider rejection (both LLM and embedder paths), missing-file fallback (raises `FileNotFoundError` with a clear message \u2014 do NOT silently default), schema-mismatch (extra YAML keys ignored, missing required keys raises `ValidationError`).",
+        "AC-LOAD-07** \u2014 `seed_student_model.py` and the `tutor_session_*` MCP handlers are updated to call `load_graphiti_config_from_yaml()` instead of hand-constructing `GraphitiConnectionConfig`. (Sweep `git grep -n 'GraphitiConnectionConfig('` and update each call site.)",
+        "AC-LOAD-08** \u2014 All modified files pass project-configured lint/format checks with zero errors."
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path: Path = Path(\".guardkit/graphiti.yaml\")) -> GraphitiConnectionConfig` exists in `src/study_tutor/knowledge/graphiti_client.py`. Reads the YAML and projects the canonical fields into the runtime model: `falkordb_host`, `falkordb_port`, `timeout`, `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions` (when present), `chunk_extraction_concurrency`.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-001",
+      "notes": "No completion promise for AC-001"
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "AC-LOAD-02** \u2014 Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`, `GRAPHITI_ENABLED` (and analogous LLM/embedder vars) per the YAML's documented contract. Tested with `monkeypatch.setenv`.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-002",
+      "notes": "No completion promise for AC-002"
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider in (\"openai\", \"gemini\")` raises `ValueError(\"cloud LLM providers disabled per DECISION-DF-001\")` with a structured log line `event=cloud_provider_rejected llm_provider=<value>`. Same for `embedding_provider == \"openai\"`.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-003",
+      "notes": "No completion promise for AC-003"
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "AC-LOAD-04** \u2014 Dataclass extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions`, `chunk_extraction_concurrency`. Existing fields (`falkor_host`, `falkor_port`, `database`, `embedder_url`, `timeout_seconds`) preserved for backwards-compat with the in-flight Phase-1 fixes (`a210472`, `78d3498`, `732672c`).",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-004",
+      "notes": "No completion promise for AC-004"
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"` is changed to `\"vllm\"`. Default `llm_model: str = \"gemini-2.5-pro\"` changed to `\"qwen-graphiti\"`. (Cleans up F2 from the review report \u2014 defaults can no longer leak Gemini even if a caller bypasses the loader.)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-005",
+      "notes": "No completion promise for AC-005"
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "AC-LOAD-06** \u2014 Unit tests cover: happy path (YAML loads), env-var override, cloud-provider rejection (both LLM and embedder paths), missing-file fallback (raises `FileNotFoundError` with a clear message \u2014 do NOT silently default), schema-mismatch (extra YAML keys ignored, missing required keys raises `ValidationError`).",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-006",
+      "notes": "No completion promise for AC-006"
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "AC-LOAD-07** \u2014 `seed_student_model.py` and the `tutor_session_*` MCP handlers are updated to call `load_graphiti_config_from_yaml()` instead of hand-constructing `GraphitiConnectionConfig`. (Sweep `git grep -n 'GraphitiConnectionConfig('` and update each call site.)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-007",
+      "notes": "No completion promise for AC-007"
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "AC-LOAD-08** \u2014 All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-008",
+      "notes": "No completion promise for AC-008"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path: Path = Path(\".guardkit/graphiti.yaml\")) -> GraphitiConnectionConfig` exists in `src/study_tutor/knowledge/graphiti_client.py`. Reads the YAML and projects the canonical fields into the runtime model: `falkordb_host`, `falkordb_port`, `timeout`, `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions` (when present), `chunk_extraction_concurrency`.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-001",
+        "notes": "No completion promise for AC-001"
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "AC-LOAD-02** \u2014 Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`, `GRAPHITI_ENABLED` (and analogous LLM/embedder vars) per the YAML's documented contract. Tested with `monkeypatch.setenv`.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-002",
+        "notes": "No completion promise for AC-002"
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider in (\"openai\", \"gemini\")` raises `ValueError(\"cloud LLM providers disabled per DECISION-DF-001\")` with a structured log line `event=cloud_provider_rejected llm_provider=<value>`. Same for `embedding_provider == \"openai\"`.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-003",
+        "notes": "No completion promise for AC-003"
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "AC-LOAD-04** \u2014 Dataclass extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions`, `chunk_extraction_concurrency`. Existing fields (`falkor_host`, `falkor_port`, `database`, `embedder_url`, `timeout_seconds`) preserved for backwards-compat with the in-flight Phase-1 fixes (`a210472`, `78d3498`, `732672c`).",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-004",
+        "notes": "No completion promise for AC-004"
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"` is changed to `\"vllm\"`. Default `llm_model: str = \"gemini-2.5-pro\"` changed to `\"qwen-graphiti\"`. (Cleans up F2 from the review report \u2014 defaults can no longer leak Gemini even if a caller bypasses the loader.)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-005",
+        "notes": "No completion promise for AC-005"
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "AC-LOAD-06** \u2014 Unit tests cover: happy path (YAML loads), env-var override, cloud-provider rejection (both LLM and embedder paths), missing-file fallback (raises `FileNotFoundError` with a clear message \u2014 do NOT silently default), schema-mismatch (extra YAML keys ignored, missing required keys raises `ValidationError`).",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-006",
+        "notes": "No completion promise for AC-006"
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "AC-LOAD-07** \u2014 `seed_student_model.py` and the `tutor_session_*` MCP handlers are updated to call `load_graphiti_config_from_yaml()` instead of hand-constructing `GraphitiConnectionConfig`. (Sweep `git grep -n 'GraphitiConnectionConfig('` and update each call site.)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-007",
+        "notes": "No completion promise for AC-007"
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "AC-LOAD-08** \u2014 All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-008",
+        "notes": "No completion promise for AC-008"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path: Path = Path(\".guardkit/graphiti.yaml\")) -> GraphitiConnectionConfig` exists in `src/study_tutor/knowledge/graphiti_client.py`. Reads the YAML and projects the canonical fields into the runtime model: `falkordb_host`, `falkordb_port`, `timeout`, `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions` (when present), `chunk_extraction_concurrency`.",
+        "AC-LOAD-02** \u2014 Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`, `GRAPHITI_ENABLED` (and analogous LLM/embedder vars) per the YAML's documented contract. Tested with `monkeypatch.setenv`.",
+        "AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider in (\"openai\", \"gemini\")` raises `ValueError(\"cloud LLM providers disabled per DECISION-DF-001\")` with a structured log line `event=cloud_provider_rejected llm_provider=<value>`. Same for `embedding_provider == \"openai\"`.",
+        "AC-LOAD-04** \u2014 Dataclass extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions`, `chunk_extraction_concurrency`. Existing fields (`falkor_host`, `falkor_port`, `database`, `embedder_url`, `timeout_seconds`) preserved for backwards-compat with the in-flight Phase-1 fixes (`a210472`, `78d3498`, `732672c`).",
+        "AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"` is changed to `\"vllm\"`. Default `llm_model: str = \"gemini-2.5-pro\"` changed to `\"qwen-graphiti\"`. (Cleans up F2 from the review report \u2014 defaults can no longer leak Gemini even if a caller bypasses the loader.)",
+        "AC-LOAD-06** \u2014 Unit tests cover: happy path (YAML loads), env-var override, cloud-provider rejection (both LLM and embedder paths), missing-file fallback (raises `FileNotFoundError` with a clear message \u2014 do NOT silently default), schema-mismatch (extra YAML keys ignored, missing required keys raises `ValidationError`).",
+        "AC-LOAD-07** \u2014 `seed_student_model.py` and the `tutor_session_*` MCP handlers are updated to call `load_graphiti_config_from_yaml()` instead of hand-constructing `GraphitiConnectionConfig`. (Sweep `git grep -n 'GraphitiConnectionConfig('` and update each call site.)",
+        "AC-LOAD-08** \u2014 All modified files pass project-configured lint/format checks with zero errors."
+      ]
+    }
+  ],
+  "rationale": "Missing 8 acceptance criteria: AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path: Path = Path(\".guardkit/graphiti.yaml\")) -> GraphitiConnectionConfig` exists in `src/study_tutor/knowledge/graphiti_client.py`. Reads the YAML and projects the canonical fields into the runtime model: `falkordb_host`, `falkordb_port`, `timeout`, `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions` (when present), `chunk_extraction_concurrency`., AC-LOAD-02** \u2014 Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`, `GRAPHITI_ENABLED` (and analogous LLM/embedder vars) per the YAML's documented contract. Tested with `monkeypatch.setenv`., AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider in (\"openai\", \"gemini\")` raises `ValueError(\"cloud LLM providers disabled per DECISION-DF-001\")` with a structured log line `event=cloud_provider_rejected llm_provider=<value>`. Same for `embedding_provider == \"openai\"`., AC-LOAD-04** \u2014 Dataclass extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_base_url`, `llm_model`, `llm_max_tokens`, `embedding_provider`, `embedding_base_url`, `embedding_model`, `embedding_dimensions`, `chunk_extraction_concurrency`. Existing fields (`falkor_host`, `falkor_port`, `database`, `embedder_url`, `timeout_seconds`) preserved for backwards-compat with the in-flight Phase-1 fixes (`a210472`, `78d3498`, `732672c`)., AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"` is changed to `\"vllm\"`. Default `llm_model: str = \"gemini-2.5-pro\"` changed to `\"qwen-graphiti\"`. (Cleans up F2 from the review report \u2014 defaults can no longer leak Gemini even if a caller bypasses the loader.), AC-LOAD-06** \u2014 Unit tests cover: happy path (YAML loads), env-var override, cloud-provider rejection (both LLM and embedder paths), missing-file fallback (raises `FileNotFoundError` with a clear message \u2014 do NOT silently default), schema-mismatch (extra YAML keys ignored, missing required keys raises `ValidationError`)., AC-LOAD-07** \u2014 `seed_student_model.py` and the `tutor_session_*` MCP handlers are updated to call `load_graphiti_config_from_yaml()` instead of hand-constructing `GraphitiConnectionConfig`. (Sweep `git grep -n 'GraphitiConnectionConfig('` and update each call site.), AC-LOAD-08** \u2014 All modified files pass project-configured lint/format checks with zero errors.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1475/7892 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- REFERS_TO\n- INSTRUCTS_USER_TO_START\n- IS_USED_IN_PROJECT\n\n### \u26a0\ufe0f Warnings\n- SOURCE_OF\n- IS_IMPLEMENTED_AS\n\n### \ud83c\udfad Role Constraints\n- MUST_FACTOR_HONESTY_SCORE\n- MONITORS\n- FACTORS_INTO_DECISIONS\n- ASSESSED_WITH_PRINCIPLE\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- IS_SUITABLE_FOR\n- HAS_IMPLEMENTATION_MODE\n\n\n## Previous Turn Summary (Turn 2)\n**What was attempted**: Implementation attempt\n**Player decision**: feedback\n**Coach decision**: feedback\n**Coach feedback**: - Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LOAD-01** \u2014 `load_graphiti_config_from_yaml(path: Path = Path(\".guardkit/graphiti.yaml\")) -> Grap\n  \u2022 AC-LOAD-02** \u2014 Env-var overrides honoured for the documented set: `FALKORDB_HOST`, `FALKORDB_PORT`, \n  \u2022 AC-LOAD-03** \u2014 DECISION-DF-001 guard at load time: `llm_provider in (\"openai\", \"gemini\")` raises `Va\n  \u2022 AC-LOAD-04** \u2014 Dataclass extension: `GraphitiConnectionConfig` gains fields `llm_provider`, `llm_bas\n  \u2022 AC-LOAD-05** \u2014 The legacy default `llm_provider: str = \"gemini\"` is changed to `\"vllm\"`. Default `ll\n  (3 more)\n\n**Acceptance Criteria Status**:\n  \u2717 AC-001: rejected\n  \u2717 AC-002: rejected\n  \u2717 AC-003: rejected\n  \u2717 AC-004: rejected\n  \u2717 AC-005: rejected\n  \u2717 AC-006: rejected\n  \u2717 AC-007: rejected\n  \u2717 AC-008: rejected",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

@@ -1,0 +1,162 @@
+{
+  "task_id": "TASK-GR-SEED",
+  "timestamp": "2026-05-02T17:48:40.324696",
+  "completed": false,
+  "phases": {},
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 0,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
+  },
+  "files_modified": [
+    ".claude/task-plans/TASK-GR-SEED-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GR-SEED/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_1.end",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_1.pid",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_1.start",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_2.end",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_2.pid",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_2.start",
+    ".guardkit/autobuild/TASK-GR-SEED/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GR-SEED/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SEED/specialist_results.json",
+    ".guardkit/autobuild/TASK-GR-SEED/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-SEED/turn_context.json",
+    ".guardkit/autobuild/TASK-GR-SEED/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/checkpoints.json",
+    ".guardkit/graphiti.yaml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/scripts/seed_student_model.py",
+    "scripts/seed_student_model.py",
+    "src/study_tutor/knowledge/graphiti_client.py",
+    "tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-SEED-reseed-lilymay-and-flip-phase-1-gate.md",
+    "tasks/design_approved/TASK-GR-SEED-reseed-lilymay-and-flip-phase-1-gate.md"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-GR-SEED/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-SEED/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_3.pid",
+    ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_3.start",
+    ".guardkit/autobuild/TASK-GR-SEED/verify_lilymay.py"
+  ],
+  "tests_written": [],
+  "summary": "Implementation completed",
+  "sdk_turns": {
+    "turns_used": 17,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "AC-SEED-01** \u2014 `python scripts/seed_student_model.py` runs successfully against live FalkorDB at `whitestocks:6379`, database `study_tutor`. All 25 entity writes (per `TASK-GSM-006` schema) succeed without 401s, timeouts, or `GroupIdValidationError` failures.",
+      "status": "complete",
+      "evidence": "File-existence verified: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/scripts/seed_student_model.py (modified), scripts/seed_student_model.py (modified)",
+      "evidence_type": "file_existence",
+      "confidence": 1.0
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "AC-SEED-02** \u2014 `mcp__graphiti__search_nodes(query=\"Lilymay\", group_ids=[\"student-lilymay\"])` returns the Student entity with the expected attributes \u2014 `year_group=11`, `target_grade=\"8\"`, non-empty `subjects` list, non-empty `topic_confidences` map.",
+      "status": "incomplete",
+      "evidence": "No file-existence evidence for this criterion",
+      "evidence_type": "file_existence",
+      "confidence": 0.0
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "AC-SEED-03** \u2014 `get_student_state(client, \"lilymay\")` (the existing helper from `student_model.py`) returns a non-empty `StudentState` populated from the live graph (i.e. not the bootstrap-empty case from `GroupsNodesNotFoundError` swallow).",
+      "status": "complete",
+      "evidence": "File-existence verified: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/scripts/seed_student_model.py (modified), scripts/seed_student_model.py (modified)",
+      "evidence_type": "file_existence",
+      "confidence": 1.0
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "AC-SEED-04** \u2014 Re-running the seed is idempotent \u2014 `python scripts/seed_student_model.py` a second time emits `event=seeding_skipped` (the existing `student_model.py` skip-if-present guard fires) and exits 0 without re-issuing entity writes.",
+      "status": "complete",
+      "evidence": "File-existence verified: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/scripts/seed_student_model.py (modified), scripts/seed_student_model.py (modified)",
+      "evidence_type": "file_existence",
+      "confidence": 1.0
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "AC-SEED-05** \u2014 `docs/research/ideas/phase-1-validation.md` is updated:",
+      "status": "partial",
+      "evidence": "File existence verified: docs/research/ideas/phase-1-validation.md",
+      "evidence_type": "file_existence",
+      "confidence": 0.5
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "AC-SEED-06** \u2014 Stale-index cleanup if needed: if `Connection closed by server` warnings escalate into actual write failures, the FalkorDB graph is dropped via `redis-cli -h whitestocks -p 6379 GRAPH.DELETE study_tutor` and the seed re-run. Document if this happens; otherwise leave in place.",
+      "status": "incomplete",
+      "evidence": "No file-existence evidence for this criterion",
+      "evidence_type": "file_existence",
+      "confidence": 0.0
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "AC-SEED-07** \u2014 Wall-clock for the seed run captured. Expected ~30 min on MacBook ollama (78s/`add_episode` median \u00d7 25 writes + helper.drain serial overhead). Anomalies (\u226545 min) get a structured-log review and notes added to the risk register for Wave 5 planning.",
+      "status": "incomplete",
+      "evidence": "No file-existence evidence for this criterion",
+      "evidence_type": "file_existence",
+      "confidence": 0.0
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "AC-SEED-08** \u2014 All modified files (the validation doc + any seed-script touch-ups) pass project-configured lint/format checks with zero errors.",
+      "status": "incomplete",
+      "evidence": "No file-existence evidence for this criterion",
+      "evidence_type": "file_existence",
+      "confidence": 0.0
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 81.91046687494963
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 334.14002358401194
+    }
+  ]
+}

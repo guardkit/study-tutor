@@ -1,0 +1,146 @@
+{
+  "task_id": "TASK-GR-WIRE",
+  "turn": 2,
+  "files_modified": [
+    ".claude/task-plans/TASK-GR-WIRE-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GR-LOAD/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/specialist_results.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/turn_context.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/turn_state_turn_1.json",
+    "pyproject.toml",
+    "src/study_tutor/knowledge/graphiti_client.py",
+    "tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-WIRE-build-llm-client-and-embedder-with-cross-encoder-sentinel.md",
+    "tasks/design_approved/TASK-GR-WIRE-build-llm-client-and-embedder-with-cross-encoder-sentinel.md",
+    "tests/unit/knowledge/test_graphiti_client.py",
+    "tests/unit/knowledge/test_graphiti_client_wiring.py",
+    "uv.lock"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-GR-WIRE/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-GR-WIRE/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-WIRE/player_turn_2.json"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005",
+    "AC-006",
+    "AC-007",
+    "AC-008"
+  ],
+  "requirements_remaining": [
+    "AC-009 (uncertain \u2014 no lint runner configured)"
+  ],
+  "sdk_turns_used": 3,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 15,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "AC-WIRE-01 \u2014 _build_llm_client(config: GraphitiConnectionConfig) -> OpenAIGenericClient returns OpenAIGenericClient(config=LLMConfig(base_url=config.llm_base_url, model=config.llm_model, api_key='local-key'), max_tokens=config.llm_max_tokens) for config.llm_provider in ('vllm','ollama'). Raises NotImplementedError for any other provider value.",
+      "status": "complete",
+      "evidence": "Implemented in src/study_tutor/knowledge/graphiti_client.py:_build_llm_client (defined around line 460). Body: (1) raises NotImplementedError when llm_provider not in {'vllm','ollama'} with a message naming the offending provider value and pointing at DECISION-DF-001; (2) calls _load_llm_client_classes() to lazy-import OpenAIGenericClient + LLMConfig; (3) constructs LLMConfig(base_url=config.llm_base_url, model=config.llm_model, api_key='local-key'); (4) builds **kwargs containing max_tokens only when config.llm_max_tokens is not None (graphiti-core's int-typed signature would reject None); (5) returns OpenAIGenericClient(config=llm_config, **kwargs). Verified by 3 unit tests in tests/unit/knowledge/test_graphiti_client_wiring.py: test_build_llm_client_vllm_provider_returns_configured_client (asserts api_key=='local-key', base_url, model, max_tokens=4096), test_build_llm_client_ollama_provider_returns_configured_client (asserts max_tokens omitted when None), test_build_llm_client_rejects_unknown_provider (asserts NotImplementedError matching 'anthropic'). All 3 pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "AC-WIRE-02 \u2014 _build_embedder(config: GraphitiConnectionConfig) -> OpenAIEmbedder returns OpenAIEmbedder(config=OpenAIEmbedderConfig(base_url=config.embedding_base_url, embedding_model=config.embedding_model, api_key='local-key', embedding_dim=config.embedding_dimensions if set else not_passed)). Same defensive gate.",
+      "status": "complete",
+      "evidence": "Implemented in src/study_tutor/knowledge/graphiti_client.py:_build_embedder. Body: (1) raises NotImplementedError when embedding_provider not in {'vllm','ollama'}; (2) calls _load_embedder_classes() to lazy-import OpenAIEmbedder + OpenAIEmbedderConfig; (3) builds embedder_config_kwargs with base_url, embedding_model, api_key='local-key'; (4) sets embedder_config_kwargs['embedding_dim'] = config.embedding_dimensions ONLY when config.embedding_dimensions is not None \u2014 synthesising a default would risk silent FalkorDB vector shape mismatch; (5) returns OpenAIEmbedder(config=OpenAIEmbedderConfig(**embedder_config_kwargs)). Verified by 3 unit tests: test_build_embedder_with_explicit_embedding_dim (asserts has_embedding_dim is True, embedding_dim==768, api_key=='local-key'), test_build_embedder_without_explicit_embedding_dim (asserts has_embedding_dim is False), test_build_embedder_rejects_unknown_provider (asserts NotImplementedError matching 'voyage'). All 3 pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "AC-WIRE-03 \u2014 _build_cross_encoder_sentinel() returns an object whose every attribute access raises RuntimeError('cross_encoder not wired; reranker calls disabled per DECISION-DF-001 \u2014 wire a local cross-encoder before enabling search reranking'). Implement via __getattr__.",
+      "status": "complete",
+      "evidence": "Implemented in src/study_tutor/knowledge/graphiti_client.py: class _CrossEncoderSentinel with class attribute _ERROR_MESSAGE = 'cross_encoder not wired; reranker calls disabled per DECISION-DF-001 \u2014 wire a local cross-encoder before enabling search reranking', __getattr__(self, name) raises RuntimeError(self._ERROR_MESSAGE), and __repr__ overridden so debug logging cannot trip the raise. Factory _build_cross_encoder_sentinel() returns a fresh instance per call (sibling-test isolation). Verified by 3 unit tests: test_cross_encoder_sentinel_construction_does_not_raise (proves construction succeeds and repr() returns a DECISION-DF-001 marker without raising), test_cross_encoder_sentinel_raises_on_attribute_access (calls sentinel.predict(['query'], ['doc']) inside pytest.raises(RuntimeError, match='DECISION-DF-001')), test_cross_encoder_sentinel_raises_on_arbitrary_method_name (.rank, arbitrary names). All 3 pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "AC-WIRE-04 \u2014 get_client(config) is updated to: (1) Build llm_client = _build_llm_client(config); (2) Build embedder = _build_embedder(config); (3) Build cross_encoder = _build_cross_encoder_sentinel(); (4) Pass all three into graphiti_cls(graph_driver=driver, llm_client=llm_client, embedder=embedder, cross_encoder=cross_encoder).",
+      "status": "complete",
+      "evidence": "Updated get_client() in src/study_tutor/knowledge/graphiti_client.py. Sequence: after _load_graphiti_core() succeeds, a new try/except block calls _build_llm_client(config), _build_embedder(config), _build_cross_encoder_sentinel() \u2014 wrapped inside the existing graceful-degradation envelope so ImportError / NotImplementedError both funnel through _log_degraded() and return None per AC-WIRE-07. The driver-construction try/except now calls graphiti_cls(graph_driver=driver, llm_client=llm_client, embedder=embedder, cross_encoder=cross_encoder). Verified end-to-end by test_get_client_passes_llm_embedder_and_sentinel_to_graphiti: stubs _load_graphiti_core to return _CapturingGraphiti (captures all kwargs into class-level last_kwargs) + _FakeFalkorDriver (green ping); asserts captured['graph_driver'] is a _FakeFalkorDriver, captured['llm_client'] is a _FakeOpenAIGenericClient, captured['embedder'] is a _FakeOpenAIEmbedder, and captured['cross_encoder'].predict raises RuntimeError matching 'DECISION-DF-001'. Test passes.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "AC-WIRE-05 \u2014 OPENAI_API_KEY environment variable is never read by any code path under src/study_tutor/knowledge/. Verified by adding a regression test that sets OPENAI_API_KEY=poison-this-must-not-be-used and asserts get_client() succeeds against a stubbed driver.",
+      "status": "complete",
+      "evidence": "Both builders use the literal placeholder string 'local-key' (never an env-var lookup). Two tests verify: (a) test_get_client_ignores_poisoned_openai_api_key \u2014 uses monkeypatch.setenv('OPENAI_API_KEY','poison-this-must-not-be-used'), runs get_client() against the _CapturingGraphiti + _FakeFalkorDriver stubs, asserts captured['llm_client'].config.api_key=='local-key' AND captured['embedder'].config.api_key=='local-key' AND the poison string does not appear anywhere in repr(captured_kwargs). (b) test_no_openai_api_key_lookup_in_knowledge_module_source \u2014 static source-scan over inspect.getsource(graphiti_client) that fails the test if any of os.environ.get('OPENAI_API_KEY'...), os.environ['OPENAI_API_KEY'], or os.getenv('OPENAI_API_KEY'...) appears (single OR double quotes). Both pass.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "AC-WIRE-06 \u2014 graphiti-core version pinned in pyproject.toml to >=0.29,<0.30 (per parent-task risk register). Document the rationale inline.",
+      "status": "complete",
+      "evidence": "Added 'graphiti-core>=0.29,<0.30' to [project].dependencies in pyproject.toml with an inline comment block (TASK-GR-WIRE / AC-WIRE-06 (FEAT-FD32, 2026-05-02)) explaining the OpenAIGenericClient constructor surface drift between 0.28 and 0.29 (model_size kwarg + LLMConfig signature shifts) and naming Wave 3's smoke test as the trip-wire for the next drift. Verified by reading pyproject.toml: lines containing 'graphiti-core>=0.29,<0.30' present in the dependencies array, with the rationale comment immediately above the pin.",
+      "test_file": null,
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "AC-WIRE-07 \u2014 ImportError for the LLM/embedder modules falls into the existing _log_degraded('ImportError', ...) path in get_client() \u2014 does NOT raise. The existing graceful-degradation contract (return None) is preserved.",
+      "status": "complete",
+      "evidence": "Both _build_llm_client and _build_embedder import via the patch-friendly _load_llm_client_classes / _load_embedder_classes helpers (mirroring the existing _load_graphiti_core pattern). get_client() wraps the builder calls in a try/except where ImportError \u2192 _log_degraded('ImportError', config.falkor_host, error_message=str(exc)) + return None \u2014 the SAME envelope already used for the bare graphiti-core import failure (no widening of the boundary). NotImplementedError gets a parallel branch with error_class='NotImplementedError'. Verified by test_get_client_returns_none_when_llm_client_import_fails: side_effects _load_llm_client_classes to raise ImportError, asserts get_client returns None and that a graphiti_client_degraded log record carries error_class='ImportError'. Also test_get_client_returns_none_on_unsupported_provider exercises the NotImplementedError branch. Both pass. NOTE: The AC quotes import paths 'graphiti_core.llm_client.openai_generic.OpenAIGenericClient' and 'graphiti_core.embedder.openai.OpenAIEmbedder', but graphiti-core 0.29's actual paths are 'graphiti_core.llm_client.openai_generic_client.OpenAIGenericClient' (file is openai_generic_client.py, confirmed in installed site-packages) and 'graphiti_core.embedder' (package-level re-export, used by GuardKit canonical reference). Implementation uses the real-and-canonical paths so the runtime ImportError contract still holds end-to-end.",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "AC-WIRE-08 \u2014 Unit tests cover: client construction with vllm provider, client construction with ollama provider, embedder with explicit embedding_dim, embedder without explicit dim, cross-encoder sentinel raises on first attribute access (not at construction), full get_client() with stubbed _load_graphiti_core returning a fake Graphiti class that captures kwargs.",
+      "status": "complete",
+      "evidence": "tests/unit/knowledge/test_graphiti_client_wiring.py contains 15 tests covering exactly the listed cases plus a few belt-and-braces extras: test_build_llm_client_vllm_provider_returns_configured_client (vllm), test_build_llm_client_ollama_provider_returns_configured_client (ollama), test_build_embedder_with_explicit_embedding_dim, test_build_embedder_without_explicit_embedding_dim, test_cross_encoder_sentinel_construction_does_not_raise + test_cross_encoder_sentinel_raises_on_attribute_access (the construction-vs-access split the AC names explicitly), test_get_client_passes_llm_embedder_and_sentinel_to_graphiti (full get_client with _CapturingGraphiti stub recording kwargs). Plus 8 supporting tests for unknown-provider gates, OPENAI_API_KEY poisoning, ImportError funneling, source-scan audit, and env isolation. Full test run: 15 passed, 0 failed in 0.07s. Coverage on the new builder functions is at or above the AC's \u226580% line target (every branch exercised: provider gate happy path, provider gate raise, max_tokens set/omitted, embedding_dim set/omitted, sentinel construction, sentinel access, sentinel repr).",
+      "test_file": "tests/unit/knowledge/test_graphiti_client_wiring.py",
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "AC-WIRE-09 \u2014 All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "uncertain",
+      "evidence": "No automated lint/format runner is configured for this default GuardKit template \u2014 .claude/settings.json carries no 'lint' or 'format' command, and pyproject.toml has no [tool.ruff], [tool.black], or [tool.flake8] sections. Code follows the existing project's conventions: 'from __future__ import annotations' at the top, explicit type hints on public surface, comprehensive docstrings, no print() calls (uses the module logger), specific exception types (NotImplementedError, ImportError, RuntimeError), no bare except. Marked 'uncertain' because no deterministic gate exists in this worktree to assert pass/fail on AC-WIRE-09's exact wording. The autobuild Coach pass should resolve this \u2014 if a lint runner exists at orchestrator level it will run there.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/knowledge/graphiti_client.py",
+        "pyproject.toml",
+        "tests/unit/knowledge/test_graphiti_client_wiring.py",
+        "tests/unit/knowledge/test_graphiti_client.py"
+      ]
+    }
+  ]
+}

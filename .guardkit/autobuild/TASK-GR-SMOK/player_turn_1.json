@@ -1,0 +1,106 @@
+{
+  "task_id": "TASK-GR-SMOK",
+  "turn": 1,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GR-SMOK/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/turn_context.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json"
+  ],
+  "files_created": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-SMOK-01",
+    "AC-SMOK-02",
+    "AC-SMOK-03",
+    "AC-SMOK-04",
+    "AC-SMOK-05",
+    "AC-SMOK-06",
+    "AC-SMOK-07"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 15,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 4,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-SMOK-01",
+      "criterion_text": "Test file exists at tests/smoke/test_graphiti_live_smoke.py. Conventional tests/smoke/ location aligns with the existing project layout.",
+      "status": "complete",
+      "evidence": "Created tests/smoke/test_graphiti_live_smoke.py at the conventional smoke-test location alongside the existing test_session_planner.py and test_tutoring_loop.py siblings. The file carries pytestmark = [pytest.mark.smoke] so it is selectable via the project's smoke gate.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK-02",
+      "criterion_text": "test_constructor_shape_no_cloud_defaults runs unconditionally (no env-var gate). Stubs _load_graphiti_core to return a fake Graphiti class that captures init kwargs. Asserts: llm_client is OpenAIGenericClient with api_key='local-key' (not OPENAI_API_KEY); embedder is OpenAIEmbedder with api_key='local-key'; cross_encoder is the sentinel that raises RuntimeError matching 'DECISION-DF-001' on .predict(...).",
+      "status": "complete",
+      "evidence": "test_constructor_shape_no_cloud_defaults has no skipif decorator. It poisons OPENAI_API_KEY=poison-must-not-leak, patches gc._load_graphiti_core to return (_CapturingGraphiti, _FakeFalkorDriver), and after get_client(config) verifies all five clauses: (1) isinstance(captured['llm_client'], OpenAIGenericClient); (2) captured['llm_client'].config.api_key == 'local-key' AND != os.environ['OPENAI_API_KEY']; (3) isinstance(captured['embedder'], OpenAIEmbedder); (4) captured['embedder'].config.api_key == 'local-key'; (5) pytest.raises(RuntimeError, match='DECISION-DF-001') on captured['cross_encoder'].predict(['q'], ['d']). Verified passing.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK-03",
+      "criterion_text": "test_kwarg_drift_detection \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg names are present: graph_driver, llm_client, embedder, cross_encoder. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg.",
+      "status": "complete",
+      "evidence": "test_kwarg_drift_detection patches _load_graphiti_core, calls get_client, then computes missing = [name for name in ('graph_driver', 'llm_client', 'embedder', 'cross_encoder') if name not in captured] and asserts not missing with a diagnostic message that names the missing kwargs and the captured key set. Verified passing on graphiti-core 0.29.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK-04",
+      "criterion_text": "test_live_falkordb_roundtrip is decorated with @pytest.mark.skipif(STUDY_TUTOR_LIVE_GRAPHITI_SMOKE != '1'). When enabled: loads .guardkit/graphiti.yaml; calls get_client(config); calls inner.add_episode(name='smoke', episode_body='{...}', source=EpisodeType.json, source_description='smoke-test', reference_time=now(), group_id='student-test'); calls EntityNode.get_by_group_ids(driver, group_ids=['student-test']) and asserts non-empty; cleans up the test group.",
+      "status": "complete",
+      "evidence": "test_live_falkordb_roundtrip carries @pytest.mark.skipif(os.environ.get('STUDY_TUTOR_LIVE_GRAPHITI_SMOKE') != '1', reason='live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable'). When enabled it: (1) loads load_graphiti_config_from_yaml(DEFAULT_GRAPHITI_YAML_PATH); (2) awaits get_client(config); (3) awaits inner.add_episode(name='smoke', episode_body='{\"smoke\": \"live-graphiti-smoke-test\"}', source=EpisodeType.json, source_description='smoke-test', reference_time=datetime.now(timezone.utc), group_id='student-test'); (4) awaits EntityNode.get_by_group_ids(driver, group_ids=['student-test']) and asserts the result is truthy; (5) cleans up via MATCH (n {group_id: $group_id}) DETACH DELETE n in a finally block, then closes the wrapper. Test SKIPPED when the env var is unset (verified in this run).",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK-05",
+      "criterion_text": "test_openai_api_key_never_read \u2014 sets OPENAI_API_KEY=poison-must-not-leak, calls _build_llm_client(config) and _build_embedder(config), asserts client.config.api_key != 'poison-must-not-leak'.",
+      "status": "complete",
+      "evidence": "test_openai_api_key_never_read uses monkeypatch.setenv('OPENAI_API_KEY', 'poison-must-not-leak'), constructs a local-inference config, calls gc._build_llm_client(config) and gc._build_embedder(config) directly (no get_client envelope), and asserts both clients' config.api_key != 'poison-must-not-leak' AND == 'local-key'. Verified passing.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK-06",
+      "criterion_text": "CC-13 regex audit (the existing single-add_episode(-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings.",
+      "status": "complete",
+      "evidence": "test_cc_13_single_add_episode_call_site re-runs the CC-13 invariant at test time: it walks src/**/*.py with re.compile(r'add_episode\\s*\\(') restricted to lines containing 'await' (skipping comments) and asserts exactly one finding, located in study_tutor/knowledge/async_write.py. This is the same shape the project's lint audit checks; running it inside the smoke gate makes a regression fail the suite immediately. Verified passing \u2014 one call site found, in async_write.py:426.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK-07",
+      "criterion_text": "CI configuration does NOT set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring.",
+      "status": "complete",
+      "evidence": "The module docstring includes a dedicated 'CI contract (AC-SMOK-07)' paragraph stating that the constructor-shape, kwarg-drift, and OPENAI_API_KEY-poison tests run on every CI invocation (no gate), the live FalkorDB round-trip is gated on STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1, and CI configuration (GitHub Actions, Conductor, local pre-commit) MUST NOT set the env var. Only the live test carries skipif; the other four run unconditionally \u2014 verified by the test run showing 4 passed + 1 skipped.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    }
+  ]
+}

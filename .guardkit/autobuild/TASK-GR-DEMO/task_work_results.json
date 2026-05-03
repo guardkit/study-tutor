@@ -1,0 +1,163 @@
+{
+  "task_id": "TASK-GR-DEMO",
+  "timestamp": "2026-05-03T10:44:48.471203",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 1,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": true
+  },
+  "files_modified": [
+    ".claude/task-plans/TASK-GR-DEMO-implementation-plan.md",
+    ".guardkit/autobuild/TASK-GR-DEMO/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/specialist_results.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/turn_context.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SEED/checkpoints.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/docs/research/ideas/graphiti-latency-spike-results.md",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/docs/research/ideas/phase-1-validation.md",
+    "docs/research/ideas/graphiti-latency-spike-results.md",
+    "docs/research/ideas/phase-1-validation.md",
+    "tasks/backlog/graphiti-runtime-integration-repair/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md",
+    "tasks/design_approved/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md",
+    "tests/integration/test_lilymay_seed_seam.py"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-GR-DEMO/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-GR-DEMO/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-DEMO/player_turn_2.json"
+  ],
+  "tests_written": [],
+  "summary": "1 tests passed, all quality gates passed",
+  "sdk_turns": {
+    "turns_used": 9,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-DEMO-01",
+      "criterion_text": "A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence: tutor_start_session(student_id='lilymay') returns a session id and the loaded StudentState; 5\u20137 \u00d7 tutor_turn(...) exchanges with at least one Coach revision; tutor_session_end(session_id=...) returns successfully.",
+      "status": "incomplete",
+      "evidence": "Cannot be satisfied by autobuild. The task's '## Test Requirements' section explicitly states this AC is the human-in-the-loop demo conducted from Claude Desktop and that 'There is no automated test harness for Claude Desktop performs a 5\u20137 turn tutoring session with a real LLM at the back \u2014 that's the AC-DEMO-01 manual verification.' Autobuild has no Claude Desktop, no live LLM endpoint, and no human operator to drive 5\u20137 turns. The runtime contract this AC will exercise is pinned by the seam test at tests/integration/test_lilymay_seed_seam.py (gated behind STUDY_TUTOR_LIVE_GRAPHITI_SMOKE; turn-1 deliverable). The evidence-paste location is now scaffolded by docs/research/ideas/phase-1-validation.md \u00a7'Phase 2 Wave 5 \u2014 Operator handoff' (turn-2 deliverable). Both autobuild-side enablers are in place; the live session itself must be conducted by the operator.",
+      "test_file": "tests/integration/test_lilymay_seed_seam.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-02",
+      "criterion_text": "A session_completed episode is written to Graphiti and is visible via mcp__graphiti__get_episodes(group_ids=['student-lilymay']). The episode body contains the session id, the turn count, and a summary suitable for replay.",
+      "status": "incomplete",
+      "evidence": "Sequential follow-up to AC-DEMO-01: only verifiable after a live session has been conducted and the session_completed episode has been written by record_session_completion. The handler chain (record_session_completion \u2192 GraphitiWriteHelper.schedule_write \u2192 _perform_write \u2192 add_episode) is already shipped + unit-tested by the FEAT-PO-002 cluster \u2014 this AC asserts the live round-trip, which autobuild cannot stage. Evidence-paste row reserved at docs/research/ideas/phase-1-validation.md \u00a7'Phase 2 Wave 5 \u2014 Operator handoff' table row 'G6 (session_completed episode)'.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-03",
+      "criterion_text": "mcp__graphiti__search_nodes(query='<topic from session>', group_ids=['student-lilymay']) returns updated topic_confidences reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.)",
+      "status": "incomplete",
+      "evidence": "Sequential follow-up to AC-DEMO-01. The operator must pick a mid-range topic (baseline confidence 0.5\u20130.7 from Lilymay's seeded topic_confidences) so the post-session delta is detectable \u2014 a topic at 0.95 makes the signal hard to detect; a topic at 0.0 risks no movement. Documented in the operator-handoff scaffold's pre-flight section. Autobuild cannot perform the search because there is no in-session learning to read back.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-04",
+      "criterion_text": "Turn-level latency captured. Record p50 and p95 of tutor_turn wall-clock across all 5\u20137 turns. Append to docs/research/ideas/phase-1-validation.md and to docs/research/ideas/graphiti-latency-spike-results.md under a 'Phase 2 Wave 5 measurement' subsection.",
+      "status": "incomplete",
+      "evidence": "Structurally half-done by turn 2: the named 'Phase 2 Wave 5 measurement' subsection has been appended to docs/research/ideas/graphiti-latency-spike-results.md (with a placeholder table for session id, turn count, topic, p50, p95, Coach-revision flag, log path, plus the grep+jq+percentile recipe from the task's Implementation Notes), AND a sibling subsection has been appended to docs/research/ideas/phase-1-validation.md. The 'Append to ... under a Phase 2 Wave 5 measurement subsection' wording of the AC is satisfied at the structural level \u2014 the subsection is appended, in both docs, named exactly as the AC requires. The remaining work is filling the rows with real numbers from a live tutor_turn_complete log; that requires AC-DEMO-01 to have run first. Marking incomplete because the rows still say '_pending_' rather than holding real measurements.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/research/ideas/graphiti-latency-spike-results.md",
+        "docs/research/ideas/phase-1-validation.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-DEMO-05",
+      "criterion_text": "phase-1-validation.md updated: G3 flips 'Falsified'\u2192'Held'; G4 flips with pasted MCP session-log excerpt; G5 flips with pasted Coach-revised-turn excerpt; G6 flips with pasted mcp__graphiti__get_episodes JSON; G13 flips with session log + p50/p95 latency.",
+      "status": "incomplete",
+      "evidence": "Structurally half-done by turn 2: an 'Phase 2 Wave 5 \u2014 Operator handoff (Pending: live evidence)' subsection has been appended to docs/research/ideas/phase-1-validation.md with a per-gate evidence checklist (G3/G4/G5/G6/G13), paste-location table, pre-flight checklist, and Coach-revision rule. The actual gate flips from 'Falsified' to 'Held' in the section ABOVE the scaffold have deliberately NOT been performed \u2014 flipping a gate without real evidence would corrupt the doc's audit-trail invariant ('every status flip is backed by a real artifact'). The operator who runs AC-DEMO-01 will paste evidence into the scaffold rows and then perform the flips, citing those rows. Marking incomplete because the gates above still read 'Falsified'.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/research/ideas/phase-1-validation.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-DEMO-06",
+      "criterion_text": "Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from backlog/ to completed/, and FEAT-PH2-001 (gamification) is unblocked.",
+      "status": "incomplete",
+      "evidence": "Sequential follow-up to AC-DEMO-05. Until the validation-doc gates flip to 'Held' with real evidence, moving TASK-PH2-GR-001 to completed/ would be premature \u2014 the move asserts Phase 1 closed, which depends on the live-evidence gate flips. Autobuild cannot make the move on the basis of placeholder scaffolds.",
+      "test_file": null,
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-DEMO-07",
+      "criterion_text": "All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Both modified docs (phase-1-validation.md, graphiti-latency-spike-results.md) are markdown; no project-configured markdown linter is declared in pyproject.toml. The appended subsections use the same heading style, table syntax, and emphasis conventions as the surrounding sections (verified by inspection \u2014 h2 ## for the new subsection, h3 ### for sub-headings, GitHub-flavored markdown tables matching existing rows). The Python file added in turn 1 (tests/integration/test_lilymay_seed_seam.py) follows project conventions: 'from __future__ import annotations', module + function docstrings, pytest markers consistent with pyproject.toml's [tool.pytest.ini_options].markers (seam, integration_contract), specific assertion messages on every assert. pytest re-run after the turn-2 doc edits: 1 skipped, 0 failed, no new warnings.",
+      "test_file": "tests/integration/test_lilymay_seed_seam.py",
+      "implementation_files": [
+        "tests/integration/test_lilymay_seed_seam.py",
+        "docs/research/ideas/phase-1-validation.md",
+        "docs/research/ideas/graphiti-latency-spike-results.md"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 67.52992887492292
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 261.7883805410238
+    }
+  ]
+}

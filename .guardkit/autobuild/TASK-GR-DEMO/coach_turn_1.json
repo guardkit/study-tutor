@@ -1,0 +1,185 @@
+{
+  "task_id": "TASK-GR-DEMO",
+  "turn": 1,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/integration/test_lilymay_seed_seam.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/integration/test_lilymay_seed_seam.py::test_lilymay_seed_reachable_via_wired_client SKIPPED [100%]\n/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/graphiti_core/driver/search_interface/search_interface.py:22: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/\n======================== 1 skipped, 1 warning in 0.46s =========================",
+      "duration_seconds": 1.3690857887268066
+    },
+    "requirements": {
+      "criteria_total": 7,
+      "criteria_met": 0,
+      "all_criteria_met": false,
+      "missing": [
+        "AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence:",
+        "AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphiti__get_episodes(group_ids=[\"student-lilymay\"])`. The episode body contains the session id, the turn count, and a summary suitable for replay.",
+        "AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilymay\"])` returns updated `topic_confidences` reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.)",
+        "AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all 5\u20137 turns. Append to `docs/research/ideas/phase-1-validation.md` and to `docs/research/ideas/graphiti-latency-spike-results.md` under a \"Phase 2 Wave 5 measurement\" subsection.",
+        "AC-DEMO-05** \u2014 `phase-1-validation.md` updated:",
+        "AC-DEMO-06** \u2014 Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from `backlog/` to `completed/`, and FEAT-PH2-001 (gamification) is unblocked.",
+        "AC-DEMO-07** \u2014 All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors."
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence:",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    },
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphiti__get_episodes(group_ids=[\"student-lilymay\"])`. The episode body contains the session id, the turn count, and a summary suitable for replay.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    },
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilymay\"])` returns updated `topic_confidences` reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    },
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all 5\u20137 turns. Append to `docs/research/ideas/phase-1-validation.md` and to `docs/research/ideas/graphiti-latency-spike-results.md` under a \"Phase 2 Wave 5 measurement\" subsection.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    },
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-05** \u2014 `phase-1-validation.md` updated:",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    },
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-06** \u2014 Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from `backlog/` to `completed/`, and FEAT-PH2-001 (gamification) is unblocked.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    },
+    {
+      "criterion_id": "AC-DEMO",
+      "criterion_text": "AC-DEMO-07** \u2014 All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors.",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-DEMO",
+      "notes": "No completion promise for AC-DEMO"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence:",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      },
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphiti__get_episodes(group_ids=[\"student-lilymay\"])`. The episode body contains the session id, the turn count, and a summary suitable for replay.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      },
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilymay\"])` returns updated `topic_confidences` reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      },
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all 5\u20137 turns. Append to `docs/research/ideas/phase-1-validation.md` and to `docs/research/ideas/graphiti-latency-spike-results.md` under a \"Phase 2 Wave 5 measurement\" subsection.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      },
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-05** \u2014 `phase-1-validation.md` updated:",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      },
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-06** \u2014 Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from `backlog/` to `completed/`, and FEAT-PH2-001 (gamification) is unblocked.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      },
+      {
+        "criterion_id": "AC-DEMO",
+        "criterion_text": "AC-DEMO-07** \u2014 All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors.",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-DEMO",
+        "notes": "No completion promise for AC-DEMO"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence:",
+        "AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphiti__get_episodes(group_ids=[\"student-lilymay\"])`. The episode body contains the session id, the turn count, and a summary suitable for replay.",
+        "AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilymay\"])` returns updated `topic_confidences` reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.)",
+        "AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all 5\u20137 turns. Append to `docs/research/ideas/phase-1-validation.md` and to `docs/research/ideas/graphiti-latency-spike-results.md` under a \"Phase 2 Wave 5 measurement\" subsection.",
+        "AC-DEMO-05** \u2014 `phase-1-validation.md` updated:",
+        "AC-DEMO-06** \u2014 Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from `backlog/` to `completed/`, and FEAT-PH2-001 (gamification) is unblocked.",
+        "AC-DEMO-07** \u2014 All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors."
+      ]
+    }
+  ],
+  "rationale": "Missing 7 acceptance criteria: AC-DEMO-01** \u2014 A live MCP tutor session is conducted from Claude Desktop with the user as the human-in-the-loop. Sequence:, AC-DEMO-02** \u2014 A `session_completed` episode is written to Graphiti and is visible via `mcp__graphiti__get_episodes(group_ids=[\"student-lilymay\"])`. The episode body contains the session id, the turn count, and a summary suitable for replay., AC-DEMO-03** \u2014 `mcp__graphiti__search_nodes(query=\"<topic from session>\", group_ids=[\"student-lilymay\"])` returns updated `topic_confidences` reflecting the in-session learning. (Confirms Graphiti round-trip: write \u2192 entity update \u2192 read.), AC-DEMO-04** \u2014 Turn-level latency captured. Record p50 and p95 of `tutor_turn` wall-clock across all 5\u20137 turns. Append to `docs/research/ideas/phase-1-validation.md` and to `docs/research/ideas/graphiti-latency-spike-results.md` under a \"Phase 2 Wave 5 measurement\" subsection., AC-DEMO-05** \u2014 `phase-1-validation.md` updated:, AC-DEMO-06** \u2014 Phase 1 is now structurally complete on its own terms. The repair task TASK-PH2-GR-001 can be moved from `backlog/` to `completed/`, and FEAT-PH2-001 (gamification) is unblocked., AC-DEMO-07** \u2014 All modified files (the validation doc + the latency-results doc) pass project-configured lint/format checks with zero errors.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1667/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- REFERS_TO\n- IDENTIFIES_PARALLEL_WORK\n- ASSIGNS_TASK_TO\n- HAS_WAVE\n\n### \u26a0\ufe0f Warnings\n- HAS_SYMPTOM\n- IS_IMPLEMENTED_AS\n- CAUSES_MOCK_RESULT\n\n### \ud83c\udfad Role Constraints\n- MUST_NOT_PERFORM\n- HAS_ROLE_MUST_DO\n- MUST_NOT_PERFORM\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- HAS_INVOCATION_METHOD\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

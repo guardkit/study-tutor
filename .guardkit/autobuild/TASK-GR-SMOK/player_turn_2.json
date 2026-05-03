@@ -1,0 +1,109 @@
+{
+  "task_id": "TASK-GR-SMOK",
+  "turn": 2,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GR-SMOK/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/player_turn_2.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/specialist_results.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/turn_context.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/turn_state_turn_1.json"
+  ],
+  "files_created": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-SMOK/player_turn_2.json"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-SMOK-01",
+    "AC-SMOK-02",
+    "AC-SMOK-03",
+    "AC-SMOK-04",
+    "AC-SMOK-05",
+    "AC-SMOK-06",
+    "AC-SMOK-07"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 7,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 4,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/smoke/` location aligns with the existing project layout (see `tests/` siblings).",
+      "status": "complete",
+      "evidence": "Verified via `ls tests/smoke/`: test_graphiti_live_smoke.py (401 lines) is present alongside the existing test_session_planner.py and test_tutoring_loop.py siblings at the conventional tests/smoke/ path. The file carries `pytestmark = [pytest.mark.smoke]` (line 44) so it is selectable via the project's smoke gate. AC-SMOK-01 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). Stubs `_load_graphiti_core` to return a fake `Graphiti` class that captures init kwargs. Asserts:",
+      "status": "complete",
+      "evidence": "test_constructor_shape_no_cloud_defaults (lines 122-195) has NO skipif decorator (only @pytest.mark.asyncio). It uses monkeypatch.setenv('OPENAI_API_KEY', 'poison-must-not-leak'), then `with patch.object(gc, '_load_graphiti_core', return_value=(_CapturingGraphiti, _FakeFalkorDriver))` injects the fake Graphiti capture. After `await gc.get_client(config)` it verifies all five clauses: (1) isinstance(captured['llm_client'], OpenAIGenericClient); (2) captured['llm_client'].config.api_key == 'local-key' AND != os.environ['OPENAI_API_KEY']; (3) isinstance(captured['embedder'], OpenAIEmbedder); (4) captured['embedder'].config.api_key == 'local-key'; (5) cross_encoder is non-None and pytest.raises(RuntimeError, match='DECISION-DF-001') on .predict(['q'], ['d']). Test PASSED in 0.67s. AC-SMOK-02 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly asserts the four kwarg *names* are present: `graph_driver`, `llm_client`, `embedder`, `cross_encoder`. If graphiti-core 0.30 renames any of these, this test fails immediately with a clear message naming the missing kwarg. (Closes the parent's `@regression` BDD scenario.)",
+      "status": "complete",
+      "evidence": "test_kwarg_drift_detection (lines 203-236) reuses the _CapturingGraphiti pattern via the same patch.object on _load_graphiti_core. After get_client(config) it computes `missing = [name for name in ('graph_driver', 'llm_client', 'embedder', 'cross_encoder') if name not in captured]` and asserts `not missing` with a diagnostic message that lists missing kwarg names AND captured kwarg keys for a clean drift signal. Test PASSED on graphiti-core 0.29; would fail loudly on a 0.30 rename. AC-SMOK-03 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\"STUDY_TUTOR_LIVE_GRAPHITI_SMOKE\") != \"1\", reason=\"live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable\")`. When enabled, the test:",
+      "status": "complete",
+      "evidence": "test_live_falkordb_roundtrip (lines 324-400) carries the exact decorator: `@pytest.mark.skipif(os.environ.get('STUDY_TUTOR_LIVE_GRAPHITI_SMOKE') != '1', reason='live FalkorDB requires Tailscale; set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 to enable')`. When enabled the body: (1) `config = load_graphiti_config_from_yaml(DEFAULT_GRAPHITI_YAML_PATH)`; (2) `wrapper = await get_client(config)`; (3) `await inner.add_episode(name='smoke', episode_body='{\"smoke\": \"live-graphiti-smoke-test\"}', source=EpisodeType.json, source_description='smoke-test', reference_time=datetime.now(timezone.utc), group_id='student-test')`; (4) `nodes = await EntityNode.get_by_group_ids(driver, group_ids=['student-test'])` and `assert nodes`; (5) cleanup via MATCH (n {group_id: $group_id}) DETACH DELETE n inside try/finally followed by await wrapper.close(). Test SKIPPED in this run (env var not set), confirming gating works. AC-SMOK-04 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls `_build_llm_client(config)` and `_build_embedder(config)`, asserts `client.config.api_key != \"poison-must-not-leak\"`. (Direct AC-LOAD-03 / AC-WIRE-05 enforcement at the test layer.)",
+      "status": "complete",
+      "evidence": "test_openai_api_key_never_read (lines 244-272) calls monkeypatch.setenv('OPENAI_API_KEY', 'poison-must-not-leak'), constructs a local-inference config via _make_local_inference_config(), then calls gc._build_llm_client(config) and gc._build_embedder(config) directly (no get_client envelope). Asserts: llm_client.config.api_key != 'poison-must-not-leak' AND == 'local-key'; embedder.config.api_key != 'poison-must-not-leak' AND == 'local-key'. Test PASSED. AC-SMOK-05 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-06** \u2014 CC-13 regex audit (the existing single-`add_episode(`-call-site invariant) re-run via the project's lint/audit harness \u2014 passes with zero new findings.",
+      "status": "complete",
+      "evidence": "test_cc_13_single_add_episode_call_site (lines 280-316) re-runs the CC-13 invariant inline: walks src/**/*.py via Path.rglob('*.py'), applies re.compile(r'add_episode\\s*\\(') restricted to lines containing 'await' (skipping comment lines), and asserts (a) exactly 1 finding and (b) the finding lives in study_tutor/knowledge/async_write.py. Test PASSED \u2014 exactly one call site found, in async_write.py. Running the audit inside the smoke gate makes a regression fail the suite immediately rather than waiting for a separate lint pass. AC-SMOK-06 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-SMOK",
+      "criterion_text": "AC-SMOK-07** \u2014 CI configuration (whether GitHub Actions, Conductor, or local pre-commit) does NOT set `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1`. The constructor-shape test runs in every CI invocation; the live test stays env-gated. Document this contract in the smoke test file's module docstring.",
+      "status": "complete",
+      "evidence": "Module docstring of tests/smoke/test_graphiti_live_smoke.py (lines 19-26) contains a dedicated 'CI contract (AC-SMOK-07)' paragraph stating: the constructor-shape, kwarg-drift, and OPENAI_API_KEY-poison tests run on every CI invocation (no env-var gate); the live FalkorDB round-trip is gated on STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1 because it requires Tailscale access to the Synology NAS; CI configuration (GitHub Actions, Conductor, local pre-commit) MUST NOT set STUDY_TUTOR_LIVE_GRAPHITI_SMOKE=1. Verified by the test run: 4 always-on tests passed unconditionally and only test_live_falkordb_roundtrip was skipped. AC-SMOK-07 satisfied.",
+      "test_file": "tests/smoke/test_graphiti_live_smoke.py",
+      "implementation_files": [
+        "tests/smoke/test_graphiti_live_smoke.py"
+      ]
+    }
+  ]
+}

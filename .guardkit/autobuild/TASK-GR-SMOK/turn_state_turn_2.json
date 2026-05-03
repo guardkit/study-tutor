@@ -1,0 +1,36 @@
+{
+  "id": "TURN-FEAT-FD32-2",
+  "feature_id": "FEAT-FD32",
+  "task_id": "TASK-GR-SMOK",
+  "turn_number": 2,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "continuing_work",
+  "blockers_found": [],
+  "progress_summary": "Turn 2: approve",
+  "acceptance_criteria_status": {
+    "AC-SMOK": "verified"
+  },
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GR-SMOK/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/player_turn_2.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/specialist_results.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/turn_context.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/turn_state_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-SMOK/player_turn_2.json"
+  ],
+  "tests_passed": null,
+  "tests_failed": null,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-05-02T17:26:43.606000",
+  "completed_at": "2026-05-02T17:26:43.606000",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

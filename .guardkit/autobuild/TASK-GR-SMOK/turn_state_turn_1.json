@@ -1,0 +1,33 @@
+{
+  "id": "TURN-FEAT-FD32-1",
+  "feature_id": "FEAT-FD32",
+  "task_id": "TASK-GR-SMOK",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "feedback",
+  "coach_decision": "feedback",
+  "coach_feedback": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-SMOK-01** \u2014 Test file exists at `tests/smoke/test_graphiti_live_smoke.py`. Conventional `tests/sm\n  \u2022 AC-SMOK-02** \u2014 `test_constructor_shape_no_cloud_defaults` runs unconditionally (no env-var gate). St\n  \u2022 AC-SMOK-03** \u2014 `test_kwarg_drift_detection` \u2014 same fake-Graphiti capture pattern, but explicitly ass\n  \u2022 AC-SMOK-04** \u2014 `test_live_falkordb_roundtrip` is decorated with `@pytest.mark.skipif(os.environ.get(\n  \u2022 AC-SMOK-05** \u2014 `test_openai_api_key_never_read` \u2014 sets `OPENAI_API_KEY=poison-must-not-leak`, calls \n  (2 more)",
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: feedback",
+  "acceptance_criteria_status": {
+    "AC-SMOK": "rejected"
+  },
+  "files_modified": [
+    ".guardkit/autobuild/TASK-GR-SMOK/checkpoints.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/task_work_results.json",
+    ".guardkit/autobuild/TASK-GR-SMOK/turn_context.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-FD32/.guardkit/autobuild/TASK-GR-SMOK/player_turn_1.json"
+  ],
+  "tests_passed": null,
+  "tests_failed": null,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-05-02T17:19:24.793220",
+  "completed_at": "2026-05-02T17:19:24.793220",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

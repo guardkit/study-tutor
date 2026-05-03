@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import pathlib
 import subprocess
 import sys
 import textwrap
@@ -63,11 +64,83 @@ class _FakeDriverOK:
 class _FakeGraphitiOK:
     """Fake graphiti-core ``Graphiti`` whose driver responds OK."""
 
-    def __init__(self, graph_driver) -> None:
+    def __init__(self, graph_driver, **kwargs) -> None:
+        # TASK-GR-WIRE expanded the constructor surface to accept
+        # ``llm_client``, ``embedder``, and ``cross_encoder`` kwargs.
+        # This fake silently absorbs them so it stays compatible with
+        # both the pre-WIRE and post-WIRE call sites.
         self.driver = graph_driver
+        self.llm_client = kwargs.get("llm_client")
+        self.embedder = kwargs.get("embedder")
+        self.cross_encoder = kwargs.get("cross_encoder")
 
     async def close(self) -> None:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Wave-2 wiring stubs (TASK-GR-WIRE)
+#
+# ``get_client`` now calls ``_build_llm_client``, ``_build_embedder``, and
+# ``_build_cross_encoder_sentinel`` between the lazy import and the
+# Graphiti construction. Tests that exercised the pre-WIRE path patched
+# only ``_load_graphiti_core`` and assumed bare-minimum configs would
+# round-trip through the constructor; with WIRE in place those configs
+# would now hit the real graphiti-core OpenAIEmbedderConfig validator
+# and trip a ValidationError. ``_patch_wave2_loaders`` keeps the
+# pre-WIRE assertions intact while injecting test doubles for the new
+# loader helpers.
+# ---------------------------------------------------------------------------
+
+
+class _FakeLLMConfigForGetClient:
+    def __init__(self, **kwargs):
+        self.api_key = kwargs.get("api_key")
+        self.base_url = kwargs.get("base_url")
+        self.model = kwargs.get("model")
+
+
+class _FakeOpenAIGenericClientForGetClient:
+    def __init__(self, *, config, **kwargs):
+        self.config = config
+
+
+class _FakeOpenAIEmbedderConfigForGetClient:
+    def __init__(self, **kwargs):
+        self.api_key = kwargs.get("api_key")
+        self.base_url = kwargs.get("base_url")
+        self.embedding_model = kwargs.get("embedding_model")
+
+
+class _FakeOpenAIEmbedderForGetClient:
+    def __init__(self, *, config):
+        self.config = config
+
+
+def _patch_wave2_loaders(module):
+    """Return paired patches for the LLM + embedder loaders.
+
+    Used as a context manager via ``contextlib.ExitStack`` in the tests
+    that previously only patched ``_load_graphiti_core``.
+    """
+    return (
+        patch.object(
+            module,
+            "_load_llm_client_classes",
+            return_value=(
+                _FakeOpenAIGenericClientForGetClient,
+                _FakeLLMConfigForGetClient,
+            ),
+        ),
+        patch.object(
+            module,
+            "_load_embedder_classes",
+            return_value=(
+                _FakeOpenAIEmbedderForGetClient,
+                _FakeOpenAIEmbedderConfigForGetClient,
+            ),
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +174,16 @@ def test_module_loads_in_subprocess_with_graphiti_core_absent():
     ``import graphiti_core`` raise ``ImportError``. The wrapper module must
     still import cleanly — this is the production guarantee that callers
     can introspect the config class without the optional dependency.
+
+    The subprocess does NOT inherit pytest's ``pythonpath = ["src", "."]``
+    injection from ``pyproject.toml``, so we propagate the worktree's
+    ``src/`` (and repo root for ``scripts/``) explicitly via
+    ``PYTHONPATH``. Without this, the subprocess would fail with
+    ``ModuleNotFoundError`` regardless of whether the code under test is
+    correct — that's a test-harness bug, not a production regression.
     """
+    import os
+
     code = textwrap.dedent(
         """
         import sys
@@ -114,11 +196,25 @@ def test_module_loads_in_subprocess_with_graphiti_core_absent():
         print('OK', cfg.timeout_seconds)
         """
     )
+
+    # Locate the worktree root (this file lives at
+    # ``<worktree>/tests/unit/knowledge/test_graphiti_client.py`` — go up
+    # three levels to reach the worktree root, then append ``src``).
+    worktree_root = pathlib.Path(__file__).resolve().parents[3]
+    src_path = str(worktree_root / "src")
+    extra_paths = [src_path, str(worktree_root)]
+    existing = os.environ.get("PYTHONPATH", "")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = (
+        os.pathsep.join([*extra_paths, existing]) if existing else os.pathsep.join(extra_paths)
+    )
+
     result = subprocess.run(
         [sys.executable, "-c", code],
         capture_output=True,
         text=True,
         timeout=30,
+        env=env,
     )
     assert result.returncode == 0, (
         f"subprocess failed: stdout={result.stdout!r} stderr={result.stderr!r}"
@@ -146,9 +242,16 @@ def test_config_default_timeout_matches_assum_005():
 
 
 def test_config_default_provider_and_model():
+    """AC-LOAD-05: defaults migrated from gemini → vllm/qwen-graphiti.
+
+    The bare-default construction must not silently leak Gemini even when
+    a caller bypasses :func:`load_graphiti_config_from_yaml`. Per
+    DECISION-DF-001 / F2 review finding, the dataclass defaults now point
+    at the local vLLM stack.
+    """
     cfg = _make_config()
-    assert cfg.llm_provider == "gemini"
-    assert cfg.llm_model == "gemini-2.5-pro"
+    assert cfg.llm_provider == "vllm"
+    assert cfg.llm_model == "qwen-graphiti"
 
 
 def test_config_rejects_negative_port():
@@ -225,11 +328,12 @@ async def test_get_client_returns_none_when_driver_construction_fails(caplog):
     fake_driver_cls = MagicMock(side_effect=ConnectionRefusedError("nope"))
     fake_graphiti_cls = MagicMock()
 
+    llm_patch, embedder_patch = _patch_wave2_loaders(mod)
     with patch.object(
         mod,
         "_load_graphiti_core",
         return_value=(fake_graphiti_cls, fake_driver_cls),
-    ):
+    ), llm_patch, embedder_patch:
         with caplog.at_level(logging.WARNING, logger=mod.logger.name):
             result = await mod.get_client(cfg)
 
@@ -265,17 +369,20 @@ async def test_get_client_returns_none_when_healthcheck_times_out(caplog):
             pass
 
     class _SlowGraphiti:
-        def __init__(self, graph_driver) -> None:
+        def __init__(self, graph_driver, **kwargs) -> None:
+            # Absorb TASK-GR-WIRE's extra constructor kwargs
+            # (llm_client / embedder / cross_encoder).
             self.driver = graph_driver
 
         async def close(self) -> None:
             pass
 
+    llm_patch, embedder_patch = _patch_wave2_loaders(mod)
     with patch.object(
         mod,
         "_load_graphiti_core",
         return_value=(_SlowGraphiti, _SlowDriver),
-    ):
+    ), llm_patch, embedder_patch:
         with caplog.at_level(logging.WARNING, logger=mod.logger.name):
             result = await mod.get_client(cfg)
 
@@ -300,11 +407,12 @@ async def test_get_client_returns_wrapper_on_success():
     from study_tutor.knowledge import graphiti_client as mod
 
     cfg = _make_config()
+    llm_patch, embedder_patch = _patch_wave2_loaders(mod)
     with patch.object(
         mod,
         "_load_graphiti_core",
         return_value=(_FakeGraphitiOK, _FakeDriverOK),
-    ):
+    ), llm_patch, embedder_patch:
         result = await mod.get_client(cfg)
 
     assert result is not None

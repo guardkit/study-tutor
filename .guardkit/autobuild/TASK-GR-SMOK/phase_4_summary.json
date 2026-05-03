@@ -1,0 +1,7 @@
+{
+  "tests_run": 5,
+  "tests_failed": 0,
+  "coverage_pct": 54.0,
+  "output_summary": "pytest tests/smoke/test_graphiti_live_smoke.py: 4 passed, 1 skipped (env-gated live FalkorDB), 0 failed; graphiti_client.py 54% line coverage",
+  "quality_gates_passed": true
+}
