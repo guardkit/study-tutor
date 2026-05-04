@@ -148,6 +148,8 @@ The wired-client repair (Wave 2 / TASK-PH2-GR-001) cleared the OpenAI 401 root c
 | AC-SEED-07 | ✅ Captured | Run-4 wall-clock 64 min; anomaly noted; R-WAVE5-01 / R-WAVE5-02 risk entries added above. |
 | AC-SEED-08 | ⚠️ Not run | Lint/format pass not exercised in this wave; only this validation doc was edited. |
 
+> **2026-05-04 update**: Design resolution captured in [TASK-GSM-008](../../../tasks/completed/TASK-GSM-008-resolve-typed-entity-design-gaps.md) → [ADR-ARCH-021](../../architecture/decisions/ADR-ARCH-021-typed-entity-seed-design-resolutions.md). Implementation tracked in [TASK-GSM-009](../../../tasks/backlog/TASK-GSM-009-typed-entity-seed-refactor.md); G2/G3 gate flips here are pending TASK-GSM-009's live evidence. AC-SEED-02's expected `year_group=11, target_grade="8"` is corrected to `year_group=10, target_grade="7"` under TASK-GSM-009 AC-05.
+
 ---
 
 *Doc lives at `docs/research/ideas/phase-1-validation.md`. Revisit at the close of the Wave 5 follow-up (provider rate-limit mitigation + `succeeded_writes` counter accuracy) to flip the falsified G2/G3/G4/G5/G6 entries to held — at which point Phase 1 is structurally complete on its own terms, even though the close-out exercise crossed the calendar boundary.*
