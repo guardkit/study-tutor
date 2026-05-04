@@ -12,12 +12,37 @@ complexity: 4
 estimated_minutes: 60
 dependencies:
 - TASK-GR-SMOK
-status: blocked
+status: completed
 priority: critical
 created: 2026-05-02 00:00:00+00:00
-updated: 2026-05-03T17:55:00+00:00
-previous_state: completed
-state_transition_reason: "Wave 4 reopened as Wave 5 retry; run 5 surfaced new blocker R-WAVE5-03 (graphiti-core dashed-group_ids break RediSearch fulltext queries on FalkorDB). Operator decision required among 3 remediation paths — see docs/research/ideas/phase-1-validation.md §Wave 4 retry — TASK-GR-SEED run 5 — 2026-05-03 (afternoon)."
+updated: 2026-05-04T22:25:00+00:00
+previous_state: blocked
+state_transition_reason: "TASK-GSM-009 (typed-entity rewrite per ADR-ARCH-021) landed on 2026-05-04 and unblocked the seed end-to-end. Retry run on 2026-05-04T21:24:44Z confirmed AC-SEED-04 idempotency (seeding_skipped, exit 0, 2s wall-clock); fresh verify_lilymay.py JSON confirms AC-SEED-02/03 (Student node with enrolled_subjects + 6 TopicConfidence nodes; StudentState populated with year_group=10, target_grade='7' per the AC-02 doc-drift correction). All 8 AC-SEED gates Held."
+ac_results:
+  AC-SEED-01:
+    status: held
+    evidence: ".guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json (25 nodes + 16 intra-group edges across 4 partitions, written via EntityNode.save / EntityEdge.save — no add_episode path)"
+  AC-SEED-02:
+    status: held
+    evidence: ".guardkit/autobuild/TASK-GR-SEED/logs/verify_lilymay_TASK-GR-SEED-retry.json — Student node with attributes_keys=[enrolled_subjects, student_id, target_grade, year_group], summary 'Year 10, target grade 7'. AC-02's doc-drift expectation of year_group=11/target_grade='8' corrected to 10/'7' under TASK-GSM-009 AC-14."
+  AC-SEED-03:
+    status: held
+    evidence: "verify_lilymay_TASK-GR-SEED-retry.json: StudentState empty=False, year_group=10, target_grade='7', subjects=[English Literature, English Language], 6 topic_confidences spanning struggling/developing/secure bands"
+  AC-SEED-04:
+    status: held
+    evidence: ".guardkit/autobuild/TASK-GR-SEED/logs/seed_run_TASK-GR-SEED-retry.log: 'seeding skipped: Lilymay baseline already present', exit 0, wall-clock 2s"
+  AC-SEED-05:
+    status: held
+    evidence: "docs/research/ideas/phase-1-validation.md §'TASK-GSM-009 — Typed-entity seed landed' (lines 292+) — G2 flipped to Held with caveat (cross-group edges deferred per ADR-ARCH-021 §G2); G3 flipped to Held"
+  AC-SEED-06:
+    status: held
+    evidence: "No write-time Connection-closed-by-server escalation observed; the post-exit build_indices_and_constraints cleanup noise is a graphiti-core lifecycle artifact (same artifact captured during the G2 probe in TASK-GSM-008). Seed exited 0 in both runs. No GRAPH.DELETE needed."
+  AC-SEED-07:
+    status: held
+    evidence: "Retry run wall-clock: 2s (start 21:24:44Z, end 21:24:46Z). TASK-GSM-009's first-run was also ~2s. No LLM in the write path; both well under the 45-min anomaly threshold."
+  AC-SEED-08:
+    status: held
+    evidence: "TASK-GSM-009 commit a90bc65 passed full test suite (765 unit tests pass per commit message; 2 unrelated pre-existing failures stay out of scope). No production-code changes introduced by this retry — only task-state moves and validation evidence capture."
 tags:
 - graphiti
 - seed

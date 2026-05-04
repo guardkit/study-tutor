@@ -1,0 +1,132 @@
+{
+  "ac_seed_03_get_student_state": {
+    "empty": false,
+    "year_group": 10,
+    "target_grade": "7",
+    "subjects": [
+      "English Literature",
+      "English Language"
+    ],
+    "topic_confidences": [
+      "topic_name='Power and Conflict: Ozymandias themes' band='struggling' percentage=35 last_revised_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)",
+      "topic_name=\"Lady Macbeth's ambition\" band='developing' percentage=55 last_revised_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)",
+      "topic_name='Macbeth: ambition and guilt' band='secure' percentage=80 last_revised_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)",
+      "topic_name='Metaphor identification' band='developing' percentage=60 last_revised_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)",
+      "topic_name=\"Macbeth's witches\" band='struggling' percentage=25 last_revised_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)",
+      "topic_name=\"Scrooge's redemption arc\" band='secure' percentage=75 last_revised_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)"
+    ]
+  },
+  "ac_seed_02_student_lilymay_nodes": [
+    {
+      "name": "Lilymay",
+      "labels": [
+        "Entity",
+        "Student"
+      ],
+      "summary": "Student Lilymay (id=lilymay), Year 10, target grade 7. Enrolled in: English Literature, English Language.",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "enrolled_subjects",
+        "student_id",
+        "target_grade",
+        "year_group"
+      ]
+    },
+    {
+      "name": "TopicConfidence:Power and Conflict: Ozymandias themes",
+      "labels": [
+        "Entity",
+        "TopicConfidence"
+      ],
+      "summary": "Lilymay's baseline confidence on 'Power and Conflict: Ozymandias themes': 35% (struggling). Last revised at 1970-01-01T00:00:00+00:00 (never-revised sentinel).",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "band",
+        "last_revised_at",
+        "percentage",
+        "student_ref",
+        "topic_ref"
+      ]
+    },
+    {
+      "name": "TopicConfidence:Lady Macbeth's ambition",
+      "labels": [
+        "Entity",
+        "TopicConfidence"
+      ],
+      "summary": "Lilymay's baseline confidence on 'Lady Macbeth's ambition': 55% (developing). Last revised at 1970-01-01T00:00:00+00:00 (never-revised sentinel).",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "band",
+        "last_revised_at",
+        "percentage",
+        "student_ref",
+        "topic_ref"
+      ]
+    },
+    {
+      "name": "TopicConfidence:Macbeth: ambition and guilt",
+      "labels": [
+        "Entity",
+        "TopicConfidence"
+      ],
+      "summary": "Lilymay's baseline confidence on 'Macbeth: ambition and guilt': 80% (secure). Last revised at 1970-01-01T00:00:00+00:00 (never-revised sentinel).",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "band",
+        "last_revised_at",
+        "percentage",
+        "student_ref",
+        "topic_ref"
+      ]
+    },
+    {
+      "name": "TopicConfidence:Metaphor identification",
+      "labels": [
+        "Entity",
+        "TopicConfidence"
+      ],
+      "summary": "Lilymay's baseline confidence on 'Metaphor identification': 60% (developing). Last revised at 1970-01-01T00:00:00+00:00 (never-revised sentinel).",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "band",
+        "last_revised_at",
+        "percentage",
+        "student_ref",
+        "topic_ref"
+      ]
+    },
+    {
+      "name": "TopicConfidence:Macbeth's witches",
+      "labels": [
+        "Entity",
+        "TopicConfidence"
+      ],
+      "summary": "Lilymay's baseline confidence on 'Macbeth's witches': 25% (struggling). Last revised at 1970-01-01T00:00:00+00:00 (never-revised sentinel).",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "band",
+        "last_revised_at",
+        "percentage",
+        "student_ref",
+        "topic_ref"
+      ]
+    },
+    {
+      "name": "TopicConfidence:Scrooge's redemption arc",
+      "labels": [
+        "Entity",
+        "TopicConfidence"
+      ],
+      "summary": "Lilymay's baseline confidence on 'Scrooge's redemption arc': 75% (secure). Last revised at 1970-01-01T00:00:00+00:00 (never-revised sentinel).",
+      "group_id": "student-lilymay",
+      "attributes_keys": [
+        "band",
+        "last_revised_at",
+        "percentage",
+        "student_ref",
+        "topic_ref"
+      ]
+    }
+  ]
+}

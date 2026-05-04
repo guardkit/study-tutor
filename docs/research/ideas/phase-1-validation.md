@@ -375,7 +375,22 @@ The second run hit the pre-flight idempotency gate (`event=seeding_skipped reaso
 ### Cross-references
 
 - [ADR-ARCH-021](../../architecture/decisions/ADR-ARCH-021-typed-entity-seed-design-resolutions.md) — design rationale for G1/G2/G3 resolutions
-- [TASK-GSM-009](../../../tasks/in_progress/TASK-GSM-009-typed-entity-seed-refactor.md) — implementation task
+- [TASK-GSM-009](../../../tasks/completed/TASK-GSM-009/TASK-GSM-009.md) — implementation task (completed 2026-05-04)
 - [scripts/probes/probe_cross_group_edges.py](../../../scripts/probes/probe_cross_group_edges.py) — G2 probe (silent-dangle confirmation that drove the deferral decision)
-- [`.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json`](../../../.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json) — full live evidence JSON
+- [`.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json`](../../../.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json) — full live evidence JSON (TASK-GSM-009 first-run)
 - [tests/integration/test_typed_entity_writes.py](../../../tests/integration/test_typed_entity_writes.py) — MERGE-by-uuid integration smoke (AC-13)
+
+---
+
+## TASK-GR-SEED retry close-out — 2026-05-04 (evening)
+
+**Result: TASK-GR-SEED moved blocked → completed. All 8 AC-SEED-* gates Held against fresh evidence.**
+
+With TASK-GSM-009 (typed-entity rewrite per ADR-ARCH-021) merged at commit `a90bc65`, the seed path is unblocked. A retry run was executed against the live `whitestocks:6379` FalkorDB to formalise close-out:
+
+- **Retry run** start `2026-05-04T21:24:44Z`, end `2026-05-04T21:24:46Z`, wall-clock **2s**. Log: [`.guardkit/autobuild/TASK-GR-SEED/logs/seed_run_TASK-GR-SEED-retry.log`](../../../.guardkit/autobuild/TASK-GR-SEED/logs/seed_run_TASK-GR-SEED-retry.log). Hit pre-flight idempotency gate (`event=seeding_skipped reason=already_seeded`) and exited 0 — confirming AC-SEED-04.
+- **Fresh verify_lilymay capture**: [`.guardkit/autobuild/TASK-GR-SEED/logs/verify_lilymay_TASK-GR-SEED-retry.json`](../../../.guardkit/autobuild/TASK-GR-SEED/logs/verify_lilymay_TASK-GR-SEED-retry.json) shows the Student node with `attributes_keys=[enrolled_subjects, student_id, target_grade, year_group]`, summary `"Year 10, target grade 7. Enrolled in: English Literature, English Language."`, and 6 TopicConfidence nodes spanning struggling / developing / secure bands. `get_student_state(...)` returns `StudentState(empty=False, year_group=10, target_grade="7", subjects=[English Literature, English Language], topic_confidences=[6 entries])` — confirming AC-SEED-02 + AC-SEED-03.
+- **AC-SEED-* status table** at line 362 above remains authoritative. The retry adds a second idempotency-evidence point on top of TASK-GSM-009's pre/post-counts evidence.
+- **G4 / G5 / G6 / G13** remain Falsified pending Wave 5's MCP demo session (per the original spec — these are session-side gates, not seed-side; flipping them here would be a false-evidence claim).
+
+The seed task closes here. Next gate work (G4/G5/G6/G13) belongs to a separate Wave-5 MCP demo task.
