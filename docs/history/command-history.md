@@ -2605,6 +2605,152 @@ GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-FD32 --verbose
 
 
 
+/task-create please create a review task to investigate the failing autobuild feature in /Users/richardwoollcott/Projects/appmilla_github/study-tutor/docs/history/autobuild-FEAT-FD32-failed-run-1-history.md
+
+
+/task-review TASK-REV-FD32 --mode=debugging
+
+
+
+GUARDKIT_AUTOBUILD_TASK_TIMEOUT_FLOOR=4500 \
+         guardkit autobuild feature FEAT-FD32 --resume
+
+
+
+
+
+
+Operator follow-ups still owed (per the manual completions in TASK-GR-SEED + TASK-GR-DEMO):
+  1. Live FalkorDB seed + read-back evidence (TASK-GR-SEED playbook)
+  2. Live Claude Desktop tutoring session driving G3/G4/G5/G6/G13 evidence into the scaffolded tables in phase-1-validation.md and
+  graphiti-latency-spike-results.md
+
+
+/task-work TASK-GR-SEED
+
+
+Outcome — Wave 5 retry: still red, but for a different reason
+Seed run 5: 13min wall-clock, 25 scheduled / 3 succeeded / 22 failed. Verify confirms graph still empty for student-lilymay. Task moved to tasks/blocked/. phase-1-validation.md updated with full Wave 5 retry findings, R-WAVE5-03 + R-WAVE5-04 entries, and updated AC-SEED-XX status table.
+
+The actual blocker (R-WAVE5-03)
+Wave 4's narrative was wrong about what was breaking. The vLLM rate-limit story (R-WAVE5-01) was a plausible misreading of partial logs — the real issue is a hard graphiti-core × FalkorDB × RediSearch incompatibility:
+
+graphiti-core's GroupIdValidationError only allows [A-Za-z0-9_-] → forced project to use student-lilymay
+graphiti-core's RediSearch fulltext query parses student-lilymay as student NOT lilymay → query syntax error
+First 3 writes succeed (empty RELATES_TO index, no entity-resolution lookup); writes 4-25 fail (index now populated, every lookup hits the broken query)
+Independently corroborated through MCP: mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"]) returns the same RediSearch syntax error — meaning AC-SEED-02 as written is currently unverifiable through MCP at all.
+
+Decision required — three remediation paths
+#	Path	Blast radius	Trade-off
+1	Monkey-patch graphiti-core to escape group_ids in fulltext query construction (\- or {}-wrapping per RediSearch escaping rules). Lives in study_tutor.knowledge.graphiti_client, intercepting the FalkorDB driver at import time.	Smallest. Group_id format stays student-lilymay; no downstream code touched.	Carries an upstream-dependency wart; needs to be revisited when graphiti-core releases a fix.
+2	Migrate group_id format dash → underscore (student_lilymay, subject_english_literature, fleet_appmilla).	Touches the post-a210472 normalisation surface: student_model.py, the test fixtures updated in that commit, operator docs that cite the dash form, the noted-divergent specialist-agent reference.	No upstream wart, but reopens a migration that already shipped.
+3	Switch graph backend FalkorDB → Neo4j. Lucene fulltext syntax doesn't treat - as NOT.	Largest. Cascades into ADR-ARCH-018 / ADR-ARCH-019 territory.	Overkill for this issue alone; only worth it if other Neo4j-vs-FalkorDB tradeoffs are already in play.
+My read: option 1 is the right next move — smallest blast radius, validates the diagnosis, unblocks the seed, leaves option 2 available later if upstream graphiti-core stays unfixed for a long time. But this is a real architectural choice and I shouldn't make it for you.
+
+There's also a secondary signal worth flagging: R-WAVE5-04 (Connection closed by server reappearing on read-only paths during verify) — Wave 4 marked AC-SEED-06 as "no escalation observed", but it's now intermittently reappearing. May need a separate FalkorDB-side investigation regardless of which R-WAVE5-03 path you pick.
+
+Which path do you want to take, or do you want to investigate further first?
+
+
+please provide details of what you are recommending for option 1 - where does graphiti-core live? Is it guardkit repo source code or the actual open source getzep repo? My honest take on graphiti is its a buggy piece of shit - half my work seems to be working around bugs etc in it not working and everytime I think it's all ok and we can move on there is something else.
+
+Fair venting — and the validation doc backs it up empirically: this is now the 5th distinct graphiti-core workaround in the project (Read API mismatch, Write API mismatch, GroupIdValidationError migration, OpenAI default LLM client, and now the RediSearch dash-as-NOT bug). That's signal, not noise. Let me get you the concrete details before you decide.
+
+
+Where graphiti-core lives
+It's the upstream getzep package (PyPI: graphiti-core), pinned >=0.29,<0.30 in your pyproject.toml, installed at .venv/lib/python3.14/site-packages/graphiti_core/. Not vendored anywhere in your repo or in guardkit. Source repo: github.com/getzep/graphiti. So a "monkey-patch" means importing graphiti-core normally, then mutating its functions at runtime from your own code in study_tutor/knowledge/.
+
+The smoking gun
+Look at falkordb_driver.py:406-410:
+
+
+# Escape group_ids with quotes to prevent RediSearch syntax errors
+# with reserved words like "main" or special characters like hyphens
+escaped_group_ids = [f'"{gid}"' for gid in group_ids]
+group_values = '|'.join(escaped_group_ids)
+group_filter = f'(@group_id:{group_values})'
+Upstream already tried to fix this exact bug. The comment explicitly mentions "special characters like hyphens." But the fix is wrong — wrapping in double-quotes does NOT prevent RediSearch from parsing the dash inside as a NOT operator. The runtime error proves it: query is (@group_id:"student-lilymay") (quotes present in the actual SQL we logged), syntax error at offset 19 (the dash).
+
+Same broken code is duplicated in falkordb/operations/search_ops.py:105-107 — both call sites would need patching.
+
+The correct RediSearch escape for hyphens is either backslash-escape (\-) or verbatim-brace wrap ({student-lilymay} — RediSearch treats the contents as opaque). Quotes alone don't cut it.
+
+What the patch actually looks like
+A new file src/study_tutor/knowledge/graphiti_patches.py, ~40 lines:
+
+
+"""R-WAVE5-03 — graphiti-core 0.29 fails to escape dashes in RediSearch
+fulltext queries on FalkorDB. Upstream attempted a fix in
+falkordb_driver.py:406-410 (double-quote wrap) but the fix is wrong:
+RediSearch still parses dashes as NOT operators inside double quotes.
+
+This patch overrides both call sites with brace-wrapped verbatim values,
+which RediSearch treats as opaque tokens. Remove once upstream ships a
+real fix (track issue: TBD — open against getzep/graphiti).
+"""
+from graphiti_core.driver import falkordb_driver
+from graphiti_core.driver.falkordb.operations import search_ops
+
+_STOPWORDS = falkordb_driver.STOPWORDS  # reuse upstream's stopword list
+
+
+def _brace_wrap(group_ids):
+    return [f'{{{gid}}}' for gid in group_ids]
+
+
+def _patched_build_fulltext_query(self, query, group_ids=None, max_query_length=128):
+    falkordb_driver.validate_group_ids(group_ids)
+    if not group_ids:
+        group_filter = ''
+    else:
+        group_filter = f'(@group_id:{"|".join(_brace_wrap(group_ids))})'
+    sanitized = self.sanitize(query)
+    words = [w for w in sanitized.split() if w and w.lower() not in _STOPWORDS]
+    sanitized = ' | '.join(words)
+    if len(sanitized.split(' ')) + len(group_ids or '') >= max_query_length:
+        return ''
+    return group_filter + ' (' + sanitized + ')'
+
+
+def _patched_search_ops_query(query, group_ids=None, max_query_length=...):
+    # mirror image of above — same brace-wrap fix
+    ...
+
+
+def install():
+    falkordb_driver.FalkorDriver.build_fulltext_query = _patched_build_fulltext_query
+    search_ops._build_falkor_fulltext_query = _patched_search_ops_query
+Then in graphiti_client.py, add from .graphiti_patches import install as _install_patches; _install_patches() at the top so the patch is in place before any FalkorDriver instance is constructed.
+
+Risks I'd flag before doing this:
+
+Upstream's "fix" already shipped, untested against real FalkorDB. That's a process-smell on the getzep side. Whatever tests they ran for the double-quote version, they didn't actually run the query through RediSearch with a non-empty index. My patch needs the same scrutiny — write it, then run the seed end-to-end (the 3-good-then-22-bad pattern only manifests once the index has data, so a 5-write smoke test would falsely look green).
+Two call sites is a code-smell — getzep duplicated the function. Version 0.30 might add a third call site or refactor the duplication, and either move re-bakes the patch.
+Brace-wrap may interact with multi-value group_id queries ((@group_id:val1|val2)) — would need to test that a query targeting multiple group_ids still parses. Backslash-escape is the safer bet on that axis but uglier on the eye.
+Time: ~1h to write + smoke-test the patch, ~30-60min to re-run seed, ~15min to verify + flip G2/G3. Total ~2-3 hours.
+
+On the broader frustration — that's a real signal
+You're not wrong, and the project history backs it up. Counting from the validation doc + this session:
+
+#	Bug	Workaround
+1	get_client(config) defaulted to OpenAI 401	Wave 2 wired LLM/embedder explicitly
+2	Read API mismatch (search_nodes doesn't exist)	New _read_student_partition seam in queries.py
+3	Write API mismatch (add_episode kwargs wrong)	_add_episode_kwargs helper in async_write.py
+4	GroupIdValidationError rejects colons	Migrated student: → student- (commit a210472)
+5	RediSearch dashes-as-NOT — and upstream's "fix" doesn't work	This task
+That's five distinct upstream defects in a few weeks, on a single integration. Bug #5 is especially concerning because the upstream fix attempt makes it look like getzep tested it, and they didn't. If anything, that's a stronger argument for considering whether to keep paying the graphiti tax.
+
+A few alternatives worth at least naming, even if you stick with option 1 for now:
+
+Replace graphiti-core with a thin direct-FalkorDB layer. Your project's actual surface is small (get_student_state, _perform_write, the seed), and a custom writer + querier might be a few hundred lines. You'd lose graphiti's entity-resolution / fact-extraction, but a glance at the seed says you're not really using those — the seed has structured data, not free text needing extraction.
+Drop graph framing entirely. A flat learner profile in JSONB on Postgres (or sqlite) covers the read/write surface the project currently uses. Phase 2 features that genuinely need a graph can adopt one later.
+Open an upstream issue + wait. The dashes-as-NOT bug is a 5-line fix and trivially demonstrable; an active maintainer should land it fast. But "fast" upstream usually means weeks, and you have FEAT-FD32 to land.
+Keep paying the graphiti tax (option 1). Pragmatic if you're attached to the entity-resolution / temporal-fact features for Phase 2+ — but the bug-rate suggests budgeting time for #6.
+Happy to do any of: (a) write + smoke-test the option-1 patch, (b) sketch what a graphiti-replacement layer would look like for your actual usage, (c) draft the upstream issue, (d) something else. What's the call?
+
+So my one-liner pick: /task-review TASK-FORK-PATCH --mode=decision --depth=standard --no-questions from the graphiti fork dir.
+
+
 
 
 

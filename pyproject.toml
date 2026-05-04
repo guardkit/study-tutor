@@ -24,7 +24,13 @@ dependencies = [
     # mode this feature exists to fix. Wave 3's smoke test is the trip-wire
     # for the next drift; until that test exists, the version bound is the
     # only line of defence.
-    "graphiti-core>=0.29,<0.30",
+    # TASK-FORK-PATCH (2026-05-04): repin from PyPI 0.29.x to the guardkit fork
+    # tag v0.29.5-guardkit.2. Fork is based on upstream 0.29.0 (preserves the
+    # constraint above) and ships fixes for bugs #5/#11 (RediSearch dash-as-NOT
+    # / @group_id filter), #6/#7 (factories OpenAI mis-routing), #8 (decorator
+    # single-group), #9 (edge search endpoints), #10 (backtick sanitiser),
+    # #12/#13 (FastMCP host binding). See FORK-NOTES.md in the fork repo.
+    "graphiti-core[falkordb] @ git+https://github.com/guardkit/graphiti.git@v0.29.5-guardkit.2",
 ]
 
 [project.scripts]
@@ -50,6 +56,13 @@ dev = [
     # See guardkit:tasks/.../TASK-OPS-BDDM-11-pyproject-study-tutor.md.
     "pytest-bdd>=8.1,<9",
 ]
+
+[tool.hatch.metadata]
+# Required so the git+https direct reference for the guardkit graphiti-core
+# fork (TASK-FORK-PATCH, see project.dependencies above) is accepted by
+# hatchling. Switch back to a PyPI version pin when the fork's fixes land
+# upstream and we re-base onto a release that ships them.
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/study_tutor"]

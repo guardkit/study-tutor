@@ -284,3 +284,8 @@ stderr.log
 .guardkit/graphiti-query-log.jsonl
 .guardkit/graphiti-query-log.jsonl.1
 
+# GuardKit autobuild process-tracking sidecars (local-only PID/start/end markers)
+.guardkit/autobuild/*/logs/*.pid
+.guardkit/autobuild/*/logs/*.start
+.guardkit/autobuild/*/logs/*.end
+

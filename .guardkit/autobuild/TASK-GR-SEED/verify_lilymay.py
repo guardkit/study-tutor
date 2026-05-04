@@ -48,13 +48,18 @@ async def main() -> int:
         # AC-SEED-02: search_nodes-equivalent against student-lilymay group.
         #
         # MCP graphiti tools require permissions not granted in this Player
-        # runtime, so go via graphiti-core's underlying read API to produce
-        # equivalent evidence.
-        from graphiti_core.nodes import EntityNode  # type: ignore[import-not-found]
+        # runtime, so go via study_tutor's read seam to produce equivalent
+        # evidence. ``_read_student_partition`` mirrors the guardkit graphiti
+        # fork's per-group driver-clone decorator on writes (TASK-FORK-PATCH
+        # bug #8) — the writer isolates each group_id into its own FalkorDB
+        # named graph, so a direct ``EntityNode.get_by_group_ids(driver, [...])``
+        # against the default graph would return ``[]`` even when writes
+        # succeeded.
+        from study_tutor.knowledge.queries import _read_student_partition
         nodes_payload: list[dict[str, Any]] = []
         try:
-            entity_nodes = await EntityNode.get_by_group_ids(
-                inner.driver, ["student-lilymay"], limit=20
+            entity_nodes, _entity_edges = await _read_student_partition(
+                inner, ["student-lilymay"], limit=20
             )
             for node in entity_nodes:
                 nodes_payload.append(

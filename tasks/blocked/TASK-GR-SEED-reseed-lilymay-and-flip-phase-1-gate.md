@@ -15,7 +15,9 @@ dependencies:
 status: blocked
 priority: critical
 created: 2026-05-02 00:00:00+00:00
-updated: 2026-05-02 00:00:00+00:00
+updated: 2026-05-03T17:55:00+00:00
+previous_state: completed
+state_transition_reason: "Wave 4 reopened as Wave 5 retry; run 5 surfaced new blocker R-WAVE5-03 (graphiti-core dashed-group_ids break RediSearch fulltext queries on FalkorDB). Operator decision required among 3 remediation paths — see docs/research/ideas/phase-1-validation.md §Wave 4 retry — TASK-GR-SEED run 5 — 2026-05-03 (afternoon)."
 tags:
 - graphiti
 - seed
