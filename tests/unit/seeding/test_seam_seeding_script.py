@@ -1,15 +1,27 @@
-"""Seam tests for the Lilymay baseline seeding script (TASK-GSM-006).
+"""Seam tests for the typed-entity Lilymay seeding script (TASK-GSM-009).
 
-Lifted verbatim from
-``tasks/backlog/graphiti-student-model/TASK-GSM-006-seeding-script.md``
-(``## Seam Tests``) so the upstream contracts from TASK-GSM-003,
-TASK-GSM-004, and TASK-GSM-005 are pinned at this boundary:
+These tests pin the **typed-entity** seed contract introduced by
+TASK-GSM-009 (replacing the original TASK-GSM-006 ``add_episode`` /
+``GraphitiWriteHelper`` contract). The producer chain is now:
 
-- :class:`GraphitiClient` (TASK-GSM-003): seeding requires a live client.
-- :class:`SharedAsyncWriteHelper` (TASK-GSM-004): every seed write uses
-  ``flush_id="SEED"``.
-- :class:`StudentModelQueries` (TASK-GSM-005): post-seed verification uses
-  :func:`get_student_state`.
+- :class:`GraphitiClient` (TASK-GSM-003): seeding requires a live client;
+  exit 2 on ``client=None`` per the original contract (unchanged).
+- ``EntityNode.save`` / ``EntityEdge.save`` (graphiti-core fork
+  ``v0.29.5-guardkit.2``): every write is a typed-entity ``.save()`` call.
+  The seed script imports these directly inside :func:`seed_lilymay` rather
+  than routing through :class:`GraphitiWriteHelper`. ADR-ARCH-021
+  documents the CC-13 invariant scope-narrowing this seam encodes.
+- :func:`get_student_state` (TASK-GSM-005): post-seed verification gate
+  reads back through the same enumerator the live tutor session uses.
+
+The original seam test
+``test_seed_writes_use_seed_flush_id`` (which AST-scanned for
+``schedule_write(..., flush_id="SEED")``) is **deleted** — the typed-entity
+seed has no ``schedule_write`` calls. The replacement
+``test_seed_writes_via_typed_entity_save`` AST-scans for the inverse
+property: at least one ``EntityNode.save`` and at least one
+``EntityEdge.save`` call must appear inside :func:`seed_lilymay`, and there
+must be **zero** ``add_episode`` calls anywhere in the script.
 """
 from __future__ import annotations
 
@@ -27,66 +39,81 @@ _REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 _SCRIPT_PATH = _REPO_ROOT / "scripts" / "seed_student_model.py"
 
 
-@pytest.mark.seam
-@pytest.mark.integration_contract("GraphitiClient")
-def test_graphiti_client_required_at_seed_time() -> None:
-    """Verify GraphitiClient contract is honoured by the seeding script.
+def _parse_script() -> ast.AST:
+    return ast.parse(_SCRIPT_PATH.read_text())
 
-    Contract: Script obtains a real client via get_client(config) and exits
-              non-zero if client is None (seeding is NOT a degradation path).
-    Producer: TASK-GSM-003
+
+def _find_attr_calls(tree: ast.AST, attr: str) -> list[ast.Call]:
+    """Return every ``ast.Call`` whose ``func`` is an attribute access on
+    ``attr`` (e.g. ``something.save(...)``).
     """
-    # Format assertion: a script-level helper that branches on client=None and
-    # raises SystemExit(2) is the contract. Verify by importing the helper.
-    from scripts.seed_student_model import require_client_or_exit
-
-    with pytest.raises(SystemExit) as exc_info:
-        require_client_or_exit(client=None)
-    assert exc_info.value.code == 2  # store unreachable per @seeding scenario
-
-
-@pytest.mark.seam
-@pytest.mark.integration_contract("SharedAsyncWriteHelper")
-def test_seed_writes_use_seed_flush_id() -> None:
-    """Verify SharedAsyncWriteHelper contract is honoured by the seeding script.
-
-    Contract: Seed writes use helper.schedule_write(..., flush_id='SEED');
-              script awaits helper.drain() before exit.
-    Producer: TASK-GSM-004
-    """
-    src = _SCRIPT_PATH.read_text()
-    tree = ast.parse(src)
-
-    seen_flush_ids: list[str] = []
+    out: list[ast.Call] = []
     for node in ast.walk(tree):
         if (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
-            and node.func.attr == "schedule_write"
+            and node.func.attr == attr
         ):
-            for kw in node.keywords:
-                if kw.arg == "flush_id" and isinstance(kw.value, ast.Constant):
-                    seen_flush_ids.append(kw.value.value)
+            out.append(node)
+    return out
 
-    assert (
-        len(seen_flush_ids) > 0
-    ), "seeding script must call helper.schedule_write at least once"
-    assert all(fid == "SEED" for fid in seen_flush_ids), (
-        f"All seed writes must use flush_id='SEED', got: {seen_flush_ids}"
+
+@pytest.mark.seam
+@pytest.mark.integration_contract("GraphitiClient")
+def test_graphiti_client_required_at_seed_time() -> None:
+    """Verify GraphitiClient contract: client=None ⇒ SystemExit(2).
+
+    Producer: TASK-GSM-003 (unchanged from TASK-GSM-006 era).
+    """
+    from scripts.seed_student_model import require_client_or_exit
+
+    with pytest.raises(SystemExit) as exc_info:
+        require_client_or_exit(client=None)
+    assert exc_info.value.code == 2
+
+
+@pytest.mark.seam
+@pytest.mark.integration_contract("TypedEntityWrites")
+def test_seed_writes_via_typed_entity_save() -> None:
+    """Verify typed-entity write contract (TASK-GSM-009 / ADR-ARCH-021).
+
+    Contract: seed_lilymay() drives writes via ``EntityNode.save`` and
+    ``EntityEdge.save`` (typed-entity), never via ``add_episode`` or
+    ``schedule_write``.
+    """
+    tree = _parse_script()
+
+    save_calls = _find_attr_calls(tree, "save")
+    assert save_calls, (
+        "seed script must contain at least one ``.save(...)`` call "
+        "(EntityNode.save / EntityEdge.save) — typed-entity write contract."
+    )
+
+    add_episode_calls = _find_attr_calls(tree, "add_episode")
+    assert not add_episode_calls, (
+        f"seed script must contain ZERO add_episode calls under "
+        f"ADR-ARCH-021; found {len(add_episode_calls)} (lines: "
+        f"{[c.lineno for c in add_episode_calls]})."
+    )
+
+    schedule_write_calls = _find_attr_calls(tree, "schedule_write")
+    assert not schedule_write_calls, (
+        f"seed script must contain ZERO schedule_write calls under "
+        f"ADR-ARCH-021 (the seed bypasses GraphitiWriteHelper); found "
+        f"{len(schedule_write_calls)} (lines: "
+        f"{[c.lineno for c in schedule_write_calls]})."
     )
 
 
 @pytest.mark.seam
 @pytest.mark.integration_contract("StudentModelQueries")
 def test_post_seed_verification_gate() -> None:
-    """Verify StudentModelQueries contract is honoured as the post-seed gate.
+    """Verify StudentModelQueries contract: get_student_state is the
+    post-seed read-back.
 
-    Contract: After seeding, script calls get_student_state(client, 'lilymay')
-              as a verification gate; non-empty StudentState confirms seed landed.
-    Producer: TASK-GSM-005
+    Producer: TASK-GSM-005.
     """
-    src = _SCRIPT_PATH.read_text()
-    tree = ast.parse(src)
+    tree = _parse_script()
 
     found_query_import = False
     for node in ast.walk(tree):
@@ -100,4 +127,31 @@ def test_post_seed_verification_gate() -> None:
     assert found_query_import, (
         "Seeding script must import get_student_state from "
         "study_tutor.knowledge.queries to act as the post-seed verification gate"
+    )
+
+
+@pytest.mark.seam
+@pytest.mark.integration_contract("DeterministicUUIDs")
+def test_seed_imports_deterministic_uuid_helpers() -> None:
+    """Verify deterministic UUID5 derivation contract (TASK-GSM-009 AC-12).
+
+    Re-running the seed must produce byte-identical graph state via
+    MERGE-by-uuid on the FalkorDB driver. The helpers in
+    :mod:`study_tutor.knowledge.seed_uuids` are the load-bearing source
+    of those uuids; the seed must import them.
+    """
+    tree = _parse_script()
+
+    found_seed_uuid_import = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if "seed_uuids" in module:
+                found_seed_uuid_import = True
+                break
+
+    assert found_seed_uuid_import, (
+        "Seeding script must import deterministic UUID helpers from "
+        "study_tutor.knowledge.seed_uuids — required for MERGE-by-uuid "
+        "idempotency on re-run."
     )

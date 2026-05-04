@@ -1,0 +1,121 @@
+{
+  "task_id": "TASK-GSM-009",
+  "captured_at": "2026-05-04T21:35:00Z",
+  "ac_01_seed_runs_no_add_episode": true,
+  "ac_02_student_node_with_enrolled_subjects": {
+    "labels_include_student": true,
+    "attributes_include_enrolled_subjects": true,
+    "enrolled_subjects": [
+      "English Literature",
+      "English Language"
+    ],
+    "year_group": 10,
+    "target_grade": "7"
+  },
+  "ac_03_get_student_state_populated": {
+    "year_group": 10,
+    "target_grade": "7",
+    "subjects": [
+      "English Literature",
+      "English Language"
+    ],
+    "topic_confidences_count": 6,
+    "bands_present": [
+      "developing",
+      "secure",
+      "struggling"
+    ],
+    "epoch_sentinel_observed": true
+  },
+  "ac_04_idempotency_counts": {
+    "before_second_run": {
+      "nodes": 25,
+      "edges": 16
+    },
+    "after_second_run": {
+      "nodes": 25,
+      "edges": 16
+    },
+    "identical": true,
+    "second_run_log": "event=seeding_skipped reason=already_seeded"
+  },
+  "partition_breakdown": {
+    "student-lilymay": {
+      "nodes": 7,
+      "edges": 6,
+      "node_names": [
+        "Lilymay",
+        "TopicConfidence:Lady Macbeth's ambition",
+        "TopicConfidence:Macbeth's witches",
+        "TopicConfidence:Macbeth: ambition and guilt",
+        "TopicConfidence:Metaphor identification",
+        "TopicConfidence:Power and Conflict: Ozymandias themes",
+        "TopicConfidence:Scrooge's redemption arc"
+      ],
+      "edge_names": [
+        "HAS_CONFIDENCE"
+      ]
+    },
+    "subject-english-literature": {
+      "nodes": 10,
+      "edges": 9,
+      "node_names": [
+        "A Christmas Carol",
+        "English Literature",
+        "Lady Macbeth's ambition",
+        "Macbeth",
+        "Macbeth's witches",
+        "Macbeth: ambition and guilt",
+        "Power and Conflict poetry cluster",
+        "Power and Conflict: Ozymandias themes",
+        "Scrooge's redemption arc",
+        "York Notes: Macbeth (study guide)"
+      ],
+      "edge_names": [
+        "COVERS",
+        "HAS_TEXT"
+      ]
+    },
+    "subject-english-language": {
+      "nodes": 2,
+      "edges": 1,
+      "node_names": [
+        "English Language",
+        "Metaphor identification"
+      ],
+      "edge_names": [
+        "COVERS"
+      ]
+    },
+    "fleet-appmilla": {
+      "nodes": 6,
+      "edges": 0,
+      "node_names": [
+        "AO1",
+        "AO2",
+        "AO3",
+        "AO4",
+        "AO5",
+        "AO6"
+      ],
+      "edge_names": []
+    }
+  },
+  "g3_planner_day1_recommendations": [
+    {
+      "topic_name": "Power and Conflict: Ozymandias themes",
+      "reason": "struggling_stale",
+      "band": "struggling"
+    },
+    {
+      "topic_name": "Macbeth's witches",
+      "reason": "struggling_stale",
+      "band": "struggling"
+    },
+    {
+      "topic_name": "Lady Macbeth's ambition",
+      "reason": "developing_stale",
+      "band": "developing"
+    }
+  ]
+}

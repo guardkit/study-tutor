@@ -1,10 +1,61 @@
-"""Lilymay baseline seeding script (TASK-GSM-006).
+"""Lilymay baseline seeding script (TASK-GSM-009 — typed-entity rewrite).
 
 One-off scaffolding script that populates Lilymay's baseline learner profile
-into the Synology FalkorDB so the Phase-1 tutor stack has a real student to
-plan against on day 1. Per ``phase-1-scope.md §FEAT-PH1-001`` (Lilymay
-seeding) and the build plan's Saturday-evening steps 9–11, running this
-script end-to-end is the integration gate that closes FEAT-1773.
+into the Synology FalkorDB via **typed-entity writes** (``EntityNode.save`` /
+``EntityEdge.save``) rather than ``add_episode``-driven LLM extraction. Per
+``phase-1-scope.md §FEAT-PH1-001`` (Lilymay seeding) and ADR-ARCH-021
+(typed-entity seed design resolutions), running this script end-to-end is
+the integration gate that closes Phase 1's G2/G3 gates.
+
+Why typed-entity writes (not ``add_episode``)
+---------------------------------------------
+
+The original TASK-GSM-006 implementation routed every seed write through
+``GraphitiWriteHelper.schedule_write`` → ``_perform_write`` → ``add_episode``.
+That hits graphiti-core's LLM-driven entity extraction path on every call
+(~30+ minutes wall-clock per full seed against the GB10 vLLM endpoint, with
+intermittent 429s under concurrency). It also went through a non-trivial
+chain of failures (R-WAVE5-01 vLLM rate-limiting, R-WAVE5-03 RediSearch
+dash-as-NOT — the latter fixed in the guardkit graphiti-core fork at
+``v0.29.5-guardkit.2``).
+
+TASK-GSM-007's design review approved Path 1B: build the typed Pydantic
+entity instances declared in :mod:`study_tutor.knowledge.student_model`,
+serialise them via graphiti-core's ``EntityNode`` / ``EntityEdge`` types,
+and call ``.save(driver)`` directly. Same input → same graph state, ~1s
+wall-clock, no LLM in the loop, byte-idempotent on re-run via
+deterministic UUID5 derivation (see :mod:`study_tutor.knowledge.seed_uuids`).
+
+CC-13 invariant narrowing
+-------------------------
+
+Per ADR-ARCH-021, the CC-13 single-call-site invariant (originally "all
+``add_episode`` calls go through ``GraphitiWriteHelper``") is narrowed to
+**"all live tutor session ``add_episode`` calls go through
+``GraphitiWriteHelper``; the seed writes typed entities directly"**. The
+seed therefore has no ``add_episode`` calls at all (a grep enforces this in
+TASK-GSM-009 AC-01). See :mod:`study_tutor.knowledge.async_write` module
+docstring for the runtime side of the same statement.
+
+Group-id discipline
+-------------------
+
+Carries forward unchanged from TASK-GSM-006:
+
+- ``student-<id>`` for student-scoped writes (Student node, TopicConfidence
+  nodes, ``HAS_CONFIDENCE`` edges).
+- ``subject-<slug>`` for curriculum-scoped writes (Subject, Text, Topic
+  nodes; ``HAS_TEXT`` and ``COVERS`` edges).
+- ``fleet-appmilla`` for cross-fleet writes (AssessmentObjective nodes).
+
+Cross-group edges (``Student → STUDIES → Subject``,
+``Student → WORKING_ON → Text``, ``Topic → ASSESSED_BY → AO``) are
+**deferred** under ADR-ARCH-021 §G2 — the G2 probe (2026-05-04) confirmed
+``EntityEdge.save()`` silently dangles when source and target nodes live in
+different named graphs. The Student node carries an ``enrolled_subjects:
+list[str]`` attribute as a denormalisation workaround (G1) and Topic nodes
+carry an ``ao_refs: list[str]`` attribute that mirrors the dropped
+ASSESSED_BY edge.
 
 Usage
 -----
@@ -14,36 +65,38 @@ Usage
     python scripts/seed_student_model.py [--config-path PATH]
 
 When ``--config-path`` is omitted the script falls back to the canonical
-Phase-1 Synology defaults (whitestocks FalkorDB + GB10 vLLM embedder).
-A YAML config may override any field of
-:class:`~study_tutor.knowledge.graphiti_client.GraphitiConnectionConfig`.
+Phase-1 Synology defaults (whitestocks FalkorDB + GB10 vLLM embedder, the
+latter unused by typed-entity writes). A YAML config may override any
+field of :class:`~study_tutor.knowledge.graphiti_client.GraphitiConnectionConfig`.
 
 Exit-code contract
 ------------------
 
 - ``0`` — fresh seed succeeded **or** pre-flight detected an existing
-  baseline and skipped (idempotent re-run).
+  baseline and skipped (idempotent re-run). Re-running is byte-idempotent
+  via deterministic UUID5 derivation; no abandonment-counting needed.
 - ``2`` — Graphiti / FalkorDB unreachable (``get_client`` returned ``None``).
   Seeding is **not** a degradation path: it requires a live store. A
   structured log line ``event=seeding_failed, reason=client_unavailable``
   is emitted before exit.
-- ``3`` — at least one in-flight write was abandoned at shutdown grace.
-  The structured log line includes the abandoned count.
 
-Architectural invariants honoured
----------------------------------
+Note: the legacy ``EXIT_PENDING_WRITES_ABANDONED = 3`` code is removed —
+``EntityNode.save`` / ``EntityEdge.save`` are sequential synchronous-style
+calls with no async fan-out, so there is no abandonment surface.
 
-- **CC-13 single-call-site**: every seed write is dispatched through
-  :meth:`~study_tutor.knowledge.async_write.GraphitiWriteHelper.schedule_write`
-  with ``flush_id="SEED"``. The script never calls ``add_episode`` directly.
-- **Group-id discipline**: every write uses constants from
-  :mod:`study_tutor.knowledge.student_model` (``student:lilymay``,
-  ``subject:<slug>``, ``fleet:appmilla``) — never bare string literals.
-- **Idempotency**: pre-flight ``get_student_state(client, "lilymay")``
-  short-circuits on a non-empty existing baseline.
-- **Verification gate**: post-write, the same ``get_student_state`` call is
-  used to confirm the seed actually landed. The script logs a one-line
-  summary of what was seeded.
+Structured log events
+---------------------
+
+- ``seeding_failed`` — fatal, paired with ``reason``.
+- ``seeding_failed_unhandled`` — uncaught exception in the orchestrator.
+- ``seeding_skipped`` — pre-flight detected an existing baseline.
+- ``seeding_completed`` — full seed succeeded; carries entity counts.
+- ``seeding_verification_warning`` — post-write read-back returned empty.
+- ``seeding_node_written`` — debug-level, one per node, structured with
+  ``entity_kind``, ``name``, ``group_id``, ``uuid``. Useful for diagnosis
+  without a graph dump.
+- ``seeding_edge_written`` — debug-level, one per edge, structured with
+  ``edge_name``, ``source_uuid``, ``target_uuid``, ``group_id``, ``uuid``.
 
 Manual verification
 -------------------
@@ -53,14 +106,25 @@ issue::
 
     search_nodes(query="Lilymay", group_ids=["student-lilymay"])
 
-The Student entity should be returned with the attributes seeded below.
+The Student entity should be returned with ``enrolled_subjects=["English
+Literature", "English Language"]`` and the rest of the baseline attributes.
+Or run ``.guardkit/autobuild/TASK-GR-SEED/verify_lilymay.py`` for the JSON
+form used in the Phase-1 validation gate evidence.
+
+Cross-references
+----------------
+
+- ADR-ARCH-021 — typed-entity seed design resolutions (G1/G2/G3)
+- TASK-GSM-001 — Pydantic entity models consumed here
+- :mod:`study_tutor.knowledge.seed_uuids` — deterministic UUID derivation
+- :mod:`study_tutor.knowledge.student_model` — entity classes + relationship
+  constants + ``EPOCH_NEVER_REVISED`` sentinel
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
 import logging
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -68,11 +132,6 @@ from typing import Any
 
 import yaml
 
-from study_tutor.knowledge.async_write import GraphitiWriteHelper
-from study_tutor.knowledge.episodes import (
-    SeedBaselineEpisode,
-    TopicConfidenceUpdatedEpisode,
-)
 from study_tutor.knowledge.graphiti_client import (
     DEFAULT_GRAPHITI_YAML_PATH,
     GraphitiClient,
@@ -81,8 +140,21 @@ from study_tutor.knowledge.graphiti_client import (
     load_graphiti_config_from_yaml,
 )
 from study_tutor.knowledge.queries import get_student_state
+from study_tutor.knowledge.seed_uuids import (
+    assessment_objective_uuid,
+    edge_uuid,
+    student_uuid,
+    subject_uuid,
+    text_uuid,
+    topic_confidence_uuid,
+    topic_uuid,
+)
 from study_tutor.knowledge.student_model import (
+    COVERS,
+    EPOCH_NEVER_REVISED,
     FLEET_GROUP_ID,
+    HAS_CONFIDENCE,
+    HAS_TEXT,
     STUDENT_GROUP_PREFIX,
     SUBJECT_GROUP_PREFIX,
     confidence_band_for,
@@ -98,7 +170,6 @@ logger = logging.getLogger("study_tutor.seed")
 
 EXIT_OK: int = 0
 EXIT_CLIENT_UNAVAILABLE: int = 2
-EXIT_PENDING_WRITES_ABANDONED: int = 3
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +357,11 @@ TOPICS: tuple[dict[str, Any], ...] = (
 # ---------------------------------------------------------------------------
 
 #: Defaults align with ``phase-1-scope.md`` and the latency-spike script.
+#:
+#: Note: under typed-entity writes, ``llm_provider`` / ``llm_model`` /
+#: ``embedder_url`` are unused at seed time (no LLM extraction in the write
+#: path). They are retained here so live tutor-session writes via the same
+#: config still resolve correctly.
 DEFAULT_CONFIG: dict[str, Any] = {
     "falkor_host": "whitestocks",
     "falkor_port": 6379,
@@ -308,7 +384,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="seed_student_model",
         description=(
             "Seed Lilymay's baseline learner profile into the configured "
-            "Graphiti / FalkorDB store. Idempotent on re-run."
+            "Graphiti / FalkorDB store via typed-entity writes. Idempotent "
+            "on re-run."
         ),
     )
     parser.add_argument(
@@ -374,13 +451,8 @@ def require_client_or_exit(client: GraphitiClient | None) -> GraphitiClient:
 
 
 # ---------------------------------------------------------------------------
-# Per-entity seed writers — every one routes through helper.schedule_write
+# Driver helpers (FalkorDB per-group named-graph isolation)
 # ---------------------------------------------------------------------------
-
-
-def _now_utc() -> datetime:
-    """Return the current UTC instant. Hoisted so tests can monkeypatch."""
-    return datetime.now(timezone.utc)
 
 
 def _student_group(student_id: str) -> str:
@@ -391,180 +463,118 @@ def _subject_group(slug: str) -> str:
     return f"{SUBJECT_GROUP_PREFIX}{slug}"
 
 
-def _seed_student(helper: GraphitiWriteHelper, *, now: datetime) -> None:
-    """Schedule the Student entity (Lilymay) baseline write."""
-    helper.schedule_write(
-        group_ids=[_student_group(STUDENT_ID)],
-        episode=SeedBaselineEpisode(
-            entity_kind="student",
-            entity_name=STUDENT_NAME,
-            description=(
-                f"Student {STUDENT_NAME} (id={STUDENT_ID}), Year "
-                f"{STUDENT_YEAR_GROUP}, target grade "
-                f"{STUDENT_TARGET_GRADE}. Baseline created at "
-                f"{now.isoformat()}."
-            ),
-        ),
-        flush_id="SEED",
-    )
+def _now_utc() -> datetime:
+    """Return the current UTC instant. Hoisted so tests can monkeypatch."""
+    return datetime.now(timezone.utc)
 
 
-def _seed_subjects(helper: GraphitiWriteHelper) -> None:
-    """Schedule a Subject baseline write per enrolled subject."""
-    for subject in SUBJECTS:
-        helper.schedule_write(
-            group_ids=[_subject_group(subject["slug"])],
-            episode=SeedBaselineEpisode(
-                entity_kind="subject",
-                entity_name=subject["name"],
-                description=(
-                    f"Subject {subject['name']} ({subject['exam_board']} "
-                    f"spec {subject['spec_code']})."
-                ),
-            ),
-            flush_id="SEED",
-        )
+def _driver_for_group(driver: Any, group_id: str) -> Any:
+    """Return a driver pointing at the named graph for ``group_id``.
 
-
-def _seed_texts(helper: GraphitiWriteHelper) -> None:
-    """Schedule a Text baseline write per curriculum text."""
-    for text in TEXTS:
-        helper.schedule_write(
-            group_ids=[_subject_group(text["subject_slug"])],
-            episode=SeedBaselineEpisode(
-                entity_kind="text",
-                entity_name=text["name"],
-                description=(
-                    f"Text '{text['name']}' ({text['kind']}) under subject "
-                    f"{text['subject_slug']}; source path "
-                    f"{text['source_path']}."
-                ),
-            ),
-            flush_id="SEED",
-        )
-
-
-def _seed_assessment_objectives(helper: GraphitiWriteHelper) -> None:
-    """Schedule a SeedBaselineEpisode for each AQA AO (AC-008)."""
-    for ao in AOS:
-        helper.schedule_write(
-            # AOs are curriculum-level, not per-student — write under the
-            # fleet group so they're shared across all future students.
-            group_ids=[FLEET_GROUP_ID],
-            episode=SeedBaselineEpisode(
-                entity_kind="assessment_objective",
-                entity_name=ao["code"],
-                description=(
-                    f"{ao['code']} ({ao['exam_board']}): {ao['description']}"
-                ),
-            ),
-            flush_id="SEED",
-        )
-
-
-def _seed_topics(helper: GraphitiWriteHelper) -> None:
-    """Schedule a Topic baseline write per Phase-1 topic."""
-    for topic in TOPICS:
-        helper.schedule_write(
-            group_ids=[_subject_group(topic["subject_slug"])],
-            episode=SeedBaselineEpisode(
-                entity_kind="topic",
-                entity_name=topic["name"],
-                description=(
-                    f"Topic '{topic['name']}' under subject "
-                    f"{topic['subject_slug']}; AO refs: "
-                    f"{', '.join(topic['ao_refs'])}."
-                ),
-            ),
-            flush_id="SEED",
-        )
-
-
-def _seed_initial_topic_confidences(
-    helper: GraphitiWriteHelper, *, now: datetime
-) -> None:
-    """Emit one ``TopicConfidenceUpdatedEpisode`` per topic (AC-006, AC-007).
-
-    Every initial confidence is committed via the shared async helper with
-    ``flush_id="SEED"`` — never a raw ``add_episode`` call.
+    The guardkit graphiti-core fork (TASK-FORK-PATCH bug #8) isolates each
+    ``group_id`` into its own FalkorDB named graph (graph name == group_id).
+    Typed writes ignore the high-level ``Graphiti`` decorator that auto-clones
+    on the read side, so we mirror it explicitly here. Drivers that don't
+    expose ``clone(database=...)`` (Neo4j, Kuzu, in-memory test doubles) get
+    the original driver back.
     """
-    for topic in TOPICS:
-        new_band = confidence_band_for(int(topic["initial_percentage"]))
-        helper.schedule_write(
-            group_ids=[_student_group(STUDENT_ID)],
-            episode=TopicConfidenceUpdatedEpisode(
-                student_id=STUDENT_ID,
-                topic_name=topic["name"],
-                # Baseline transition: from "no observation" (modelled as
-                # the same band at 0%) into the human-estimated value.
-                previous_band=new_band,
-                new_band=new_band,
-                previous_percentage=0,
-                new_percentage=int(topic["initial_percentage"]),
-                observed_at=now,
-                triggering_session_id=None,
-            ),
-            flush_id="SEED",
-        )
-
-
-# ---------------------------------------------------------------------------
-# Orchestration
-# ---------------------------------------------------------------------------
-
-
-#: Env var override for the per-batch drain budget used by
-#: :func:`seed_lilymay`. Sized for seed-time bulk loads (one-off, ~25
-#: writes) rather than the 30s handler-tear-down grace exposed by
-#: :data:`async_write.DEFAULT_SHUTDOWN_GRACE_SEC`.
-_SEED_BATCH_DRAIN_ENV: str = "GRAPHITI_SEED_BATCH_DRAIN_SEC"
-
-#: Default seed-time drain budget per entity-type batch (seconds).
-#: 600s comfortably covers a 6-episode batch at vLLM extraction
-#: wall-time of ~30-90s per episode.
-DEFAULT_SEED_BATCH_DRAIN_SEC: int = 600
-
-
-def _resolve_seed_batch_drain_sec() -> int:
-    """Resolve the per-batch drain budget from env or default.
-
-    Mirrors the parse-and-warn shape of
-    :func:`async_write._resolve_default_grace_sec`: a non-positive or
-    non-integer value falls back to the default with a structured warning
-    so misconfiguration is observable in production logs.
-    """
-    raw = os.environ.get(_SEED_BATCH_DRAIN_ENV)
-    if raw is None:
-        return DEFAULT_SEED_BATCH_DRAIN_SEC
+    clone_fn = getattr(driver, "clone", None)
+    if clone_fn is None:
+        return driver
     try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "ignoring non-integer %s=%r; using default %d",
-            _SEED_BATCH_DRAIN_ENV,
-            raw,
-            DEFAULT_SEED_BATCH_DRAIN_SEC,
-            extra={
-                "event": "seeding_batch_drain_env_invalid",
-                "raw_value": raw,
-                "fallback": DEFAULT_SEED_BATCH_DRAIN_SEC,
-            },
-        )
-        return DEFAULT_SEED_BATCH_DRAIN_SEC
-    if value <= 0:
-        logger.warning(
-            "ignoring non-positive %s=%d; using default %d",
-            _SEED_BATCH_DRAIN_ENV,
-            value,
-            DEFAULT_SEED_BATCH_DRAIN_SEC,
-            extra={
-                "event": "seeding_batch_drain_env_invalid",
-                "raw_value": raw,
-                "fallback": DEFAULT_SEED_BATCH_DRAIN_SEC,
-            },
-        )
-        return DEFAULT_SEED_BATCH_DRAIN_SEC
-    return value
+        return clone_fn(database=group_id)
+    except TypeError:
+        return driver
+
+
+# ---------------------------------------------------------------------------
+# Per-entity seed writers — typed-entity writes via EntityNode/EntityEdge
+# ---------------------------------------------------------------------------
+
+
+async def _save_node(
+    driver: Any,
+    *,
+    entity_cls: type,
+    uuid_value: str,
+    name: str,
+    labels: list[str],
+    group_id: str,
+    attributes: dict[str, Any],
+    summary: str,
+) -> str:
+    """Construct and save a typed ``EntityNode``; emit a debug log line.
+
+    The actual ``EntityNode`` class is the one from graphiti-core; we accept
+    it as a parameter so this helper is the single import point and the
+    caller-side code reads as plain Python without graphiti-core constants
+    sprinkled around. ``entity_cls`` is the same ``EntityNode`` for every
+    call today — the parameterisation is cheap insurance against a future
+    seed extension that wants a different node class.
+    """
+    node = entity_cls(
+        uuid=uuid_value,
+        name=name,
+        labels=labels,
+        group_id=group_id,
+        summary=summary,
+        attributes=dict(attributes),
+    )
+    target_driver = _driver_for_group(driver, group_id)
+    await node.save(target_driver)
+    logger.debug(
+        "seeding node written",
+        extra={
+            "event": "seeding_node_written",
+            "entity_kind": labels[-1] if labels else "Entity",
+            # Use ``entity_name`` rather than ``name`` because ``name`` is
+            # already a reserved attribute on :class:`logging.LogRecord`
+            # and Python's logging module rejects ``extra={"name": ...}``.
+            "entity_name": name,
+            "group_id": group_id,
+            "uuid": uuid_value,
+        },
+    )
+    return uuid_value
+
+
+async def _save_edge(
+    driver: Any,
+    *,
+    edge_cls: type,
+    uuid_value: str,
+    name: str,
+    source_node_uuid: str,
+    target_node_uuid: str,
+    fact: str,
+    group_id: str,
+    attributes: dict[str, Any],
+    created_at: datetime,
+) -> None:
+    """Construct and save a typed ``EntityEdge``; emit a debug log line."""
+    edge = edge_cls(
+        uuid=uuid_value,
+        name=name,
+        source_node_uuid=source_node_uuid,
+        target_node_uuid=target_node_uuid,
+        fact=fact,
+        group_id=group_id,
+        created_at=created_at,
+        attributes=dict(attributes),
+    )
+    target_driver = _driver_for_group(driver, group_id)
+    await edge.save(target_driver)
+    logger.debug(
+        "seeding edge written",
+        extra={
+            "event": "seeding_edge_written",
+            "edge_name": name,
+            "source_uuid": source_node_uuid,
+            "target_uuid": target_node_uuid,
+            "group_id": group_id,
+            "uuid": uuid_value,
+        },
+    )
 
 
 def _is_already_seeded(state: Any) -> bool:
@@ -572,8 +582,9 @@ def _is_already_seeded(state: Any) -> bool:
 
     We check ``empty=False`` plus at least one observable trace of the
     seed (a subject, a confidence row, or a recorded year_group). Any of
-    these is enough — re-running the script is a no-op once the baseline
-    is detected.
+    these is enough — re-running the script is byte-idempotent under
+    typed-entity writes (deterministic UUID5 → MERGE-by-uuid in FalkorDB),
+    so this is more of a fast-path log-and-skip than a correctness gate.
     """
     if state is None:
         return False
@@ -588,19 +599,17 @@ def _is_already_seeded(state: Any) -> bool:
     return False
 
 
-async def seed_lilymay(
-    client: GraphitiClient,
-    helper: GraphitiWriteHelper,
-) -> int:
-    """Run the full seed flow against ``client`` via ``helper``.
+async def seed_lilymay(client: GraphitiClient) -> int:
+    """Run the full seed flow against ``client`` via typed-entity writes.
 
     Returns:
-        One of :data:`EXIT_OK` / :data:`EXIT_PENDING_WRITES_ABANDONED`.
+        :data:`EXIT_OK` on success or pre-flight skip.
 
-    Pre-flight check (AC-003):
-        If ``get_student_state`` already shows a non-empty baseline for
+    Pre-flight check:
+        If :func:`get_student_state` already shows a non-empty baseline for
         Lilymay, log ``event=seeding_skipped`` and return :data:`EXIT_OK`
-        without writing anything.
+        without writing anything. Re-runs are byte-idempotent regardless,
+        but the skip avoids unnecessary work and noise.
     """
     # ---- Pre-flight: idempotency gate ------------------------------------
     state = await get_student_state(client, STUDENT_ID)
@@ -615,83 +624,269 @@ async def seed_lilymay(
         )
         return EXIT_OK
 
-    # ---- Schedule every write through the shared helper ------------------
-    #
-    # TASK-GR-SEED (2026-05-02): drain between each entity-type batch, not
-    # just at the end. Background: schedule_write is fire-and-forget by
-    # design (CC-13 / ADR-ARCH-019 handler-budget contract), so calling all
-    # six batch helpers without intermediate drains dispatches all ~25
-    # episodes concurrently. Each episode in turn triggers ~3-4 internal
-    # graphiti-core LLM extraction calls — multiplied across 25 in-flight
-    # episodes that's ~75-100 concurrent vLLM requests, which exceeds the
-    # GB10 vLLM queue cap and 429-rate-limits every write. Draining between
-    # batches keeps the in-flight count to one batch's worth at a time
-    # (≤6 episodes), which fits comfortably inside vLLM's queue while
-    # preserving the seed's existing CC-13 invariants — every write still
-    # routes through helper.schedule_write under flush_id="SEED", and the
-    # final drain still runs as the catch-all.
-    #
-    # The intermediate drains use a generous per-batch timeout (the
-    # GRAPHITI_SEED_BATCH_DRAIN_SEC env var, default 600s) because vLLM
-    # extraction wall-time per episode is highly variable (5-90s) and the
-    # 30s default shutdown_grace is sized for handler-budget tear-down,
-    # not seed-time bulk loads.
-    now = _now_utc()
-    batch_drain_sec = _resolve_seed_batch_drain_sec()
-
-    async def _drain_batch(label: str) -> None:
-        succeeded, abandoned = await helper.drain(timeout_sec=batch_drain_sec)
-        logger.info(
-            "seeding batch drained",
+    # ---- Resolve graphiti-core driver ------------------------------------
+    inner = getattr(client, "client_or_none", None)
+    if inner is None:
+        logger.error(
+            "seeding failed: graphiti client has no inner client",
             extra={
-                "event": "seeding_batch_drained",
-                "batch": label,
-                "succeeded": succeeded,
-                "abandoned": abandoned,
+                "event": "seeding_failed",
+                "reason": "client_or_none_unavailable",
             },
         )
-        if abandoned > 0:
-            # Surface a hard-fail on the first batch that loses writes
-            # rather than soldiering on through five more batches that
-            # will drop the same way.
-            raise RuntimeError(
-                f"seeding batch {label!r} abandoned {abandoned} of "
-                f"{succeeded + abandoned} writes after {batch_drain_sec}s "
-                "drain — investigate vLLM queue saturation before retrying"
+        return EXIT_CLIENT_UNAVAILABLE
+    driver = getattr(inner, "driver", None)
+    if driver is None:
+        logger.error(
+            "seeding failed: graphiti client missing driver attribute",
+            extra={
+                "event": "seeding_failed",
+                "reason": "driver_unavailable",
+            },
+        )
+        return EXIT_CLIENT_UNAVAILABLE
+
+    # Lazy imports so the module is importable in environments without
+    # graphiti-core (e.g. unit-test mocks that monkeypatch ``seed_lilymay``).
+    from graphiti_core.edges import EntityEdge
+    from graphiti_core.nodes import EntityNode
+
+    now = _now_utc()
+    student_group = _student_group(STUDENT_ID)
+    fleet_group = FLEET_GROUP_ID
+
+    # ---- Student node (carries enrolled_subjects denormalisation per G1) -
+    enrolled_subject_names = [s["name"] for s in SUBJECTS]
+    student_uuid_value = student_uuid(student_group, STUDENT_NAME)
+    await _save_node(
+        driver,
+        entity_cls=EntityNode,
+        uuid_value=student_uuid_value,
+        name=STUDENT_NAME,
+        labels=["Entity", "Student"],
+        group_id=student_group,
+        summary=(
+            f"Student {STUDENT_NAME} (id={STUDENT_ID}), Year "
+            f"{STUDENT_YEAR_GROUP}, target grade {STUDENT_TARGET_GRADE}. "
+            f"Enrolled in: {', '.join(enrolled_subject_names)}."
+        ),
+        attributes={
+            "student_id": STUDENT_ID,
+            "year_group": STUDENT_YEAR_GROUP,
+            "target_grade": STUDENT_TARGET_GRADE,
+            # ADR-ARCH-021 §G1 denormalisation — projection in
+            # ``queries._build_student_state`` reads this directly so
+            # ``state.subjects`` is populated without cross-group edge
+            # traversal.
+            "enrolled_subjects": list(enrolled_subject_names),
+            "created_at": now.isoformat(),
+        },
+    )
+
+    # ---- Subjects (curriculum-level, one named graph per subject) --------
+    subject_uuid_by_slug: dict[str, str] = {}
+    for subject in SUBJECTS:
+        sg = _subject_group(subject["slug"])
+        s_uuid = subject_uuid(sg, subject["name"])
+        subject_uuid_by_slug[subject["slug"]] = s_uuid
+        await _save_node(
+            driver,
+            entity_cls=EntityNode,
+            uuid_value=s_uuid,
+            name=subject["name"],
+            labels=["Entity", "Subject"],
+            group_id=sg,
+            summary=(
+                f"Subject {subject['name']} ({subject['exam_board']} "
+                f"spec {subject['spec_code']})."
+            ),
+            attributes={
+                "name": subject["name"],
+                "exam_board": subject["exam_board"],
+                "spec_code": subject["spec_code"],
+                "slug": subject["slug"],
+            },
+        )
+
+    # ---- Texts (under their parent subject's group) ----------------------
+    text_uuid_by_subject: dict[str, list[str]] = {}
+    for text in TEXTS:
+        sg = _subject_group(text["subject_slug"])
+        t_uuid = text_uuid(sg, text["subject_slug"], text["name"])
+        text_uuid_by_subject.setdefault(text["subject_slug"], []).append(t_uuid)
+        await _save_node(
+            driver,
+            entity_cls=EntityNode,
+            uuid_value=t_uuid,
+            name=text["name"],
+            labels=["Entity", "Text"],
+            group_id=sg,
+            summary=(
+                f"Text '{text['name']}' ({text['kind']}) under subject "
+                f"{text['subject_slug']}; source path "
+                f"{text['source_path']}."
+            ),
+            attributes={
+                "name": text["name"],
+                "kind": text["kind"],
+                "source_path": text["source_path"],
+                "subject_slug": text["subject_slug"],
+            },
+        )
+
+    # ---- Topics (under their parent subject's group; ao_refs denormalised
+    #      per ADR-ARCH-021 §G2 — Topic→AO would be cross-group) ---------
+    topic_uuid_by_subject: dict[str, list[tuple[str, str]]] = {}
+    topic_uuid_by_name: dict[str, str] = {}
+    for topic in TOPICS:
+        sg = _subject_group(topic["subject_slug"])
+        t_uuid = topic_uuid(sg, topic["name"])
+        topic_uuid_by_subject.setdefault(topic["subject_slug"], []).append(
+            (topic["name"], t_uuid)
+        )
+        topic_uuid_by_name[topic["name"]] = t_uuid
+        await _save_node(
+            driver,
+            entity_cls=EntityNode,
+            uuid_value=t_uuid,
+            name=topic["name"],
+            labels=["Entity", "Topic"],
+            group_id=sg,
+            summary=(
+                f"Topic '{topic['name']}' under subject "
+                f"{topic['subject_slug']}; AO refs: "
+                f"{', '.join(topic['ao_refs'])}."
+            ),
+            attributes={
+                "name": topic["name"],
+                "subject_ref": topic["subject_slug"],
+                # G2 denormalisation: ASSESSED_BY is cross-group
+                # (Topic in subject-<slug>, AO in fleet-appmilla) so we
+                # cannot write the edge. The list-of-codes attribute is
+                # the workaround the planner can read at projection time.
+                "ao_refs": list(topic["ao_refs"]),
+            },
+        )
+
+    # ---- Assessment Objectives (cross-fleet, single named graph) ---------
+    for ao in AOS:
+        ao_uuid = assessment_objective_uuid(fleet_group, ao["code"])
+        await _save_node(
+            driver,
+            entity_cls=EntityNode,
+            uuid_value=ao_uuid,
+            name=ao["code"],
+            labels=["Entity", "AssessmentObjective"],
+            group_id=fleet_group,
+            summary=f"{ao['code']} ({ao['exam_board']}): {ao['description']}",
+            attributes={
+                "code": ao["code"],
+                "exam_board": ao["exam_board"],
+                "description": ao["description"],
+            },
+        )
+
+    # ---- TopicConfidences (one per Topic, all under student-<id>) --------
+    confidence_uuid_by_topic: dict[str, str] = {}
+    for topic in TOPICS:
+        tc_uuid = topic_confidence_uuid(
+            student_group, STUDENT_ID, topic["name"]
+        )
+        confidence_uuid_by_topic[topic["name"]] = tc_uuid
+        percentage = int(topic["initial_percentage"])
+        band = confidence_band_for(percentage)
+        await _save_node(
+            driver,
+            entity_cls=EntityNode,
+            uuid_value=tc_uuid,
+            name=f"TopicConfidence:{topic['name']}",
+            labels=["Entity", "TopicConfidence"],
+            group_id=student_group,
+            summary=(
+                f"{STUDENT_NAME}'s baseline confidence on '{topic['name']}': "
+                f"{percentage}% ({band}). Last revised at "
+                f"{EPOCH_NEVER_REVISED.isoformat()} (never-revised sentinel)."
+            ),
+            attributes={
+                "student_ref": STUDENT_ID,
+                "topic_ref": topic["name"],
+                "percentage": percentage,
+                "band": band,
+                # ADR-ARCH-021 §G3 — far-past sentinel keeps every baseline
+                # topic outside the planner's 48h cooldown without
+                # introducing an Optional[datetime] schema change.
+                "last_revised_at": EPOCH_NEVER_REVISED.isoformat(),
+            },
+        )
+
+    # ---- Intra-group edges (per ADR-ARCH-021 §G2) ------------------------
+    # Student → HAS_CONFIDENCE → TopicConfidence (within student-<id>)
+    for topic_name, tc_uuid in confidence_uuid_by_topic.items():
+        e_uuid = edge_uuid(HAS_CONFIDENCE, student_uuid_value, tc_uuid)
+        await _save_edge(
+            driver,
+            edge_cls=EntityEdge,
+            uuid_value=e_uuid,
+            name=HAS_CONFIDENCE,
+            source_node_uuid=student_uuid_value,
+            target_node_uuid=tc_uuid,
+            fact=(
+                f"{STUDENT_NAME} has baseline confidence on '{topic_name}'."
+            ),
+            group_id=student_group,
+            created_at=now,
+            attributes={"topic_ref": topic_name},
+        )
+
+    # Subject → HAS_TEXT → Text (within subject-<slug>)
+    for subject in SUBJECTS:
+        slug = subject["slug"]
+        s_uuid = subject_uuid_by_slug[slug]
+        sg = _subject_group(slug)
+        for t_uuid in text_uuid_by_subject.get(slug, []):
+            e_uuid = edge_uuid(HAS_TEXT, s_uuid, t_uuid)
+            await _save_edge(
+                driver,
+                edge_cls=EntityEdge,
+                uuid_value=e_uuid,
+                name=HAS_TEXT,
+                source_node_uuid=s_uuid,
+                target_node_uuid=t_uuid,
+                fact=f"Subject {subject['name']} has text under {slug}.",
+                group_id=sg,
+                created_at=now,
+                attributes={},
             )
 
-    _seed_student(helper, now=now)
-    await _drain_batch("student")
-    _seed_subjects(helper)
-    await _drain_batch("subjects")
-    _seed_texts(helper)
-    await _drain_batch("texts")
-    _seed_assessment_objectives(helper)
-    await _drain_batch("assessment_objectives")
-    _seed_topics(helper)
-    await _drain_batch("topics")
-    _seed_initial_topic_confidences(helper, now=now)
-
-    # ---- Drain in-flight tasks before exit -------------------------------
-    succeeded, abandoned = await helper.drain(timeout_sec=batch_drain_sec)
-    if abandoned > 0:
-        logger.error(
-            "seeding pending writes abandoned at shutdown",
-            extra={
-                "event": "seeding_pending_writes_abandoned",
-                "abandoned": abandoned,
-                "succeeded": succeeded,
-            },
-        )
-        return EXIT_PENDING_WRITES_ABANDONED
+    # Subject → COVERS → Topic (within subject-<slug>)
+    for subject in SUBJECTS:
+        slug = subject["slug"]
+        s_uuid = subject_uuid_by_slug[slug]
+        sg = _subject_group(slug)
+        for topic_name, t_uuid in topic_uuid_by_subject.get(slug, []):
+            e_uuid = edge_uuid(COVERS, s_uuid, t_uuid)
+            await _save_edge(
+                driver,
+                edge_cls=EntityEdge,
+                uuid_value=e_uuid,
+                name=COVERS,
+                source_node_uuid=s_uuid,
+                target_node_uuid=t_uuid,
+                fact=(
+                    f"Subject {subject['name']} covers topic '{topic_name}'."
+                ),
+                group_id=sg,
+                created_at=now,
+                attributes={"topic_ref": topic_name},
+            )
 
     # ---- Verification gate (build-plan step 10) --------------------------
     final_state = await get_student_state(client, STUDENT_ID)
     if final_state is None or getattr(final_state, "empty", True):
         # The store accepted writes but the verification read couldn't see
-        # them — this is unusual and worth flagging, but we still exit 0
-        # because the writes themselves succeeded (drain reported zero
-        # abandoned). Operators can re-run get_student_state manually.
+        # them — operators can re-run get_student_state manually. Counted
+        # entities below come from the in-process write surface, not the
+        # read-back, so the warning is informational.
         logger.warning(
             "post-seed verification did not observe baseline state",
             extra={
@@ -701,17 +896,27 @@ async def seed_lilymay(
         )
     else:
         logger.info(
-            "seeded Lilymay baseline (subjects=%d, confidences=%d, "
-            "succeeded_writes=%d)",
+            "seeded Lilymay baseline (subjects=%d, confidences=%d)",
             len(final_state.subjects),
             len(final_state.topic_confidences),
-            succeeded,
             extra={
                 "event": "seeding_completed",
                 "student_id": STUDENT_ID,
                 "subjects": len(final_state.subjects),
                 "topic_confidences": len(final_state.topic_confidences),
-                "succeeded_writes": succeeded,
+                "nodes_written": (
+                    1  # Student
+                    + len(SUBJECTS)
+                    + len(TEXTS)
+                    + len(TOPICS)
+                    + len(AOS)
+                    + len(TOPICS)  # one TopicConfidence per topic
+                ),
+                "edges_written": (
+                    len(TOPICS)  # HAS_CONFIDENCE
+                    + len(TEXTS)  # HAS_TEXT
+                    + len(TOPICS)  # COVERS (one per topic)
+                ),
             },
         )
     return EXIT_OK
@@ -742,15 +947,9 @@ async def main(argv: list[str] | None = None) -> int:
     require_client_or_exit(client)
     assert client is not None  # narrowed by require_client_or_exit
 
-    helper = GraphitiWriteHelper(client.client_or_none)
     try:
-        return await seed_lilymay(client, helper)
+        return await seed_lilymay(client)
     finally:
-        # Defensive: even if seed_lilymay returned early or raised, drain
-        # any tasks the helper might still be tracking before we close the
-        # underlying client. Idempotent — drain on an empty helper is a
-        # cheap no-op tuple ``(0, 0)``.
-        await helper.drain()
         await client.close()
 
 

@@ -49,8 +49,8 @@ Confidence bands (per ASSUM-001, confirmed):
 """
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Literal
+from datetime import datetime, timezone
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -102,6 +102,25 @@ ASSESSED_BY: str = "ASSESSED_BY"
 
 #: Student HAS_CONFIDENCE TopicConfidence — per-topic mastery state.
 HAS_CONFIDENCE: str = "HAS_CONFIDENCE"
+
+
+# ---------------------------------------------------------------------------
+# Sentinel timestamps (ADR-ARCH-021 §G3)
+# ---------------------------------------------------------------------------
+
+#: Sentinel timestamp for ``TopicConfidence.last_revised_at`` baseline writes.
+#:
+#: A baseline TopicConfidence has, by construction, never been revised — but
+#: the field is non-Optional and the planner cooldown logic compares it
+#: against ``now()``. Writing ``now()`` would put every baseline topic
+#: inside the 24h cooldown and break TASK-GSM-009 AC-03 (planner must have
+#: bands to plan against on day 1). The far-past sentinel keeps the topic
+#: comfortably outside the 48h stale-bonus boundary forever (until a real
+#: revision overwrites this value with the actual revised-at timestamp).
+#:
+#: Anyone reading ``last_revised_at = 1970-01-01`` in raw graph queries
+#: should follow this constant back to ADR-ARCH-021 §G3.
+EPOCH_NEVER_REVISED: Final[datetime] = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
@@ -337,6 +356,8 @@ __all__ = [
     # Confidence helper
     "ConfidenceBand",
     "confidence_band_for",
+    # Sentinel timestamps
+    "EPOCH_NEVER_REVISED",
     # Other type aliases
     "TextKind",
 ]

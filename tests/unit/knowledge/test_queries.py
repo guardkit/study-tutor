@@ -194,6 +194,72 @@ async def test_get_student_state_happy_path_populates_all_fields() -> None:
     assert inner.search_memory_facts_calls[0]["group_ids"] == expected_group_ids
 
 
+async def test_get_student_state_reads_enrolled_subjects_off_student_node() -> None:
+    """ADR-ARCH-021 §G1 / TASK-GSM-009 AC-03: ``state.subjects`` is populated
+    from the Student node's ``enrolled_subjects`` attribute (denormalisation),
+    not from cross-group Subject node traversal.
+    """
+    nodes = [
+        _node(
+            "Student",
+            year_group=10,
+            target_grade="7",
+            enrolled_subjects=["English Literature", "English Language"],
+        ),
+    ]
+    inner = _FakeInner(nodes=nodes, facts=[])
+
+    state = await get_student_state(
+        client=_FakeClient(inner), student_id="lilymay"
+    )
+
+    assert state is not None
+    assert state.subjects == ["English Literature", "English Language"]
+    assert state.year_group == 10
+    assert state.target_grade == "7"
+
+
+async def test_get_student_state_handles_missing_enrolled_subjects() -> None:
+    """When ``enrolled_subjects`` is absent from the Student attributes,
+    projection still completes and ``state.subjects`` stays empty.
+    """
+    nodes = [
+        _node("Student", year_group=10, target_grade="7"),
+    ]
+    inner = _FakeInner(nodes=nodes, facts=[])
+
+    state = await get_student_state(
+        client=_FakeClient(inner), student_id="lilymay"
+    )
+
+    assert state is not None
+    assert state.year_group == 10
+    assert state.target_grade == "7"
+    assert state.subjects == []
+
+
+async def test_get_student_state_skips_non_list_enrolled_subjects() -> None:
+    """A malformed ``enrolled_subjects`` (e.g. accidental string) must not
+    crash projection — list-typed values are required.
+    """
+    nodes = [
+        _node(
+            "Student",
+            year_group=10,
+            target_grade="7",
+            enrolled_subjects="English Literature",  # not a list
+        ),
+    ]
+    inner = _FakeInner(nodes=nodes, facts=[])
+
+    state = await get_student_state(
+        client=_FakeClient(inner), student_id="lilymay"
+    )
+
+    assert state is not None
+    assert state.subjects == []
+
+
 async def test_get_student_state_returns_none_on_read_timeout(
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,

@@ -2,9 +2,14 @@
 id: TASK-GSM-009
 title: "Refactor seed_student_model.py to write typed entities directly (Path 1B implementation, post-ADR-ARCH-021)"
 task_type: implementation
-status: backlog
+status: completed
 created: 2026-05-04T12:00:00Z
-updated: 2026-05-04T12:00:00Z
+updated: 2026-05-04T21:40:00Z
+completed: 2026-05-04T21:40:00Z
+completed_location: tasks/completed/TASK-GSM-009/
+organized_files:
+  - TASK-GSM-009.md
+  - completion-report.md
 priority: high
 complexity: 5
 estimated_minutes: 240
@@ -42,9 +47,19 @@ context_files:
   - docs/research/ideas/phase-1-validation.md
   - .guardkit/autobuild/TASK-GR-SEED/verify_lilymay.py
 test_results:
-  status: pending
-  coverage: null
-  last_run: null
+  status: passed
+  coverage: null  # no project-configured coverage tool
+  last_run: 2026-05-04T21:35:00Z
+  unit_tests:
+    passed: 765
+    failed: 2  # both pre-existing, explicitly out-of-scope per AC-07
+    skipped: 1  # live FalkorDB seam, requires STUDY_TUTOR_LIVE_GRAPHITI_SMOKE
+    failures_out_of_scope:
+      - tests/unit/knowledge/test_graphiti_client_wiring.py::test_cross_encoder_sentinel_raises_on_arbitrary_method_name
+      - tests/unit/planner/test_protocols.py::test_mypy_strict_accepts_structurally_conforming_rule
+  live_evidence: .guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json
+  integration_smoke_files_added:
+    - tests/integration/test_typed_entity_writes.py  # AC-13 MERGE-by-uuid (skip-if-unreachable)
 ---
 
 # Refactor seed_student_model.py to write typed entities directly (Path 1B)

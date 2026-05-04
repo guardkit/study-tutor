@@ -194,6 +194,7 @@ async def _read_student_partition(
         )
         return list(nodes), list(facts)
 
+    from graphiti_core.driver.driver import GraphProvider
     from graphiti_core.edges import EntityEdge
     from graphiti_core.errors import (
         GroupsEdgesNotFoundError,
@@ -205,10 +206,23 @@ async def _read_student_partition(
     if driver is None:
         return [], []
 
-    async def _safe_nodes() -> list[Any]:
+    # The guardkit graphiti fork (TASK-FORK-PATCH bug #8) isolates each
+    # group_id into its own FalkorDB named graph (graph name == group_id).
+    # The high-level Graphiti search/retrieve methods auto-clone via the
+    # ``handle_multiple_group_ids`` decorator, but the static enumerators
+    # ``EntityNode.get_by_group_ids`` / ``EntityEdge.get_by_group_ids``
+    # take a raw driver and run on whatever database that driver was last
+    # pointed at — typically the default ``study_tutor`` graph, which is
+    # empty under the per-group isolation. Mirror the writer-side decorator
+    # by cloning the driver per group_id and aggregating.
+    is_falkordb = (
+        getattr(driver, "provider", None) == GraphProvider.FALKORDB
+    )
+
+    async def _safe_nodes(target_driver: Any, gids: list[str]) -> list[Any]:
         try:
             result = await EntityNode.get_by_group_ids(
-                driver, group_ids, limit=limit
+                target_driver, gids, limit=limit
             )
         except GroupsNodesNotFoundError:
             # graphiti-core 0.29 raises rather than returning ``[]`` for
@@ -217,17 +231,36 @@ async def _read_student_partition(
             return []
         return list(result)
 
-    async def _safe_edges() -> list[Any]:
+    async def _safe_edges(target_driver: Any, gids: list[str]) -> list[Any]:
         try:
             result = await EntityEdge.get_by_group_ids(
-                driver, group_ids, limit=limit
+                target_driver, gids, limit=limit
             )
         except GroupsEdgesNotFoundError:
             return []
         return list(result)
 
-    nodes, edges = await asyncio.gather(_safe_nodes(), _safe_edges())
-    return nodes, edges
+    if not is_falkordb:
+        nodes, edges = await asyncio.gather(
+            _safe_nodes(driver, group_ids),
+            _safe_edges(driver, group_ids),
+        )
+        return nodes, edges
+
+    async def _read_one_group(gid: str) -> tuple[list[Any], list[Any]]:
+        cloned = driver.clone(database=gid)
+        nodes_one, edges_one = await asyncio.gather(
+            _safe_nodes(cloned, [gid]),
+            _safe_edges(cloned, [gid]),
+        )
+        return nodes_one, edges_one
+
+    per_group = await asyncio.gather(
+        *(_read_one_group(gid) for gid in group_ids)
+    )
+    aggregated_nodes = [n for nodes_one, _ in per_group for n in nodes_one]
+    aggregated_edges = [e for _, edges_one in per_group for e in edges_one]
+    return aggregated_nodes, aggregated_edges
 
 
 def _attr(obj: Any, name: str, default: Any = None) -> Any:
@@ -305,6 +338,21 @@ def _build_student_state(
                 state.year_group = int(year_group)
             if target_grade is not None and state.target_grade is None:
                 state.target_grade = str(target_grade)
+            # ADR-ARCH-021 §G1: subjects are denormalised onto the Student node
+            # as ``enrolled_subjects: list[str]`` because cross-group edge
+            # traversal (Student → STUDIES → Subject across student-/subject-
+            # named graphs) is functionally broken on the FalkorDB driver
+            # (silent dangle; see G2 probe outcome). The Subject nodes still
+            # exist under ``subject-<slug>`` for curriculum-level structure,
+            # but the planner-level "what is this student enrolled in" answer
+            # comes from this attribute, not edge traversal.
+            enrolled = _attr(
+                attrs, "enrolled_subjects", _attr(node, "enrolled_subjects")
+            )
+            if isinstance(enrolled, list):
+                for subject in enrolled:
+                    if subject:
+                        state.subjects.append(str(subject))
 
         elif kind == "subject":
             name = _attr(attrs, "name", _attr(node, "name"))

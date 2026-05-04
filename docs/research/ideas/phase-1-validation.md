@@ -148,11 +148,88 @@ The wired-client repair (Wave 2 / TASK-PH2-GR-001) cleared the OpenAI 401 root c
 | AC-SEED-07 | ✅ Captured | Run-4 wall-clock 64 min; anomaly noted; R-WAVE5-01 / R-WAVE5-02 risk entries added above. |
 | AC-SEED-08 | ⚠️ Not run | Lint/format pass not exercised in this wave; only this validation doc was edited. |
 
-> **2026-05-04 update**: Design resolution captured in [TASK-GSM-008](../../../tasks/completed/TASK-GSM-008-resolve-typed-entity-design-gaps.md) → [ADR-ARCH-021](../../architecture/decisions/ADR-ARCH-021-typed-entity-seed-design-resolutions.md). Implementation tracked in [TASK-GSM-009](../../../tasks/backlog/TASK-GSM-009-typed-entity-seed-refactor.md); G2/G3 gate flips here are pending TASK-GSM-009's live evidence. AC-SEED-02's expected `year_group=11, target_grade="8"` is corrected to `year_group=10, target_grade="7"` under TASK-GSM-009 AC-05.
+> **2026-05-04 update**: Design resolution captured in [TASK-GSM-008](../../../tasks/completed/TASK-GSM-008-resolve-typed-entity-design-gaps.md) → [ADR-ARCH-021](../../architecture/decisions/ADR-ARCH-021-typed-entity-seed-design-resolutions.md). Implementation tracked in [TASK-GSM-009](../../../tasks/in_progress/TASK-GSM-009-typed-entity-seed-refactor.md); G2/G3 gate flips here are pending TASK-GSM-009's live evidence. AC-SEED-02's expected `year_group=11, target_grade="8"` is corrected to `year_group=10, target_grade="7"` under TASK-GSM-009 AC-05.
+
+> **2026-05-04 (later)**: TASK-GSM-009 landed (typed-entity rewrite). Live evidence captured below; **G2 flips to Held with caveat, G3 flips to Held**. AC-SEED-* statuses are superseded by TASK-GSM-009 AC-01..-17 — see the Wave 6 follow-on subsection further down.
 
 ---
 
 *Doc lives at `docs/research/ideas/phase-1-validation.md`. Revisit at the close of the Wave 5 follow-up (provider rate-limit mitigation + `succeeded_writes` counter accuracy) to flip the falsified G2/G3/G4/G5/G6 entries to held — at which point Phase 1 is structurally complete on its own terms, even though the close-out exercise crossed the calendar boundary.*
+
+---
+
+## Wave 4 retry — TASK-GR-SEED run 5 — 2026-05-03 (afternoon)
+
+**Result: G2 / G3 remain Falsified — different failure mode surfaced.**
+
+The R-WAVE5-01 mitigation (`chunk_extraction_concurrency: 1`, `max_concurrent_episodes: 1`) was already committed to `.guardkit/graphiti.yaml` after the Wave 4 close-out. Both LLM endpoints are healthy at retry time (GB10 vLLM serving `qwen-graphiti`; MacBook ollama up as fallback). Re-running `python scripts/seed_student_model.py` against live FalkorDB produced a **distinct** failure mode that cannot be cleared by retry, infrastructure tuning, or operator intervention — it requires a code-level fix.
+
+### Evidence
+
+- **Run 5** start `2026-05-03T17:23:40Z`, end `2026-05-03T17:37:08Z`, wall-clock **13 min** (much faster than Wave 4's 64 min — failure is fast, not slow).
+- **Counter**: `seeded Lilymay baseline (subjects=0, confidences=0, succeeded_writes=6)`. Underlying counts: 25 writes scheduled, **3 succeeded, 22 failed**. R-WAVE5-02 (counter accuracy) reasserts.
+- **Read-back**: `EntityNode.get_by_group_ids(driver, ["student-lilymay"], limit=20)` → `[]`. `get_student_state(client, "lilymay")` → all fields null/empty. **G2 evidence absent; G3 evidence absent.**
+- **Failure site**: graphiti-core's entity-resolution path inside `add_episode`:
+  ```
+  ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query:
+  RediSearch: Syntax error at offset 19 near student
+  CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query) ...
+  {'query': '(@group_id:"student-lilymay") (Student | lilymay | ...)', 'group_ids': ['student-lilymay']}
+  ```
+  Three error variants observed across the 22 failures, all the same root cause:
+  - `near student` (`@group_id:"student-lilymay"`)
+  - `near subject` (`@group_id:"subject-english-literature"`)
+  - `near fleet` (`@group_id:"fleet-appmilla"`)
+
+### Root cause: dash collision between two graphiti-core constraints
+
+graphiti-core 0.29 imposes two requirements on `group_id` that are **incompatible** under the FalkorDB backend:
+
+1. **`GroupIdValidationError`** (write side, raised at `Graphiti.add_episode`) — only accepts `[A-Za-z0-9_-]`. This is the constraint that forced the Phase-1 close-out to migrate the project's group-id constants from `student:lilymay` to `student-lilymay` (commit a210472, 2026-05-02).
+2. **RediSearch fulltext query** (read side, executed inside `add_episode`'s entity-resolution step) — graphiti-core builds queries of the form `(@group_id:"<id>") (token1 | token2 | ...)`. **In RediSearch syntax, `-` is the NOT operator**, so `student-lilymay` parses as "student NOT lilymay" and the query is rejected with `Syntax error at offset 19`.
+
+The first 3 writes succeed because the `RELATES_TO` fulltext index has no entries — graphiti-core skips entity-resolution against an empty index. Once any relationship lands, every subsequent `add_episode` call triggers a query against the populated index and crashes. The seed therefore poisons its own pipeline three writes in.
+
+This is **not** the issue Wave 4 captured (LLM rate-limiting). R-WAVE5-01's mitigation does not apply. The fulltext-query syntax error happens regardless of concurrency, regardless of LLM provider, and regardless of whether the GB10 endpoint is contended.
+
+### MCP-side corroboration
+
+The same root cause was independently reproduced via `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` during retry triage — the MCP server returns the identical `RediSearch: Syntax error at offset 19 near student` response. AC-SEED-02 (as written) is therefore **not just falsified by absent data — it is unverifiable through MCP at all** under the current dashed-group-id format. The acceptance criterion's evidence requirement (read-back through MCP) cannot be satisfied without remediation.
+
+### Risk-register entry — supersedes R-WAVE5-01 as the load-bearing blocker
+
+- **R-WAVE5-03 — Dashed group_ids break graphiti-core's RediSearch fulltext queries on FalkorDB.** Any partition with ≥1 relationship and a dashed group_id (`student-lilymay`, `subject-english-literature`, `fleet-appmilla`, etc.) is unwriteable beyond the first write. This is a hard incompatibility, not a tuning issue. Three remediation paths, in increasing order of project disruption:
+  1. **Escape group_ids in graphiti-core's fulltext query construction.** Quote with `\-` or wrap with `{}` per RediSearch escaping rules. Minimal-blast-radius option; can land as a monkey-patch in `study_tutor.knowledge.graphiti_client` (intercept and patch `graphiti_core.driver.falkordb_driver` at import time) or as an upstream PR. The seed's group_id format stays `student-lilymay`.
+  2. **Migrate group_id format to underscore (`student_lilymay`, `subject_english_literature`, `fleet_appmilla`).** Satisfies both `GroupIdValidationError` and RediSearch syntax. Touches the post-a210472 normalisation surface — `student_model.py`, the test fixtures updated in that commit, the operator docs that cite the dash form, and any external Graphiti consumers (the spec'd-but-noted-divergent `appmilla-fleet` reference in the specialist-agent repo). Bigger blast radius but no upstream dependency.
+  3. **Switch graph backend from FalkorDB to Neo4j.** Neo4j's fulltext index uses Lucene syntax (different escaping rules; dashes are not operators). Out of scope for a seed retry; would cascade into ADR-ARCH-018 / ADR-ARCH-019 territory.
+
+  **Recommendation pending operator decision**: option 1 (monkey-patch) is the cleanest path back to a green seed without re-opening the post-a210472 migration. Option 2 is the cleanest long-term answer if the project expects to track upstream graphiti-core. Option 3 is overkill unless other Neo4j-vs-FalkorDB tradeoffs are already in play.
+
+- **R-WAVE5-04 — `Connection closed by server` reappearing on read-only paths.** Observed during the post-run-5 `verify_lilymay.py` execution (FalkorDB closed the connection mid-`get_by_group_ids`; the script still completed). Wave 4 marked AC-SEED-06 as "no escalation observed" — that's no longer accurate as of run 5. May be a separate FalkorDB stability issue worth investigating before R-WAVE5-03 is fixed; otherwise, retries against a healed graphiti-core may surface this intermittently.
+
+### Status of AC-SEED-XX after run 5
+
+| AC | Status | Notes |
+|---|---|---|
+| AC-SEED-01 | ❌ Falsified | Run 5: 22/25 writes failed with RediSearch syntax errors; 3 succeeded but did not persist to readable state. |
+| AC-SEED-02 | ❌ Falsified + unverifiable | `EntityNode.get_by_group_ids(["student-lilymay"])` → `[]`; `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returns the same syntax error encountered in writes — the AC's evidence shape is currently unobtainable. |
+| AC-SEED-03 | ❌ Falsified | `get_student_state(client, "lilymay")` returns `empty=false` but all fields null/empty (unchanged from Wave 4). |
+| AC-SEED-04 | ⚠️ Not exercised | Idempotency cannot be tested while first run never persists. |
+| AC-SEED-05 | ❌ Cannot flip | G2 + G3 evidence absent; remediation path required before retry. |
+| AC-SEED-06 | ⚠️ Now observed | `Connection closed by server` reappeared during verify (R-WAVE5-04). `GRAPH.DELETE` not yet triggered. |
+| AC-SEED-07 | ✅ Captured | Run-5 wall-clock 13 min (fast-fail, not slow); R-WAVE5-03 / R-WAVE5-04 added above. |
+| AC-SEED-08 | ⚠️ Not run | Lint/format pass not exercised; only this validation doc was edited in Wave 5 retry. |
+
+### What Wave 5 retry did deliver
+
+- Confirmed Wave 4's R-WAVE5-01 mitigation is in place (concurrency=1) — but it doesn't help, because the failure isn't rate-limiting.
+- Identified the actual blocker: graphiti-core × FalkorDB × RediSearch dash-as-NOT incompatibility (R-WAVE5-03).
+- Independently reproduced the same root cause through the MCP boundary (`mcp__graphiti__search_nodes` returns the same syntax error) — useful triage for AC-DEMO-* in the operator-handoff scaffold below, since those ACs also depend on dashed group_ids being queryable through MCP.
+- Captured a new intermittent FalkorDB stability signal (R-WAVE5-04) for inclusion in the Wave 5 risk register.
+
+### Decision required before next retry
+
+TASK-GR-SEED is moving back to `blocked/` pending an operator decision among R-WAVE5-03's three remediation paths. The seed itself is correct; the backend integration is broken in a way that cannot be fixed by re-running.
 
 ---
 
@@ -209,3 +286,96 @@ AC-DEMO-01.2 explicitly requires "at least one Coach revision observed". If the 
 - TASK-GR-DEMO `## Acceptance Criteria` (the upstream contract).
 - `docs/research/ideas/graphiti-latency-spike-results.md §"Phase 2 Wave 5 measurement"` (sibling scaffold for AC-DEMO-04).
 - `tests/integration/test_lilymay_seed_seam.py` (the Wave-5 seam pinning the runtime contract this demo exercises).
+
+---
+
+## TASK-GSM-009 — Typed-entity seed landed — 2026-05-04
+
+**Result: G2 flips to _Held with caveat_; G3 flips to _Held_.**
+
+The typed-entity seed rewrite ([TASK-GSM-009](../../../tasks/in_progress/TASK-GSM-009-typed-entity-seed-refactor.md)) is the implementation of [ADR-ARCH-021](../../architecture/decisions/ADR-ARCH-021-typed-entity-seed-design-resolutions.md). It bypasses the LLM-driven `add_episode` write path entirely (`EntityNode.save` / `EntityEdge.save` directly), uses deterministic UUID5 derivation for byte-idempotency on re-run, denormalises `Student.enrolled_subjects` per ADR-ARCH-021 §G1, and writes only intra-group edges per §G2. The 2026-05-03 R-WAVE5-03 RediSearch dash-as-NOT blocker is gone (typed writes don't go through the fulltext-query path on entity resolution).
+
+### G2 — Held with caveat
+
+**Caveat**: cross-group edges (`Student → STUDIES → Subject`, `Student → WORKING_ON → Text`, `Topic → ASSESSED_BY → AO`) are **not** exercised by the Phase-1 seed — ADR-ARCH-021 §G2 documented the silent-dangle outcome from the cross-group edge probe and deferred them. The seed writes only intra-group edges (`HAS_CONFIDENCE` within `student-<id>`, `COVERS` and `HAS_TEXT` within `subject-<slug>`). Subjects-on-Student is denormalised via the `enrolled_subjects: list[str]` attribute. Topic-to-AO is denormalised via the Topic node's `ao_refs: list[str]` attribute.
+
+**Live evidence** (full JSON at [`.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json`](../../../.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json)):
+
+```json
+{
+  "ac_02_student_node_with_enrolled_subjects": {
+    "labels_include_student": true,
+    "attributes_include_enrolled_subjects": true,
+    "enrolled_subjects": ["English Literature", "English Language"],
+    "year_group": 10,
+    "target_grade": "7"
+  },
+  "partition_breakdown": {
+    "student-lilymay": {"nodes": 7, "edges": 6, "edge_names": ["HAS_CONFIDENCE"]},
+    "subject-english-literature": {"nodes": 10, "edges": 9, "edge_names": ["COVERS", "HAS_TEXT"]},
+    "subject-english-language": {"nodes": 2, "edges": 1, "edge_names": ["COVERS"]},
+    "fleet-appmilla": {"nodes": 6, "edges": 0}
+  }
+}
+```
+
+Total: **25 nodes, 16 intra-group edges** across all four partitions. The Student node's `attributes` dict includes `enrolled_subjects=["English Literature", "English Language"]` (the load-bearing G1 denormalisation). Note: the `summary` field is populated by the seed (e.g. `"Student Lilymay (id=lilymay), Year 10, target grade 7. Enrolled in: English Literature, English Language."`) but is not the load-bearing assertion under ADR-ARCH-021; the structured `attributes` dict is.
+
+### G3 — Held
+
+**Live evidence**:
+
+```json
+{
+  "ac_03_get_student_state_populated": {
+    "year_group": 10,
+    "target_grade": "7",
+    "subjects": ["English Literature", "English Language"],
+    "topic_confidences_count": 6,
+    "bands_present": ["developing", "secure", "struggling"],
+    "epoch_sentinel_observed": true
+  },
+  "g3_planner_day1_recommendations": [
+    {"topic_name": "Power and Conflict: Ozymandias themes", "reason": "struggling_stale", "band": "struggling"},
+    {"topic_name": "Macbeth's witches", "reason": "struggling_stale", "band": "struggling"},
+    {"topic_name": "Lady Macbeth's ambition", "reason": "developing_stale", "band": "developing"}
+  ]
+}
+```
+
+`get_student_state(client, "lilymay")` returns a populated `StudentState` with all the AC-006 fields (`year_group`, `target_grade`, non-empty `subjects` via the §G1 denormalisation, six `topic_confidences` spanning all three planner bands). `get_topic_recommendations` produces three recommendations on day 1 — the EPOCH_NEVER_REVISED sentinel keeps every baseline topic outside the 48h cooldown so the planner has bands to plan against immediately. **G3 satisfied at the runtime layer, not just the unit-test layer.**
+
+### Idempotency proof (AC-04 / R12)
+
+`MATCH (n) RETURN count(n)` per partition before and after a second seed run:
+
+| Partition | Nodes (before) | Nodes (after) | Edges (before) | Edges (after) |
+|---|---|---|---|---|
+| `student-lilymay` | 7 | 7 | 6 | 6 |
+| `subject-english-literature` | 10 | 10 | 9 | 9 |
+| `subject-english-language` | 2 | 2 | 1 | 1 |
+| `fleet-appmilla` | 6 | 6 | 0 | 0 |
+| **Total** | **25** | **25** | **16** | **16** |
+
+The second run hit the pre-flight idempotency gate (`event=seeding_skipped reason=already_seeded`) and exited 0 without writing anything. Even if the pre-flight skip were bypassed, deterministic UUID5 derivation + FalkorDB MERGE-by-uuid (pinned by [`tests/integration/test_typed_entity_writes.py`](../../../tests/integration/test_typed_entity_writes.py)) would still collapse a second run into the same node set.
+
+### AC-SEED-* status table — superseded by TASK-GSM-009
+
+| AC | Original status | Superseded by | Notes |
+|---|---|---|---|
+| AC-SEED-01 | ❌ Falsified (Wave 4/5) | TASK-GSM-009 AC-01 | Typed-entity writes; no `add_episode` path. **Held.** |
+| AC-SEED-02 | ❌ Falsified + unverifiable (Wave 5 R-WAVE5-03) | TASK-GSM-009 AC-02 | Student node readable with `enrolled_subjects` attribute. _Note: AC-SEED-02 originally asserted `year_group=11, target_grade="8"` — drift in the doc, not the seed. Corrected to `year_group=10, target_grade="7"` under TASK-GSM-009 AC-14._ **Held.** |
+| AC-SEED-03 | ❌ Falsified | TASK-GSM-009 AC-03 | `get_student_state(...)` populated. **Held.** |
+| AC-SEED-04 | ⚠️ Not exercised | TASK-GSM-009 AC-04 | Idempotency proven via byte-identical pre/post counts + UUID5 derivation. **Held.** |
+| AC-SEED-05 | ❌ Cannot flip | TASK-GSM-009 AC-05 (this section) | Gate flips landed. |
+| AC-SEED-06 | ⚠️ Now observed (R-WAVE5-04) | n/a | `Connection closed by server` reappears intermittently in shutdown logs but does not block successful writes (the seed completed end-to-end despite the noise). |
+| AC-SEED-07 | ✅ Captured | n/a | Wave-5 retry timing was 13 min; TASK-GSM-009 seed runs end-to-end in ~2s (no LLM in the write path). |
+| AC-SEED-08 | ⚠️ Not run | TASK-GSM-009 AC-08 | `py_compile` + import smoke pass; no project-configured ruff/black/mypy beyond pytest. |
+
+### Cross-references
+
+- [ADR-ARCH-021](../../architecture/decisions/ADR-ARCH-021-typed-entity-seed-design-resolutions.md) — design rationale for G1/G2/G3 resolutions
+- [TASK-GSM-009](../../../tasks/in_progress/TASK-GSM-009-typed-entity-seed-refactor.md) — implementation task
+- [scripts/probes/probe_cross_group_edges.py](../../../scripts/probes/probe_cross_group_edges.py) — G2 probe (silent-dangle confirmation that drove the deferral decision)
+- [`.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json`](../../../.guardkit/autobuild/TASK-GR-SEED/logs/TASK-GSM-009_live_evidence.json) — full live evidence JSON
+- [tests/integration/test_typed_entity_writes.py](../../../tests/integration/test_typed_entity_writes.py) — MERGE-by-uuid integration smoke (AC-13)

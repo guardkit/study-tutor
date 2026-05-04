@@ -1,20 +1,20 @@
-"""Unit tests for the Lilymay baseline seeding script (TASK-GSM-006).
+"""Unit tests for the typed-entity Lilymay seeding script (TASK-GSM-009).
 
 Each acceptance criterion in
-``tasks/backlog/graphiti-student-model/TASK-GSM-006-seeding-script.md`` is
-covered by at least one test below.
+``tasks/in_progress/TASK-GSM-009-typed-entity-seed-refactor.md`` is covered
+by at least one test below. The test surface is structured around AC-06's
+``_FakeDriver`` fixture: ``EntityNode.save`` and ``EntityEdge.save`` are
+monkey-patched at the graphiti-core class level so every typed write is
+intercepted and recorded for assertion.
 
-The tests deliberately avoid hitting a real FalkorDB:
+Hermeticity:
 
-- ``get_client`` is monkeypatched to return a fake :class:`GraphitiClient`
-  wrapper (or ``None`` for the store-unreachable path).
+- ``get_client`` is monkeypatched per-scenario.
 - ``get_student_state`` is monkeypatched per-scenario to drive the
   pre-flight idempotency branch and the post-seed verification gate.
-- The :class:`GraphitiWriteHelper` is replaced by a fake that records every
-  ``schedule_write`` call without ever spawning a task.
-
-This keeps the suite hermetic while still exercising the real script
-orchestration code (``main`` / ``seed_lilymay``).
+- ``EntityNode.save`` / ``EntityEdge.save`` are monkey-patched to record
+  rather than persist. Tests assert on labels, attributes, group_ids,
+  uuids and idempotency (second-run produces identical uuids).
 """
 from __future__ import annotations
 
@@ -32,8 +32,10 @@ from scripts.seed_student_model import (
     DEFAULT_CONFIG,
     EXIT_CLIENT_UNAVAILABLE,
     EXIT_OK,
-    EXIT_PENDING_WRITES_ABANDONED,
     STUDENT_ID,
+    STUDENT_NAME,
+    STUDENT_TARGET_GRADE,
+    STUDENT_YEAR_GROUP,
     SUBJECTS,
     TEXTS,
     TOPICS,
@@ -43,13 +45,22 @@ from scripts.seed_student_model import (
     require_client_or_exit,
     seed_lilymay,
 )
-from study_tutor.knowledge.episodes import (
-    SeedBaselineEpisode,
-    TopicConfidenceUpdatedEpisode,
-)
 from study_tutor.knowledge.queries import StudentState, TopicConfidenceSnapshot
+from study_tutor.knowledge.seed_uuids import (
+    assessment_objective_uuid,
+    edge_uuid,
+    student_uuid,
+    subject_uuid,
+    text_uuid,
+    topic_confidence_uuid,
+    topic_uuid,
+)
 from study_tutor.knowledge.student_model import (
+    COVERS,
+    EPOCH_NEVER_REVISED,
     FLEET_GROUP_ID,
+    HAS_CONFIDENCE,
+    HAS_TEXT,
     STUDENT_GROUP_PREFIX,
     SUBJECT_GROUP_PREFIX,
     confidence_band_for,
@@ -61,66 +72,118 @@ from study_tutor.knowledge.student_model import (
 # ---------------------------------------------------------------------------
 
 
-class _FakeHelper:
-    """Records every schedule_write call; drain reports configured tallies."""
+class _FakeDriver:
+    """Stand-in graphiti-core driver.
 
-    def __init__(
-        self, *, drain_succeeded: int = 0, drain_abandoned: int = 0
-    ) -> None:
-        self.calls: list[dict[str, Any]] = []
-        self._drain_succeeded = drain_succeeded
-        self._drain_abandoned = drain_abandoned
-        self.drain_call_count = 0
+    The seed script calls ``driver.clone(database=group_id)`` to route each
+    write at the named-graph layer the FalkorDB driver enforces; the fake
+    just returns ``self`` so every save accumulates in the same recorder.
+    The most-recent ``database`` argument is captured so tests can assert
+    routing if needed.
+    """
 
-    def schedule_write(
-        self,
-        *,
-        group_ids: list[str],
-        episode: Any,
-        flush_id: str,
-    ) -> None:
-        self.calls.append(
-            {
-                "group_ids": list(group_ids),
-                "episode": episode,
-                "flush_id": flush_id,
-            }
-        )
-        return None
+    def __init__(self) -> None:
+        self.last_clone_database: str | None = None
 
-    async def drain(self, timeout_sec: int | None = None) -> tuple[int, int]:
-        self.drain_call_count += 1
-        # Use the recorded calls as the implicit "succeeded" budget when
-        # not explicitly overridden so the post-drain summary log matches
-        # what a real helper would report.
-        succeeded = (
-            self._drain_succeeded
-            if self._drain_succeeded
-            else max(0, len(self.calls) - self._drain_abandoned)
-        )
-        return (succeeded, self._drain_abandoned)
+    def clone(self, *, database: str) -> "_FakeDriver":
+        self.last_clone_database = database
+        return self
+
+
+class _FakeInnerClient:
+    """Mimics the inner graphiti-core client that exposes ``driver``."""
+
+    def __init__(self, driver: _FakeDriver) -> None:
+        self.driver = driver
 
 
 class _FakeWrapper:
-    """Stand-in for :class:`GraphitiClient` exposing the surface the script needs."""
+    """Stand-in for :class:`GraphitiClient` with the surface the seed uses."""
 
     def __init__(self) -> None:
-        self.client_or_none = object()  # opaque "inner client"
+        self.driver = _FakeDriver()
+        self.client_or_none: Any = _FakeInnerClient(self.driver)
         self.close_call_count = 0
 
     async def close(self) -> None:
         self.close_call_count += 1
 
 
+class _FakeWrapperWithoutInner:
+    """Wrapper whose ``client_or_none`` is None — exercises the seed's
+    inner-client guard.
+    """
+
+    def __init__(self) -> None:
+        self.client_or_none: Any = None
+        self.close_call_count = 0
+
+    async def close(self) -> None:
+        self.close_call_count += 1
+
+
+class _FakeWrapperWithoutDriver:
+    """Wrapper whose inner client has no ``driver`` attribute — exercises
+    the seed's driver guard.
+    """
+
+    def __init__(self) -> None:
+        self.client_or_none: Any = object()  # opaque, no .driver
+        self.close_call_count = 0
+
+    async def close(self) -> None:
+        self.close_call_count += 1
+
+
+@pytest.fixture
+def save_recorder(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[Any]]:
+    """Intercept EntityNode.save / EntityEdge.save and record the instances.
+
+    Returns a dict with two keys:
+
+    - ``"nodes"``: list of EntityNode instances saved.
+    - ``"edges"``: list of EntityEdge instances saved.
+
+    Order of insertion mirrors the order ``seed_lilymay`` issues writes.
+    """
+    from graphiti_core.edges import EntityEdge
+    from graphiti_core.nodes import EntityNode
+
+    nodes: list[Any] = []
+    edges: list[Any] = []
+
+    async def fake_node_save(self: Any, driver: Any) -> None:
+        nodes.append(self)
+
+    async def fake_edge_save(self: Any, driver: Any) -> None:
+        edges.append(self)
+
+    monkeypatch.setattr(EntityNode, "save", fake_node_save)
+    monkeypatch.setattr(EntityEdge, "save", fake_edge_save)
+    return {"nodes": nodes, "edges": edges}
+
+
 # ---------------------------------------------------------------------------
-# require_client_or_exit (AC-004)
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _nodes_by_label(
+    nodes: list[Any], label: str
+) -> list[Any]:
+    """Filter saved EntityNode instances by their (last) label."""
+    return [n for n in nodes if (getattr(n, "labels", []) or [])[-1:] == [label]]
+
+
+# ---------------------------------------------------------------------------
+# require_client_or_exit (AC-04 in TASK-GSM-006 era; still in scope)
 # ---------------------------------------------------------------------------
 
 
 def test_require_client_or_exit_raises_systemexit_2_on_none(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """AC-004 contract: client=None ⇒ SystemExit(2) + structured log."""
+    """client=None ⇒ SystemExit(2) + structured log."""
     with caplog.at_level(logging.ERROR, logger="study_tutor.seed"):
         with pytest.raises(SystemExit) as excinfo:
             require_client_or_exit(None)
@@ -141,7 +204,7 @@ def test_require_client_or_exit_returns_client_when_present() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Idempotency pre-flight (AC-003)
+# Idempotency pre-flight
 # ---------------------------------------------------------------------------
 
 
@@ -191,10 +254,10 @@ def test_is_already_seeded_returns_false_for_empty_states(
 @pytest.mark.asyncio
 async def test_seed_lilymay_skips_when_already_seeded(
     monkeypatch: pytest.MonkeyPatch,
+    save_recorder: dict[str, list[Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """AC-003: pre-flight non-empty state ⇒ exit 0 + seeding_skipped log."""
-    helper = _FakeHelper()
+    """Pre-flight non-empty state ⇒ exit 0 + seeding_skipped log; no writes."""
     wrapper = _FakeWrapper()
 
     async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
@@ -207,10 +270,11 @@ async def test_seed_lilymay_skips_when_already_seeded(
     monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
 
     with caplog.at_level(logging.INFO, logger="study_tutor.seed"):
-        rc = await seed_lilymay(wrapper, helper)
+        rc = await seed_lilymay(wrapper)
 
     assert rc == EXIT_OK
-    assert helper.calls == [], "skipped path must not schedule any writes"
+    assert save_recorder["nodes"] == []
+    assert save_recorder["edges"] == []
     skipped = next(
         (
             r
@@ -224,266 +288,541 @@ async def test_seed_lilymay_skips_when_already_seeded(
 
 
 # ---------------------------------------------------------------------------
-# Fresh-seed happy path (AC-002, AC-006, AC-007, AC-008)
+# Driver / inner-client guards
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_seed_lilymay_fresh_run_succeeds_and_uses_seed_flush_id(
+async def test_seed_lilymay_returns_exit_2_when_inner_client_missing(
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    helper = _FakeHelper(drain_abandoned=0)
-    wrapper = _FakeWrapper()
-
-    states = iter(
-        [
-            StudentState(empty=True),  # pre-flight: no baseline yet
-            # Post-drain verification: full baseline visible.
-            StudentState(
-                empty=False,
-                student_id=STUDENT_ID,
-                year_group=10,
-                target_grade="7",
-                subjects=["English Literature", "English Language"],
-                topic_confidences=[
-                    TopicConfidenceSnapshot(
-                        topic_name=t["name"],
-                        band=confidence_band_for(t["initial_percentage"]),
-                        percentage=t["initial_percentage"],
-                    )
-                    for t in TOPICS
-                ],
-            ),
-        ]
-    )
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-
-    rc = await seed_lilymay(wrapper, helper)
-
-    assert rc == EXIT_OK
-    assert helper.drain_call_count == 1
-    assert helper.calls, "fresh seed must schedule writes"
-
-    # AC-007: every schedule_write uses flush_id="SEED" — this is the
-    # primary in-process check that complements the seam-test AST scan.
-    assert all(
-        c["flush_id"] == "SEED" for c in helper.calls
-    ), f"non-SEED flush_id detected: {[c['flush_id'] for c in helper.calls]}"
-
-
-@pytest.mark.asyncio
-async def test_seed_lilymay_seeds_all_six_aos_with_descriptions(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """AC-008: AO1–AO6 all present with AQA descriptions."""
-    helper = _FakeHelper(drain_abandoned=0)
-    wrapper = _FakeWrapper()
-
-    states = iter(
-        [
-            StudentState(empty=True),
-            StudentState(
-                empty=False,
-                student_id=STUDENT_ID,
-                subjects=["English Literature"],
-            ),
-        ]
-    )
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-
-    await seed_lilymay(wrapper, helper)
-
-    ao_episodes = [
-        c["episode"]
-        for c in helper.calls
-        if isinstance(c["episode"], SeedBaselineEpisode)
-        and c["episode"].entity_kind == "assessment_objective"
-    ]
-    seeded_codes = {e.entity_name for e in ao_episodes}
-    assert seeded_codes == {"AO1", "AO2", "AO3", "AO4", "AO5", "AO6"}, (
-        f"expected all six AOs, got {seeded_codes}"
-    )
-
-    # Each description must come from the AQA-canonical table and end up in
-    # the projected episode body so the extraction LLM sees it.
-    for ao_def in AOS:
-        match = next((e for e in ao_episodes if e.entity_name == ao_def["code"]), None)
-        assert match is not None
-        body = match.to_graphiti_episode_body()
-        # The first ~60 chars of the AQA description survive the projection.
-        assert ao_def["description"][:40] in body
-        assert "AQA" in match.description
-
-
-@pytest.mark.asyncio
-async def test_seed_lilymay_covers_all_three_planner_bands(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """AC-006: at least one struggling / developing / secure topic."""
-    helper = _FakeHelper(drain_abandoned=0)
-    wrapper = _FakeWrapper()
-
-    states = iter(
-        [
-            StudentState(empty=True),
-            StudentState(empty=False, student_id=STUDENT_ID, subjects=["x"]),
-        ]
-    )
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-    await seed_lilymay(wrapper, helper)
-
-    confidence_episodes = [
-        c["episode"]
-        for c in helper.calls
-        if isinstance(c["episode"], TopicConfidenceUpdatedEpisode)
-    ]
-    bands = {e.new_band for e in confidence_episodes}
-    assert {"struggling", "developing", "secure"}.issubset(bands), (
-        f"missing required bands; got {bands}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_seed_lilymay_topics_match_topic_table(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Every TOPICS row produces a Topic baseline + a confidence episode."""
-    helper = _FakeHelper(drain_abandoned=0)
-    wrapper = _FakeWrapper()
-
-    states = iter([StudentState(empty=True), StudentState(empty=True)])
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-    await seed_lilymay(wrapper, helper)
-
-    topic_baseline_names = {
-        c["episode"].entity_name
-        for c in helper.calls
-        if isinstance(c["episode"], SeedBaselineEpisode)
-        and c["episode"].entity_kind == "topic"
-    }
-    confidence_topic_names = {
-        c["episode"].topic_name
-        for c in helper.calls
-        if isinstance(c["episode"], TopicConfidenceUpdatedEpisode)
-    }
-    expected = {t["name"] for t in TOPICS}
-    assert topic_baseline_names == expected
-    assert confidence_topic_names == expected
-
-
-@pytest.mark.asyncio
-async def test_seed_lilymay_uses_correct_group_ids(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Group-id discipline: student/subject/fleet — never bare literals."""
-    helper = _FakeHelper(drain_abandoned=0)
-    wrapper = _FakeWrapper()
-
-    states = iter([StudentState(empty=True), StudentState(empty=True)])
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-    await seed_lilymay(wrapper, helper)
-
-    # Student write → student:lilymay
-    student_calls = [
-        c
-        for c in helper.calls
-        if isinstance(c["episode"], SeedBaselineEpisode)
-        and c["episode"].entity_kind == "student"
-    ]
-    assert student_calls, "no Student write scheduled"
-    assert student_calls[0]["group_ids"] == [f"{STUDENT_GROUP_PREFIX}lilymay"]
-
-    # AO writes → fleet:appmilla
-    ao_calls = [
-        c
-        for c in helper.calls
-        if isinstance(c["episode"], SeedBaselineEpisode)
-        and c["episode"].entity_kind == "assessment_objective"
-    ]
-    assert ao_calls, "no AO writes scheduled"
-    for c in ao_calls:
-        assert c["group_ids"] == [FLEET_GROUP_ID]
-
-    # Subject writes → subject:<slug>
-    subject_calls = [
-        c
-        for c in helper.calls
-        if isinstance(c["episode"], SeedBaselineEpisode)
-        and c["episode"].entity_kind == "subject"
-    ]
-    assert {c["group_ids"][0] for c in subject_calls} == {
-        f"{SUBJECT_GROUP_PREFIX}{s['slug']}" for s in SUBJECTS
-    }
-
-    # Confidence writes → student:lilymay
-    confidence_calls = [
-        c
-        for c in helper.calls
-        if isinstance(c["episode"], TopicConfidenceUpdatedEpisode)
-    ]
-    for c in confidence_calls:
-        assert c["group_ids"] == [f"{STUDENT_GROUP_PREFIX}lilymay"]
-
-
-# ---------------------------------------------------------------------------
-# Drain failure (AC-005)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_seed_lilymay_returns_exit_3_when_writes_abandoned(
-    monkeypatch: pytest.MonkeyPatch,
+    save_recorder: dict[str, list[Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """AC-005: any abandoned write ⇒ exit 3 + structured log w/ count."""
-    helper = _FakeHelper(drain_abandoned=2)
-    wrapper = _FakeWrapper()
-
-    states = iter([StudentState(empty=True), StudentState(empty=True)])
+    """A wrapper without an inner client surfaces an exit-2 + structured log."""
+    wrapper = _FakeWrapperWithoutInner()
 
     async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
+        return StudentState(empty=True)
 
     monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
 
     with caplog.at_level(logging.ERROR, logger="study_tutor.seed"):
-        rc = await seed_lilymay(wrapper, helper)
+        rc = await seed_lilymay(wrapper)
 
-    assert rc == EXIT_PENDING_WRITES_ABANDONED == 3
-    abandoned_log = next(
-        (
-            r
-            for r in caplog.records
-            if getattr(r, "event", "") == "seeding_pending_writes_abandoned"
-        ),
+    assert rc == EXIT_CLIENT_UNAVAILABLE
+    assert save_recorder["nodes"] == []
+    failure = next(
+        (r for r in caplog.records if getattr(r, "event", "") == "seeding_failed"),
         None,
     )
-    assert abandoned_log is not None
-    assert abandoned_log.abandoned == 2
+    assert failure is not None
+    assert failure.reason == "client_or_none_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_returns_exit_2_when_driver_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    save_recorder: dict[str, list[Any]],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """An inner client without a ``driver`` attribute surfaces exit-2."""
+    wrapper = _FakeWrapperWithoutDriver()
+
+    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
+        return StudentState(empty=True)
+
+    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
+
+    with caplog.at_level(logging.ERROR, logger="study_tutor.seed"):
+        rc = await seed_lilymay(wrapper)
+
+    assert rc == EXIT_CLIENT_UNAVAILABLE
+    assert save_recorder["nodes"] == []
+    failure = next(
+        (r for r in caplog.records if getattr(r, "event", "") == "seeding_failed"),
+        None,
+    )
+    assert failure is not None
+    assert failure.reason == "driver_unavailable"
 
 
 # ---------------------------------------------------------------------------
-# main() integration (AC-001, AC-002, AC-004)
+# Fresh-seed happy path — node-level assertions
+# ---------------------------------------------------------------------------
+
+
+def _post_seed_state() -> StudentState:
+    """Build a StudentState that mirrors what the seed should produce."""
+    return StudentState(
+        empty=False,
+        student_id=STUDENT_ID,
+        year_group=STUDENT_YEAR_GROUP,
+        target_grade=STUDENT_TARGET_GRADE,
+        subjects=[s["name"] for s in SUBJECTS],
+        topic_confidences=[
+            TopicConfidenceSnapshot(
+                topic_name=t["name"],
+                band=confidence_band_for(t["initial_percentage"]),
+                percentage=int(t["initial_percentage"]),
+                last_revised_at=EPOCH_NEVER_REVISED,
+            )
+            for t in TOPICS
+        ],
+    )
+
+
+@pytest.fixture
+def state_iter(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fixture wiring ``get_student_state`` to return [empty, post-seed]."""
+    states = iter([StudentState(empty=True), _post_seed_state()])
+
+    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
+        return next(states)
+
+    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_writes_full_node_surface(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """The seed writes exactly the typed-entity surface ADR-ARCH-021 specifies.
+
+    1 Student + 2 Subject + 4 Text + 6 Topic + 6 AO + 6 TopicConfidence = 25 nodes.
+    """
+    wrapper = _FakeWrapper()
+    rc = await seed_lilymay(wrapper)
+    assert rc == EXIT_OK
+
+    nodes = save_recorder["nodes"]
+    assert len(nodes) == (
+        1  # Student
+        + len(SUBJECTS)
+        + len(TEXTS)
+        + len(TOPICS)
+        + len(AOS)
+        + len(TOPICS)  # one TopicConfidence per topic
+    ), f"got {len(nodes)} node saves; expected 25"
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_student_node_carries_enrolled_subjects(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """ADR-ARCH-021 §G1 — Student node attribute denormalises subjects."""
+    await seed_lilymay(_FakeWrapper())
+    students = _nodes_by_label(save_recorder["nodes"], "Student")
+    assert len(students) == 1
+    student = students[0]
+    assert student.name == STUDENT_NAME
+    assert student.group_id == f"{STUDENT_GROUP_PREFIX}{STUDENT_ID}"
+    attrs = student.attributes
+    assert attrs["year_group"] == STUDENT_YEAR_GROUP
+    assert attrs["target_grade"] == STUDENT_TARGET_GRADE
+    # Enrolled-subjects denormalisation — list[str] of subject display names.
+    assert attrs["enrolled_subjects"] == [s["name"] for s in SUBJECTS]
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_subject_nodes_use_correct_groups(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """Each Subject lands under ``subject-<slug>``."""
+    await seed_lilymay(_FakeWrapper())
+    subjects = _nodes_by_label(save_recorder["nodes"], "Subject")
+    by_name = {s.name: s for s in subjects}
+    for subj in SUBJECTS:
+        assert subj["name"] in by_name, f"missing Subject {subj['name']!r}"
+        assert by_name[subj["name"]].group_id == (
+            f"{SUBJECT_GROUP_PREFIX}{subj['slug']}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_topic_carries_ao_refs_attribute(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """ADR-ARCH-021 §G2 — Topic→AO is denormalised onto the Topic node
+    because the cross-group edge is unavailable.
+    """
+    await seed_lilymay(_FakeWrapper())
+    topics = _nodes_by_label(save_recorder["nodes"], "Topic")
+    by_name = {t.name: t for t in topics}
+    for topic_def in TOPICS:
+        assert topic_def["name"] in by_name
+        node = by_name[topic_def["name"]]
+        assert node.attributes["ao_refs"] == list(topic_def["ao_refs"])
+        assert node.attributes["subject_ref"] == topic_def["subject_slug"]
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_assessment_objectives_under_fleet_group(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """All six AOs land under ``fleet-appmilla``."""
+    await seed_lilymay(_FakeWrapper())
+    aos = _nodes_by_label(save_recorder["nodes"], "AssessmentObjective")
+    assert {a.name for a in aos} == {"AO1", "AO2", "AO3", "AO4", "AO5", "AO6"}
+    for ao in aos:
+        assert ao.group_id == FLEET_GROUP_ID
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_topic_confidences_use_epoch_sentinel(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """ADR-ARCH-021 §G3 — every baseline TopicConfidence has
+    ``last_revised_at = EPOCH_NEVER_REVISED``.
+    """
+    await seed_lilymay(_FakeWrapper())
+    confidences = _nodes_by_label(save_recorder["nodes"], "TopicConfidence")
+    assert len(confidences) == len(TOPICS)
+    for tc in confidences:
+        attrs = tc.attributes
+        assert attrs["last_revised_at"] == EPOCH_NEVER_REVISED.isoformat()
+        assert attrs["student_ref"] == STUDENT_ID
+        # Bands span at least struggling / developing / secure (AC-006 spirit).
+    bands = {tc.attributes["band"] for tc in confidences}
+    assert {"struggling", "developing", "secure"}.issubset(bands), (
+        f"expected all three planner bands; got {bands}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_topic_confidences_under_student_group(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """TopicConfidence nodes live under ``student-<id>`` (not ``subject-*``)."""
+    await seed_lilymay(_FakeWrapper())
+    confidences = _nodes_by_label(save_recorder["nodes"], "TopicConfidence")
+    student_group = f"{STUDENT_GROUP_PREFIX}{STUDENT_ID}"
+    for tc in confidences:
+        assert tc.group_id == student_group
+
+
+# ---------------------------------------------------------------------------
+# Edge-level assertions (ADR-ARCH-021 §G2 — only intra-group edges)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_writes_only_intra_group_edges(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """ADR-ARCH-021 §G2 — every edge has source and target in the same group_id.
+
+    The seed must NOT attempt cross-group edges (Student→Subject,
+    Student→Text, Topic→AO) under the FalkorDB silent-dangle constraint.
+    """
+    await seed_lilymay(_FakeWrapper())
+    edges = save_recorder["edges"]
+    # We only check the edge.group_id field is consistent. Source/target
+    # node-uuid checking is folded into the per-edge tests below.
+    seen_names = {e.name for e in edges}
+    assert seen_names == {HAS_CONFIDENCE, HAS_TEXT, COVERS}, (
+        f"unexpected edge types written: {seen_names}"
+    )
+    # No STUDIES, WORKING_ON, or ASSESSED_BY edges should be written.
+    for forbidden in ("STUDIES", "WORKING_ON", "ASSESSED_BY"):
+        assert not any(e.name == forbidden for e in edges), (
+            f"forbidden cross-group edge type written: {forbidden}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_writes_has_confidence_edges(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """One Student → HAS_CONFIDENCE → TopicConfidence per topic."""
+    await seed_lilymay(_FakeWrapper())
+    edges = [e for e in save_recorder["edges"] if e.name == HAS_CONFIDENCE]
+    assert len(edges) == len(TOPICS)
+    student_group = f"{STUDENT_GROUP_PREFIX}{STUDENT_ID}"
+    for edge in edges:
+        assert edge.group_id == student_group
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_writes_has_text_edges(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """Subject → HAS_TEXT → Text under the parent subject's group_id."""
+    await seed_lilymay(_FakeWrapper())
+    edges = [e for e in save_recorder["edges"] if e.name == HAS_TEXT]
+    assert len(edges) == len(TEXTS)
+    for edge in edges:
+        assert edge.group_id.startswith(SUBJECT_GROUP_PREFIX)
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_writes_covers_edges(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """Subject → COVERS → Topic under the parent subject's group_id."""
+    await seed_lilymay(_FakeWrapper())
+    edges = [e for e in save_recorder["edges"] if e.name == COVERS]
+    assert len(edges) == len(TOPICS)
+    for edge in edges:
+        assert edge.group_id.startswith(SUBJECT_GROUP_PREFIX)
+
+
+# ---------------------------------------------------------------------------
+# Idempotency (deterministic UUID5 derivation)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_uses_deterministic_uuids(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+) -> None:
+    """Every saved node carries the uuid the seed_uuids helpers derive.
+
+    This is the load-bearing property that makes re-runs byte-idempotent —
+    same uuid + FalkorDB MERGE-by-uuid = no duplicate node.
+    """
+    await seed_lilymay(_FakeWrapper())
+    nodes = save_recorder["nodes"]
+
+    student_group = f"{STUDENT_GROUP_PREFIX}{STUDENT_ID}"
+    expected_student_uuid = student_uuid(student_group, STUDENT_NAME)
+    student_node = _nodes_by_label(nodes, "Student")[0]
+    assert student_node.uuid == expected_student_uuid
+
+    # Subject UUIDs
+    for subj in SUBJECTS:
+        sg = f"{SUBJECT_GROUP_PREFIX}{subj['slug']}"
+        expected = subject_uuid(sg, subj["name"])
+        match = next(
+            (n for n in _nodes_by_label(nodes, "Subject") if n.name == subj["name"]),
+            None,
+        )
+        assert match is not None
+        assert match.uuid == expected
+
+    # Text UUIDs
+    for text in TEXTS:
+        sg = f"{SUBJECT_GROUP_PREFIX}{text['subject_slug']}"
+        expected = text_uuid(sg, text["subject_slug"], text["name"])
+        match = next(
+            (n for n in _nodes_by_label(nodes, "Text") if n.name == text["name"]),
+            None,
+        )
+        assert match is not None
+        assert match.uuid == expected
+
+    # Topic UUIDs
+    for topic in TOPICS:
+        sg = f"{SUBJECT_GROUP_PREFIX}{topic['subject_slug']}"
+        expected = topic_uuid(sg, topic["name"])
+        match = next(
+            (n for n in _nodes_by_label(nodes, "Topic") if n.name == topic["name"]),
+            None,
+        )
+        assert match is not None
+        assert match.uuid == expected
+
+    # AO UUIDs
+    for ao in AOS:
+        expected = assessment_objective_uuid(FLEET_GROUP_ID, ao["code"])
+        match = next(
+            (
+                n
+                for n in _nodes_by_label(nodes, "AssessmentObjective")
+                if n.name == ao["code"]
+            ),
+            None,
+        )
+        assert match is not None
+        assert match.uuid == expected
+
+    # TopicConfidence UUIDs
+    for topic in TOPICS:
+        expected = topic_confidence_uuid(student_group, STUDENT_ID, topic["name"])
+        match = next(
+            (
+                n
+                for n in _nodes_by_label(nodes, "TopicConfidence")
+                if n.attributes.get("topic_ref") == topic["name"]
+            ),
+            None,
+        )
+        assert match is not None
+        assert match.uuid == expected
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_second_run_produces_identical_uuids(
+    save_recorder: dict[str, list[Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A re-seed (pre-flight returns empty both times) writes nodes with the
+    same uuids — graphiti-core's FalkorDB MERGE-by-uuid then collapses them
+    rather than duplicating, which is the on-graph idempotency story.
+    """
+    # First run: pre-flight empty, post empty (verification warning ok)
+    states = iter(
+        [
+            StudentState(empty=True),
+            StudentState(empty=True),
+            StudentState(empty=True),
+            StudentState(empty=True),
+        ]
+    )
+
+    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
+        return next(states)
+
+    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
+
+    rc1 = await seed_lilymay(_FakeWrapper())
+    first_run_uuids = [n.uuid for n in save_recorder["nodes"]]
+    assert rc1 == EXIT_OK
+    assert first_run_uuids, "first run wrote no nodes"
+
+    # Reset the recorder (in test scope only — graphiti-core doesn't see the
+    # first batch because we're mocking the save call).
+    save_recorder["nodes"].clear()
+    save_recorder["edges"].clear()
+
+    rc2 = await seed_lilymay(_FakeWrapper())
+    second_run_uuids = [n.uuid for n in save_recorder["nodes"]]
+    assert rc2 == EXIT_OK
+    assert first_run_uuids == second_run_uuids, (
+        "second run derived different uuids — idempotency property broken"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Node + edge structured-log assertions (AC-17)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_emits_node_and_edge_debug_log_events(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """One ``seeding_node_written`` per node and one ``seeding_edge_written``
+    per edge — the debug-level diagnostics from AC-17.
+    """
+    with caplog.at_level(logging.DEBUG, logger="study_tutor.seed"):
+        await seed_lilymay(_FakeWrapper())
+
+    node_records = [
+        r for r in caplog.records if getattr(r, "event", "") == "seeding_node_written"
+    ]
+    edge_records = [
+        r for r in caplog.records if getattr(r, "event", "") == "seeding_edge_written"
+    ]
+    assert len(node_records) == len(save_recorder["nodes"])
+    assert len(edge_records) == len(save_recorder["edges"])
+    # Each node-event carries identifying metadata (greppable in production).
+    # ``entity_name`` rather than ``name`` because ``name`` is reserved on
+    # :class:`logging.LogRecord` (the seed module respects this constraint).
+    for record in node_records:
+        for field in ("entity_kind", "entity_name", "group_id", "uuid"):
+            assert getattr(record, field, None) is not None, (
+                f"seeding_node_written record missing {field}"
+            )
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_pruned_log_events_no_longer_emitted(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """AC-17 — the dropped events from the helper-based era never appear."""
+    forbidden = {
+        "seeding_pending_writes_abandoned",
+        "seeding_batch_drained",
+        "seeding_batch_drain_env_invalid",
+    }
+    with caplog.at_level(logging.DEBUG, logger="study_tutor.seed"):
+        await seed_lilymay(_FakeWrapper())
+    seen = {getattr(r, "event", "") for r in caplog.records}
+    assert seen.isdisjoint(forbidden), (
+        f"pruned log event reappeared: {seen & forbidden}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Verification gate (post-seed read-back)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_emits_completion_log(
+    save_recorder: dict[str, list[Any]],
+    state_iter: None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Successful seed emits ``seeding_completed`` with entity counts."""
+    with caplog.at_level(logging.INFO, logger="study_tutor.seed"):
+        rc = await seed_lilymay(_FakeWrapper())
+    assert rc == EXIT_OK
+    completion = next(
+        (
+            r
+            for r in caplog.records
+            if getattr(r, "event", "") == "seeding_completed"
+        ),
+        None,
+    )
+    assert completion is not None
+    assert completion.subjects == len(SUBJECTS)
+    assert completion.topic_confidences == len(TOPICS)
+    assert completion.nodes_written == 1 + len(SUBJECTS) + len(TEXTS) + 2 * len(
+        TOPICS
+    ) + len(AOS)
+    assert completion.edges_written == 2 * len(TOPICS) + len(TEXTS)
+
+
+@pytest.mark.asyncio
+async def test_seed_lilymay_warns_when_post_read_returns_empty(
+    save_recorder: dict[str, list[Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verification-warning path when the read-back can't see the writes."""
+    states = iter([StudentState(empty=True), StudentState(empty=True)])
+
+    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
+        return next(states)
+
+    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
+
+    with caplog.at_level(logging.WARNING, logger="study_tutor.seed"):
+        rc = await seed_lilymay(_FakeWrapper())
+
+    assert rc == EXIT_OK
+    warning = next(
+        (
+            r
+            for r in caplog.records
+            if getattr(r, "event", "") == "seeding_verification_warning"
+        ),
+        None,
+    )
+    assert warning is not None
+    assert warning.student_id == STUDENT_ID
+
+
+# ---------------------------------------------------------------------------
+# main() integration
 # ---------------------------------------------------------------------------
 
 
@@ -492,7 +831,7 @@ async def test_main_exits_2_when_get_client_returns_none(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """AC-004 end-to-end: main() exits 2 when the store is unreachable."""
+    """End-to-end: main() exits 2 when the store is unreachable."""
 
     async def fake_get_client(config: Any) -> Any:
         return None
@@ -509,46 +848,33 @@ async def test_main_exits_2_when_get_client_returns_none(
 @pytest.mark.asyncio
 async def test_main_returns_zero_on_success(
     monkeypatch: pytest.MonkeyPatch,
+    save_recorder: dict[str, list[Any]],
 ) -> None:
-    """AC-002 end-to-end: main() returns 0 on a clean fresh seed."""
+    """End-to-end: main() returns 0 on a clean fresh seed."""
     wrapper = _FakeWrapper()
-    helper_holder: dict[str, _FakeHelper] = {}
 
     async def fake_get_client(config: Any) -> Any:
         return wrapper
 
     states = iter(
-        [
-            StudentState(empty=True),
-            StudentState(
-                empty=False,
-                student_id=STUDENT_ID,
-                subjects=["English Literature"],
-            ),
-        ]
+        [StudentState(empty=True), _post_seed_state()]
     )
 
     async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
         return next(states)
 
-    def fake_helper_ctor(client: Any, *args: Any, **kwargs: Any) -> _FakeHelper:
-        helper = _FakeHelper(drain_abandoned=0)
-        helper_holder["helper"] = helper
-        return helper
-
     monkeypatch.setattr(seed_module, "get_client", fake_get_client)
     monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-    monkeypatch.setattr(seed_module, "GraphitiWriteHelper", fake_helper_ctor)
 
     rc = await main([])
 
     assert rc == EXIT_OK
     assert wrapper.close_call_count == 1, "main() must close the wrapper"
-    assert helper_holder["helper"].drain_call_count >= 1
+    assert save_recorder["nodes"], "main() must drive the seed writes"
 
 
 # ---------------------------------------------------------------------------
-# CLI / config plumbing (AC-001)
+# CLI / config plumbing
 # ---------------------------------------------------------------------------
 
 
@@ -587,8 +913,34 @@ def test_load_config_rejects_non_mapping_yaml(tmp_path: Path) -> None:
 
 
 def test_argparse_accepts_config_path_flag() -> None:
-    """AC-001 contract: --config-path flag is wired through argparse."""
+    """``--config-path`` flag is wired through argparse."""
     ns = seed_module._parse_args(["--config-path", "/tmp/x.yaml"])
     assert ns.config_path == Path("/tmp/x.yaml")
     ns_default = seed_module._parse_args([])
     assert ns_default.config_path is None
+
+
+# ---------------------------------------------------------------------------
+# AC-01 — grep enforcement: no ``add_episode`` in the seed script source
+# ---------------------------------------------------------------------------
+
+
+def test_seed_script_has_no_add_episode_calls() -> None:
+    """AC-GSM-009-01 — every seed write is typed-entity, never add_episode."""
+    src = Path(seed_module.__file__).read_text()
+    # Strip the entire docstring/comment surface so we only test executable
+    # code (the docstring legitimately *describes* the migration).
+    import ast
+
+    tree = ast.parse(src)
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_episode"
+        ):
+            pytest.fail(
+                f"add_episode call found in {seed_module.__file__} at line "
+                f"{node.lineno} — AC-GSM-009-01 forbids LLM-driven write paths "
+                f"in the typed-entity seed."
+            )

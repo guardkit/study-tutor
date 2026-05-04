@@ -18,9 +18,11 @@ Lifted verbatim from
 - :class:`GraphitiClient` (TASK-GR-WIRE): the demo handlers obtain a
   live, fully-wired client via
   :func:`load_graphiti_config_from_yaml` + :func:`get_client`.
-- :class:`LilymaySeed` (TASK-GR-SEED): post-seed
+- :class:`LilymaySeed` (TASK-GR-SEED → TASK-GSM-009): post-seed
   :func:`get_student_state` returns a non-empty :class:`StudentState`
-  with the year-11 / target-grade-8 baseline.
+  with the year-10 / target-grade-7 baseline (drift correction per
+  TASK-GSM-009 AC-14 / R7 — the spec values were always 10/"7"; the
+  earlier seam-test constants drifted).
 
 The test is gated behind ``STUDY_TUTOR_LIVE_GRAPHITI_SMOKE`` so that
 the autobuild gate (which runs without a live FalkorDB / Gemini /
@@ -70,12 +72,12 @@ async def test_lilymay_seed_reachable_via_wired_client() -> None:
             "Wave-4 seed (TASK-GR-SEED) has not landed in this "
             "FalkorDB partition."
         )
-        assert state.year_group == 11, (
-            f"Lilymay year_group expected 11, got {state.year_group!r}; "
+        assert state.year_group == 10, (
+            f"Lilymay year_group expected 10, got {state.year_group!r}; "
             "Wave-4 seed schema drifted."
         )
-        assert state.target_grade == "8", (
-            f"Lilymay target_grade expected '8', got {state.target_grade!r}; "
+        assert state.target_grade == "7", (
+            f"Lilymay target_grade expected '7', got {state.target_grade!r}; "
             "Wave-4 seed schema drifted."
         )
         assert len(state.subjects) > 0, (

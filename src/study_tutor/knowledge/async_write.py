@@ -1,8 +1,21 @@
 """Shared async fire-and-forget Graphiti write helper (TASK-GSM-004).
 
-This module is the **single** Graphiti write surface used by all flush points
-in study-tutor (F1 misconception via Coach AsyncSubAgent, F2 confidence-delta
-via Tutor handler, F3 session-end episode via Tutor handler) per **DDR-002**.
+This module is the **single** Graphiti write surface used by every **live
+tutor session** flush point in study-tutor (F1 misconception via Coach
+AsyncSubAgent, F2 confidence-delta via Tutor handler, F3 session-end
+episode via Tutor handler) per **DDR-002**.
+
+CC-13 invariant scope (per ADR-ARCH-021 / TASK-GSM-009):
+    The CC-13 single-call-site invariant — originally "all ``add_episode``
+    calls go through :meth:`GraphitiWriteHelper.schedule_write`" — is
+    **narrowed** to "all **live tutor session** ``add_episode`` calls go
+    through :meth:`GraphitiWriteHelper.schedule_write`. The Lilymay baseline
+    seed (``scripts/seed_student_model.py``) is a separate path that writes
+    typed entities directly via ``EntityNode.save`` / ``EntityEdge.save``,
+    bypassing both this helper and ``add_episode`` entirely. The seed has
+    no LLM in its write path and is byte-idempotent on re-run via
+    deterministic UUID5 derivation. See ADR-ARCH-021 for the full design
+    rationale and ADR-ARCH-019 for the original CC-13 specification.
 
 Load-bearing properties (per ADR-ARCH-019 + CC-13 + ASSUM-007):
 
@@ -27,6 +40,7 @@ Cross-references:
     - phase-1-scope.md §FEAT-PH1-001 (architectural shape)
     - DDR-002 (Coach AsyncSubAgent owns Graphiti writes)
     - ADR-ARCH-019 (async write-back at every flush point)
+    - ADR-ARCH-021 (typed-entity seed; CC-13 scope narrowing)
     - ASSUM-007 (shutdown grace ≤ 30s)
 """
 from __future__ import annotations

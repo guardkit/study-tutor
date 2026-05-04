@@ -25,6 +25,7 @@ from study_tutor.knowledge import student_model as student_model_module
 from study_tutor.knowledge.student_model import (
     ASSESSED_BY,
     COVERS,
+    EPOCH_NEVER_REVISED,
     FLEET_GROUP_ID,
     HAS_CONFIDENCE,
     HAS_TEXT,
@@ -447,3 +448,37 @@ def test_entity_round_trip_equality() -> None:
         instance = cls(**payload)
         clone = cls.model_validate(instance.model_dump())
         assert instance == clone, f"{cls.__name__} did not round-trip cleanly"
+
+
+# ---------------------------------------------------------------------------
+# TASK-GSM-009 AC-12 / ADR-ARCH-021 §G3 — EPOCH_NEVER_REVISED sentinel
+# ---------------------------------------------------------------------------
+
+
+def test_epoch_never_revised_is_unix_epoch_utc() -> None:
+    """The sentinel is exactly 1970-01-01T00:00:00Z (the Unix epoch)."""
+    assert EPOCH_NEVER_REVISED == datetime(1970, 1, 1, tzinfo=timezone.utc)
+    assert EPOCH_NEVER_REVISED.tzinfo is timezone.utc
+
+
+def test_epoch_never_revised_accepted_by_topic_confidence() -> None:
+    """A baseline TopicConfidence write with the sentinel is valid."""
+    tc = TopicConfidence(
+        student_ref="lilymay",
+        topic_ref="Macbeth's witches",
+        percentage=25,
+        band="struggling",
+        last_revised_at=EPOCH_NEVER_REVISED,
+    )
+    assert tc.last_revised_at == EPOCH_NEVER_REVISED
+
+
+def test_epoch_never_revised_falls_outside_planner_cooldown() -> None:
+    """Sanity check: any reasonable ``now`` puts the epoch well outside the
+    48h cooldown the planner uses (per ADR-ARCH-021 §G3 trade-off note).
+    """
+    now = datetime(2026, 5, 4, tzinfo=timezone.utc)
+    delta = now - EPOCH_NEVER_REVISED
+    # Comfortably more than 48h — actually ~56 years.
+    assert delta.total_seconds() > 48 * 3600
+    assert delta.days > 365 * 50  # at least 50 years
