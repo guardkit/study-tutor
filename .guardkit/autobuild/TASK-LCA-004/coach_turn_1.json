@@ -1,0 +1,209 @@
+{
+  "task_id": "TASK-LCA-004",
+  "turn": 1,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/llm/test_client.py tests/unit/mcp/test_adapter.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_factory_llm_provider_error_propagates_from_init PASSED [ 86%]\ntests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_no_smoke_check_when_factory_is_none PASSED [ 90%]\ntests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config PASSED [ 95%]\ntests/unit/mcp/test_adapter.py::test_session_end_skips_topic_confidence_for_zero_turn_session PASSED [100%]\n============================== 22 passed in 0.30s ==============================",
+      "duration_seconds": 1.441560983657837
+    },
+    "requirements": {
+      "criteria_total": 9,
+      "criteria_met": 6,
+      "all_criteria_met": false,
+      "missing": [
+        "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+        "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+        "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant"
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`_default_coach_model()` exists in `src/study_tutor/llm/client.py`, signature `() -> str`",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py immediately after _default_player_model (lines 56-92). Type-hinted return is `str`; no parameters; reads AGENT_MODELS__COACH_MODEL via os.environ at call time (SR-03 parity).",
+      "notes": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py immediately after _default_player_model (lines 56-92). Type-hinted return is `str`; no parameters; reads AGENT_MODELS__COACH_MODEL via os.environ at call time (SR-03 parity)."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "When `AGENT_MODELS__COACH_MODEL` is set, `_default_coach_model()` returns the env-var value verbatim (no canonicalisation)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implementation does `raw = os.environ.get('AGENT_MODELS__COACH_MODEL', '')` and `return raw` on the success path \u2014 no .lower(), .casefold(), or other transformation. Test test_returns_env_var_value_verbatim_when_set exercises both lowercase ('anthropic') and mixed-case ('OpenAI') inputs and asserts identical round-trip.",
+      "notes": "Implementation does `raw = os.environ.get('AGENT_MODELS__COACH_MODEL', '')` and `return raw` on the success path \u2014 no .lower(), .casefold(), or other transformation. Test test_returns_env_var_value_verbatim_when_set exercises both lowercase ('anthropic') and mixed-case ('OpenAI') inputs and asserts identical round-trip."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`.env.example` includes:",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Updated .env.example to include both lines with the spec'd inline comments: 'AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)' and 'AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation'. Matches the AC's required text verbatim.",
+      "notes": "Updated .env.example to include both lines with the spec'd inline comments: 'AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)' and 'AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation'. Matches the AC's required text verbatim."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "`MCPAdapter.__init__` (`src/study_tutor/mcp/adapter.py:129`) invokes `self._orchestrator_factory()` once at end of `__init__` when `_orchestrator_factory is not None`; the result is discarded",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added boot smoke check at the end of MCPAdapter.__init__ in src/study_tutor/mcp/adapter.py (after self._graphiti_client assignment): `if self._orchestrator_factory is not None: self._orchestrator_factory()` \u2014 return value is not bound to any name, so it is discarded. Test test_factory_invoked_once_at_init_when_supplied verifies single invocation and that the factory return value is not stored on the adapter.",
+      "notes": "Added boot smoke check at the end of MCPAdapter.__init__ in src/study_tutor/mcp/adapter.py (after self._graphiti_client assignment): `if self._orchestrator_factory is not None: self._orchestrator_factory()` \u2014 return value is not bound to any name, so it is discarded. Test test_factory_invoked_once_at_init_when_supplied verifies single invocation and that the factory return value is not stored on the adapter."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "When `_orchestrator_factory is None`, `__init__` behaviour is unchanged (Phase-0 path remains backward-compatible)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Smoke check is gated on `if self._orchestrator_factory is not None`, so the None branch is skipped entirely \u2014 no factory call, no exception path. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 17 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification, confirming Phase-0 backward compatibility.",
+      "notes": "Smoke check is gated on `if self._orchestrator_factory is not None`, so the None branch is skipped entirely \u2014 no factory call, no exception path. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 17 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification, confirming Phase-0 backward compatibility."
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "All implementation follows the existing module style: from __future__ import annotations, type hints, docstrings (Google style with Args/Returns/Raises blocks matching the existing _default_player_model and validate_coach_config docstrings), and no bare excepts. No new imports were added to adapter.py for the smoke check (it uses already-stored self._orchestrator_factory). pyproject.toml marker addition follows existing list format. The project does not currently run ruff/black in the test gate; pytest collected and ran 49 tests across the affected modules with the new code parsed cleanly.",
+      "notes": "All implementation follows the existing module style: from __future__ import annotations, type hints, docstrings (Google style with Args/Returns/Raises blocks matching the existing _default_player_model and validate_coach_config docstrings), and no bare excepts. No new imports were added to adapter.py for the smoke check (it uses already-stored self._orchestrator_factory). pyproject.toml marker addition follows existing list format. The project does not currently run ruff/black in the test gate; pytest collected and ran 49 tests across the affected modules with the new code parsed cleanly."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`_default_coach_model()` exists in `src/study_tutor/llm/client.py`, signature `() -> str`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py immediately after _default_player_model (lines 56-92). Type-hinted return is `str`; no parameters; reads AGENT_MODELS__COACH_MODEL via os.environ at call time (SR-03 parity).",
+        "notes": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py immediately after _default_player_model (lines 56-92). Type-hinted return is `str`; no parameters; reads AGENT_MODELS__COACH_MODEL via os.environ at call time (SR-03 parity)."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "When `AGENT_MODELS__COACH_MODEL` is set, `_default_coach_model()` returns the env-var value verbatim (no canonicalisation)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation does `raw = os.environ.get('AGENT_MODELS__COACH_MODEL', '')` and `return raw` on the success path \u2014 no .lower(), .casefold(), or other transformation. Test test_returns_env_var_value_verbatim_when_set exercises both lowercase ('anthropic') and mixed-case ('OpenAI') inputs and asserts identical round-trip.",
+        "notes": "Implementation does `raw = os.environ.get('AGENT_MODELS__COACH_MODEL', '')` and `return raw` on the success path \u2014 no .lower(), .casefold(), or other transformation. Test test_returns_env_var_value_verbatim_when_set exercises both lowercase ('anthropic') and mixed-case ('OpenAI') inputs and asserts identical round-trip."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`.env.example` includes:",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Updated .env.example to include both lines with the spec'd inline comments: 'AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)' and 'AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation'. Matches the AC's required text verbatim.",
+        "notes": "Updated .env.example to include both lines with the spec'd inline comments: 'AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)' and 'AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation'. Matches the AC's required text verbatim."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "`MCPAdapter.__init__` (`src/study_tutor/mcp/adapter.py:129`) invokes `self._orchestrator_factory()` once at end of `__init__` when `_orchestrator_factory is not None`; the result is discarded",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added boot smoke check at the end of MCPAdapter.__init__ in src/study_tutor/mcp/adapter.py (after self._graphiti_client assignment): `if self._orchestrator_factory is not None: self._orchestrator_factory()` \u2014 return value is not bound to any name, so it is discarded. Test test_factory_invoked_once_at_init_when_supplied verifies single invocation and that the factory return value is not stored on the adapter.",
+        "notes": "Added boot smoke check at the end of MCPAdapter.__init__ in src/study_tutor/mcp/adapter.py (after self._graphiti_client assignment): `if self._orchestrator_factory is not None: self._orchestrator_factory()` \u2014 return value is not bound to any name, so it is discarded. Test test_factory_invoked_once_at_init_when_supplied verifies single invocation and that the factory return value is not stored on the adapter."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "When `_orchestrator_factory is None`, `__init__` behaviour is unchanged (Phase-0 path remains backward-compatible)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Smoke check is gated on `if self._orchestrator_factory is not None`, so the None branch is skipped entirely \u2014 no factory call, no exception path. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 17 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification, confirming Phase-0 backward compatibility.",
+        "notes": "Smoke check is gated on `if self._orchestrator_factory is not None`, so the None branch is skipped entirely \u2014 no factory call, no exception path. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 17 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification, confirming Phase-0 backward compatibility."
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All implementation follows the existing module style: from __future__ import annotations, type hints, docstrings (Google style with Args/Returns/Raises blocks matching the existing _default_player_model and validate_coach_config docstrings), and no bare excepts. No new imports were added to adapter.py for the smoke check (it uses already-stored self._orchestrator_factory). pyproject.toml marker addition follows existing list format. The project does not currently run ruff/black in the test gate; pytest collected and ran 49 tests across the affected modules with the new code parsed cleanly.",
+        "notes": "All implementation follows the existing module style: from __future__ import annotations, type hints, docstrings (Google style with Args/Returns/Raises blocks matching the existing _default_player_model and validate_coach_config docstrings), and no bare excepts. No new imports were added to adapter.py for the smoke check (it uses already-stored self._orchestrator_factory). pyproject.toml marker addition follows existing list format. The project does not currently run ruff/black in the test gate; pytest collected and ran 49 tests across the affected modules with the new code parsed cleanly."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+        "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+        "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant"
+      ]
+    }
+  ],
+  "rationale": "Missing 3 acceptance criteria: AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`), AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins), AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant",
+  "context_used": "## Job-Specific Context\n\nBudget: 1030/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- BELONGS_TO_CATEGORY\n- IS_PART_OF_PATTERN\n\n### \u26a0\ufe0f Warnings\n- REQUIRES_USE_OF\n- HAS_ROOT_CAUSE\n\n### \ud83c\udfad Role Constraints\n- HAS_ROLE_MUST_DO\n- HAS_ROLE\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- ASSOCIATED_WITH_PROJECT\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

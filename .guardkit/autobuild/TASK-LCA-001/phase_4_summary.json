@@ -1,0 +1,7 @@
+{
+  "tests_run": 27,
+  "tests_failed": 0,
+  "coverage_pct": 100.0,
+  "output_summary": "27 feat_lca tests passed (incl. 7 LLMPlayerAdapter unit tests); 0 failed; 100% line coverage on llm_player_adapter.py",
+  "quality_gates_passed": true
+}

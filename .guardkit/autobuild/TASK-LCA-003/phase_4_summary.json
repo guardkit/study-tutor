@@ -1,0 +1,7 @@
+{
+  "tests_run": 821,
+  "tests_failed": 2,
+  "coverage_pct": 95.0,
+  "output_summary": "821 ran, 2 pre-existing failures unrelated to TASK-LCA-003 (graphiti client wiring, planner mypy import); 100% on session_state.py, 95% combined.",
+  "quality_gates_passed": false
+}

@@ -53,6 +53,46 @@ def _default_player_model() -> str:
     return os.environ.get("AGENT_MODELS__REASONING_MODEL") or DEFAULT_PLAYER_MODEL
 
 
+def _default_coach_model() -> str:
+    """Resolve the Coach provider name at call time.
+
+    Reads ``AGENT_MODELS__COACH_MODEL`` from the environment on every
+    invocation (SR-03 parity with :func:`_default_player_model`). Unlike
+    the player-side helper, there is **no fallback default** — per
+    decision D-COACH-05 (FEAT-6CC5) the operator MUST configure the
+    Coach provider explicitly so the D3 two-provider invariant
+    (ASSUM-LCA-009) cannot be silently violated by accepting a default
+    that happens to coincide with the Player's provider.
+
+    Returns:
+        The exact, untransformed value of
+        ``AGENT_MODELS__COACH_MODEL`` from the environment. The value
+        is returned verbatim — no canonicalisation, no case folding —
+        so that downstream comparisons (e.g.
+        ``Coach.provider == Player.provider`` in
+        :func:`study_tutor.tutoring.coach.factory.validate_coach_config`)
+        operate on exactly what the operator typed.
+
+    Raises:
+        LLMProviderError: When ``AGENT_MODELS__COACH_MODEL`` is unset
+            or set to an empty/whitespace-only string. The exception
+            message names the env var literally (``"AGENT_MODELS__COACH_MODEL"``)
+            so that operators can search logs deterministically (per
+            AC-LCA-07).
+    """
+    raw = os.environ.get("AGENT_MODELS__COACH_MODEL", "")
+    if not raw or not raw.strip():
+        raise LLMProviderError(
+            "AGENT_MODELS__COACH_MODEL is not set. Phase-1 requires the "
+            "Coach provider to be explicitly configured and to differ "
+            "from AGENT_MODELS__REASONING_MODEL (the D3 two-provider "
+            "invariant is enforced at orchestrator factory time via "
+            "validate_coach_config; rotation requires server restart "
+            "because the env var is snapshotted at boot)."
+        )
+    return raw
+
+
 class LLMClient:
     """Provider-agnostic LLM client.
 

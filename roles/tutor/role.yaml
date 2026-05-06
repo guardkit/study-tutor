@@ -7,4 +7,5 @@ player:
   prompt_file: roles/tutor/prompts/player.md
 
 coach:
+  prompt_file: roles/tutor/prompts/coach.md
   criteria_file: roles/tutor/criteria/definitions.yaml
