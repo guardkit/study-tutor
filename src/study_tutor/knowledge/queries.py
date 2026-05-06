@@ -35,15 +35,20 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Literal
+from typing import Any, Awaitable, Callable, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from study_tutor.knowledge.async_write import GraphitiWriteHelper
-from study_tutor.knowledge.episodes import SessionCompletedEpisode
+from study_tutor.knowledge.episodes import (
+    SessionCompletedEpisode,
+    TopicConfidenceUpdatedEpisode,
+)
+from study_tutor.knowledge.seed_uuids import topic_confidence_uuid
 from study_tutor.knowledge.student_model import (
     STUDENT_GROUP_PREFIX,
     ConfidenceBand,
+    confidence_band_for,
 )
 
 logger = logging.getLogger(__name__)

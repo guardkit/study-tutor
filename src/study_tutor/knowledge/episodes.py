@@ -19,7 +19,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # Discriminator literals used across all concrete episode classes.
@@ -114,6 +114,22 @@ class TopicConfidenceUpdatedEpisode(EpisodeBase):
     new_percentage: int
     observed_at: datetime
     triggering_session_id: str | None = None
+    # AC-CONF-07 (TASK-GR-CONF): identifier of the policy that produced the
+    # delta. Phase-1 stub sets ``"phase1_minimal_policy"``; FEAT-PH2-001 sets
+    # a different value. Lets future analytics filter heuristic-era data
+    # (``confidence_source == "phase1_minimal_policy"``) from real-signal
+    # data. ``min_length=1`` prevents empty strings — the field is required
+    # because ``extra="forbid"`` makes adding it a deliberate contract change.
+    confidence_source: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Identifier of the policy that produced the delta. Phase-1 stub "
+            "sets 'phase1_minimal_policy'; FEAT-PH2-001 sets a different "
+            "value. Lets future analytics distinguish heuristic-era data "
+            "from real-signal data."
+        ),
+    )
 
     def to_graphiti_episode_body(self) -> str:
         triggering = (
@@ -126,7 +142,8 @@ class TopicConfidenceUpdatedEpisode(EpisodeBase):
             f"updated from band {self.previous_band} ({self.previous_percentage}%) "
             f"to band {self.new_band} ({self.new_percentage}%) "
             f"at {self.observed_at.isoformat()}. "
-            f"Triggering session: {triggering}."
+            f"Triggering session: {triggering}. "
+            f"Source: {self.confidence_source}."
         )
 
 

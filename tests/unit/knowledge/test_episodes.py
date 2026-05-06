@@ -54,6 +54,9 @@ def _topic_payload() -> dict:
         new_percentage=70,
         observed_at=datetime(2026, 4, 27, 10, 45, tzinfo=timezone.utc),
         triggering_session_id="sess-001",
+        # AC-CONF-07 (TASK-GR-CONF): required field discriminating Phase-1
+        # heuristic-era data from FEAT-PH2-001 real-signal data.
+        confidence_source="phase1_minimal_policy",
     )
 
 
@@ -246,6 +249,7 @@ def test_session_rejects_missing_required(missing: str):
         "previous_percentage",
         "new_percentage",
         "observed_at",
+        "confidence_source",
     ],
 )
 def test_topic_rejects_missing_required(missing: str):
@@ -253,6 +257,24 @@ def test_topic_rejects_missing_required(missing: str):
     payload.pop(missing)
     with pytest.raises(ValidationError):
         TopicConfidenceUpdatedEpisode(**payload)
+
+
+def test_topic_rejects_empty_confidence_source():
+    """AC-CONF-07: ``confidence_source`` has ``min_length=1`` — empty rejected."""
+    payload = _topic_payload()
+    payload["confidence_source"] = ""
+    with pytest.raises(ValidationError):
+        TopicConfidenceUpdatedEpisode(**payload)
+
+
+def test_topic_body_surfaces_confidence_source():
+    """AC-CONF-07: the projection includes the policy identifier so the
+    natural-language body is self-describing for downstream analytics.
+    """
+    payload = _topic_payload()
+    payload["confidence_source"] = "phase1_minimal_policy"
+    body = TopicConfidenceUpdatedEpisode(**payload).to_graphiti_episode_body()
+    assert "phase1_minimal_policy" in body
 
 
 @pytest.mark.parametrize(

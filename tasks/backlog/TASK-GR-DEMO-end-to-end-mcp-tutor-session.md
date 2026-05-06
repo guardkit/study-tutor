@@ -12,10 +12,16 @@ complexity: 3
 estimated_minutes: 45
 dependencies:
 - TASK-GR-SEED
+unblocked_by:
+- TASK-GR-PMT
+- TASK-GR-WIRE
+- TASK-GR-CONF
 status: blocked
 priority: critical
 created: 2026-05-02 00:00:00+00:00
-updated: 2026-05-02 00:00:00+00:00
+updated: 2026-05-05T22:45:00+00:00
+previous_state: backlog
+state_transition_reason: "Live MCP demo attempted 2026-05-05. Transport layer works (7-turn session completed) but three implementation gaps prevent gate closure: (1) orchestrator_factory not wired — MCP runs Phase 0 single-LLM path, no Coach invocation; (2) player prompt is placeholder stub — no Socratic behaviour; (3) Graphiti write-back in tutor_session_end is a TODO — no session episode or confidence update. See docs/reviews/REVIEW-TASK-GR-DEMO-2026-05-05.md for full findings. TASK-REV-GRD5 (2026-05-05) reviewed and spawned three unblockers via /task-review [I]mplement: TASK-GR-PMT (BLOCK-2), TASK-GR-WIRE (BLOCK-1+3a), TASK-GR-CONF (BLOCK-3b). All three live at tasks/backlog/wave5-mcp-blockers/. Re-attempt this task (autobuild_state.current_turn carries forward; no reset) once the three unblockers ship."
 tags:
 - graphiti
 - mcp
