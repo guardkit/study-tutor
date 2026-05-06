@@ -394,3 +394,52 @@ With TASK-GSM-009 (typed-entity rewrite per ADR-ARCH-021) merged at commit `a90b
 - **G4 / G5 / G6 / G13** remain Falsified pending Wave 5's MCP demo session (per the original spec — these are session-side gates, not seed-side; flipping them here would be a false-evidence claim).
 
 The seed task closes here. Next gate work (G4/G5/G6/G13) belongs to a separate Wave-5 MCP demo task.
+
+---
+
+## TASK-LCA-005 AC-LCA-10 — Live Lilymay smoke outcome (operator capture)
+
+**Status: Awaiting first operator-conducted live run.**
+
+This section is the traceability anchor for AC-LCA-10 of TASK-LCA-005 (per
+the task spec line 77: "AC-LCA-10 outcome (revise-occurred or
+calibration-gap) is captured in `docs/research/ideas/phase-1-validation.md`
+… for traceability"). The live smoke is gated behind
+`STUDY_TUTOR_LIVE_LCA_SMOKE` and the `@pytest.mark.live` marker so the
+default `pytest -m "feat_lca and smoke"` autobuild gate stays hermetic;
+the operator opts in for the demo capture.
+
+### How to run
+
+```bash
+export AGENT_MODELS__REASONING_MODEL=local            # Player provider
+export AGENT_MODELS__COACH_MODEL=openrouter           # Coach provider — must differ (D3)
+export STUDY_TUTOR_LIVE_LCA_SMOKE=1
+pytest -m "feat_lca and live" tests/integration/test_mcp_lca_smoke.py -s
+```
+
+The `-s` flag preserves stderr so the test's outcome annotation
+(`AC-LCA-10 result=revision_observed …` or
+`AC-LCA-10 result=calibration_gap=True …`) is visible without rerunning.
+
+### Outcome record (fill in after first live run)
+
+| Run date (UTC) | Branch reached | Turn 1 attempts | Turn 2 attempts | Notes / follow-up |
+|---|---|---|---|---|
+| _pending first run_ | _revision_observed \| calibration_gap_ | _e.g. 1_ | _e.g. 2_ | _e.g. "Coach revised on simile-quotation turn; calibration adequate" or "Coach accepted both turns; Phase-2 calibration follow-up tracked under TASK-LCA-FOLLOWUP-CALIBRATION"_ |
+
+### Calibration-fallback rationale (Context A Q5)
+
+Per Context A Q5 of the TASK-REV-LCA1 review: zero-revision turns during
+the demo are NOT a Phase-1 test failure when the Coach prompt is minimal
+(Phase-1 plumbing only; calibration is Phase-2). The integration test in
+`tests/integration/test_mcp_lca_smoke.py::test_live_lilymay_two_turn_session_calibration_fallback`
+asserts the calibration-fallback wording explicitly: it accepts EITHER
+`attempts > 1` on at least one turn (Branch A — revision_observed) OR
+records `calibration_gap=True` to stderr (Branch B — operator captures
+this row in the table above as a Phase-2 calibration follow-up rather
+than a Phase-1 failure).
+
+The only failure mode the test enforces is a wiring regression — missing
+`attempts` metadata or a `decision` outside `{accept, exhausted, fallback}`
+— which is structural, not calibrative.

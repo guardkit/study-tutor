@@ -1,0 +1,231 @@
+{
+  "task_id": "TASK-LCA-005",
+  "turn": 1,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/integration/test_mcp_lca_smoke.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/integration/test_mcp_lca_smoke.py::test_same_provider_rejected_at_boot_via_production_closure PASSED [ 75%]\ntests/integration/test_mcp_lca_smoke.py::test_live_lilymay_two_turn_session_calibration_fallback SKIPPED [100%]\ntests/integration/test_mcp_lca_smoke.py::test_same_provider_rejected_at_boot_via_production_closure\n/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/graphiti_core/driver/search_interface/search_interface.py:22: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/\n=================== 3 passed, 1 skipped, 1 warning in 0.66s ====================",
+      "duration_seconds": 1.7574868202209473
+    },
+    "requirements": {
+      "criteria_total": 10,
+      "criteria_met": 4,
+      "all_criteria_met": false,
+      "missing": [
+        "`cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a fresh `LLMPlayerAdapter`, fresh `LLMCoachAdapter`, fresh `PlayerCoachOrchestrator(player=..., coach=..., quote_verifier=None, coach_handover=None, on_flag=<logger callback>)`",
+        "`quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both stay None on first cut; wiring is deferred to a follow-up subtask)",
+        "`on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-COACH-07 \u2014 logger-only, no DB write, no metric backend)",
+        "`MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `serve`",
+        "Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orchestrator_factory=closure)` with both env vars set to the same provider; assert `CoachConfigurationError`",
+        "All modified files pass project-configured lint/format checks with zero errors"
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a fresh `LLMPlayerAdapter`, fresh `LLMCoachAdapter`, fresh `PlayerCoachOrchestrator(player=..., coach=..., quote_verifier=None, coach_handover=None, on_flag=<logger callback>)`",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-001",
+      "notes": "No completion promise for AC-001"
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "`quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both stay None on first cut; wiring is deferred to a follow-up subtask)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-002",
+      "notes": "No completion promise for AC-002"
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "`on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-COACH-07 \u2014 logger-only, no DB write, no metric backend)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-003",
+      "notes": "No completion promise for AC-003"
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `serve`",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-004",
+      "notes": "No completion promise for AC-004"
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-01** (per-turn factory isolation, smoke): two concurrent `tutor_turn` invocations for two different sessions receive distinct `PlayerCoachOrchestrator` instances. Asserted via integration test using a tracking factory that records each invocation",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+      "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-09** (Phase-1 metadata shape, integration): live `tutor_turn` returns a dict with keys `tutor_response`, `decision`, `attempts`, `flagged_for_review`, `duration_seconds`; `decision \u2208 {\"accept\", \"exhausted\", \"fallback\"}`",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+      "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-10** (live session, smoke \u2014 operator-conducted, with calibration fallback per Context A Q5): a 2-turn Lilymay session against the seeded state demonstrates EITHER `attempts > 1` on at least one turn (Coach revision occurred \u2014 calibration is working) OR documents in the session log that the Coach never disagreed and records this as a known Phase-2 calibration follow-up rather than a test failure",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+      "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-10 outcome (revise-occurred or calibration-gap) is captured in `docs/research/ideas/phase-1-validation.md` (or equivalent operator log) for traceability",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+      "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orchestrator_factory=closure)` with both env vars set to the same provider; assert `CoachConfigurationError`",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-009",
+      "notes": "No completion promise for AC-009"
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-010",
+      "notes": "No completion promise for AC-010"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a fresh `LLMPlayerAdapter`, fresh `LLMCoachAdapter`, fresh `PlayerCoachOrchestrator(player=..., coach=..., quote_verifier=None, coach_handover=None, on_flag=<logger callback>)`",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-001",
+        "notes": "No completion promise for AC-001"
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both stay None on first cut; wiring is deferred to a follow-up subtask)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-002",
+        "notes": "No completion promise for AC-002"
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-COACH-07 \u2014 logger-only, no DB write, no metric backend)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-003",
+        "notes": "No completion promise for AC-003"
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `serve`",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-004",
+        "notes": "No completion promise for AC-004"
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-01** (per-turn factory isolation, smoke): two concurrent `tutor_turn` invocations for two different sessions receive distinct `PlayerCoachOrchestrator` instances. Asserted via integration test using a tracking factory that records each invocation",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+        "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-09** (Phase-1 metadata shape, integration): live `tutor_turn` returns a dict with keys `tutor_response`, `decision`, `attempts`, `flagged_for_review`, `duration_seconds`; `decision \u2208 {\"accept\", \"exhausted\", \"fallback\"}`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+        "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-10** (live session, smoke \u2014 operator-conducted, with calibration fallback per Context A Q5): a 2-turn Lilymay session against the seeded state demonstrates EITHER `attempts > 1` on at least one turn (Coach revision occurred \u2014 calibration is working) OR documents in the session log that the Coach never disagreed and records this as a known Phase-2 calibration follow-up rather than a test failure",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+        "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-10 outcome (revise-occurred or calibration-gap) is captured in `docs/research/ideas/phase-1-validation.md` (or equivalent operator log) for traceability",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5.",
+        "notes": "Appended a new section 'TASK-LCA-005 AC-LCA-10 \u2014 Live Lilymay smoke outcome (operator capture)' to docs/research/ideas/phase-1-validation.md. The section documents how to run the live smoke, an outcome record table for operator entries, and the calibration-fallback rationale per Context A Q5."
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orchestrator_factory=closure)` with both env vars set to the same provider; assert `CoachConfigurationError`",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-009",
+        "notes": "No completion promise for AC-009"
+      },
+      {
+        "criterion_id": "AC-010",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-010",
+        "notes": "No completion promise for AC-010"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "`cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a fresh `LLMPlayerAdapter`, fresh `LLMCoachAdapter`, fresh `PlayerCoachOrchestrator(player=..., coach=..., quote_verifier=None, coach_handover=None, on_flag=<logger callback>)`",
+        "`quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both stay None on first cut; wiring is deferred to a follow-up subtask)",
+        "`on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-COACH-07 \u2014 logger-only, no DB write, no metric backend)",
+        "`MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `serve`",
+        "Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orchestrator_factory=closure)` with both env vars set to the same provider; assert `CoachConfigurationError`",
+        "All modified files pass project-configured lint/format checks with zero errors"
+      ]
+    }
+  ],
+  "rationale": "Missing 6 acceptance criteria: `cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a fresh `LLMPlayerAdapter`, fresh `LLMCoachAdapter`, fresh `PlayerCoachOrchestrator(player=..., coach=..., quote_verifier=None, coach_handover=None, on_flag=<logger callback>)`, `quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both stay None on first cut; wiring is deferred to a follow-up subtask), `on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-COACH-07 \u2014 logger-only, no DB write, no metric backend), `MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `serve`, Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orchestrator_factory=closure)` with both env vars set to the same provider; assert `CoachConfigurationError`, All modified files pass project-configured lint/format checks with zero errors",
+  "context_used": "## Job-Specific Context\n\nBudget: 981/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- HAS_DEFAULT_FACTORY\n- TERMINATES_EXECUTION_ON_CONDITION\n\n### \u26a0\ufe0f Warnings\n- USES_ENDPOINT\n- REPLACES\n\n### \ud83c\udfad Role Constraints\n- IS_CREATED_FOR\n- PROJECT_INVOLVES\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- HAS_PROJECT_ID\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

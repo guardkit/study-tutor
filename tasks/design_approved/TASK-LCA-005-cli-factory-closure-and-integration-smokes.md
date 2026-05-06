@@ -1,44 +1,45 @@
 ---
-id: TASK-LCA-005
-title: Wire CLI orchestrator_factory closure and integration smokes (per-turn isolation, Phase-1 metadata, live Lilymay)
-task_type: feature
-parent_review: TASK-REV-LCA1
+complexity: 5
+context_files:
+- features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md
+- docs/research/ideas/llm-player-coach-adapters-brief.md
+- src/study_tutor/cli/main.py
+- src/study_tutor/mcp/adapter.py
+- src/study_tutor/tutoring/orchestrator.py
+created: 2026-05-06 01:00:00+00:00
+dependencies:
+- TASK-LCA-001
+- TASK-LCA-002
+- TASK-LCA-003
+- TASK-LCA-004
 feature_id: FEAT-6CC5
 feature_slug: mcp-llm-player-coach-adapters
-wave: 2
+id: TASK-LCA-005
 implementation_mode: task-work
-complexity: 5
-dependencies:
-  - TASK-LCA-001
-  - TASK-LCA-002
-  - TASK-LCA-003
-  - TASK-LCA-004
-status: backlog
+parent_review: TASK-REV-LCA1
 priority: high
-created: 2026-05-06T01:00:00+00:00
-updated: 2026-05-06T01:00:00+00:00
-tags:
-  - feat-lca
-  - integration
-  - cli
-  - smoke-test
-  - phase-1
 related:
-  - TASK-REV-LCA1
-  - TASK-LCA-001
-  - TASK-LCA-002
-  - TASK-LCA-003
-  - TASK-LCA-004
-  - TASK-GR-WIRE
-  - TASK-GR-PMT
-context_files:
-  - features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md
-  - docs/research/ideas/llm-player-coach-adapters-brief.md
-  - src/study_tutor/cli/main.py
-  - src/study_tutor/mcp/adapter.py
-  - src/study_tutor/tutoring/orchestrator.py
+- TASK-REV-LCA1
+- TASK-LCA-001
+- TASK-LCA-002
+- TASK-LCA-003
+- TASK-LCA-004
+- TASK-GR-WIRE
+- TASK-GR-PMT
+status: design_approved
+tags:
+- feat-lca
+- integration
+- cli
+- smoke-test
+- phase-1
+task_type: feature
 test_results:
   status: pending
+title: Wire CLI orchestrator_factory closure and integration smokes (per-turn isolation,
+  Phase-1 metadata, live Lilymay)
+updated: 2026-05-06 01:00:00+00:00
+wave: 2
 ---
 
 # Task: CLI factory closure + integration smokes
