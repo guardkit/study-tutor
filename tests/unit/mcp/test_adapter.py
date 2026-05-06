@@ -123,3 +123,162 @@ async def test_server_registers_four_tools(
     assert "graphiti" not in end_tool.description.lower()
     assert "async" not in end_tool.description.lower()
     assert "marks session ended" in end_tool.description.lower()
+
+
+# ---------------------------------------------------------------------------
+# TASK-GR-WIRE BLOCK-3a — perform_session_end delegation
+# ---------------------------------------------------------------------------
+
+
+async def test_session_end_delegates_to_perform_session_end(
+    role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``tutor_session_end`` must delegate to ``perform_session_end``.
+
+    AC-WIRE-06 contract check: the adapter must (1) resolve the session,
+    (2) extract topics_covered/aos_exercised from the cached SessionPlan,
+    (3) thread a transition_state closure that calls store.end, and
+    (4) return perform_session_end's value verbatim. We patch
+    ``perform_session_end`` at the adapter's import site so the assertion
+    surface is the keyword-argument shape, not the underlying
+    bus/write-helper plumbing (that is tested in
+    ``tests/unit/tutoring/test_session_end.py``).
+    """
+    from study_tutor.knowledge.async_write import GraphitiWriteHelper
+    from study_tutor.mcp import adapter as adapter_mod
+    from study_tutor.tutoring.session_end import EventBus
+
+    captured: dict[str, object] = {}
+    sentinel_return = {"session_id": "sentinel", "status": "ended"}
+
+    async def fake_perform_session_end(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        # Honour the contract: transition_state is the closure that flips
+        # store state. Calling it here mirrors the real path so the
+        # subsequent status check returns "ended".
+        ts = kwargs.get("transition_state")
+        assert callable(ts)
+        ts()  # type: ignore[operator]
+        return sentinel_return
+
+    monkeypatch.setattr(
+        adapter_mod, "perform_session_end", fake_perform_session_end
+    )
+
+    write_helper = GraphitiWriteHelper(client=None)
+    event_bus = EventBus()
+    store = SessionStore()
+    adapter = MCPAdapter(
+        role_config=role_config,
+        store=store,
+        write_helper=write_helper,
+        event_bus=event_bus,
+    )
+
+    # Start a session so ``_plan_sessions`` has an entry — drives the
+    # topics_covered / aos_exercised extraction branch.
+    started = await adapter.tutor_start_session(
+        student_id="lilymay", topic_override="Macbeth"
+    )
+    session_id = started["session_id"]
+    await _drain_warmups(adapter)
+
+    # Append a turn so the session has non-zero turns (the I-T6 guard
+    # branch is exercised separately by perform_session_end's own tests).
+    store.append_turn(session_id, "user", "hi")
+
+    result = await adapter.tutor_session_end(session_id=session_id)
+
+    # Verbatim return.
+    assert result is sentinel_return
+
+    # Delegation kwargs match the contract: perform_session_end takes
+    # ``session=...`` (the TutorSession object), not a bare session_id.
+    assert "session_id" not in captured
+    session_arg = captured["session"]
+    assert getattr(session_arg, "session_id") == session_id
+    assert captured["student_id"] == "lilymay"
+    assert captured["write_helper"] is write_helper
+    assert captured["event_bus"] is event_bus
+    # topics_covered comes from the planner's plan; deterministic planner
+    # may degrade to a baseline plan whose topic_name is the override or
+    # a fallback string. We only assert the *shape* — list of one string —
+    # because the planner internals are not this test's surface.
+    topics = captured["topics_covered"]
+    assert isinstance(topics, list) and len(topics) == 1
+    assert isinstance(topics[0], str)
+    aos = captured["aos_exercised"]
+    assert isinstance(aos, list)
+    # transition_state must be a callable; fake_perform_session_end
+    # already invoked it, so the store should now report status=ended.
+    assert callable(captured["transition_state"])
+    assert store.get(session_id).status == "ended"
+
+
+async def test_session_end_unknown_session_short_circuits_before_delegation(
+    role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unknown session_id must NOT reach perform_session_end.
+
+    Defence-in-depth: the SessionNotFoundError path returns
+    ``_session_not_found(...)`` directly so we never construct a
+    transition_state closure or compute topics for a session that
+    doesn't exist.
+    """
+    from study_tutor.mcp import adapter as adapter_mod
+
+    called = False
+
+    async def fake_perform_session_end(**kwargs: object) -> dict[str, object]:
+        nonlocal called
+        called = True
+        return {"session_id": "x", "status": "ended"}
+
+    monkeypatch.setattr(
+        adapter_mod, "perform_session_end", fake_perform_session_end
+    )
+
+    adapter = MCPAdapter(role_config=role_config, store=SessionStore())
+    result = await adapter.tutor_session_end(session_id="nope")
+
+    assert result["error_type"] == "SessionNotFoundError"
+    assert called is False
+
+
+async def test_session_end_missing_plan_uses_empty_topics_and_aos(
+    role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Stale-lookup branch: cold ``_plan_sessions`` cache → empty defaults.
+
+    When ``tutor_session_end`` is called for a session_id that exists in
+    the SessionStore but was never minted via this adapter instance's
+    ``tutor_start_session`` (e.g. server restart between endpoints), the
+    plan cache is cold and topics_covered / aos_exercised default to
+    empty lists rather than raising. perform_session_end /
+    build_session_completed_episode handles the empty case by falling
+    back to ``[session.topic]``.
+    """
+    from study_tutor.mcp import adapter as adapter_mod
+
+    captured: dict[str, object] = {}
+
+    async def fake_perform_session_end(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        return {"session_id": "x", "status": "ended"}
+
+    monkeypatch.setattr(
+        adapter_mod, "perform_session_end", fake_perform_session_end
+    )
+
+    store = SessionStore()
+    adapter = MCPAdapter(role_config=role_config, store=store)
+
+    # Bypass tutor_start_session — go straight to the store, simulating
+    # a session minted by a prior process.
+    session = store.create(subject="lilymay", topic="Romeo and Juliet")
+    store.append_turn(session.session_id, "user", "hi")
+
+    await adapter.tutor_session_end(session_id=session.session_id)
+
+    assert captured["topics_covered"] == []
+    assert captured["aos_exercised"] == []

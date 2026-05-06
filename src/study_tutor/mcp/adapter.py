@@ -13,14 +13,19 @@ Registers four tools on the FastMCP server:
   planner pipeline.
 * ``tutor_turn`` — sync; generates one tutor reply per user message.
 * ``tutor_session_status`` — sync; pure read of session state.
-* ``tutor_session_end`` — sync; marks session ended (Phase 0 no-op beyond
-  status flip; Phase 1 adds async Graphiti write per DEC-02).
+* ``tutor_session_end`` — sync caller-facing return; delegates to
+  :func:`study_tutor.tutoring.session_end.perform_session_end` for the
+  DDR-003-ordered ``session.completed`` emit + F3 Graphiti write
+  fire-and-forget dispatch (TASK-GR-WIRE BLOCK-3a). Returns within the
+  ASSUM-004 2 s wall-clock budget regardless of Graphiti latency per
+  ADR-ARCH-019.
 
 SR-03: every handler resolves the provider via ``_default_player_model()``
 at call time — no module-level provider hard-coding.
 
 SR-07: ``tutor_session_end`` description is *only* ``"marks session ended"``.
-The Phase 1 Graphiti write is a ``# TODO(phase-1)`` in code, not user-facing text.
+The Phase 1 Graphiti write happens inside ``perform_session_end`` as a
+fire-and-forget task — not user-facing text.
 
 Concurrency note (TASK-DSP-006): the per-instance ``_plan_sessions`` dict
 is keyed by ``session.session_id``. UUID4 collision probability is
@@ -36,6 +41,7 @@ import logging
 import os
 from typing import Any
 
+from study_tutor.knowledge.async_write import GraphitiWriteHelper
 from study_tutor.llm.client import LLMClient, _default_player_model
 from study_tutor.planner.pipeline import plan_session
 from study_tutor.planner.types import SessionPlan, _baseline_plan
@@ -46,6 +52,7 @@ from study_tutor.session.tutor_session import (
     get_default_store,
 )
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
+from study_tutor.tutoring.session_end import EventBus, perform_session_end
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +125,9 @@ class MCPAdapter:
         role_config: RoleConfig,
         store: SessionStore | None = None,
         orchestrator_factory: Any = None,
+        write_helper: GraphitiWriteHelper | None = None,
+        event_bus: EventBus | None = None,
+        graphiti_client: Any | None = None,
     ) -> None:
         self._role = role_config
         self._store = store or get_default_store()
@@ -135,6 +145,18 @@ class MCPAdapter:
         # ``None``, the Phase 0 single-LLM path is preserved so this
         # change is backward-compatible.
         self._orchestrator_factory = orchestrator_factory
+        # TASK-GR-WIRE BLOCK-3a: session-end Graphiti writeback dependencies.
+        # All three default to ``None`` / a fresh empty bus so existing tests
+        # (and any caller that doesn't need Graphiti persistence) continue to
+        # work — ``perform_session_end`` accepts ``write_helper=None`` as a
+        # graceful no-op for the F3 dispatch, and an unsubscribed
+        # :class:`EventBus` is functionally a no-op for the bus emit. The
+        # ``graphiti_client`` is held for future read-back uses (e.g.
+        # ``mcp__graphiti__get_episodes`` confirmation paths) and is
+        # otherwise unused on this code path.
+        self._write_helper = write_helper
+        self._event_bus = event_bus if event_bus is not None else EventBus()
+        self._graphiti_client = graphiti_client
 
     async def tutor_start_session(
         self,
@@ -300,18 +322,66 @@ class MCPAdapter:
         }
 
     async def tutor_session_end(self, session_id: str) -> dict[str, Any]:
-        """Mark the session ended.
+        """Mark the session ended (TASK-GR-WIRE BLOCK-3a).
 
-        Phase 0: flip status only. Phase 1 adds a Graphiti write here per
-        DEC-02 — kept out of the tool description (SR-07).
+        Delegates to
+        :func:`study_tutor.tutoring.session_end.perform_session_end` which
+        owns the full FEAT-PH1-003 session-end workflow:
+
+        * F4 in-flight ``tutor_turn`` resolution (3 s inner timeout).
+        * I-T6 zero-turn invariant guard — sessions ended before any tutor
+          turn flip status to ``"ended"`` but do NOT emit
+          ``session.completed`` and do NOT schedule the F3 Graphiti write.
+        * DDR-003 ordering: bus emit precedes the F3 ``create_task`` call.
+        * F3 fire-and-forget Graphiti write via the injected
+          :class:`GraphitiWriteHelper` (graceful no-op if ``None``).
+        * Caller-facing return within the ASSUM-004 2 s wall-clock budget
+          regardless of Graphiti latency (ADR-ARCH-019).
+
+        ``topics_covered`` and ``aos_exercised`` are sourced from the
+        cached :class:`SessionPlan` for ``session_id``. If no plan is
+        cached (e.g. a session_id from a prior process restart), both
+        default to empty — :func:`build_session_completed_episode` will
+        fall back to ``[session.topic]`` if available, otherwise the
+        learner subject slug.
         """
-        # TODO(phase-1): add async Graphiti write per DEC-02
         try:
-            self._store.end(session_id)
+            session = self._store.get(session_id)
         except SessionNotFoundError:
             return _session_not_found(session_id)
 
-        return {"session_id": session_id, "status": "ended"}
+        plan = self._plan_sessions.get(session_id)
+        if plan is not None:
+            topics_covered = [plan.topic_name]
+            aos_exercised = list(plan.focus_aos)
+        else:
+            # Stale-lookup fallback: a tutor_session_end called for a
+            # session_id never seen by this process's tutor_start_session
+            # (e.g. server restart between the two endpoints) is still a
+            # valid graceful path — the session itself exists in the
+            # store, but the per-process plan cache is cold. Empty
+            # topics/AOs let perform_session_end derive defaults from
+            # session.topic.
+            topics_covered = []
+            aos_exercised = []
+
+        # transition_state closure — perform_session_end calls this
+        # exactly once at the documented ordering point (after I-T6
+        # check, before bus emit) so the test surface can assert "state
+        # flipped before session.completed dispatched". We do not flip
+        # state here ourselves.
+        def _transition_state() -> None:
+            self._store.end(session_id)
+
+        return await perform_session_end(
+            session=session,
+            student_id=session.subject,
+            write_helper=self._write_helper,
+            event_bus=self._event_bus,
+            topics_covered=topics_covered,
+            aos_exercised=aos_exercised,
+            transition_state=_transition_state,
+        )
 
     async def _warm_up(self, provider: str) -> None:
         """Fire an empty generate() to prime the Ollama model into memory."""
