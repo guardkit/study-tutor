@@ -1,12 +1,12 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 83.92246704094578,
+    "duration_seconds": 67.8806182499975,
     "error": null,
     "tests_run": 7,
     "tests_failed": 0,
     "coverage_pct": 100.0,
-    "output_summary": "pytest tests/unit/tutoring/adapters/test_llm_player_adapter.py: 7 passed, 0 failed; 100% line coverage on llm_player_adapter.py (26/26 stmts).",
+    "output_summary": "pytest tests/unit/tutoring/adapters/test_llm_player_adapter.py: 7 passed, 0 failed in 0.07s; 100% line coverage on llm_player_adapter.py (26/26 stmts).",
     "quality_gates_passed": true
   },
   "phase_5": {
