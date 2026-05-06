@@ -39,6 +39,7 @@ pattern at ``study_tutor.mcp.adapter.MCPAdapter.tutor_turn``).
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import Iterable
 
 from study_tutor.llm.client import LLMClient, _default_player_model
@@ -53,6 +54,65 @@ _REVISE_PROMPT_HEADER = (
     "least its target score. Do not invent new content; refine what is "
     "below."
 )
+
+
+# Matches well-formed ``<think>...</think>`` blocks. ``re.DOTALL`` so the
+# inner ``.`` matches newlines (the model emits multi-line reasoning);
+# ``re.IGNORECASE`` is cheap insurance against capitalisation drift
+# (``<Think>`` / ``<THINK>``) — not observed in production output but
+# trivially defended.
+_THINK_BLOCK_RE = re.compile(
+    r"<think\b[^>]*>.*?</think>", re.DOTALL | re.IGNORECASE
+)
+# Unclosed-tag prefix: the fine-tuned Gemma 4 model sometimes truncates
+# ``</think>``, leaving a dangling opener. We strip from that opener up
+# to the first blank-line boundary the model uses to separate reasoning
+# from response. The pattern is anchored at start-of-string after a
+# leading-whitespace skip so a stray ``<think>`` mid-response does not
+# eat the rest of the turn.
+_UNCLOSED_THINK_PREFIX_RE = re.compile(
+    r"\A\s*<think\b[^>]*>.*?\n\n", re.DOTALL | re.IGNORECASE
+)
+# Fallback when a dangling ``<think>`` opener has no following blank
+# line: drop only the marker tag itself, preserving any content the
+# model produced after it. Leaking the marker without reasoning is less
+# harmful than blanking the entire ``tutor_response``.
+_UNCLOSED_THINK_TAG_ONLY_RE = re.compile(
+    r"\A\s*<think\b[^>]*>", re.IGNORECASE
+)
+
+
+def _strip_think_tokens(raw: str) -> str:
+    """Remove model reasoning preambles before they reach the orchestrator.
+
+    The fine-tuned Gemma 4 26B-A4B MoE Player model emits
+    ``<think>...</think>`` reasoning blocks ahead of its student-facing
+    response. Sanitisation lives in the Player adapter (not in
+    :class:`~study_tutor.llm.client.LLMClient`) because other consumers
+    of ``LLMClient`` — notably the Coach adapter — may need access to
+    raw output for parsing or diagnostics.
+
+    Handles three cases observed in session ``c78a49a0`` (2026-05-06):
+
+    1. Well-formed pairs: any number of ``<think>...</think>`` blocks
+       are removed wholesale.
+    2. Unclosed prefix with blank-line delimiter: a leading ``<think>``
+       with no closing tag is stripped up to and including the first
+       ``\\n\\n`` boundary the model uses between reasoning and
+       response.
+    3. Unclosed prefix with no blank line: only the dangling ``<think>``
+       opener tag is removed, preserving any content the model produced
+       after it (Hippocratic choice — leaking a marker is less harmful
+       than emptying the turn).
+
+    Trailing leading-whitespace artefacts are trimmed via ``lstrip``.
+    """
+    cleaned = _THINK_BLOCK_RE.sub("", raw)
+    if _UNCLOSED_THINK_PREFIX_RE.match(cleaned):
+        cleaned = _UNCLOSED_THINK_PREFIX_RE.sub("", cleaned, count=1)
+    elif _UNCLOSED_THINK_TAG_ONLY_RE.match(cleaned):
+        cleaned = _UNCLOSED_THINK_TAG_ONLY_RE.sub("", cleaned, count=1)
+    return cleaned.lstrip()
 
 
 class LLMPlayerAdapter:
@@ -99,9 +159,10 @@ class LLMPlayerAdapter:
         _ = session_state.session_id
         provider = _default_player_model()
         client = LLMClient(provider=provider)
-        return await asyncio.to_thread(
+        raw = await asyncio.to_thread(
             client.generate, learner_message, self._player_prompt
         )
+        return _strip_think_tokens(raw)
 
     async def revise(
         self,
@@ -128,9 +189,10 @@ class LLMPlayerAdapter:
         )
         provider = _default_player_model()
         client = LLMClient(provider=provider)
-        return await asyncio.to_thread(
+        raw = await asyncio.to_thread(
             client.generate, prompt, self._player_prompt
         )
+        return _strip_think_tokens(raw)
 
     @staticmethod
     def _assemble_revise_prompt(
