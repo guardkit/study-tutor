@@ -6,7 +6,7 @@ description: Wire production LLMPlayerAdapter and LLMCoachAdapter into a per-tur
   Two-provider invariant enforced at boot. Player revision prompt carries structured
   criterion pointers only.
 created: '2026-05-06T10:12:12.176544'
-status: planned
+status: completed
 complexity: 6
 estimated_tasks: 5
 tasks:
@@ -16,37 +16,73 @@ tasks:
   file_path: tasks/backlog/mcp-llm-player-coach-adapters/TASK-LCA-001-llm-player-adapter.md
   complexity: 5
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 4
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 4
+  current_turn: 0
+  started_at: '2026-05-06T12:03:04.680127'
+  completed_at: '2026-05-06T12:45:11.237787'
 - id: TASK-LCA-002
   name: Implement LLMCoachAdapter (Path C hybrid) + coach.md prompt + JSON parsing
   file_path: tasks/backlog/mcp-llm-player-coach-adapters/TASK-LCA-002-llm-coach-adapter.md
   complexity: 6
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 4
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 4
+  current_turn: 0
+  started_at: '2026-05-06T12:03:04.684036'
+  completed_at: '2026-05-06T12:45:11.241205'
 - id: TASK-LCA-003
   name: Add SessionState typed dataclass and update MCP adapter construction site
   file_path: tasks/backlog/mcp-llm-player-coach-adapters/TASK-LCA-003-session-state-dataclass.md
   complexity: 4
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 3
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 3
+  current_turn: 0
+  started_at: '2026-05-06T12:03:04.687491'
+  completed_at: '2026-05-06T12:45:11.244028'
 - id: TASK-LCA-004
   name: Add _default_coach_model() helper, env var, and MCPAdapter boot smoke check
   file_path: tasks/backlog/mcp-llm-player-coach-adapters/TASK-LCA-004-coach-model-env-and-boot-smoke.md
   complexity: 4
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 4
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 4
+  current_turn: 0
+  started_at: '2026-05-06T12:03:04.690839'
+  completed_at: '2026-05-06T12:45:11.246850'
 - id: TASK-LCA-005
   name: Wire CLI orchestrator_factory closure and integration smokes
   file_path: tasks/backlog/mcp-llm-player-coach-adapters/TASK-LCA-005-cli-factory-closure-and-integration-smokes.md
@@ -56,10 +92,19 @@ tasks:
   - TASK-LCA-002
   - TASK-LCA-003
   - TASK-LCA-004
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-05-06T12:45:11.448048'
+  completed_at: '2026-05-06T13:09:27.786898'
 orchestration:
   parallel_groups:
   - - TASK-LCA-001
@@ -71,8 +116,25 @@ orchestration:
   recommended_parallel: 4
 smoke_gates:
   after_wave: 2
-  command: |
-    set -e
+  command: 'set -e
+
     pytest -m "feat_lca and smoke" tests/unit tests/integration -x
+
+    '
   expected_exit: 0
   timeout: 180
+  exit5_is_hard_fail: false
+execution:
+  started_at: '2026-05-06T12:03:04.656737'
+  completed_at: '2026-05-06T13:09:29.748615'
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-6CC5
+  total_turns: 17
+  tasks_completed: 5
+  tasks_failed: 0
+  current_wave: 2
+  completed_waves:
+  - 1
+  - 2
+  last_updated: '2026-05-06T13:09:27.790972'
+  archived_at: null
+  archived_to: null

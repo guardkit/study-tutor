@@ -1,6 +1,7 @@
 ---
 id: TASK-LCA-005
-title: Wire CLI orchestrator_factory closure and integration smokes (per-turn isolation, Phase-1 metadata, live Lilymay)
+title: Wire CLI orchestrator_factory closure and integration smokes (per-turn isolation,
+  Phase-1 metadata, live Lilymay)
 task_type: feature
 parent_review: TASK-REV-LCA1
 feature_id: FEAT-6CC5
@@ -9,36 +10,71 @@ wave: 2
 implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-LCA-001
-  - TASK-LCA-002
-  - TASK-LCA-003
-  - TASK-LCA-004
-status: backlog
+- TASK-LCA-001
+- TASK-LCA-002
+- TASK-LCA-003
+- TASK-LCA-004
+status: in_review
 priority: high
-created: 2026-05-06T01:00:00+00:00
-updated: 2026-05-06T01:00:00+00:00
+created: 2026-05-06 01:00:00+00:00
+updated: 2026-05-06 01:00:00+00:00
 tags:
-  - feat-lca
-  - integration
-  - cli
-  - smoke-test
-  - phase-1
+- feat-lca
+- integration
+- cli
+- smoke-test
+- phase-1
 related:
-  - TASK-REV-LCA1
-  - TASK-LCA-001
-  - TASK-LCA-002
-  - TASK-LCA-003
-  - TASK-LCA-004
-  - TASK-GR-WIRE
-  - TASK-GR-PMT
+- TASK-REV-LCA1
+- TASK-LCA-001
+- TASK-LCA-002
+- TASK-LCA-003
+- TASK-LCA-004
+- TASK-GR-WIRE
+- TASK-GR-PMT
 context_files:
-  - features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md
-  - docs/research/ideas/llm-player-coach-adapters-brief.md
-  - src/study_tutor/cli/main.py
-  - src/study_tutor/mcp/adapter.py
-  - src/study_tutor/tutoring/orchestrator.py
+- features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md
+- docs/research/ideas/llm-player-coach-adapters-brief.md
+- src/study_tutor/cli/main.py
+- src/study_tutor/mcp/adapter.py
+- src/study_tutor/tutoring/orchestrator.py
 test_results:
   status: pending
+autobuild_state:
+  current_turn: 2
+  max_turns: 5
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-6CC5
+  base_branch: main
+  started_at: '2026-05-06T12:45:11.457456'
+  last_updated: '2026-05-06T13:09:27.783185'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 `cli/main.py:serve` constructs `orchestrator_factory`\
+      \ as a no-arg closure that on each call builds a\n  \u2022 `quote_verifier=None`\
+      \ and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014\
+      \ both s\n  \u2022 `on_flag` callback emits a structured log line `event=\"\
+      orchestrator_turn_flagged\"` to stderr (per D-\n  \u2022 `MCPAdapter(orchestrator_factory=orchestrator_factory,\
+      \ ...)` is wired at the construction site in `s\n  \u2022 Same-provider rejection\
+      \ is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orc\n\
+      \  (1 more)"
+    timestamp: '2026-05-06T12:45:11.457456'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-06T13:01:44.263131'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: CLI factory closure + integration smokes
