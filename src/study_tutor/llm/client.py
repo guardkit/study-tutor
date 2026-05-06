@@ -105,21 +105,63 @@ class LLMClient:
 
     def generate(self, prompt: str, system: str | None = None) -> str:
         if self.provider == "local":
-            return self._generate_ollama(prompt, system)
+            return self._generate_ollama(
+                prompt,
+                system,
+                model_env="OLLAMA_MODEL",
+                base_url_env="OLLAMA_BASE_URL",
+            )
+        if self.provider == "local-coach":
+            # Coach routes through its own llama-swap endpoint
+            # (OLLAMA_COACH_BASE_URL) and selects OLLAMA_COACH_MODEL.
+            # When OLLAMA_COACH_BASE_URL is unset the Coach falls back to
+            # OLLAMA_BASE_URL so single-host setups still work. D3
+            # (Coach.provider != Player.provider) is satisfied at the
+            # provider-name level so the boot smoke check in
+            # MCPAdapter.__init__ accepts the configuration. Phase-1
+            # plumbing only — Coach calibration is Phase-2 (per
+            # ASSUM-LCA-010 and TASK-REV-GRD5 follow-up).
+            #
+            # Uses /v1/chat/completions (OpenAI-compatible) rather than the
+            # Ollama-native /api/generate the Player uses, because
+            # llama-swap (Phase-1 Coach host) only exposes the OpenAI-compat
+            # surface. Mac Ollama supports both endpoints, so a single-host
+            # configuration that points OLLAMA_COACH_BASE_URL at Mac Ollama
+            # also works.
+            return self._generate_openai_compat(
+                prompt,
+                system,
+                model_env="OLLAMA_COACH_MODEL",
+                base_url_env="OLLAMA_COACH_BASE_URL",
+            )
         if self.provider == "bedrock":
             raise NotImplementedError(
                 "Bedrock provider wired by FEAT-PO-004"
             )
         raise LLMProviderError(
             f"Unsupported provider: {self.provider!r}. "
-            "Expected one of: 'local', 'bedrock' (Phase 0)."
+            "Expected one of: 'local', 'local-coach', 'bedrock' (Phase 0)."
         )
 
-    def _generate_ollama(self, prompt: str, system: str | None) -> str:
+    def _generate_ollama(
+        self,
+        prompt: str,
+        system: str | None,
+        *,
+        model_env: str = "OLLAMA_MODEL",
+        base_url_env: str = "OLLAMA_BASE_URL",
+    ) -> str:
         import httpx  # Lazy: keeps import graph minimal for non-local paths
 
-        base_url = os.environ.get("OLLAMA_BASE_URL") or DEFAULT_OLLAMA_BASE_URL
-        model = os.environ.get("OLLAMA_MODEL") or DEFAULT_OLLAMA_MODEL
+        # Resolve base URL: prefer the role-specific env var, then fall back
+        # to OLLAMA_BASE_URL so OLLAMA_COACH_BASE_URL is optional (single-host
+        # setups can leave it unset and both providers share one endpoint).
+        base_url = (
+            os.environ.get(base_url_env)
+            or os.environ.get("OLLAMA_BASE_URL")
+            or DEFAULT_OLLAMA_BASE_URL
+        )
+        model = os.environ.get(model_env) or DEFAULT_OLLAMA_MODEL
         num_predict = _resolve_num_predict()
 
         payload: dict[str, object] = {
@@ -145,3 +187,60 @@ class LLMClient:
 
         data = response.json()
         return data.get("response", "")
+
+    def _generate_openai_compat(
+        self,
+        prompt: str,
+        system: str | None,
+        *,
+        model_env: str,
+        base_url_env: str,
+    ) -> str:
+        """Call an OpenAI-compatible /v1/chat/completions endpoint.
+
+        Used by the ``local-coach`` provider for hosts (e.g. llama-swap)
+        that don't expose Ollama's native /api/generate surface. Returns
+        the assistant message content as a string, matching the
+        Player-side return shape so callers can treat both code paths
+        uniformly.
+        """
+        import httpx  # Lazy: keeps import graph minimal for non-local paths
+
+        base_url = (
+            os.environ.get(base_url_env)
+            or os.environ.get("OLLAMA_BASE_URL")
+            or DEFAULT_OLLAMA_BASE_URL
+        )
+        model = os.environ.get(model_env) or DEFAULT_OLLAMA_MODEL
+        num_predict = _resolve_num_predict()
+
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: dict[str, object] = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": num_predict,
+            "stream": False,
+        }
+
+        try:
+            response = httpx.post(
+                f"{base_url.rstrip('/')}/v1/chat/completions",
+                json=payload,
+                timeout=DEFAULT_OLLAMA_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise LLMProviderError(
+                f"OpenAI-compat request to {base_url} failed: {exc}"
+            ) from exc
+
+        data = response.json()
+        choices = data.get("choices") or []
+        if not choices:
+            return ""
+        message = choices[0].get("message") or {}
+        return message.get("content", "")
