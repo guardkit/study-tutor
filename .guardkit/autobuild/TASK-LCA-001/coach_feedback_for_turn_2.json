@@ -1,0 +1,9 @@
+{
+  "turn": 2,
+  "feedback_from_turn": 1,
+  "feedback_summary": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_mo\n  \u2022 Player prompt is loaded once at adapter construction via `RoleConfig.load_player_prompt()` (existing\n  \u2022 AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:\n  \u2022 Assembled `revise()` prompt contains NO substring from `RubricFeedback.suggested_focus` (asserted by\n  \u2022 Assembled `revise()` prompt contains NO Coach evidence / verdict / reasoning text (asserted by unit \n  (5 more)",
+  "must_fix": [],
+  "should_fix": [],
+  "validation_results": {},
+  "raw_feedback": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_mo\n  \u2022 Player prompt is loaded once at adapter construction via `RoleConfig.load_player_prompt()` (existing\n  \u2022 AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:\n  \u2022 Assembled `revise()` prompt contains NO substring from `RubricFeedback.suggested_focus` (asserted by\n  \u2022 Assembled `revise()` prompt contains NO Coach evidence / verdict / reasoning text (asserted by unit \n  (5 more)"
+}
