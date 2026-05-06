@@ -1,12 +1,12 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 112.7907713339664,
+    "duration_seconds": 152.3637569999555,
     "error": null,
-    "tests_run": 821,
+    "tests_run": 826,
     "tests_failed": 2,
-    "coverage_pct": 95.0,
-    "output_summary": "821 ran, 2 pre-existing failures unrelated to TASK-LCA-003 (graphiti client wiring, planner mypy import); 100% on session_state.py, 95% combined.",
+    "coverage_pct": 91.0,
+    "output_summary": "pytest tests/: 824 passed, 2 failed (pre-existing graphiti+mypy, unrelated), 5 skipped; TASK-LCA-003 27 unit + 4 BDD all green; 100% session_state.py.",
     "quality_gates_passed": false
   },
   "phase_5": {

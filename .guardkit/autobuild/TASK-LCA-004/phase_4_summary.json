@@ -1,7 +1,7 @@
 {
-  "tests_run": 22,
+  "tests_run": 27,
   "tests_failed": 0,
-  "coverage_pct": 67.0,
-  "output_summary": "22/22 passed in tests/unit/llm/test_client.py + tests/unit/mcp/test_adapter.py; coverage on changed modules: client.py 44%, adapter.py 76% (total 67%).",
+  "coverage_pct": 72.0,
+  "output_summary": "27/27 passed in tests/unit/{llm/test_client,mcp/test_adapter,roles/test_loader}.py; coverage on changed modules: client.py 44%, adapter.py 76%, loader.py 94% (total 72%).",
   "quality_gates_passed": true
 }
