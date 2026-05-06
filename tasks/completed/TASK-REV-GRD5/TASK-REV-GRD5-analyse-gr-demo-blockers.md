@@ -4,10 +4,12 @@ title: "Review: Analyse TASK-GR-DEMO blockers and sequence the BLOCK-1/2/3 fixes
 task_type: review
 review_mode: decision
 review_depth: standard
-status: review_complete
+status: completed
 priority: critical
 created: 2026-05-05T00:00:00+00:00
-updated: 2026-05-05T22:00:00+00:00
+updated: 2026-05-06T00:00:00+00:00
+completed: 2026-05-06T00:00:00+00:00
+completed_location: tasks/completed/TASK-REV-GRD5/
 complexity: 4
 tags:
   - graphiti
@@ -55,7 +57,11 @@ review_results:
   recommendation: implement
   decision_taken: implement
   decision_taken_at: 2026-05-05T22:45:00+00:00
-  awaiting: task-complete-of-review
+  awaiting: null
+  unblockers_landed:
+    - TASK-GR-PMT (commit d8972b6)
+    - TASK-GR-WIRE (commit 8249a5e)
+    - TASK-GR-CONF (commit 1946ec7)
 test_results:
   status: not_applicable
   coverage: null
@@ -78,39 +84,39 @@ The live MCP tutor session attempt on 2026-05-05 (TASK-GR-DEMO) completed transp
 
 ## Acceptance Criteria
 
-- [ ] **AC-REV-01** — Each of the three BLOCK items is independently validated against the codebase as it stands on `main` today. Confirm or refute:
+- [x] **AC-REV-01** — Each of the three BLOCK items is independently validated against the codebase as it stands on `main` today. Confirm or refute:
   - BLOCK-1: `MCPAdapter.__init__` accepts `orchestrator_factory` but the server entry point does not inject one.
   - BLOCK-2: `roles/tutor/prompts/player.md` is the placeholder stub described in the report.
   - BLOCK-3: `tutor_session_end` in `adapter.py` contains the `TODO(phase-1)` comment with no Graphiti write-back code path.
   Each finding gets a code-level citation (file:line) and a one-line confirmation.
 
-- [ ] **AC-REV-02** — Sequencing decided. Output one of:
+- [x] **AC-REV-02** — Sequencing decided. Output one of:
   - **(a)** Three separate implementation tasks, ordered by dependency (recommended ordering with rationale).
   - **(b)** A single fix-up task covering all three (with rationale for why bundling beats splitting).
   - **(c)** A hybrid (e.g. BLOCK-2 standalone, BLOCK-1+3 bundled).
   The decision must explain *why* — blast radius, review surface, parallelisability, and whether the AC-DEMO gates can flip incrementally.
 
-- [ ] **AC-REV-03** — BLOCK-2 design choice resolved. Decide between:
+- [x] **AC-REV-03** — BLOCK-2 design choice resolved. Decide between:
   - **(b1)** Verbatim copy of Open WebUI prompt into `roles/tutor/prompts/player.md` (30-second fix; immediate quality lift).
   - **(b2)** Wire FEAT-PO-001's `GOAL.md` → player prompt generation as originally intended.
   Include a recommendation and the cost of deferring (b2) if (b1) is chosen first.
 
-- [ ] **AC-REV-04** — BLOCK-3 design choice resolved. Decide:
+- [x] **AC-REV-04** — BLOCK-3 design choice resolved. Decide:
   - Sync vs async write-back (per DEC-02 guidance in the TODO).
   - Episode payload shape (turn count, summary, p50/p95 latency? — what does AC-DEMO-02 actually require for replay?).
   - TopicConfidence update strategy (single topic from `topic_override`? all touched topics? confidence delta source — heuristic from turn count, Coach signal, or explicit student self-report?).
 
-- [ ] **AC-REV-05** — Risk register produced. Identify failure modes for each block:
+- [x] **AC-REV-05** — Risk register produced. Identify failure modes for each block:
   - BLOCK-1: orchestrator_factory wiring — what breaks if the factory closure captures wrong state? Test coverage gap on the entry-point path?
   - BLOCK-2: prompt-as-data — version control story, drift risk vs the GB10 file.
   - BLOCK-3: Graphiti write-back — partial-failure semantics (episode written but TopicConfidence update fails?), transactional expectations, retry posture.
 
-- [ ] **AC-REV-06** — Spawn decision recorded. The review concludes with either:
+- [x] **AC-REV-06** — Spawn decision recorded. The review concludes with either:
   - One or more `/task-create` invocations (with prefix, title, dependencies, AC outline) ready to run, **OR**
   - A justified "no new task — fold fixes into TASK-GR-DEMO and re-attempt" decision.
   Either way, TASK-GR-DEMO's `status: blocked` must reflect the outcome (unblocked-by lineage updated, or unblocking conditions explicit).
 
-- [ ] **AC-REV-07** — Phase-1 gate impact stated. For each of G3/G4/G5/G6/G13 in `phase-1-validation.md`, state whether the proposed fixes are sufficient to flip the gate or whether further work is required (e.g. is AC-DEMO-04 latency capture covered by the Phase 1 path's instrumentation, or is more work needed?).
+- [x] **AC-REV-07** — Phase-1 gate impact stated. For each of G3/G4/G5/G6/G13 in `phase-1-validation.md`, state whether the proposed fixes are sufficient to flip the gate or whether further work is required (e.g. is AC-DEMO-04 latency capture covered by the Phase 1 path's instrumentation, or is more work needed?).
 
 ## Test Requirements
 
