@@ -58,7 +58,7 @@ def test_unsupported_provider_raises_llm_provider_error() -> None:
 
 
 def test_local_provider_posts_openai_compat_with_system_prompt() -> None:
-    """Local path should POST to {OLLAMA_BASE_URL}/v1/chat/completions with messages."""
+    """Local path should POST to {LOCAL_BASE_URL}/v1/chat/completions with messages."""
     from study_tutor.llm.client import LLMClient
 
     fake_response = MagicMock()
@@ -68,8 +68,8 @@ def test_local_provider_posts_openai_compat_with_system_prompt() -> None:
     fake_response.raise_for_status.return_value = None
 
     env = {
-        "OLLAMA_BASE_URL": "http://localhost:11434",
-        "OLLAMA_MODEL": "gcse-tutor-test",
+        "LOCAL_BASE_URL": "http://localhost:11434",
+        "LOCAL_MODEL": "gcse-tutor-test",
     }
     with patch.dict(os.environ, env, clear=False):
         with patch("httpx.post", return_value=fake_response) as mock_post:
@@ -112,11 +112,11 @@ def test_local_provider_omits_system_when_none() -> None:
 
 
 def test_local_provider_uses_env_num_predict_at_call_time() -> None:
-    """OLLAMA_NUM_PREDICT override must be read at call time (SR-03).
+    """LOCAL_NUM_PREDICT override must be read at call time (SR-03).
 
-    TASK-PO02F-002: the Ollama default (~128 tokens) truncates GCSE essay
-    scaffolds mid-body-paragraph. Default ceiling is 2048; overridable
-    per-call via the env var.
+    TASK-PO02F-002: the Ollama-compatible default (~128 tokens) truncates
+    GCSE essay scaffolds mid-body-paragraph. Default ceiling is 2048;
+    overridable per-call via the env var.
     """
     from study_tutor.llm.client import LLMClient
 
@@ -126,7 +126,7 @@ def test_local_provider_uses_env_num_predict_at_call_time() -> None:
     }
     fake_response.raise_for_status.return_value = None
 
-    with patch.dict(os.environ, {"OLLAMA_NUM_PREDICT": "512"}, clear=False):
+    with patch.dict(os.environ, {"LOCAL_NUM_PREDICT": "512"}, clear=False):
         with patch("httpx.post", return_value=fake_response) as mock_post:
             LLMClient(provider="local").generate("hi")
 
@@ -135,8 +135,8 @@ def test_local_provider_uses_env_num_predict_at_call_time() -> None:
 
 
 def test_local_provider_falls_back_to_default_on_bad_num_predict() -> None:
-    """Non-integer or non-positive OLLAMA_NUM_PREDICT values must fall back
-    to the default, not crash or pass through garbage to Ollama."""
+    """Non-integer or non-positive LOCAL_NUM_PREDICT values must fall back
+    to the default, not crash or pass through garbage to the local LLM."""
     from study_tutor.llm.client import LLMClient
 
     fake_response = MagicMock()
@@ -146,12 +146,12 @@ def test_local_provider_falls_back_to_default_on_bad_num_predict() -> None:
     fake_response.raise_for_status.return_value = None
 
     for bad in ("not-a-number", "0", "-1", ""):
-        with patch.dict(os.environ, {"OLLAMA_NUM_PREDICT": bad}, clear=False):
+        with patch.dict(os.environ, {"LOCAL_NUM_PREDICT": bad}, clear=False):
             with patch("httpx.post", return_value=fake_response) as mock_post:
                 LLMClient(provider="local").generate("hi")
         body = mock_post.call_args.kwargs["json"]
         assert body["max_tokens"] == 2048, (
-            f"Expected fallback to 2048 for OLLAMA_NUM_PREDICT={bad!r}"
+            f"Expected fallback to 2048 for LOCAL_NUM_PREDICT={bad!r}"
         )
 
 

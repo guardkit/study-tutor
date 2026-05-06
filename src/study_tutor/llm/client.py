@@ -15,13 +15,13 @@ from __future__ import annotations
 import os
 
 DEFAULT_PLAYER_MODEL = "local"
-DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
-DEFAULT_OLLAMA_MODEL = "gcse-tutor-gemma4-moe:latest"
-DEFAULT_OLLAMA_TIMEOUT_SECONDS = 120.0
-# Ollama's default num_predict is ~128 tokens — too small for GCSE essay
-# scaffolds. Cap at 2048 to fit a full Intro/Body ×2/Conclusion plan;
-# overridable via OLLAMA_NUM_PREDICT for tuning (see TASK-PO02F-002).
-DEFAULT_OLLAMA_NUM_PREDICT = 2048
+DEFAULT_LOCAL_BASE_URL = "http://localhost:11434"
+DEFAULT_LOCAL_MODEL = "gcse-tutor-gemma4-moe:latest"
+DEFAULT_LOCAL_TIMEOUT_SECONDS = 120.0
+# The Ollama-compatible default num_predict is ~128 tokens — too small for
+# GCSE essay scaffolds. Cap at 2048 to fit a full Intro/Body ×2/Conclusion
+# plan; overridable via LOCAL_NUM_PREDICT for tuning (see TASK-PO02F-002).
+DEFAULT_LOCAL_NUM_PREDICT = 2048
 
 
 class LLMProviderError(RuntimeError):
@@ -29,19 +29,19 @@ class LLMProviderError(RuntimeError):
 
 
 def _resolve_num_predict() -> int:
-    """Return the Ollama ``num_predict`` ceiling.
+    """Return the local LLM ``num_predict`` ceiling.
 
-    Reads ``OLLAMA_NUM_PREDICT`` at call time (SR-03). Falls back to
-    ``DEFAULT_OLLAMA_NUM_PREDICT`` when unset or not a positive integer.
+    Reads ``LOCAL_NUM_PREDICT`` at call time (SR-03). Falls back to
+    ``DEFAULT_LOCAL_NUM_PREDICT`` when unset or not a positive integer.
     """
-    raw = os.environ.get("OLLAMA_NUM_PREDICT")
+    raw = os.environ.get("LOCAL_NUM_PREDICT")
     if raw is None or raw == "":
-        return DEFAULT_OLLAMA_NUM_PREDICT
+        return DEFAULT_LOCAL_NUM_PREDICT
     try:
         value = int(raw)
     except ValueError:
-        return DEFAULT_OLLAMA_NUM_PREDICT
-    return value if value > 0 else DEFAULT_OLLAMA_NUM_PREDICT
+        return DEFAULT_LOCAL_NUM_PREDICT
+    return value if value > 0 else DEFAULT_LOCAL_NUM_PREDICT
 
 
 def _default_player_model() -> str:
@@ -108,31 +108,31 @@ class LLMClient:
             return self._generate_openai_compat(
                 prompt,
                 system,
-                model_env="OLLAMA_MODEL",
-                base_url_env="OLLAMA_BASE_URL",
+                model_env="LOCAL_MODEL",
+                base_url_env="LOCAL_BASE_URL",
             )
         if self.provider == "local-coach":
             # Coach routes through its own llama-swap endpoint
-            # (OLLAMA_COACH_BASE_URL) and selects OLLAMA_COACH_MODEL.
-            # When OLLAMA_COACH_BASE_URL is unset the Coach falls back to
-            # OLLAMA_BASE_URL so single-host setups still work. D3
+            # (LOCAL_COACH_BASE_URL) and selects LOCAL_COACH_MODEL.
+            # When LOCAL_COACH_BASE_URL is unset the Coach falls back to
+            # LOCAL_BASE_URL so single-host setups still work. D3
             # (Coach.provider != Player.provider) is satisfied at the
             # provider-name level so the boot smoke check in
             # MCPAdapter.__init__ accepts the configuration. Phase-1
             # plumbing only — Coach calibration is Phase-2 (per
             # ASSUM-LCA-010 and TASK-REV-GRD5 follow-up).
             #
-            # Uses /v1/chat/completions (OpenAI-compatible) rather than the
-            # Ollama-native /api/generate the Player uses, because
-            # llama-swap (Phase-1 Coach host) only exposes the OpenAI-compat
-            # surface. Mac Ollama supports both endpoints, so a single-host
-            # configuration that points OLLAMA_COACH_BASE_URL at Mac Ollama
-            # also works.
+            # Uses /v1/chat/completions (OpenAI-compatible) so the same code
+            # path works against llama-swap (Phase-1 Coach host, which only
+            # exposes the OpenAI-compat surface) and against Mac Ollama (which
+            # supports both /v1/chat/completions and /api/generate). A
+            # single-host configuration that points LOCAL_COACH_BASE_URL at
+            # Mac Ollama therefore works without code changes.
             return self._generate_openai_compat(
                 prompt,
                 system,
-                model_env="OLLAMA_COACH_MODEL",
-                base_url_env="OLLAMA_COACH_BASE_URL",
+                model_env="LOCAL_COACH_MODEL",
+                base_url_env="LOCAL_COACH_BASE_URL",
             )
         if self.provider == "bedrock":
             raise NotImplementedError(
@@ -160,18 +160,17 @@ class LLMClient:
         uniformly.
 
         Note: after TASK-LSP-002 both ``local`` and ``local-coach``
-        providers reach this helper, so the ``OLLAMA_BASE_URL`` fallback
-        below is shared across providers; TASK-LCN-001 owns the eventual
-        tightening alongside the ``OLLAMA_*`` → ``LOCAL_*`` rename.
+        providers reach this helper, so the ``LOCAL_BASE_URL`` fallback
+        below is shared across providers.
         """
         import httpx  # Lazy: keeps import graph minimal for non-local paths
 
         base_url = (
             os.environ.get(base_url_env)
-            or os.environ.get("OLLAMA_BASE_URL")
-            or DEFAULT_OLLAMA_BASE_URL
+            or os.environ.get("LOCAL_BASE_URL")
+            or DEFAULT_LOCAL_BASE_URL
         )
-        model = os.environ.get(model_env) or DEFAULT_OLLAMA_MODEL
+        model = os.environ.get(model_env) or DEFAULT_LOCAL_MODEL
         num_predict = _resolve_num_predict()
 
         messages: list[dict[str, str]] = []
@@ -190,7 +189,7 @@ class LLMClient:
             response = httpx.post(
                 f"{base_url.rstrip('/')}/v1/chat/completions",
                 json=payload,
-                timeout=DEFAULT_OLLAMA_TIMEOUT_SECONDS,
+                timeout=DEFAULT_LOCAL_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:
