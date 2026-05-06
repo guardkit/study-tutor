@@ -1,7 +1,7 @@
 {
-  "tests_run": 3,
+  "tests_run": 4,
   "tests_failed": 0,
   "coverage_pct": 67.0,
-  "output_summary": "pytest tests/integration/test_mcp_lca_smoke.py: 3 passed, 1 skipped (live, env-gated), 0 failed; cli/main.py coverage 67%",
+  "output_summary": "pytest -m 'feat_lca and smoke' tests/integration/test_mcp_lca_smoke.py: 3 passed, 1 skipped (live, env-gated), 0 failed; cli/main.py 67% line coverage",
   "quality_gates_passed": true
 }

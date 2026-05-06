@@ -1,0 +1,9 @@
+{
+  "turn": 2,
+  "feedback_from_turn": 1,
+  "feedback_summary": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 `cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a\n  \u2022 `quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both s\n  \u2022 `on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-\n  \u2022 `MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `s\n  \u2022 Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orc\n  (1 more)",
+  "must_fix": [],
+  "should_fix": [],
+  "validation_results": {},
+  "raw_feedback": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 `cli/main.py:serve` constructs `orchestrator_factory` as a no-arg closure that on each call builds a\n  \u2022 `quote_verifier=None` and `coach_handover=None` in the first-cut closure (per ASSUM-LCA-015 \u2014 both s\n  \u2022 `on_flag` callback emits a structured log line `event=\"orchestrator_turn_flagged\"` to stderr (per D-\n  \u2022 `MCPAdapter(orchestrator_factory=orchestrator_factory, ...)` is wired at the construction site in `s\n  \u2022 Same-provider rejection is asserted at boot in this layer too (AC-LCA-08): construct `MCPAdapter(orc\n  (1 more)"
+}
