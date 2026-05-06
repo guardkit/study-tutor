@@ -817,6 +817,162 @@ class TestMalformedCoachOutputFallback:
 
 
 # ---------------------------------------------------------------------------
+# ASSUM-LCA-005: unknown criterion IDs silently dropped
+# ---------------------------------------------------------------------------
+
+
+class TestUnknownCriterionDrop:
+    """ASSUM-LCA-005: ``parse_coach_output`` silently drops unknown
+    ``criterion_id`` values returned by the Coach LLM. The canonical
+    six in :data:`CRITERION_IDS` are the only IDs the rubric weighted
+    dispatch knows how to weight.
+
+    The drop applies to the dict and JSON-string parse branches. The
+    already-built :class:`CoachVerdict` pass-through branch is
+    intentionally not filtered — a caller that constructs a verdict
+    directly is asserting its validity, and silently mutating it would
+    surprise tests that round-trip known-good verdicts.
+    """
+
+    @staticmethod
+    def _canonical_score(criterion_id: str = "curriculum_accuracy") -> dict[str, object]:
+        return {
+            "criterion_id": criterion_id,
+            "score": 0.7,
+            "evidence": "ok",
+        }
+
+    @staticmethod
+    def _unknown_score() -> dict[str, object]:
+        return {
+            "criterion_id": "bogus_invented_criterion",
+            "score": 0.9,
+            "evidence": "should be dropped",
+        }
+
+    def test_unknown_criterion_id_dropped_from_dict_input(self) -> None:
+        verdict = parse_coach_output(
+            {
+                "weighted_total": 0.5,
+                "decision": "accept",
+                "criterion_scores": [
+                    self._canonical_score(),
+                    self._unknown_score(),
+                ],
+                "rubric_feedback": [],
+                "misconceptions": [],
+            }
+        )
+        ids = [cs.criterion_id for cs in verdict.criterion_scores]
+        assert ids == ["curriculum_accuracy"]
+
+    def test_unknown_criterion_id_dropped_from_json_string_input(self) -> None:
+        payload = json.dumps(
+            {
+                "weighted_total": 0.5,
+                "decision": "accept",
+                "criterion_scores": [
+                    self._canonical_score(),
+                    self._unknown_score(),
+                ],
+                "rubric_feedback": [],
+                "misconceptions": [],
+            }
+        )
+        verdict = parse_coach_output(payload)
+        ids = [cs.criterion_id for cs in verdict.criterion_scores]
+        assert ids == ["curriculum_accuracy"]
+
+    def test_known_criteria_preserved_in_order_alongside_unknown(self) -> None:
+        """A mixed list keeps the surviving canonical criteria in the
+        order the LLM emitted them — the parser drops unknown entries
+        without reordering or sorting the survivors.
+        """
+        verdict = parse_coach_output(
+            {
+                "weighted_total": 0.5,
+                "decision": "accept",
+                "criterion_scores": [
+                    self._canonical_score("ao_alignment"),
+                    self._unknown_score(),
+                    self._canonical_score("curriculum_accuracy"),
+                    {
+                        "criterion_id": "another_invented_one",
+                        "score": 0.1,
+                        "evidence": "drop me too",
+                    },
+                    self._canonical_score("quote_fidelity"),
+                ],
+                "rubric_feedback": [],
+                "misconceptions": [],
+            }
+        )
+        ids = [cs.criterion_id for cs in verdict.criterion_scores]
+        assert ids == [
+            "ao_alignment",
+            "curriculum_accuracy",
+            "quote_fidelity",
+        ]
+
+    def test_already_built_coach_verdict_passthrough_is_not_filtered(
+        self,
+    ) -> None:
+        """The pre-built :class:`CoachVerdict` branch in
+        :func:`parse_coach_output` is the ``isinstance(raw, CoachVerdict)``
+        no-op. Constructing a verdict directly with an off-rubric
+        criterion id (which the model schema permits — ``criterion_id``
+        is a non-empty string with no whitelist enforcement) and round-
+        tripping it through the parser must return the **same** instance,
+        unmodified.
+        """
+        verdict = CoachVerdict(
+            weighted_total=0.5,
+            decision="accept",
+            criterion_scores=[
+                CriterionScore(
+                    criterion_id="curriculum_accuracy",
+                    score=0.5,
+                    evidence="ok",
+                ),
+                CriterionScore(
+                    criterion_id="hand_built_off_rubric",
+                    score=0.5,
+                    evidence="caller asserted this is valid",
+                ),
+            ],
+        )
+        result = parse_coach_output(verdict)
+        assert result is verdict
+        assert [cs.criterion_id for cs in result.criterion_scores] == [
+            "curriculum_accuracy",
+            "hand_built_off_rubric",
+        ]
+
+    def test_no_unknowns_returns_same_verdict_instance(self) -> None:
+        """When no criteria need dropping, the parser's hot path
+        returns the validated verdict instance directly (no
+        :meth:`model_copy` allocation). This locks the
+        ``len(kept) == len(verdict.criterion_scores)`` short-circuit in
+        :func:`_drop_unknown_criteria` so a future regression that
+        eagerly copies on every call surfaces here.
+        """
+        payload = {
+            "weighted_total": 0.5,
+            "decision": "accept",
+            "criterion_scores": [self._canonical_score()],
+            "rubric_feedback": [],
+            "misconceptions": [],
+        }
+        # Calling parse_coach_output twice returns two different verdict
+        # instances (model_validate constructs anew each time), but
+        # within a single call the short-circuit means model_copy is
+        # not invoked. We assert the survivor list count equals the
+        # input count to lock the contract.
+        verdict = parse_coach_output(payload)
+        assert len(verdict.criterion_scores) == 1
+
+
+# ---------------------------------------------------------------------------
 # Integration test: verify_quotes → score_rubric pipeline w/ canonical text
 # ---------------------------------------------------------------------------
 

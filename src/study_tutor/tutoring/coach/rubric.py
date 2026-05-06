@@ -113,6 +113,12 @@ CRITERION_IDS: tuple[str, ...] = (
     CRITERION_QUOTE_FIDELITY,
 )
 
+#: Frozen set view of :data:`CRITERION_IDS` for O(1) membership checks in
+#: :func:`_drop_unknown_criteria` (ASSUM-LCA-005). Re-deriving on every call
+#: would be cheap but allocating once at module import keeps the filter
+#: site allocation-free on the hot Coach-evaluate path.
+_CANONICAL_CRITERION_IDS: frozenset[str] = frozenset(CRITERION_IDS)
+
 #: Floating-point tolerance for the weights-sum-to-1.0 sanity check. The
 #: tolerance is intentionally tight (1e-9) — drift larger than this almost
 #: always indicates a configuration mistake (e.g. weights of {0.2, 0.2, 0.2,
@@ -594,6 +600,45 @@ class MalformedCoachOutputError(ValueError):
     """
 
 
+def _drop_unknown_criteria(verdict: CoachVerdict) -> CoachVerdict:
+    """Filter unknown criterion IDs out of ``verdict.criterion_scores``.
+
+    Per ASSUM-LCA-005 + the LCA-002 AC: unknown criterion IDs from raw
+    Coach LLM output are silently dropped — the canonical six in
+    :data:`CRITERION_IDS` are the only IDs the rubric weighted-total
+    dispatch knows how to weight, and an LLM-invented criterion would
+    otherwise survive validation (``CriterionScore.criterion_id`` is a
+    plain non-empty string with no whitelist enforcement on the model
+    itself).
+
+    The filter is applied only on the dict and JSON-string parse
+    branches in :func:`parse_coach_output`. The pre-built
+    :class:`CoachVerdict` pass-through branch is intentionally left
+    untouched: a caller that constructed a verdict directly is asserting
+    its validity, and silently mutating that object would surprise tests
+    that round-trip known-good verdicts.
+
+    ``weighted_total`` is **not** recomputed when criteria are dropped.
+    Phase-1 acceptance is intentionally lenient about post-drop
+    divergence (per ASSUM-LCA-010 — calibration is Phase-2 territory);
+    re-aggregating here would also re-introduce the rubric-weight
+    coupling we are trying to keep parser-side parser-only. The
+    downstream :func:`score_rubric` call site recomputes the weighted
+    total against the canonical scorer set anyway.
+    """
+    kept = [
+        cs
+        for cs in verdict.criterion_scores
+        if cs.criterion_id in _CANONICAL_CRITERION_IDS
+    ]
+    if len(kept) == len(verdict.criterion_scores):
+        # Common case: nothing to drop — return the same instance so the
+        # parser's hot path does not allocate a copy on every well-formed
+        # verdict.
+        return verdict
+    return verdict.model_copy(update={"criterion_scores": kept})
+
+
 def parse_coach_output(raw: Any) -> CoachVerdict:
     """Parse raw Coach output into a :class:`CoachVerdict`.
 
@@ -609,6 +654,13 @@ def parse_coach_output(raw: Any) -> CoachVerdict:
     Pydantic are wrapped in :class:`MalformedCoachOutputError` so the
     orchestrator has exactly one exception class to catch.
 
+    Per ASSUM-LCA-005, unknown criterion IDs in ``criterion_scores`` are
+    silently dropped on the ``dict`` and ``str`` parse branches via
+    :func:`_drop_unknown_criteria`. The already-built
+    :class:`CoachVerdict` pass-through branch is intentionally not
+    filtered — a caller that constructed the verdict directly is
+    asserting its validity.
+
     Raises:
         MalformedCoachOutputError: If parsing or schema validation fails.
             The orchestrator applies the unevaluated-turn fallback.
@@ -618,11 +670,12 @@ def parse_coach_output(raw: Any) -> CoachVerdict:
 
     if isinstance(raw, dict):
         try:
-            return CoachVerdict.model_validate(raw)
+            verdict = CoachVerdict.model_validate(raw)
         except ValidationError as exc:
             raise MalformedCoachOutputError(
                 f"Coach output dict failed CoachVerdict schema validation: {exc}"
             ) from exc
+        return _drop_unknown_criteria(verdict)
 
     if isinstance(raw, str):
         try:
@@ -638,11 +691,12 @@ def parse_coach_output(raw: Any) -> CoachVerdict:
                 f"{type(payload).__name__}"
             )
         try:
-            return CoachVerdict.model_validate(payload)
+            verdict = CoachVerdict.model_validate(payload)
         except ValidationError as exc:
             raise MalformedCoachOutputError(
                 f"Coach output JSON failed CoachVerdict schema validation: {exc}"
             ) from exc
+        return _drop_unknown_criteria(verdict)
 
     raise MalformedCoachOutputError(
         f"Coach output of type {type(raw).__name__} is not parseable; "

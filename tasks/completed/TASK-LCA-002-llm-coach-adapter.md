@@ -9,10 +9,11 @@ wave: 1
 implementation_mode: task-work
 complexity: 6
 dependencies: []
-status: backlog
+status: completed
 priority: high
 created: 2026-05-06 01:00:00+00:00
-updated: 2026-05-06 01:00:00+00:00
+updated: 2026-05-06 15:00:00+00:00
+completed: 2026-05-06 15:00:00+00:00
 tags:
 - feat-lca
 - tutoring
@@ -53,9 +54,17 @@ consumer_context:
     _default_coach_model() at evaluate() time (call-time resolution per SR-03), not
     at construction time.
 test_results:
-  status: pending
-previous_state: completed
-state_transition_reason: "Re-opened 2026-05-06: prior FEAT-6CC5 autobuild approved this task with zero implementation files (see TASK-INV-AB1). The src/study_tutor/tutoring/adapters/ package and its modules were never written despite coach approval; merged feature broke `pytest --collect-only` with `ModuleNotFoundError: study_tutor.tutoring.adapters`. Restored to backlog so /feature-build can re-run from a clean slate. The previous autobuild_state block was stripped to avoid resume-mode carryover; the historical record lives in .guardkit/archive/FEAT-6CC5/feature_state.yaml."
+  status: passed
+  unit_total: 70
+  unit_passed: 70
+  unit_failed: 0
+  scoped_test_paths:
+  - tests/unit/tutoring/adapters/test_llm_coach_adapter.py
+  - tests/unit/tutoring/coach/test_rubric.py
+  - tests/unit/roles/test_loader.py
+  notes: "All 70 scoped tests pass; full unit suite 830 passing with 3 pre-existing failures unrelated to this task (graphiti_client_wiring sentinel test; mcp/stdio_discipline; planner mypy strict — confirmed via `git stash` to fail on main without these changes)."
+previous_state: in_review
+state_transition_reason: "Completed 2026-05-06 via /task-complete: implementation merged through /task-work (architectural review 91/100; code review APPROVED). Created src/study_tutor/tutoring/adapters/llm_coach_adapter.py and tests/unit/tutoring/adapters/test_llm_coach_adapter.py; added `_drop_unknown_criteria` filter to parse_coach_output (rubric.py) per ASSUM-LCA-005; re-exported LLMCoachAdapter from the adapters package. coach.md, RoleConfig.load_coach_prompt, role.yaml wiring, parse_coach_output, _default_coach_model, and CoachLike Protocol were already in place from the prior FEAT-6CC5 partial autobuild."
 ---
 
 # Task: Implement LLMCoachAdapter (Path C hybrid)
