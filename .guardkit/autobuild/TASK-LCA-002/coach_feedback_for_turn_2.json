@@ -1,0 +1,9 @@
+{
+  "turn": 2,
+  "feedback_from_turn": 1,
+  "feedback_summary": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=\n  \u2022 LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision\n  \u2022 AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coac\n  \u2022 `roles/tutor/prompts/coach.md` exists with <300 words and:\n  \u2022 ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting tha\n  (4 more)",
+  "must_fix": [],
+  "should_fix": [],
+  "validation_results": {},
+  "raw_feedback": "- Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=\n  \u2022 LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision\n  \u2022 AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coac\n  \u2022 `roles/tutor/prompts/coach.md` exists with <300 words and:\n  \u2022 ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting tha\n  (4 more)"
+}

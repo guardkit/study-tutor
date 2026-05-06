@@ -1,0 +1,209 @@
+{
+  "task_id": "TASK-LCA-004",
+  "turn": 2,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/llm/test_client.py tests/unit/mcp/test_adapter.py tests/unit/roles/test_loader.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/roles/test_loader.py::test_load_coach_prompt_raises_when_path_unset PASSED [ 88%]\ntests/unit/roles/test_loader.py::test_load_coach_prompt_raises_when_file_missing PASSED [ 92%]\ntests/unit/roles/test_loader.py::test_load_role_resolves_coach_prompt_path PASSED [ 96%]\ntests/unit/roles/test_loader.py::test_load_role_leaves_coach_prompt_path_none_when_absent PASSED [100%]\n============================== 27 passed in 0.24s ==============================",
+      "duration_seconds": 0.9377007484436035
+    },
+    "requirements": {
+      "criteria_total": 9,
+      "criteria_met": 9,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`_default_coach_model()` exists in `src/study_tutor/llm/client.py`, signature `() -> str`",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py at lines 56-93 (immediately after _default_player_model at line 47). Signature is exactly `() -> str` \u2014 no parameters, return type annotated `str`. Function reads AGENT_MODELS__COACH_MODEL via os.environ.get() at call time (SR-03 parity).",
+      "notes": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py at lines 56-93 (immediately after _default_player_model at line 47). Signature is exactly `() -> str` \u2014 no parameters, return type annotated `str`. Function reads AGENT_MODELS__COACH_MODEL via os.environ.get() at call time (SR-03 parity)."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+      "notes": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "When `AGENT_MODELS__COACH_MODEL` is set, `_default_coach_model()` returns the env-var value verbatim (no canonicalisation)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Success-path code at src/study_tutor/llm/client.py:93 is `return raw` \u2014 no .lower(), .casefold(), .strip(), or any other transformation applied. Test test_returns_env_var_value_verbatim_when_set verifies both lowercase ('anthropic') and mixed-case ('OpenAI') round-trip identically. PASSED.",
+      "notes": "Success-path code at src/study_tutor/llm/client.py:93 is `return raw` \u2014 no .lower(), .casefold(), .strip(), or any other transformation applied. Test test_returns_env_var_value_verbatim_when_set verifies both lowercase ('anthropic') and mixed-case ('OpenAI') round-trip identically. PASSED."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`.env.example` includes:",
+      "result": "verified",
+      "status": "verified",
+      "evidence": ".env.example lines 10-11 contain exactly: `AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)` and `AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation`. Matches the AC's required text verbatim.",
+      "notes": ".env.example lines 10-11 contain exactly: `AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)` and `AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation`. Matches the AC's required text verbatim."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "`MCPAdapter.__init__` (`src/study_tutor/mcp/adapter.py:129`) invokes `self._orchestrator_factory()` once at end of `__init__` when `_orchestrator_factory is not None`; the result is discarded",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "src/study_tutor/mcp/adapter.py:186-187 \u2014 at the end of __init__ (after self._graphiti_client = graphiti_client on line 166): `if self._orchestrator_factory is not None: self._orchestrator_factory()`. The return value is not bound to any name, so it is discarded. Verified by test_factory_invoked_once_at_init_when_supplied (counts invocations==1) and test_no_smoke_check_when_factory_is_none (asserts no invocation when factory is None). Both PASSED.",
+      "notes": "src/study_tutor/mcp/adapter.py:186-187 \u2014 at the end of __init__ (after self._graphiti_client = graphiti_client on line 166): `if self._orchestrator_factory is not None: self._orchestrator_factory()`. The return value is not bound to any name, so it is discarded. Verified by test_factory_invoked_once_at_init_when_supplied (counts invocations==1) and test_no_smoke_check_when_factory_is_none (asserts no invocation when factory is None). Both PASSED."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+      "notes": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+      "notes": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED."
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "When `_orchestrator_factory is None`, `__init__` behaviour is unchanged (Phase-0 path remains backward-compatible)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Smoke check is gated on `if self._orchestrator_factory is not None` (adapter.py:186) \u2014 None branch is skipped entirely. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 12 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification. PASSED.",
+      "notes": "Smoke check is gated on `if self._orchestrator_factory is not None` (adapter.py:186) \u2014 None branch is skipped entirely. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 12 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification. PASSED."
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "All modified files follow existing module conventions: from __future__ import annotations, type hints, Google-style docstrings with Args/Returns/Raises matching surrounding style (validate_coach_config, _default_player_model). No bare excepts. No new imports added to adapter.py for the smoke check. pyproject.toml marker addition follows existing list format. Pytest collected and ran the 22 directly-relevant tests cleanly with zero parse errors.",
+      "notes": "All modified files follow existing module conventions: from __future__ import annotations, type hints, Google-style docstrings with Args/Returns/Raises matching surrounding style (validate_coach_config, _default_player_model). No bare excepts. No new imports added to adapter.py for the smoke check. pyproject.toml marker addition follows existing list format. Pytest collected and ran the 22 directly-relevant tests cleanly with zero parse errors."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`_default_coach_model()` exists in `src/study_tutor/llm/client.py`, signature `() -> str`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py at lines 56-93 (immediately after _default_player_model at line 47). Signature is exactly `() -> str` \u2014 no parameters, return type annotated `str`. Function reads AGENT_MODELS__COACH_MODEL via os.environ.get() at call time (SR-03 parity).",
+        "notes": "Added `def _default_coach_model() -> str:` in src/study_tutor/llm/client.py at lines 56-93 (immediately after _default_player_model at line 47). Signature is exactly `() -> str` \u2014 no parameters, return type annotated `str`. Function reads AGENT_MODELS__COACH_MODEL via os.environ.get() at call time (SR-03 parity)."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+        "notes": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "When `AGENT_MODELS__COACH_MODEL` is set, `_default_coach_model()` returns the env-var value verbatim (no canonicalisation)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Success-path code at src/study_tutor/llm/client.py:93 is `return raw` \u2014 no .lower(), .casefold(), .strip(), or any other transformation applied. Test test_returns_env_var_value_verbatim_when_set verifies both lowercase ('anthropic') and mixed-case ('OpenAI') round-trip identically. PASSED.",
+        "notes": "Success-path code at src/study_tutor/llm/client.py:93 is `return raw` \u2014 no .lower(), .casefold(), .strip(), or any other transformation applied. Test test_returns_env_var_value_verbatim_when_set verifies both lowercase ('anthropic') and mixed-case ('OpenAI') round-trip identically. PASSED."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`.env.example` includes:",
+        "result": "verified",
+        "status": "verified",
+        "evidence": ".env.example lines 10-11 contain exactly: `AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)` and `AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation`. Matches the AC's required text verbatim.",
+        "notes": ".env.example lines 10-11 contain exactly: `AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)` and `AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation`. Matches the AC's required text verbatim."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "`MCPAdapter.__init__` (`src/study_tutor/mcp/adapter.py:129`) invokes `self._orchestrator_factory()` once at end of `__init__` when `_orchestrator_factory is not None`; the result is discarded",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "src/study_tutor/mcp/adapter.py:186-187 \u2014 at the end of __init__ (after self._graphiti_client = graphiti_client on line 166): `if self._orchestrator_factory is not None: self._orchestrator_factory()`. The return value is not bound to any name, so it is discarded. Verified by test_factory_invoked_once_at_init_when_supplied (counts invocations==1) and test_no_smoke_check_when_factory_is_none (asserts no invocation when factory is None). Both PASSED.",
+        "notes": "src/study_tutor/mcp/adapter.py:186-187 \u2014 at the end of __init__ (after self._graphiti_client = graphiti_client on line 166): `if self._orchestrator_factory is not None: self._orchestrator_factory()`. The return value is not bound to any name, so it is discarded. Verified by test_factory_invoked_once_at_init_when_supplied (counts invocations==1) and test_no_smoke_check_when_factory_is_none (asserts no invocation when factory is None). Both PASSED."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+        "notes": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+        "notes": "AC-LCA-08 verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (once for Coach.provider, once for Player.provider \u2014 validator uses repr() per coach/factory.py:386-391) and 'two-provider' or 'ASSUM-009' appears (the D3 invariant reference). PASSED."
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "When `_orchestrator_factory is None`, `__init__` behaviour is unchanged (Phase-0 path remains backward-compatible)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Smoke check is gated on `if self._orchestrator_factory is not None` (adapter.py:186) \u2014 None branch is skipped entirely. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 12 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification. PASSED.",
+        "notes": "Smoke check is gated on `if self._orchestrator_factory is not None` (adapter.py:186) \u2014 None branch is skipped entirely. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 12 pre-existing test_adapter.py tests + the 5 test_provider_resolution.py tests + all 15 test_adapter_planner_integration.py tests still pass without modification. PASSED."
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All modified files follow existing module conventions: from __future__ import annotations, type hints, Google-style docstrings with Args/Returns/Raises matching surrounding style (validate_coach_config, _default_player_model). No bare excepts. No new imports added to adapter.py for the smoke check. pyproject.toml marker addition follows existing list format. Pytest collected and ran the 22 directly-relevant tests cleanly with zero parse errors.",
+        "notes": "All modified files follow existing module conventions: from __future__ import annotations, type hints, Google-style docstrings with Args/Returns/Raises matching surrounding style (validate_coach_config, _default_player_model). No bare excepts. No new imports added to adapter.py for the smoke check. pyproject.toml marker addition follows existing list format. Pytest collected and ran the 22 directly-relevant tests cleanly with zero parse errors."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "bdd_failure",
+      "description": "BDD oracle: 1 scenario(s) failed during pytest-bdd execution. Implementation does not satisfy the Gherkin specification.",
+      "scenarios_failed": 1,
+      "scenarios_passed": 0,
+      "scenarios_pending": 0,
+      "feature_files": [
+        "features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature"
+      ],
+      "failure_examples": [
+        "pytest_runner_error \u2014 pytest_runner_error: exit=4; ERROR: not found: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-6CC5/features/mcp-llm-playe"
+      ]
+    }
+  ],
+  "rationale": "BDD scenarios failed: 1 scenario(s) reported assertion failure during pytest-bdd execution.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1164/7892 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- BELONGS_TO_CATEGORY\n- IS_PART_OF_PATTERN\n\n### \u26a0\ufe0f Warnings\n- REQUIRES_USE_OF\n- HAS_ROOT_CAUSE\n\n### \ud83c\udfad Role Constraints\n- HAS_ROLE_MUST_DO\n- HAS_ROLE\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- ASSOCIATED_WITH_PROJECT\n- APPLIES_TO\n\n\n## Previous Turn Summary (Turn 1)\n**What was attempted**: Implementation attempt\n**Player decision**: feedback\n**Coach decision**: feedback\n**Coach feedback**: - Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` rais\n  \u2022 AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError\n  \u2022 AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the\n\n**Acceptance Criteria Status**:\n  \u25cb AC-001: verified\n  \u2717 AC-LCA: rejected\n  \u25cb AC-003: verified\n  \u25cb AC-004: verified\n  \u25cb AC-005: verified\n  \u25cb AC-008: verified\n  \u25cb AC-009: verified",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}
