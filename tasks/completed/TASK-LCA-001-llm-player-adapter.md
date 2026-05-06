@@ -9,10 +9,11 @@ wave: 1
 implementation_mode: task-work
 complexity: 5
 dependencies: []
-status: backlog
+status: completed
 priority: high
 created: 2026-05-06 01:00:00+00:00
-updated: 2026-05-06 01:00:00+00:00
+updated: 2026-05-06 02:45:00+00:00
+completed: 2026-05-06 02:45:00+00:00
 tags:
 - feat-lca
 - tutoring
@@ -40,7 +41,12 @@ consumer_context:
     signatures must accept SessionState in place of the previous Any-typed dict and
     access fields via attribute access, not subscript.
 test_results:
-  status: pending
+  status: passed
+  unit_tests_passed: 12
+  unit_tests_failed: 0
+  coverage_lines: 100
+  test_file: tests/unit/tutoring/adapters/test_llm_player_adapter.py
+  notes: "All 12 unit tests pass; full adapter suite 21/21. Pre-existing failures (test_graphiti_client_wiring, test_stdio_discipline, test_protocols, test_mcp_lca_smoke) are unrelated to this task and verified via git stash. test_mcp_lca_smoke is blocked on TASK-LCA-002."
 previous_state: completed
 state_transition_reason: "Re-opened 2026-05-06: prior FEAT-6CC5 autobuild approved this task with zero implementation files (see TASK-INV-AB1). The src/study_tutor/tutoring/adapters/ package and its modules were never written despite coach approval; merged feature broke `pytest --collect-only` with `ModuleNotFoundError: study_tutor.tutoring.adapters`. Restored to backlog so /feature-build can re-run from a clean slate. The previous autobuild_state block was stripped to avoid resume-mode carryover; the historical record lives in .guardkit/archive/FEAT-6CC5/feature_state.yaml."
 ---
@@ -173,3 +179,60 @@ def test_session_state_contract_for_player_adapter():
     with pytest.raises((AttributeError, Exception)):
         state.session_id = "different"  # type: ignore[misc]
 ```
+
+## Implementation Summary
+
+Wrote the production `LLMPlayerAdapter` at
+`src/study_tutor/tutoring/adapters/llm_player_adapter.py` and exported it
+from the adapters package init. The adapter caches the player system
+prompt at construction (`RoleConfig.load_player_prompt()`) and resolves
+the LLM provider per-call via `_default_player_model()` to honour SR-03
+call-time semantics. `respond()` and `revise()` bridge the sync
+`LLMClient.generate` to the async Protocol surface with
+`asyncio.to_thread`, mirroring the existing pattern at
+`src/study_tutor/mcp/adapter.py:351`.
+
+The load-bearing piece is `_assemble_revise_prompt`. Per ASSUM-008 /
+ASSUM-LCA-006 it emits one bullet per `RubricFeedback` of the form
+`criterion_id: <id>; target_score: <score>` — and only those two
+fields. `suggested_focus` is read off the model schema by the
+forward-looking property test
+(`test_assembled_prompt_contains_only_documented_fields`) so that any
+future `RubricFeedback` field addition forces a security review of
+this prompt-assembly site before the new field can leak.
+
+## Lessons / Decisions
+
+- **Forward-looking field guard via `RubricFeedback.model_fields`**:
+  rather than asserting `"suggested_focus" not in prompt` against today's
+  schema, the test enumerates the Pydantic model fields and asserts the
+  difference set is absent. This is cheap insurance against ASSUM-008
+  regressing when the rubric schema grows.
+- **Per-call provider resolution must round-trip through env**: a unit
+  test (`test_respond_resolves_provider_at_call_time`) flips
+  `AGENT_MODELS__REASONING_MODEL` between two `respond` calls and
+  asserts two `LLMClient(provider=...)` constructions with distinct
+  values. SR-03 was already documented but this is the first machine
+  check that the adapter respects it.
+- **`SessionState` consumed via attribute access only**: the §4 contract
+  required attribute access, and a unit test passes a real
+  `SessionState` (no `__getitem__`) through `respond`. If the adapter
+  ever regressed to `state["session_id"]`, that test would surface a
+  `TypeError` before the LLM mock was reached.
+- **Pre-existing failures left for their owners**: the surrounding
+  suite has 4 pre-existing failures
+  (`test_graphiti_client_wiring`, `test_stdio_discipline` ×2,
+  `test_protocols`, plus `test_mcp_lca_smoke` blocked on TASK-LCA-002).
+  Verified via `git stash` that none are introduced by this work.
+
+## Files Changed
+
+- `src/study_tutor/tutoring/adapters/llm_player_adapter.py` (new, 32 LOC, 100% coverage)
+- `src/study_tutor/tutoring/adapters/__init__.py` (export `LLMPlayerAdapter`)
+- `tests/unit/tutoring/adapters/test_llm_player_adapter.py` (new, 12 tests, all pass)
+
+## Test Results
+
+- 12/12 unit tests pass on the new file
+- 21/21 pass across the full `tests/unit/tutoring/adapters/` suite
+- 100% line coverage on `llm_player_adapter.py` (32 statements, 0 missed)
