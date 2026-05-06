@@ -41,7 +41,13 @@ import logging
 import os
 from typing import Any
 
+from datetime import datetime, timezone
+
 from study_tutor.knowledge.async_write import GraphitiWriteHelper
+from study_tutor.knowledge.queries import (
+    Phase1MinimalDeltaPolicy,
+    record_topic_confidence_update,
+)
 from study_tutor.llm.client import LLMClient, _default_player_model
 from study_tutor.planner.pipeline import plan_session
 from study_tutor.planner.types import SessionPlan, _baseline_plan
@@ -373,7 +379,7 @@ class MCPAdapter:
         def _transition_state() -> None:
             self._store.end(session_id)
 
-        return await perform_session_end(
+        result = await perform_session_end(
             session=session,
             student_id=session.subject,
             write_helper=self._write_helper,
@@ -382,6 +388,84 @@ class MCPAdapter:
             aos_exercised=aos_exercised,
             transition_state=_transition_state,
         )
+
+        # AC-CONF-08 (TASK-GR-CONF / BLOCK-3b): TopicConfidence node
+        # update on session end. We dispatch this as a separate fire-
+        # and-forget task so the caller-facing path returns within the
+        # ASSUM-004 2 s budget regardless of FalkorDB latency on the
+        # node load. The helper itself is structured-log-only on every
+        # failure mode (AC-CONF-06), so an exception inside the task
+        # never escapes to the MCP caller.
+        #
+        # Skip conditions (graceful degradation):
+        #
+        # * Zero-turn sessions — ``perform_session_end`` already
+        #   suppressed ``session.completed`` and the F3 write under
+        #   I-T6, so the F2 episode would be temporally orphaned.
+        # * No write_helper — Graphiti not wired (test path / Phase 0
+        #   compatibility). Helper would be a no-op anyway, but
+        #   skipping avoids the empty task scheduling.
+        # * No cached plan — we have no ``topic_ref`` to update; the
+        #   F3 episode in ``perform_session_end`` already fell back to
+        #   ``session.topic`` and the AC-DEMO-03 entity round-trip
+        #   degrades cleanly.
+        if (
+            len(session.turns) > 0
+            and self._write_helper is not None
+            and plan is not None
+            and self._graphiti_client is not None
+        ):
+            # ``perform_session_end`` returns only ``{session_id, status}``
+            # so we mint our own end timestamp here. This runs synchronously
+            # immediately after the bus emit; the few ms drift vs the
+            # episode's internal ``ended_at`` is well below any temporal-
+            # analytics resolution we care about.
+            ended_at = datetime.now(timezone.utc)
+            student_turn_count = sum(
+                1 for turn in session.turns if turn.role == "user"
+            )
+            # Phase-1 fallback per the task spec: ``TutorSession`` does
+            # not currently track per-turn ``CoachVerdict`` payloads, so
+            # we feed an empty misconception map. Phase1MinimalDeltaPolicy
+            # produces ``+1`` for engagement-only sessions (turns >= 5)
+            # and ``0`` otherwise — both satisfy AC-DEMO-03 because the
+            # ``last_revised_at`` flip is the structural change.
+            session_summary: dict[str, Any] = {
+                "misconceptions_per_topic": {},
+                "student_turn_count": student_turn_count,
+                "ended_at": ended_at,
+                "triggering_session_id": session_id,
+            }
+            try:
+                asyncio.create_task(
+                    record_topic_confidence_update(
+                        client=self._graphiti_client,
+                        write_helper=self._write_helper,
+                        student_id=session.subject,
+                        topic_ref=plan.topic_name,
+                        session_summary=session_summary,
+                        policy=Phase1MinimalDeltaPolicy(),
+                    ),
+                    name=f"topic-confidence-{session_id}",
+                )
+            except Exception as exc:  # noqa: BLE001 — boundary catch
+                # ``asyncio.create_task`` only fails when there's no
+                # running loop; in that path we drop the update with a
+                # log line — the session is still observably ``ended``
+                # and ``perform_session_end`` already emitted
+                # ``session.completed``.
+                logger.warning(
+                    "topic confidence dispatch failed; session.completed "
+                    "already emitted",
+                    extra={
+                        "event": "topic_confidence_dispatch_failed",
+                        "session_id": session_id,
+                        "error_type": type(exc).__name__,
+                        "error": str(exc),
+                    },
+                )
+
+        return result
 
     async def _warm_up(self, provider: str) -> None:
         """Fire an empty generate() to prime the Ollama model into memory."""

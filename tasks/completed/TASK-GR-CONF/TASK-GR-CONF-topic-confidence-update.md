@@ -11,11 +11,13 @@ complexity: 5
 estimated_minutes: 240
 dependencies:
   - TASK-GR-WIRE
-status: in_progress
+status: completed
 priority: critical
 created: 2026-05-05T22:30:00+00:00
-updated: 2026-05-06T00:00:00+00:00
-previous_state: backlog
+updated: 2026-05-06T01:00:00+00:00
+completed: 2026-05-06T01:00:00+00:00
+completed_location: tasks/completed/TASK-GR-CONF/
+previous_state: in_review
 tags:
   - graphiti
   - mcp
@@ -37,9 +39,12 @@ consumer_context:
     format_note: This task assumes TASK-GR-WIRE has already added write_helper / event_bus / graphiti_client params to MCPAdapter.__init__.
 conductor_workspace: wave5-mcp-blockers-wave2-1
 test_results:
-  status: pending
-  coverage: null
-  last_run: null
+  status: passed
+  coverage: "80% (knowledge.queries + knowledge.episodes + mcp.adapter combined)"
+  unit_tests_passed: 783
+  unit_tests_skipped: 1
+  unit_tests_deselected: 2  # pre-existing unrelated: mypy env + cross-encoder sentinel
+  last_run: 2026-05-06T00:30:00+00:00
 ---
 
 # Wave 5 — BLOCK-3b: TopicConfidence node update on session end (typed-entity write + pluggable policy)

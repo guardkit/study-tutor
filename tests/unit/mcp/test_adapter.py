@@ -6,6 +6,7 @@ TASK-PO02-006's ``tests/unit/mcp/test_stdio_discipline.py``.
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -282,3 +283,199 @@ async def test_session_end_missing_plan_uses_empty_topics_and_aos(
 
     assert captured["topics_covered"] == []
     assert captured["aos_exercised"] == []
+
+
+# ---------------------------------------------------------------------------
+# TASK-GR-CONF BLOCK-3b — record_topic_confidence_update wiring (AC-CONF-08)
+# ---------------------------------------------------------------------------
+
+
+async def test_session_end_dispatches_topic_confidence_update(
+    role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC-CONF-08: after ``perform_session_end`` returns,
+    ``tutor_session_end`` schedules :func:`record_topic_confidence_update`
+    as a fire-and-forget task with the cached plan's ``topic_name`` and
+    a session_summary derived from the live :class:`TutorSession`.
+
+    The helper itself is patched at the adapter's import site so this
+    test surfaces the kwarg-shape contract — not the internal
+    typed-entity load+save plumbing (those have unit coverage in
+    ``tests/unit/knowledge/test_queries.py``).
+    """
+    from study_tutor.knowledge.async_write import GraphitiWriteHelper
+    from study_tutor.mcp import adapter as adapter_mod
+    from study_tutor.tutoring.session_end import EventBus
+
+    # Stub perform_session_end so we don't run the real session-end path.
+    async def fake_perform_session_end(**kwargs: object) -> dict[str, object]:
+        ts = kwargs.get("transition_state")
+        assert callable(ts)
+        ts()  # type: ignore[operator]
+        return {"session_id": "x", "status": "ended"}
+
+    monkeypatch.setattr(
+        adapter_mod, "perform_session_end", fake_perform_session_end
+    )
+
+    captured: dict[str, object] = {}
+    record_called = asyncio.Event()
+
+    async def fake_record_topic_confidence_update(**kwargs: object) -> None:
+        captured.update(kwargs)
+        record_called.set()
+
+    monkeypatch.setattr(
+        adapter_mod,
+        "record_topic_confidence_update",
+        fake_record_topic_confidence_update,
+    )
+
+    write_helper = GraphitiWriteHelper(client=None)
+    event_bus = EventBus()
+    store = SessionStore()
+    sentinel_client = object()  # any non-None graphiti_client triggers dispatch
+    adapter = MCPAdapter(
+        role_config=role_config,
+        store=store,
+        write_helper=write_helper,
+        event_bus=event_bus,
+        graphiti_client=sentinel_client,
+    )
+
+    started = await adapter.tutor_start_session(
+        student_id="lilymay", topic_override="Macbeth"
+    )
+    session_id = started["session_id"]
+    await _drain_warmups(adapter)
+
+    # Two user turns + one tutor turn → student_turn_count must be 2.
+    store.append_turn(session_id, "user", "hi")
+    store.append_turn(session_id, "tutor", "hello")
+    store.append_turn(session_id, "user", "tell me about ambition")
+
+    await adapter.tutor_session_end(session_id=session_id)
+
+    # Wait briefly for the fire-and-forget task to run.
+    await asyncio.wait_for(record_called.wait(), timeout=1.0)
+
+    # Wired through correctly.
+    assert captured["client"] is sentinel_client
+    assert captured["write_helper"] is write_helper
+    assert captured["student_id"] == "lilymay"
+    # The planner-resolved topic; topic_override="Macbeth" goes through
+    # rule 1 short-circuit, so plan.topic_name should be "Macbeth".
+    assert captured["topic_ref"] == "Macbeth"
+
+    summary = captured["session_summary"]
+    assert isinstance(summary, dict)
+    assert summary["student_turn_count"] == 2
+    assert summary["misconceptions_per_topic"] == {}
+    assert summary["triggering_session_id"] == session_id
+    assert isinstance(summary["ended_at"], datetime)
+
+    # Phase-1 stub policy is supplied by the adapter.
+    policy = captured["policy"]
+    assert getattr(policy, "name", None) == "phase1_minimal_policy"
+
+
+async def test_session_end_skips_topic_confidence_when_no_graphiti_client(
+    role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When ``graphiti_client`` is None the adapter must NOT schedule the
+    confidence update task — graceful degradation for Phase 0 / test
+    paths where Graphiti isn't wired."""
+    from study_tutor.mcp import adapter as adapter_mod
+
+    async def fake_perform_session_end(**kwargs: object) -> dict[str, object]:
+        ts = kwargs.get("transition_state")
+        assert callable(ts)
+        ts()  # type: ignore[operator]
+        return {"session_id": "x", "status": "ended"}
+
+    monkeypatch.setattr(
+        adapter_mod, "perform_session_end", fake_perform_session_end
+    )
+
+    record_called = False
+
+    async def fake_record_topic_confidence_update(**kwargs: object) -> None:
+        nonlocal record_called
+        record_called = True
+
+    monkeypatch.setattr(
+        adapter_mod,
+        "record_topic_confidence_update",
+        fake_record_topic_confidence_update,
+    )
+
+    store = SessionStore()
+    adapter = MCPAdapter(
+        role_config=role_config,
+        store=store,
+        graphiti_client=None,  # explicit
+    )
+
+    started = await adapter.tutor_start_session(student_id="lilymay")
+    session_id = started["session_id"]
+    await _drain_warmups(adapter)
+    store.append_turn(session_id, "user", "hi")
+
+    await adapter.tutor_session_end(session_id=session_id)
+    # Yield once so any erroneously-scheduled task could fire.
+    await asyncio.sleep(0)
+    assert record_called is False
+
+
+async def test_session_end_skips_topic_confidence_for_zero_turn_session(
+    role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """I-T6 zero-turn invariant: no user turns → no F2 episode candidate.
+
+    The adapter must skip ``record_topic_confidence_update`` entirely
+    when ``len(session.turns) == 0`` so we don't dispatch a temporally-
+    orphaned F2 write after ``perform_session_end`` already suppressed
+    ``session.completed`` and the F3 write.
+    """
+    from study_tutor.knowledge.async_write import GraphitiWriteHelper
+    from study_tutor.mcp import adapter as adapter_mod
+    from study_tutor.tutoring.session_end import EventBus
+
+    async def fake_perform_session_end(**kwargs: object) -> dict[str, object]:
+        ts = kwargs.get("transition_state")
+        assert callable(ts)
+        ts()  # type: ignore[operator]
+        return {"session_id": "x", "status": "ended"}
+
+    monkeypatch.setattr(
+        adapter_mod, "perform_session_end", fake_perform_session_end
+    )
+
+    record_called = False
+
+    async def fake_record_topic_confidence_update(**kwargs: object) -> None:
+        nonlocal record_called
+        record_called = True
+
+    monkeypatch.setattr(
+        adapter_mod,
+        "record_topic_confidence_update",
+        fake_record_topic_confidence_update,
+    )
+
+    store = SessionStore()
+    adapter = MCPAdapter(
+        role_config=role_config,
+        store=store,
+        write_helper=GraphitiWriteHelper(client=None),
+        event_bus=EventBus(),
+        graphiti_client=object(),
+    )
+    started = await adapter.tutor_start_session(student_id="lilymay")
+    session_id = started["session_id"]
+    await _drain_warmups(adapter)
+    # Deliberately do not append any turns.
+
+    await adapter.tutor_session_end(session_id=session_id)
+    await asyncio.sleep(0)
+    assert record_called is False

@@ -103,6 +103,8 @@ def make_confidence_episode() -> TopicConfidenceUpdatedEpisode:
         previous_percentage=55,
         new_percentage=75,
         observed_at=_now(),
+        # AC-CONF-07 (TASK-GR-CONF): confidence_source is required.
+        confidence_source="phase1_minimal_policy",
     )
 
 
