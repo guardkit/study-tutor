@@ -1,0 +1,221 @@
+{
+  "task_id": "TASK-LCA-002",
+  "turn": 1,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/llm/test_client.py tests/unit/mcp/test_adapter.py tests/unit/roles/test_loader.py tests/unit/tutoring/adapters/test_llm_coach_adapter.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/tutoring/adapters/test_llm_coach_adapter.py::test_evaluate_drops_unknown_criterion_ids_silently PASSED [ 90%]\ntests/unit/tutoring/adapters/test_llm_coach_adapter.py::test_adapter_satisfies_coach_like_protocol PASSED [ 93%]\ntests/unit/tutoring/adapters/test_llm_coach_adapter.py::test_evaluate_renders_placeholders_when_session_state_has_no_text PASSED [ 96%]\ntests/unit/tutoring/adapters/test_llm_coach_adapter.py::test_constructor_loads_coach_prompt_once PASSED [100%]\n============================== 33 passed in 0.25s ==============================",
+      "duration_seconds": 0.9801838397979736
+    },
+    "requirements": {
+      "criteria_total": 9,
+      "criteria_met": 0,
+      "all_criteria_met": false,
+      "missing": [
+        "AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=_default_coach_model()).generate(prompt=..., system=coach_system_prompt)`",
+        "LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision, weighted_total, per-criterion scores, rubric_feedback list, misconceptions list)",
+        "AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coach_output`); the exception is NOT caught inside the adapter so the orchestrator can route to `decision=fallback`",
+        "`roles/tutor/prompts/coach.md` exists with <300 words and:",
+        "ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting that unknown criterion IDs are silently dropped (locks down the policy)",
+        "`RoleConfig.load_coach_prompt()` exists and returns the contents of `roles/tutor/prompts/coach.md` (mirrors `load_player_prompt()` shape)",
+        "`LLMCoachAdapter` implements `CoachLike` (validated via `isinstance(adapter, CoachLike)` runtime_checkable assertion)",
+        "Adapter accepts `SessionState`; uses `session_state.text_name` and `session_state.topic` to ground the Coach prompt (passed via prompt template)",
+        "All modified files pass project-configured lint/format checks with zero errors"
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=_default_coach_model()).generate(prompt=..., system=coach_system_prompt)`",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision, weighted_total, per-criterion scores, rubric_feedback list, misconceptions list)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-002",
+      "notes": "No completion promise for AC-002"
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coach_output`); the exception is NOT caught inside the adapter so the orchestrator can route to `decision=fallback`",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`roles/tutor/prompts/coach.md` exists with <300 words and:",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-004",
+      "notes": "No completion promise for AC-004"
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting that unknown criterion IDs are silently dropped (locks down the policy)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-005",
+      "notes": "No completion promise for AC-005"
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "`RoleConfig.load_coach_prompt()` exists and returns the contents of `roles/tutor/prompts/coach.md` (mirrors `load_player_prompt()` shape)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-006",
+      "notes": "No completion promise for AC-006"
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "`LLMCoachAdapter` implements `CoachLike` (validated via `isinstance(adapter, CoachLike)` runtime_checkable assertion)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-007",
+      "notes": "No completion promise for AC-007"
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "Adapter accepts `SessionState`; uses `session_state.text_name` and `session_state.topic` to ground the Coach prompt (passed via prompt template)",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-008",
+      "notes": "No completion promise for AC-008"
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-009",
+      "notes": "No completion promise for AC-009"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=_default_coach_model()).generate(prompt=..., system=coach_system_prompt)`",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision, weighted_total, per-criterion scores, rubric_feedback list, misconceptions list)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-002",
+        "notes": "No completion promise for AC-002"
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coach_output`); the exception is NOT caught inside the adapter so the orchestrator can route to `decision=fallback`",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`roles/tutor/prompts/coach.md` exists with <300 words and:",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-004",
+        "notes": "No completion promise for AC-004"
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting that unknown criterion IDs are silently dropped (locks down the policy)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-005",
+        "notes": "No completion promise for AC-005"
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "`RoleConfig.load_coach_prompt()` exists and returns the contents of `roles/tutor/prompts/coach.md` (mirrors `load_player_prompt()` shape)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-006",
+        "notes": "No completion promise for AC-006"
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "`LLMCoachAdapter` implements `CoachLike` (validated via `isinstance(adapter, CoachLike)` runtime_checkable assertion)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-007",
+        "notes": "No completion promise for AC-007"
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "Adapter accepts `SessionState`; uses `session_state.text_name` and `session_state.topic` to ground the Coach prompt (passed via prompt template)",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-008",
+        "notes": "No completion promise for AC-008"
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-009",
+        "notes": "No completion promise for AC-009"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=_default_coach_model()).generate(prompt=..., system=coach_system_prompt)`",
+        "LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision, weighted_total, per-criterion scores, rubric_feedback list, misconceptions list)",
+        "AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coach_output`); the exception is NOT caught inside the adapter so the orchestrator can route to `decision=fallback`",
+        "`roles/tutor/prompts/coach.md` exists with <300 words and:",
+        "ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting that unknown criterion IDs are silently dropped (locks down the policy)",
+        "`RoleConfig.load_coach_prompt()` exists and returns the contents of `roles/tutor/prompts/coach.md` (mirrors `load_player_prompt()` shape)",
+        "`LLMCoachAdapter` implements `CoachLike` (validated via `isinstance(adapter, CoachLike)` runtime_checkable assertion)",
+        "Adapter accepts `SessionState`; uses `session_state.text_name` and `session_state.topic` to ground the Coach prompt (passed via prompt template)",
+        "All modified files pass project-configured lint/format checks with zero errors"
+      ]
+    }
+  ],
+  "rationale": "Missing 9 acceptance criteria: AC-LCA-05** `evaluate(session_state, learner_message, player_response)` invokes `LLMClient(provider=_default_coach_model()).generate(prompt=..., system=coach_system_prompt)`, LLM output is passed to `parse_coach_output(raw)`; returned `CoachVerdict` is fully-shaped (decision, weighted_total, per-criterion scores, rubric_feedback list, misconceptions list), AC-LCA-06** when LLM returns non-JSON output, `MalformedCoachOutputError` is raised (via `parse_coach_output`); the exception is NOT caught inside the adapter so the orchestrator can route to `decision=fallback`, `roles/tutor/prompts/coach.md` exists with <300 words and:, ASSUM-LCA-005** `parse_coach_output` test suite includes a discard-extra-criteria case asserting that unknown criterion IDs are silently dropped (locks down the policy), `RoleConfig.load_coach_prompt()` exists and returns the contents of `roles/tutor/prompts/coach.md` (mirrors `load_player_prompt()` shape), `LLMCoachAdapter` implements `CoachLike` (validated via `isinstance(adapter, CoachLike)` runtime_checkable assertion), Adapter accepts `SessionState`; uses `session_state.text_name` and `session_state.topic` to ground the Coach prompt (passed via prompt template), All modified files pass project-configured lint/format checks with zero errors",
+  "context_used": "## Job-Specific Context\n\nBudget: 950/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- HAS_TYPE\n- USES_TYPE_HINT\n\n### \u26a0\ufe0f Warnings\n- REQUIRES_USE_OF\n- FIX_ADDRESS_INCORRECT_PATH_CONSTRUCTION\n\n### \ud83c\udfad Role Constraints\n- PROJECT_INVOLVES\n- IS_CREATED_FOR\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- ASSOCIATED_WITH_PROJECT\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

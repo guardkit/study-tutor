@@ -1,12 +1,12 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 53.09514341701288,
+    "duration_seconds": 62.98209241696168,
     "error": null,
     "tests_run": 22,
     "tests_failed": 0,
     "coverage_pct": 67.0,
-    "output_summary": "22/22 tests passed in tests/unit/llm/test_client.py + tests/unit/mcp/test_adapter.py; combined coverage 67% on changed modules (client.py 44%, adapter.py 76%).",
+    "output_summary": "22/22 passed in tests/unit/llm/test_client.py + tests/unit/mcp/test_adapter.py; coverage on changed modules: client.py 44%, adapter.py 76% (total 67%).",
     "quality_gates_passed": true
   },
   "phase_5": {
