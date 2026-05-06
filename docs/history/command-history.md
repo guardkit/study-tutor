@@ -2754,4 +2754,334 @@ So my one-liner pick: /task-review TASK-FORK-PATCH --mode=decision --depth=stand
 
 
 
+/task-create please create a review task to analyse docs/reviews/REVIEW-TASK-GR-DEMO-2026-05-05.md which are the results from running tasks/backlog/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md
+
+
+Task created at tasks/backlog/TASK-REV-GRD5-analyse-gr-demo-blockers.md.
+
+
+=========================================================================
+REVIEW TASK DETECTED
+=========================================================================
+
+Task: TASK-REV-GRD5 — Analyse TASK-GR-DEMO blockers and sequence the BLOCK-1/2/3 fixes
+task_type: review
+decision_required: true
+
+Suggested next step:
+  /task-review TASK-REV-GRD5
+
+Note: /task-work is for implementation, /task-review is for analysis.
+=========================================================================
+Task summary
+
+Field	Value
+ID	TASK-REV-GRD5
+Type	review (analysis + decision)
+Status	backlog
+Priority	critical
+Complexity	4
+Parent	TASK-PH2-GR-001
+Related	TASK-GR-DEMO, TASK-REV-GR1A
+Feature	FEAT-FD32
+What it does
+
+Consumes docs/reviews/REVIEW-TASK-GR-DEMO-2026-05-05.md as input and produces decisions on:
+
+AC-REV-01 — Validate each BLOCK-1/2/3 finding against current code on main (file:line citations).
+AC-REV-02 — Sequencing: 3 separate tasks vs 1 bundled vs hybrid, with rationale.
+AC-REV-03 — BLOCK-2 design: verbatim-copy the GB10 prompt vs implement FEAT-PO-001 properly.
+AC-REV-04 — BLOCK-3 design: sync vs async write, episode payload shape, TopicConfidence update strategy, DEC-02 reconciliation.
+AC-REV-05 — Risk register per block (failure modes, partial-failure semantics for Graphiti write).
+AC-REV-06 — Spawn decision: concrete /task-create invocations OR "fold into TASK-GR-DEMO" with rationale.
+AC-REV-07 — Per-gate impact statement (G3/G4/G5/G6/G13) — does this work flip them or not.
+Next step
+
+Run /task-review TASK-REV-GRD5 when you're ready to execute the analysis.
+
+
+
+
+/task-review TASK-REV-GRD5
+
+
+Review complete: TASK-REV-GRD5
+Report written to .claude/reviews/TASK-REV-GRD5-review-report.md. Task moved to review_complete with review_results recorded in frontmatter.
+
+Headline findings
+All three BLOCK items confirmed against main with file:line citations:
+
+BLOCK-1: src/study_tutor/cli/main.py:56 constructs MCPAdapter without orchestrator_factory.
+BLOCK-2: roles/tutor/prompts/player.md:1 is the placeholder stub verbatim.
+BLOCK-3: src/study_tutor/mcp/adapter.py:308 holds the TODO; but perform_session_end() already exists at src/study_tutor/tutoring/session_end.py:334, record_session_completion() at queries.py:567, SessionCompletedEpisode/TopicConfidenceUpdatedEpisode types are shipped, and GraphitiWriteHelper.schedule_write() is wired with CC-13 / fire-and-forget. The session-completed half is a wiring task; only the TopicConfidence node-attribute update is genuinely new code.
+Sequencing: hybrid (three tasks).
+
+TASK-GR-PMT — BLOCK-2 alone (verbatim Open WebUI prompt copy).
+TASK-GR-WIRE — BLOCK-1 + BLOCK-3a (orchestrator factory + perform_session_end wiring).
+TASK-GR-CONF — BLOCK-3b (TopicConfidence typed-entity update).
+BLOCK-3 sync/async: ADR-ARCH-019 mandates async fire-and-forget at every write point — no degree of freedom; tutor_session_end < 2s is binding.
+
+Phase-1 gates: GR-PMT flips nothing on its own. GR-WIRE flips G4 / G5 / G6 (most) / G13. GR-CONF closes G6's AC-DEMO-03 carve-out. G3 is already Held.
+
+TopicConfidence delta source: heuristic from turn count (+min(turn_count-1, 10) pp), last_revised_at = ended_at, single topic (topic_override or planner-selected). Flagged as a Phase-1 expedient with explicit Phase-2 ownership in FEAT-PH2-001.
+
+Decision checkpoint
+
+[A]ccept    — Approve findings; archive review; spawn TASK-GR-PMT, TASK-GR-WIRE, TASK-GR-CONF
+              via the three /task-create invocations under AC-REV-06 of the report.
+[R]evise    — Request deeper analysis (e.g. validate the Open WebUI prompt against the live GB10
+              file before approving b1; or pull in Coach RubricFeedback aggregation design before
+              approving the heuristic delta).
+[I]mplement — Auto-create the three implementation tasks via the orchestrator pipeline.
+[C]ancel    — Discard review.
+Reviewer recommendation: [A]ccept and run the three /task-create invocations from §AC-REV-06 of the report. Choose [R] if you'd rather discuss the BLOCK-3b heuristic-vs-Coach-aggregator question before spawning TASK-GR-CONF; choose [I] if you want me to spawn the tasks now.
+
+Which option — A, R, I, or C?
+
+
+[R]evise — please dig deeper to ensure you are totally confident in the root cause of the issue. Use C4 digramming and trace the flows across system and technology boundaries to create sequence diagrams that validate your thinking. Please explore  BLOCK-3b heuristic-vs-Coach-aggregator question further. Please explain why you are recommending A and then manually run task-create? Tis deviates from the usual behaviour?
+
+
+Three fair challenges. Let me address them in order.
+
+On the [A]ccept-vs-[I]mplement deviation: you're right — that's a workflow inconsistency. The canonical /task-review flow says [I]mplement is the path that creates implementation tasks via the auto-detection pipeline. I leaned toward [A]+manual because AC-REV-06 already specifies exact frontmatter (parent_review, wave, dependencies, complexity), and I wasn't confident the auto-pipeline would preserve those. But that's a rationale to defend after-the-fact, not a principled choice. I'll explain properly in the revised report and present both paths cleanly.
+
+On C4 / sequence diagrams and BLOCK-3b — let me first read the orchestrator's TurnResult shape, the Coach rubric signal space, and any FEAT-PH2-001 spec, then build the diagrams and re-evaluate the heuristic question against actual signal availability.
+
+
+Revision 1 complete
+Report updated at .claude/reviews/TASK-REV-GRD5-review-report.md — appended six new sections (R1.1–R1.6) addressing your three challenges. Original analysis preserved above for audit trail.
+
+Summary of what changed
+R1.1 — [A] vs [I] honesty: my original [A]+manual recommendation was a workflow deviation without an adequate principled reason. I drifted there because I wanted my carefully-numbered task IDs (TASK-GR-PMT/WIRE/CONF) and the dependency chain preserved exactly, and worried the auto-pipeline wouldn't honour them. That's a fidelity preference, not a workflow rationale. Corrected recommendation: [I]mplement — canonical path; the AC-REV-06 invocations stay as the contract the pipeline should produce, and any divergence is mv-fixable.
+
+R1.2 — C4 + sequence diagrams (three Mermaid diagrams added):
+
+Container view annotating which Phase-1 surfaces are wired-but-unused (orchestrator, Coach, perform_session_end, GraphitiWriteHelper) vs the four red gaps (BLOCK-1, BLOCK-2, BLOCK-3a, BLOCK-3b).
+Sequence: today's broken Phase-0 path — empty system prompt to Ollama, no Coach arrows, no FalkorDB writes.
+Sequence: proposed Phase-1 path — three par blocks make the fire-and-forget posture explicit; the typed-entity TopicConfidence write bypasses Gemini extraction entirely (ms latency); F3 session_completed and F2 episode writes are async.
+Plus a boundary-trace table identifying the single binding constraint: tutor_session_end < 2s with all writes fire-and-forget per ADR-ARCH-019.
+R1.3 — BLOCK-3b deep dive (the largest change):
+
+Coach-signal taxonomy: CoachVerdict.weighted_total and criterion_scores measure Player (tutor) quality, not student understanding. Mapping them to confidence delta is a category error.
+Only direct student-facing signal in current emissions is misconceptions: list[MisconceptionObservation]. Turn count is a weak engagement proxy. Coach scores are unusable for confidence without a separate "estimate student understanding" call (which FEAT-PH2-001 owns).
+Revised design: pluggable ConfidenceDeltaPolicyLike Protocol + Phase1MinimalDeltaPolicy stub (-3 × misconception_count + 1 if 5+ turns and 0 misconceptions, clamped ±10). FEAT-PH2-001 supplies the real policy by Protocol substitution. Adds confidence_source: str field to TopicConfidenceUpdatedEpisode so heuristic-era data is forever distinguishable from real-signal data.
+AC-CONF rewritten (10 ACs replacing the 8 in AC-REV-06).
+Even with delta == 0, last_revised_at flips, which is enough to satisfy AC-DEMO-03's round-trip evidence.
+Risk register additions: category-error trap reappearing in FEAT-PH2-001; heuristic-era data poisoning Phase-2 dashboards; R-WAVE5-03 dash-as-NOT bug surfacing on the F2 episode write path (entity update unaffected — load-bearing AC-DEMO-03 evidence still produced).
+
+Revised decision options
+
+[A]ccept    — Approve revised findings; archive.
+[I]mplement — Auto-create three tasks via pipeline (canonical path).
+[R]evise    — Further deepening (e.g. read FEAT-PO-001/FEAT-PH2-001 specs).
+[C]ancel    — Discard.
+Revised reviewer recommendation: [I]mplement (corrected from [A]).
+
+Which option — A, I, R, or C?
+
+TASK-REV-GRD5-review-report.md
+I
+
+
+Auto-detection summary printed inline:
+
+
+================================================================================
+✅ Auto-detected Configuration
+================================================================================
+   Feature slug:    wave5-mcp-blockers
+   Feature name:    Wave 5 MCP demo blockers (BLOCK-1/2/3 fixes)
+   Feature ID:      FEAT-FD32 (inherited from TASK-GR-DEMO)
+   Subtasks:        3 (parsed from review §AC-REV-06 + §R1.3.4 revisions)
+   Parallel waves:  2
+
+   Wave 1 (parallel-eligible — no file overlap between PMT and WIRE):
+     - TASK-GR-PMT      complexity 1   workspace: wave5-mcp-blockers-wave1-1
+     - TASK-GR-WIRE     complexity 5   workspace: wave5-mcp-blockers-wave1-2
+   Wave 2 (depends on TASK-GR-WIRE for write_helper injection):
+     - TASK-GR-CONF     complexity 5   workspace: wave5-mcp-blockers-wave2-1
+
+   Implementation modes:
+     /task-work: 3   Direct: 0   Manual: 0
+================================================================================
+Note: TASK-GR-PMT is treated as a soft-recommended-first for TASK-GR-WIRE (lecture-mode confound during demo evidence) but not a hard build dependency, so they can parallel-execute via Conductor if desired. Writing the five files now.
+
+
+[I]mplement complete
+
+================================================================================
+✅ Feature Implementation Structure Created
+================================================================================
+
+Created: tasks/backlog/wave5-mcp-blockers/
+  ├── README.md                                           2.2 KB
+  ├── IMPLEMENTATION-GUIDE.md                            10.0 KB
+  ├── TASK-GR-PMT-populate-player-prompt.md               7.0 KB
+  ├── TASK-GR-WIRE-orchestrator-and-session-end.md       13.5 KB
+  └── TASK-GR-CONF-topic-confidence-update.md            17.9 KB
+
+Updated:
+  • tasks/backlog/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md
+    └── unblocked_by: [TASK-GR-PMT, TASK-GR-WIRE, TASK-GR-CONF]
+  • tasks/backlog/TASK-REV-GRD5-analyse-gr-demo-blockers.md
+    └── review_results.unblockers_spawned + decision_taken: implement
+
+================================================================================
+🚀 Next steps
+================================================================================
+1. Review tasks/backlog/wave5-mcp-blockers/IMPLEMENTATION-GUIDE.md
+2. Run Wave 1 (recommended sequential, parallel-eligible via Conductor):
+     /task-work TASK-GR-PMT       # ~10 min, single-line markdown edit
+     /task-work TASK-GR-WIRE      # ~3h, MCP adapter rewiring + tests
+3. Run Wave 2 after WIRE merges:
+     /task-work TASK-GR-CONF      # ~4h, typed-entity write + Protocol policy seam
+4. Re-attempt the live demo (TASK-GR-DEMO autobuild_state.current_turn carries forward):
+     /task-work TASK-GR-DEMO
+5. Optional housekeeping:
+     /task-complete TASK-REV-GRD5     # archive review with the [I]mplement decision recorded
+================================================================================
+What was preserved from the AC-REV-06 spec
+All three tasks carry the AC sets I committed to in the review report — including the revised AC-CONF set from §R1.3.4 with the ConfidenceDeltaPolicyLike Protocol seam, the Phase1MinimalDeltaPolicy stub, and the confidence_source: str schema extension on TopicConfidenceUpdatedEpisode. The Coach-signal taxonomy analysis (R1.3) is referenced from each task description so the implementer reading TASK-GR-CONF doesn't fall into the category-error trap when extending the policy later.
+
+What I flagged for operator attention
+TASK-GR-PMT and TASK-GR-WIRE have no hard build dependency between them. I encoded TASK-GR-PMT as soft_dependency_of: TASK-GR-WIRE — they can parallel-execute via Conductor; the only cost of running TASK-GR-WIRE first is "demo evidence captured looks confounded by lecture-mode prompt" until TASK-GR-PMT lands and you re-run the session. Sequential is the cleaner evidence trail.
+TASK-GR-CONF has a hard dependency on TASK-GR-WIRE because TASK-GR-WIRE is what adds the write_helper injection point on MCPAdapter.__init__ that TASK-GR-CONF consumes.
+Coach + Player provider env-var convention: AC-WIRE-01 references a AGENT_MODELS__COACH_MODEL env var which I introduced as a suggestion. If the FEAT-PH1-003 close-out PR established a different convention, the implementer should follow that — flagged in the implementation notes.
+The review task is left in tasks/backlog/ with decision_taken: implement recorded; run /task-complete TASK-REV-GRD5 when you want to archive it formally.
+
+/feature-spec "player coach adapters" --context docs/research/ideas/llm-player-coach-adapters-brief.md
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE SPEC COMPLETE: MCP LLM Player and Coach Adapters
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files written:
+  features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature
+  features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_assumptions.yaml
+  features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md
+
+Scenarios: 24 total
+  @key-example: 5      @boundary: 4 (2 Outlines, 7 examples)
+  @negative: 5         @edge-case: 10 (4 base + 6 expansion)
+  @smoke: 5            @invariant: 6
+  @security: 3         @concurrency: 2
+  @fallback: 3
+
+Assumptions: 15 total
+  high: 8 (auto-proceed)
+  medium: 7 (Coach review recommended on ASSUM-LCA-005/006/007/008/010/015)
+  low: 0
+
+Deferred: 0 groups (all four base groups + all three expansion sub-groups accepted)
+
+Next steps:
+  Review: features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature
+  Pass to /feature-plan:
+    /feature-plan "MCP LLM Player and Coach Adapters" \
+      --context features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md \
+      --context docs/research/ideas/llm-player-coach-adapters-brief.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature is the deliverable; _assumptions.yaml records the 15 confirmed assumptions; _summary.md is shaped for /feature-plan consumption with the 5-subtask anticipation from the brief.
+
+
+/feature-plan "MCP LLM Player and Coach Adapters" \
+      --context features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters_summary.md \
+      --context docs/research/ideas/llm-player-coach-adapters-brief.md
+
+
+FEATURE PLANNING COMPLETE — FEAT-6CC5
+📁 Generated Artefacts
+Location	Purpose
+tasks/in_review/TASK-REV-LCA1-plan-mcp-llm-player-coach-adapters.md	Review task (status: review_complete)
+.claude/reviews/TASK-REV-LCA1-review-report.md	Decision-mode review report (6 findings, 5 recommendations)
+tasks/backlog/mcp-llm-player-coach-adapters/	Feature folder with 5 subtasks + IMPLEMENTATION-GUIDE.md + README.md
+.guardkit/features/FEAT-6CC5.yaml	Structured feature file for /feature-build
+📋 5 Subtasks (2 Waves)
+Wave 1 — Parallel (Conductor recommended)
+
+TASK-LCA-001 — LLMPlayerAdapter + structured-only revise prompt (complexity 5)
+TASK-LCA-002 — LLMCoachAdapter + coach.md + JSON parsing (complexity 6)
+TASK-LCA-003 — SessionState dataclass + MCP construction site (complexity 4, declarative)
+TASK-LCA-004 — _default_coach_model() + env var + boot smoke check (complexity 4)
+Wave 2 — Sequential
+
+TASK-LCA-005 — CLI serve factory closure + integration smokes (complexity 5)
+🔍 Validation Status
+Check	Result
+AC-quality linter	✅ 0 unverifiable acceptance criteria
+Feature schema (guardkit feature validate FEAT-6CC5)	✅ Valid
+smoke_gates.command paths	✅ OK (tests/unit, tests/integration resolved)
+Smoke gate command	pytest -m "feat_lca and smoke" tests/unit tests/integration -x (after Wave 2)
+§4 Integration Contracts	✅ 3 contracts (SessionState, _default_coach_model(), AGENT_MODELS__COACH_MODEL)
+Mermaid diagrams in IMPLEMENTATION-GUIDE.md	✅ Data Flow + Sequence + Task Dependency
+Seam tests on consumer tasks	✅ TASK-LCA-001 + TASK-LCA-002
+⚠️ Step 11 (BDD scenario linking) — Skipped
+The existing features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature (25 scenarios) uses multi-line Gherkin steps (e.g. line 18-20 wraps a Given across 3 lines), which the official Gherkin parser rejects. This is a pre-existing artefact from /feature-spec, not a problem with the plan.
+
+Impact: R2 BDD oracle will not activate during /task-work (scenarios stay untagged). Unit + integration tests still gate normally.
+
+To activate R2 later: collapse multi-line steps to single lines in the .feature file, then re-run:
+
+
+python3 ~/.agentecflow/bin/feature-plan-bdd-link prepare \
+    --project-root . --feature-slug mcp-llm-player-coach-adapters \
+    --feature-yaml .guardkit/features/FEAT-6CC5.yaml --output /tmp/req.json
+# then invoke bdd-linker subagent on /tmp/req.json contents, save response to /tmp/resp.json
+python3 ~/.agentecflow/bin/feature-plan-bdd-link apply \
+    --project-root . --feature-slug mcp-llm-player-coach-adapters \
+    --task-matches-file /tmp/resp.json
+🚀 Next Steps
+Review tasks/backlog/mcp-llm-player-coach-adapters/IMPLEMENTATION-GUIDE.md
+Run autonomously: /feature-build FEAT-6CC5
+Or run manually: /task-work TASK-LCA-001 (etc., one per Wave-1 Conductor workspace), then /task-work TASK-LCA-005 after Wave 1 lands
+
+
+please an you fix the issue Step 11 (BDD scenario linking)  to use single lines and run the bdd linker to the feature is ready to build. Please use the task tool to create a task in guardkit to address the multi-line issue in the feature-spec command - it could sit alongside /Users/richardwoollcott/Projects/appmilla_github/guardkit/tasks/backlog/smoke-gate-env-resolution/TASK-SGER-002-fallback-venv-python-to-sys-executable.md perhaps and I'll implmement them one after the other?
+
+
+All three tasks completed. Final state:
+
+✅ COMPLETE
+1. Fixed the .feature file
+Collapsed ~17 multi-line Gherkin steps to single lines in features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature. Header comment now points back to the upstream guardkit task. The file parses cleanly via the official Gherkin parser.
+
+2. Step 11 — BDD scenario linking complete
+
+[Step 11] linked 24 scenario(s) to task(s); 0 already tagged; 0 below threshold (0.60) (of 24 total)
+All 24 scenarios were matched and tagged above the 0.6 confidence threshold (range 0.84–0.94). Distribution:
+
+Task	Scenarios	Confidence range
+TASK-LCA-001 (Player adapter)	5	0.85–0.93
+TASK-LCA-002 (Coach adapter)	8	0.86–0.93
+TASK-LCA-003 (SessionState)	2	0.87–0.88
+TASK-LCA-004 (env var + boot smoke)	4	0.90–0.94
+TASK-LCA-005 (CLI closure + integration)	5	0.84–0.92
+The R2 BDD oracle (bdd_runner.py) will now activate during /task-work for each task and run the relevant @task:<TASK-ID>-tagged scenarios as part of Phase 4 quality gating.
+
+3. Created guardkit task TASK-FSGS-001
+guardkit/tasks/backlog/feature-spec-gherkin-syntax/TASK-FSGS-001-collapse-multi-line-steps-to-single-line.md — sits as a peer to your smoke-gate-env-resolution/TASK-SGER-002 so you can implement them sequentially.
+
+Two-prong fix specified:
+
+Prong A — add GHERKIN SYNTAX INVARIANT to the /feature-spec prompt (LLM-side guardrail)
+Prong B — deterministic post-generation normaliser at installer/core/commands/lib/feature_spec_normalize.py (defensive backstop with idempotence + Gherkin-validation, exposed as python -m ... CLI for fixing existing files)
+The task includes a fixture-based regression test using the actual broken study-tutor .feature (pre-fix) — so when you implement TASK-FSGS-001 you'll have a real-world test case from this run.
+
+FEAT-6CC5 is now fully ready to build: /feature-build FEAT-6CC5 will pick up tagged scenarios for the R2 oracle and gated smokes for the R3 oracle.
+
+
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-6CC5 --verbose 
+
+
+
+
+
+
+
+
+
 GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-1773 --verbose 
