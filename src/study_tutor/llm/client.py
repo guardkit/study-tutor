@@ -105,7 +105,7 @@ class LLMClient:
 
     def generate(self, prompt: str, system: str | None = None) -> str:
         if self.provider == "local":
-            return self._generate_ollama(
+            return self._generate_openai_compat(
                 prompt,
                 system,
                 model_env="OLLAMA_MODEL",
@@ -143,51 +143,6 @@ class LLMClient:
             "Expected one of: 'local', 'local-coach', 'bedrock' (Phase 0)."
         )
 
-    def _generate_ollama(
-        self,
-        prompt: str,
-        system: str | None,
-        *,
-        model_env: str = "OLLAMA_MODEL",
-        base_url_env: str = "OLLAMA_BASE_URL",
-    ) -> str:
-        import httpx  # Lazy: keeps import graph minimal for non-local paths
-
-        # Resolve base URL: prefer the role-specific env var, then fall back
-        # to OLLAMA_BASE_URL so OLLAMA_COACH_BASE_URL is optional (single-host
-        # setups can leave it unset and both providers share one endpoint).
-        base_url = (
-            os.environ.get(base_url_env)
-            or os.environ.get("OLLAMA_BASE_URL")
-            or DEFAULT_OLLAMA_BASE_URL
-        )
-        model = os.environ.get(model_env) or DEFAULT_OLLAMA_MODEL
-        num_predict = _resolve_num_predict()
-
-        payload: dict[str, object] = {
-            "model": model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"num_predict": num_predict},
-        }
-        if system:
-            payload["system"] = system
-
-        try:
-            response = httpx.post(
-                f"{base_url.rstrip('/')}/api/generate",
-                json=payload,
-                timeout=DEFAULT_OLLAMA_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise LLMProviderError(
-                f"Ollama request to {base_url} failed: {exc}"
-            ) from exc
-
-        data = response.json()
-        return data.get("response", "")
-
     def _generate_openai_compat(
         self,
         prompt: str,
@@ -203,6 +158,11 @@ class LLMClient:
         the assistant message content as a string, matching the
         Player-side return shape so callers can treat both code paths
         uniformly.
+
+        Note: after TASK-LSP-002 both ``local`` and ``local-coach``
+        providers reach this helper, so the ``OLLAMA_BASE_URL`` fallback
+        below is shared across providers; TASK-LCN-001 owns the eventual
+        tightening alongside the ``OLLAMA_*`` → ``LOCAL_*`` rename.
         """
         import httpx  # Lazy: keeps import graph minimal for non-local paths
 

@@ -57,12 +57,14 @@ def test_unsupported_provider_raises_llm_provider_error() -> None:
         client.generate("hello")
 
 
-def test_local_provider_posts_to_ollama_with_system_prompt() -> None:
-    """Local path should POST to {OLLAMA_BASE_URL}/api/generate with model + prompt."""
+def test_local_provider_posts_openai_compat_with_system_prompt() -> None:
+    """Local path should POST to {OLLAMA_BASE_URL}/v1/chat/completions with messages."""
     from study_tutor.llm.client import LLMClient
 
     fake_response = MagicMock()
-    fake_response.json.return_value = {"response": "Macbeth is a tragedy."}
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": "Macbeth is a tragedy."}}]
+    }
     fake_response.raise_for_status.return_value = None
 
     env = {
@@ -77,23 +79,27 @@ def test_local_provider_posts_to_ollama_with_system_prompt() -> None:
     assert out == "Macbeth is a tragedy."
     mock_post.assert_called_once()
     args, kwargs = mock_post.call_args
-    assert args[0] == "http://localhost:11434/api/generate"
+    assert args[0] == "http://localhost:11434/v1/chat/completions"
     body = kwargs["json"]
     assert body["model"] == "gcse-tutor-test"
-    assert body["prompt"] == "Explain the dagger speech."
-    assert body["system"] == "You are a tutor."
+    assert body["messages"] == [
+        {"role": "system", "content": "You are a tutor."},
+        {"role": "user", "content": "Explain the dagger speech."},
+    ]
     assert body["stream"] is False
     # Default num_predict ceiling (TASK-PO02F-002) keeps essay scaffolds
     # from truncating at Ollama's ~128-token default.
-    assert body["options"]["num_predict"] == 2048
+    assert body["max_tokens"] == 2048
 
 
 def test_local_provider_omits_system_when_none() -> None:
-    """When system is not provided, it must not appear in the Ollama payload."""
+    """When system is not provided, the messages list must contain only the user message."""
     from study_tutor.llm.client import LLMClient
 
     fake_response = MagicMock()
-    fake_response.json.return_value = {"response": "ok"}
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": "ok"}}]
+    }
     fake_response.raise_for_status.return_value = None
 
     with patch.dict(os.environ, {}, clear=False):
@@ -101,7 +107,8 @@ def test_local_provider_omits_system_when_none() -> None:
             LLMClient(provider="local").generate("hi")
 
     body = mock_post.call_args.kwargs["json"]
-    assert "system" not in body
+    assert all(m.get("role") != "system" for m in body["messages"])
+    assert body["messages"] == [{"role": "user", "content": "hi"}]
 
 
 def test_local_provider_uses_env_num_predict_at_call_time() -> None:
@@ -114,7 +121,9 @@ def test_local_provider_uses_env_num_predict_at_call_time() -> None:
     from study_tutor.llm.client import LLMClient
 
     fake_response = MagicMock()
-    fake_response.json.return_value = {"response": "ok"}
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": "ok"}}]
+    }
     fake_response.raise_for_status.return_value = None
 
     with patch.dict(os.environ, {"OLLAMA_NUM_PREDICT": "512"}, clear=False):
@@ -122,7 +131,7 @@ def test_local_provider_uses_env_num_predict_at_call_time() -> None:
             LLMClient(provider="local").generate("hi")
 
     body = mock_post.call_args.kwargs["json"]
-    assert body["options"]["num_predict"] == 512
+    assert body["max_tokens"] == 512
 
 
 def test_local_provider_falls_back_to_default_on_bad_num_predict() -> None:
@@ -131,7 +140,9 @@ def test_local_provider_falls_back_to_default_on_bad_num_predict() -> None:
     from study_tutor.llm.client import LLMClient
 
     fake_response = MagicMock()
-    fake_response.json.return_value = {"response": "ok"}
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": "ok"}}]
+    }
     fake_response.raise_for_status.return_value = None
 
     for bad in ("not-a-number", "0", "-1", ""):
@@ -139,7 +150,7 @@ def test_local_provider_falls_back_to_default_on_bad_num_predict() -> None:
             with patch("httpx.post", return_value=fake_response) as mock_post:
                 LLMClient(provider="local").generate("hi")
         body = mock_post.call_args.kwargs["json"]
-        assert body["options"]["num_predict"] == 2048, (
+        assert body["max_tokens"] == 2048, (
             f"Expected fallback to 2048 for OLLAMA_NUM_PREDICT={bad!r}"
         )
 
@@ -152,7 +163,7 @@ def test_local_provider_wraps_http_errors() -> None:
 
     with patch("httpx.post", side_effect=httpx.ConnectError("refused")):
         client = LLMClient(provider="local")
-        with pytest.raises(LLMProviderError, match="Ollama request"):
+        with pytest.raises(LLMProviderError, match="OpenAI-compat request"):
             client.generate("hi")
 
 
