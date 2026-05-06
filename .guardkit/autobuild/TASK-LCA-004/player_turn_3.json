@@ -1,0 +1,197 @@
+{
+  "task_id": "TASK-LCA-004",
+  "turn": 3,
+  "files_modified": [
+    ".claude/task-plans/TASK-LCA-001-implementation-plan.md",
+    ".claude/task-plans/TASK-LCA-002-implementation-plan.md",
+    ".claude/task-plans/TASK-LCA-003-implementation-plan.md",
+    ".claude/task-plans/TASK-LCA-004-implementation-plan.md",
+    ".env.example",
+    ".guardkit/autobuild/TASK-LCA-001/checkpoints.json",
+    ".guardkit/autobuild/TASK-LCA-001/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-001/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-001/coach_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-001/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-LCA-001/player_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-001/player_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-001/specialist_results.json",
+    ".guardkit/autobuild/TASK-LCA-001/task_work_results.json",
+    ".guardkit/autobuild/TASK-LCA-001/turn_context.json",
+    ".guardkit/autobuild/TASK-LCA-001/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-001/turn_state_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-002/checkpoints.json",
+    ".guardkit/autobuild/TASK-LCA-002/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-002/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-002/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-LCA-002/player_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-002/player_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-002/specialist_results.json",
+    ".guardkit/autobuild/TASK-LCA-002/task_work_results.json",
+    ".guardkit/autobuild/TASK-LCA-002/turn_context.json",
+    ".guardkit/autobuild/TASK-LCA-002/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-003/checkpoints.json",
+    ".guardkit/autobuild/TASK-LCA-003/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-003/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-003/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-LCA-003/player_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-003/player_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-003/specialist_results.json",
+    ".guardkit/autobuild/TASK-LCA-003/task_work_results.json",
+    ".guardkit/autobuild/TASK-LCA-003/turn_context.json",
+    ".guardkit/autobuild/TASK-LCA-003/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-004/checkpoints.json",
+    ".guardkit/autobuild/TASK-LCA-004/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-004/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-004/coach_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-004/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-LCA-004/player_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-004/player_turn_2.json",
+    ".guardkit/autobuild/TASK-LCA-004/specialist_results.json",
+    ".guardkit/autobuild/TASK-LCA-004/task_work_results.json",
+    ".guardkit/autobuild/TASK-LCA-004/turn_context.json",
+    ".guardkit/autobuild/TASK-LCA-004/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-LCA-004/turn_state_turn_2.json",
+    ".guardkit/bdd/TASK-LCA-001_junit.xml",
+    ".guardkit/bdd/TASK-LCA-002_junit.xml",
+    ".guardkit/bdd/TASK-LCA-003_junit.xml",
+    ".guardkit/bdd/TASK-LCA-004_junit.xml",
+    ".guardkit/bootstrap_state.json",
+    "features/mcp-llm-player-coach-adapters/test_mcp_llm_player_coach_adapters.py",
+    "pyproject.toml",
+    "roles/tutor/prompts/coach.md",
+    "roles/tutor/role.yaml",
+    "src/study_tutor/llm/client.py",
+    "src/study_tutor/mcp/adapter.py",
+    "src/study_tutor/roles/loader.py",
+    "tasks/backlog/TASK-LCA-005-cli-factory-closure-and-integration-smokes.md",
+    "tasks/design_approved/TASK-LCA-001-llm-player-adapter.md",
+    "tasks/design_approved/TASK-LCA-002-llm-coach-adapter.md",
+    "tasks/design_approved/TASK-LCA-003-session-state-dataclass.md",
+    "tasks/design_approved/TASK-LCA-004-coach-model-env-and-boot-smoke.md",
+    "tests/unit/llm/test_client.py",
+    "tests/unit/mcp/test_adapter.py",
+    "tests/unit/roles/__init__.py",
+    "tests/unit/roles/test_loader.py"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-LCA-004/player_turn_3.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-6CC5/.guardkit/autobuild/TASK-LCA-004/player_turn_3.json"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: _default_coach_model() helper present with () -> str signature",
+    "AC-LCA-07: unset/empty/whitespace AGENT_MODELS__COACH_MODEL raises LLMProviderError naming the env var literally",
+    "AC-003: env-var value returned verbatim with no canonicalisation",
+    "AC-004: .env.example contains both placeholders with the spec'd D3-invariant comment",
+    "AC-005: MCPAdapter.__init__ boot smoke check invokes factory once and discards return value",
+    "AC-LCA-02: factory exceptions (CoachConfigurationError, LLMProviderError, OrchestratorConfigurationError) propagate from __init__",
+    "AC-LCA-08: same-provider scenario through real validate_coach_config raises CoachConfigurationError naming both providers and the D3 invariant",
+    "AC-008: orchestrator_factory=None preserves Phase-0 backward-compatible behaviour",
+    "AC-009: code-style parity with surrounding module conventions; pytest collection clean"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 21,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 22,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`_default_coach_model()` exists in `src/study_tutor/llm/client.py`, signature `() -> str`",
+      "status": "complete",
+      "evidence": "Verified at src/study_tutor/llm/client.py:56 \u2014 `def _default_coach_model() -> str:`. Signature is exactly () -> str, no parameters, return type annotated str. Function reads AGENT_MODELS__COACH_MODEL via os.environ.get() at call time (SR-03 parity with _default_player_model at line 47). Test test_reads_env_at_call_time_not_import_time PASSED.",
+      "test_file": "tests/unit/llm/test_client.py",
+      "implementation_files": [
+        "src/study_tutor/llm/client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-LCA-07",
+      "criterion_text": "AC-LCA-07** when `AGENT_MODELS__COACH_MODEL` is unset or empty string, `_default_coach_model()` raises `LLMProviderError` with a message naming the env var literally (`\"AGENT_MODELS__COACH_MODEL\"`)",
+      "status": "complete",
+      "evidence": "Implementation at src/study_tutor/llm/client.py:83-92: `raw = os.environ.get('AGENT_MODELS__COACH_MODEL', '')` then `if not raw or not raw.strip(): raise LLMProviderError('AGENT_MODELS__COACH_MODEL is not set. ...')`. The exception message starts with the literal string 'AGENT_MODELS__COACH_MODEL'. Verified by tests/unit/llm/test_client.py::TestDefaultCoachModel::test_raises_with_env_var_named_when_unset, test_raises_with_env_var_named_when_empty_string, and test_raises_when_whitespace_only \u2014 all PASSED this turn (5/5 in TestDefaultCoachModel class).",
+      "test_file": "tests/unit/llm/test_client.py",
+      "implementation_files": [
+        "src/study_tutor/llm/client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "When `AGENT_MODELS__COACH_MODEL` is set, `_default_coach_model()` returns the env-var value verbatim (no canonicalisation)",
+      "status": "complete",
+      "evidence": "Success-path code at src/study_tutor/llm/client.py:93 is `return raw` \u2014 no .lower(), .casefold(), .strip(), or any other transformation. Test test_returns_env_var_value_verbatim_when_set verifies both lowercase ('anthropic') and mixed-case ('OpenAI') round-trip identically. PASSED.",
+      "test_file": "tests/unit/llm/test_client.py",
+      "implementation_files": [
+        "src/study_tutor/llm/client.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`.env.example` includes both AGENT_MODELS__REASONING_MODEL=local (Player) and AGENT_MODELS__COACH_MODEL= (Coach) with D3-invariant inline comment",
+      "status": "complete",
+      "evidence": ".env.example lines 10-11 contain exactly: line 10 `AGENT_MODELS__REASONING_MODEL=local       # Player (Phase 0 default)` and line 11 `AGENT_MODELS__COACH_MODEL=                 # Coach \u2014 must differ from REASONING_MODEL (D3 invariant); env-var snapshot at boot, server restart required after rotation`. Matches the AC's required text verbatim.",
+      "test_file": null,
+      "implementation_files": [
+        ".env.example"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "`MCPAdapter.__init__` invokes `self._orchestrator_factory()` once at end of `__init__` when `_orchestrator_factory is not None`; the result is discarded",
+      "status": "complete",
+      "evidence": "src/study_tutor/mcp/adapter.py:186-187 \u2014 at end of __init__: `if self._orchestrator_factory is not None: self._orchestrator_factory()  # noqa: F841 \u2014 discarded; smoke-check invocation only`. The return value is not bound to any name. Verified by test_factory_invoked_once_at_init_when_supplied (asserts invocation count == 1) and test_no_smoke_check_when_factory_is_none (asserts zero invocations when factory is None). Both PASSED.",
+      "test_file": "tests/unit/mcp/test_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/mcp/adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-LCA-02",
+      "criterion_text": "AC-LCA-02** when boot smoke check is invoked and the factory raises (`OrchestratorConfigurationError`, `CoachConfigurationError`, `LLMProviderError`), the exception propagates from `__init__` (i.e. server boot fails fast, before serving begins)",
+      "status": "complete",
+      "evidence": "Implementation at src/study_tutor/mcp/adapter.py:186-187 \u2014 bare invocation `self._orchestrator_factory()` with NO try/except wrapper, so any exception raised by the factory propagates from __init__ unchanged. Verified by two tests in TestMCPAdapterBootSmokeCheck: (1) test_factory_exception_propagates_from_init wires a factory that raises CoachConfigurationError and asserts MCPAdapter(...) raises it (boot fails fast); (2) test_factory_llm_provider_error_propagates_from_init does the same for LLMProviderError. OrchestratorConfigurationError subclasses ValueError and propagates identically by the same bare-call mechanism. Both tests PASSED.",
+      "test_file": "tests/unit/mcp/test_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/mcp/adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-LCA-08",
+      "criterion_text": "AC-LCA-08** when both `AGENT_MODELS__REASONING_MODEL` and `AGENT_MODELS__COACH_MODEL` are set to the same provider, the factory's call to `validate_coach_config` raises `CoachConfigurationError` whose message names both providers and references the D3 invariant",
+      "status": "complete",
+      "evidence": "Verified by tests/unit/mcp/test_adapter.py::TestMCPAdapterBootSmokeCheck::test_same_provider_rejection_via_real_validate_coach_config. The test wires a stub orchestrator_factory that calls the REAL validate_coach_config (from study_tutor.tutoring.coach.factory) with PlayerConfig(provider='anthropic') and CoachConfig(provider='anthropic'). MCPAdapter(..., orchestrator_factory=factory) construction triggers the boot smoke check which invokes the factory which raises CoachConfigurationError. Assertions: 'anthropic' appears in the message at least twice (Coach.provider + Player.provider via repr() per coach/factory.py:386-391) and 'two-provider'/'ASSUM-009' appears (the D3 invariant reference). PASSED.",
+      "test_file": "tests/unit/mcp/test_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/mcp/adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "When `_orchestrator_factory is None`, `__init__` behaviour is unchanged (Phase-0 path remains backward-compatible)",
+      "status": "complete",
+      "evidence": "Smoke check is gated on `if self._orchestrator_factory is not None` (adapter.py:186) \u2014 None branch is skipped entirely. Test test_no_smoke_check_when_factory_is_none asserts construction completes cleanly with self._orchestrator_factory is None. All 12 pre-existing test_adapter.py tests still pass without modification this turn (e.g., test_start_session_returns_session_id, test_turn_generates_response, test_session_end_*). PASSED.",
+      "test_file": "tests/unit/mcp/test_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/mcp/adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "All modified files follow existing module conventions: from __future__ import annotations, full type hints, Google-style docstrings with Args/Returns/Raises matching surrounding style (validate_coach_config, _default_player_model). No bare excepts. No new imports added to adapter.py for the smoke check (LLMProviderError / CoachConfigurationError / OrchestratorConfigurationError propagation requires no import here \u2014 they are raised inside the factory closure). pyproject.toml marker addition (feat_lca) follows existing list format. Pytest collected and ran 22 directly-relevant tests cleanly with zero parse errors and zero deprecation warnings.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/llm/client.py",
+        "src/study_tutor/mcp/adapter.py",
+        ".env.example",
+        "pyproject.toml"
+      ]
+    }
+  ]
+}

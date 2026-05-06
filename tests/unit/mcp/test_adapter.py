@@ -427,6 +427,160 @@ async def test_session_end_skips_topic_confidence_when_no_graphiti_client(
     assert record_called is False
 
 
+# ---------------------------------------------------------------------------
+# TASK-LCA-004 — boot-time smoke check (AC-LCA-02 / AC-LCA-08)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.feat_lca
+class TestMCPAdapterBootSmokeCheck:
+    """Verify ``MCPAdapter.__init__`` invokes the orchestrator factory once
+    at boot when one is supplied, propagates any structural-invariant
+    exception verbatim (so server boot fails fast), and is a no-op for the
+    Phase-0 backward-compatible ``orchestrator_factory=None`` path.
+    """
+
+    def test_factory_invoked_once_at_init_when_supplied(
+        self, role_config: RoleConfig
+    ) -> None:
+        """AC-LCA-02 boot path: the factory is invoked exactly once and the
+        result is discarded.
+
+        Adapter construction must not retain the factory's return value;
+        the smoke check exists solely to surface configuration errors at
+        boot. A subsequent ``tutor_turn`` will call the factory again —
+        per-turn isolation invariant — so caching here would silently
+        share orchestrator state across turns.
+        """
+        invocations: list[int] = []
+
+        def factory() -> object:
+            invocations.append(1)
+            return object()
+
+        adapter = MCPAdapter(
+            role_config=role_config,
+            store=SessionStore(),
+            orchestrator_factory=factory,
+        )
+
+        assert len(invocations) == 1
+        # Factory return value is NOT stored on the adapter — only the
+        # callable itself.
+        assert adapter._orchestrator_factory is factory
+
+    def test_factory_exception_propagates_from_init(
+        self, role_config: RoleConfig
+    ) -> None:
+        """AC-LCA-02: when the factory raises ``CoachConfigurationError``
+        the exception escapes ``__init__`` so the MCP server boot fails
+        before serving begins. We use the real exception class so the
+        propagation surface includes any subclass-aware ``except``
+        handlers a future caller might write.
+        """
+        from study_tutor.tutoring.coach.factory import CoachConfigurationError
+
+        def factory() -> object:
+            raise CoachConfigurationError(
+                "test: same provider rejected (D3 invariant)"
+            )
+
+        with pytest.raises(CoachConfigurationError, match="D3 invariant"):
+            MCPAdapter(
+                role_config=role_config,
+                store=SessionStore(),
+                orchestrator_factory=factory,
+            )
+
+    def test_factory_llm_provider_error_propagates_from_init(
+        self, role_config: RoleConfig
+    ) -> None:
+        """AC-LCA-02: an ``LLMProviderError`` raised during factory
+        invocation (e.g. unset ``AGENT_MODELS__COACH_MODEL`` surfaced via
+        :func:`_default_coach_model`) must also propagate from
+        ``__init__`` rather than being swallowed.
+        """
+        from study_tutor.llm.client import LLMProviderError
+
+        def factory() -> object:
+            raise LLMProviderError(
+                "AGENT_MODELS__COACH_MODEL is not set."
+            )
+
+        with pytest.raises(LLMProviderError, match="AGENT_MODELS__COACH_MODEL"):
+            MCPAdapter(
+                role_config=role_config,
+                store=SessionStore(),
+                orchestrator_factory=factory,
+            )
+
+    def test_no_smoke_check_when_factory_is_none(
+        self, role_config: RoleConfig
+    ) -> None:
+        """Phase-0 backward compatibility: ``orchestrator_factory=None``
+        path must construct cleanly with no factory invocation, no
+        exception, and no observable change to the existing constructor
+        contract. The Phase-0 fixture-based tests in this file rely on
+        that.
+        """
+        adapter = MCPAdapter(role_config=role_config, store=SessionStore())
+        # Constructor completes cleanly and the factory slot is None.
+        assert adapter._orchestrator_factory is None
+
+    def test_same_provider_rejection_via_real_validate_coach_config(
+        self, role_config: RoleConfig
+    ) -> None:
+        """AC-LCA-08: when both ``AGENT_MODELS__REASONING_MODEL`` and
+        ``AGENT_MODELS__COACH_MODEL`` resolve to the same provider, the
+        orchestrator factory's call to :func:`validate_coach_config`
+        raises ``CoachConfigurationError`` whose message names both
+        providers and references the D3 invariant.
+
+        This test wires a stub factory that drives the real
+        :func:`validate_coach_config` so we catch any drift between the
+        validator's error contract and the AC text — relying on a hand-
+        crafted exception would let the validator silently change
+        message format.
+        """
+        from study_tutor.tutoring.coach.factory import (
+            CoachConfig,
+            CoachConfigurationError,
+            PlayerConfig,
+            validate_coach_config,
+        )
+
+        # Factory mirrors the real cli/main.py:serve closure shape:
+        # resolve player + coach providers from the env, build configs,
+        # and invoke the validator. A same-provider scenario exercises
+        # the D3 branch.
+        def factory() -> object:
+            player_cfg = PlayerConfig(provider="anthropic")
+            coach_cfg = CoachConfig(provider="anthropic")
+            validate_coach_config(
+                player_config=player_cfg,
+                coach_config=coach_cfg,
+                system_prompt="non-empty system prompt",
+                tools=None,
+            )
+            return object()  # never reached
+
+        with pytest.raises(CoachConfigurationError) as exc_info:
+            MCPAdapter(
+                role_config=role_config,
+                store=SessionStore(),
+                orchestrator_factory=factory,
+            )
+
+        # Message must name both providers and reference the D3 / two-
+        # provider invariant per AC-LCA-08.
+        msg = str(exc_info.value)
+        assert "anthropic" in msg
+        # The validator's message uses repr() so 'anthropic' appears
+        # twice — once for Coach.provider, once for Player.provider.
+        assert msg.count("anthropic") >= 2
+        assert "two-provider" in msg.lower() or "ASSUM-009" in msg
+
+
 async def test_session_end_skips_topic_confidence_for_zero_turn_session(
     role_config: RoleConfig, monkeypatch: pytest.MonkeyPatch
 ) -> None:

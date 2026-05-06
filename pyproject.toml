@@ -90,4 +90,6 @@ markers = [
     "smoke: fast end-to-end-ish smoke tests run by autobuild smoke gates",
     "feat_ph1_002: tests scoped to the Deterministic Session Planner feature (FEAT-PH1-002)",
     "feat_ph1_003: tests scoped to the DeepAgents Tutoring Loop with Coach feature (FEAT-PH1-003)",
+    "feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)",
+    "live: operator-conducted live smokes (require real LLM/Graphiti providers; excluded from default CI)",
 ]

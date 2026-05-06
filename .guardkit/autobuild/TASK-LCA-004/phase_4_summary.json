@@ -1,0 +1,7 @@
+{
+  "tests_run": 831,
+  "tests_failed": 2,
+  "coverage_pct": 91.13,
+  "output_summary": "pytest: 824 passed, 2 failed, 5 skipped; 91.13% line coverage on src/study_tutor (failures: graphiti_client_wiring, planner mypy-strict)",
+  "quality_gates_passed": false
+}

@@ -57,6 +57,7 @@ from study_tutor.session.tutor_session import (
     SessionStore,
     get_default_store,
 )
+from study_tutor.tutoring.adapters.session_state import SessionState
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
 from study_tutor.tutoring.session_end import EventBus, perform_session_end
 
@@ -163,6 +164,27 @@ class MCPAdapter:
         self._write_helper = write_helper
         self._event_bus = event_bus if event_bus is not None else EventBus()
         self._graphiti_client = graphiti_client
+
+        # TASK-LCA-004 — boot-time smoke check (AC-LCA-02 / AC-LCA-08).
+        #
+        # When an orchestrator factory is wired (Phase-1 production path
+        # via ``cli/main.py:serve``), invoke it once and discard the
+        # result so any structural misconfiguration — most importantly
+        # the same-provider rejection raised by
+        # :func:`validate_coach_config` and the unset-env-var rejection
+        # raised by :func:`_default_coach_model` — surfaces at server
+        # boot rather than at first user turn. This converts a latent
+        # "first turn 500s with `LLMProviderError`" failure mode into a
+        # fail-fast boot-time error that the operator sees in the
+        # systemd/launchd log before any client connects.
+        #
+        # The Phase-0 backward-compatible path (``orchestrator_factory
+        # is None``) intentionally skips this check: there is no factory
+        # to invoke, no Coach to validate, and existing tests + the
+        # Phase-0 single-LLM smoke path must continue to construct the
+        # adapter without supplying one.
+        if self._orchestrator_factory is not None:
+            self._orchestrator_factory()  # noqa: F841 — discarded; smoke-check invocation only
 
     async def tutor_start_session(
         self,
@@ -287,9 +309,29 @@ class MCPAdapter:
         # instances and cannot contaminate each other's Coach
         # observations.
         if self._orchestrator_factory is not None:
+            # TASK-LCA-003: build the typed SessionState boundary object
+            # from the cached SessionPlan + TutorSession. This is the
+            # producer for the §4 SessionState integration contract
+            # consumed by TASK-LCA-001 (Player adapter) and TASK-LCA-002
+            # (Coach adapter). Optional fields default to ``None`` /
+            # ``()`` so a baseline-degraded plan (no ``text_name`` /
+            # missing ``focus_aos``) still yields a valid construction
+            # (ASSUM-LCA-007).
+            plan = self._plan_sessions.get(session_id)
+            text_name_value = (
+                getattr(plan, "text_name", None) if plan is not None else None
+            )
+            session_state = SessionState(
+                session_id=session_id,
+                student_id=session.subject,
+                text_name=text_name_value if text_name_value else None,
+                topic=plan.topic_name if plan is not None else None,
+                focus_aos=tuple(plan.focus_aos) if plan is not None else (),
+                mode="tutor",
+            )
             orchestrator: PlayerCoachOrchestrator = self._orchestrator_factory()
             turn_result = await orchestrator.run_turn(
-                session_state={"session_id": session_id},
+                session_state=session_state,
                 learner_message=user_message,
             )
             self._store.append_turn(session_id, "tutor", turn_result.response)
