@@ -1,0 +1,227 @@
+{
+  "task_id": "TASK-LCA-001",
+  "turn": 2,
+  "decision": "feedback",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/llm/test_client.py tests/unit/mcp/test_adapter.py tests/unit/roles/test_loader.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/roles/test_loader.py::test_load_coach_prompt_raises_when_path_unset PASSED [ 88%]\ntests/unit/roles/test_loader.py::test_load_coach_prompt_raises_when_file_missing PASSED [ 92%]\ntests/unit/roles/test_loader.py::test_load_role_resolves_coach_prompt_path PASSED [ 96%]\ntests/unit/roles/test_loader.py::test_load_role_leaves_coach_prompt_path_none_when_absent PASSED [100%]\n============================== 27 passed in 0.25s ==============================",
+      "duration_seconds": 0.9924812316894531
+    },
+    "requirements": {
+      "criteria_total": 10,
+      "criteria_met": 6,
+      "all_criteria_met": false,
+      "missing": [
+        "AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_model()).generate(prompt=learner_message, system=player_prompt)`; returns the result string verbatim",
+        "AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:",
+        "`feat_lca` pytest marker is registered in `pyproject.toml` (`[tool.pytest.ini_options].markers`) with description `\"feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)\"` so other Wave-1 tasks can use the marker without producing PytestUnknownMarkWarning",
+        "All modified files pass project-configured lint/format checks with zero errors"
+      ]
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_model()).generate(prompt=learner_message, system=player_prompt)`; returns the result string verbatim",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Player prompt is loaded once at adapter construction via `RoleConfig.load_player_prompt()` (existing method)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "_assemble_revise_prompt only reads entry.criterion_id and entry.target_score per RubricFeedback; entry.suggested_focus is structurally never accessed (verifiable by inspection of the f-string template \u2014 no `.suggested_focus` reference exists in the module). test_revise_does_not_leak_suggested_focus_into_prompt creates RubricFeedback(suggested_focus='DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK', ...) and asserts the literal string 'DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK' is NOT present in the prompt argument captured from the mocked LLMClient.generate call. The structured fields ('curriculum_accuracy', '0.9') ARE asserted present, proving the test exercises a real revise path.",
+      "notes": "_assemble_revise_prompt only reads entry.criterion_id and entry.target_score per RubricFeedback; entry.suggested_focus is structurally never accessed (verifiable by inspection of the f-string template \u2014 no `.suggested_focus` reference exists in the module). test_revise_does_not_leak_suggested_focus_into_prompt creates RubricFeedback(suggested_focus='DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK', ...) and asserts the literal string 'DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK' is NOT present in the prompt argument captured from the mocked LLMClient.generate call. The structured fields ('curriculum_accuracy', '0.9') ARE asserted present, proving the test exercises a real revise path."
+    },
+    {
+      "criterion_id": "AC-LCA",
+      "criterion_text": "AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-LCA",
+      "notes": "No completion promise for AC-LCA"
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Assembled `revise()` prompt contains NO substring from `RubricFeedback.suggested_focus` (asserted by unit test)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "PlayerLike is declared @runtime_checkable Protocol at src/study_tutor/tutoring/orchestrator.py:122-149 requiring async respond(*, session_state, learner_message) -> str and async revise(*, session_state, learner_message, previous_response, rubric_feedback) -> str. LLMPlayerAdapter defines both with matching keyword-only signatures and async-coroutine return types. test_adapter_satisfies_player_like_protocol explicitly asserts isinstance(adapter, PlayerLike) \u2014 passes. This validates the structural conformance at runtime, not just at type-check time.",
+      "notes": "PlayerLike is declared @runtime_checkable Protocol at src/study_tutor/tutoring/orchestrator.py:122-149 requiring async respond(*, session_state, learner_message) -> str and async revise(*, session_state, learner_message, previous_response, rubric_feedback) -> str. LLMPlayerAdapter defines both with matching keyword-only signatures and async-coroutine return types. test_adapter_satisfies_player_like_protocol explicitly asserts isinstance(adapter, PlayerLike) \u2014 passes. This validates the structural conformance at runtime, not just at type-check time."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Assembled `revise()` prompt contains NO Coach evidence / verdict / reasoning text (asserted by unit test using a fixture verdict)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Both respond() and revise() declare session_state with the Protocol-matching `Any` type annotation (mirroring PlayerLike). Inside the bodies session_state is bound only via `del session_state` (no subscript access whatsoever \u2014 verifiable by grep: zero `session_state[` occurrences in the module). The adapters package __init__.py re-exports the production SessionState frozen dataclass from session_state.py (TASK-LCA-003 already delivered) so production wiring constructs SessionState(session_id, student_id, ...) and threads it through unchanged. The unit tests use a _StubSessionState class with attribute-only access mirroring the producer contract.",
+      "notes": "Both respond() and revise() declare session_state with the Protocol-matching `Any` type annotation (mirroring PlayerLike). Inside the bodies session_state is bound only via `del session_state` (no subscript access whatsoever \u2014 verifiable by grep: zero `session_state[` occurrences in the module). The adapters package __init__.py re-exports the production SessionState frozen dataclass from session_state.py (TASK-LCA-003 already delivered) so production wiring constructs SessionState(session_id, student_id, ...) and threads it through unchanged. The unit tests use a _StubSessionState class with attribute-only access mirroring the producer contract."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "`LLMPlayerAdapter` implements `PlayerLike` (validated via `isinstance(adapter, PlayerLike)` runtime_checkable assertion)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "tests/unit/tutoring/adapters/test_llm_player_adapter.py covers all four mandated scenarios: (1) test_respond_invokes_llm_client_with_learner_message_and_system_prompt \u2014 respond happy path; (2) test_revise_with_empty_rubric_feedback_still_produces_prompt \u2014 degenerate empty list (asserts 'criterion_id:' not in prompt); (3) test_revise_assembled_prompt_contains_learner_and_previous_and_bullets \u2014 multi-criteria with two RubricFeedback entries; (4) test_revise_does_not_leak_suggested_focus_into_prompt + test_revise_does_not_leak_coach_verdict_or_evidence_text \u2014 security assertions. Plus structural tests (Protocol conformance, eager-load construction). Total: 7 tests, all passing.",
+      "notes": "tests/unit/tutoring/adapters/test_llm_player_adapter.py covers all four mandated scenarios: (1) test_respond_invokes_llm_client_with_learner_message_and_system_prompt \u2014 respond happy path; (2) test_revise_with_empty_rubric_feedback_still_produces_prompt \u2014 degenerate empty list (asserts 'criterion_id:' not in prompt); (3) test_revise_assembled_prompt_contains_learner_and_previous_and_bullets \u2014 multi-criteria with two RubricFeedback entries; (4) test_revise_does_not_leak_suggested_focus_into_prompt + test_revise_does_not_leak_coach_verdict_or_evidence_text \u2014 security assertions. Plus structural tests (Protocol conformance, eager-load construction). Total: 7 tests, all passing."
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "Adapter accepts `SessionState` as the `session_state` parameter (uses attribute access, not dict subscript)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "pyproject.toml line 93 contains exactly: 'feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)' inside the [tool.pytest.ini_options].markers list. Verified by running `pytest -m feat_lca` which collects 17 feat_lca-marked tests across the Wave-1 task suite (incl. this task's 7) with zero PytestUnknownMarkWarning emissions.",
+      "notes": "pyproject.toml line 93 contains exactly: 'feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)' inside the [tool.pytest.ini_options].markers list. Verified by running `pytest -m feat_lca` which collects 17 feat_lca-marked tests across the Wave-1 task suite (incl. this task's 7) with zero PytestUnknownMarkWarning emissions."
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "Unit tests cover: respond happy path, revise with empty rubric_feedback (degenerate case), revise with multiple criteria, revise security assertion (no free-text leak)",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Project pyproject.toml configures no ruff / black / flake8 / mypy / pyright sections; there is no .pre-commit-config.yaml in the repo. Therefore there is no project-configured lint/format gate to fail. All implementation files follow existing module conventions (`from __future__ import annotations`, type hints, descriptive docstrings, dataclass usage, asyncio.to_thread bridge) consistent with the patterns in src/study_tutor/tutoring/orchestrator.py and src/study_tutor/llm/client.py. Broader pytest run (198 tests) is green \u2014 no import-time syntax/typing errors.",
+      "notes": "Project pyproject.toml configures no ruff / black / flake8 / mypy / pyright sections; there is no .pre-commit-config.yaml in the repo. Therefore there is no project-configured lint/format gate to fail. All implementation files follow existing module conventions (`from __future__ import annotations`, type hints, descriptive docstrings, dataclass usage, asyncio.to_thread bridge) consistent with the patterns in src/study_tutor/tutoring/orchestrator.py and src/study_tutor/llm/client.py. Broader pytest run (198 tests) is green \u2014 no import-time syntax/typing errors."
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "`feat_lca` pytest marker is registered in `pyproject.toml` (`[tool.pytest.ini_options].markers`) with description `\"feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)\"` so other Wave-1 tasks can use the marker without producing PytestUnknownMarkWarning",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-009",
+      "notes": "No completion promise for AC-009"
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "result": "rejected",
+      "status": "rejected",
+      "evidence": "No completion promise for AC-010",
+      "notes": "No completion promise for AC-010"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_model()).generate(prompt=learner_message, system=player_prompt)`; returns the result string verbatim",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Player prompt is loaded once at adapter construction via `RoleConfig.load_player_prompt()` (existing method)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_assemble_revise_prompt only reads entry.criterion_id and entry.target_score per RubricFeedback; entry.suggested_focus is structurally never accessed (verifiable by inspection of the f-string template \u2014 no `.suggested_focus` reference exists in the module). test_revise_does_not_leak_suggested_focus_into_prompt creates RubricFeedback(suggested_focus='DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK', ...) and asserts the literal string 'DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK' is NOT present in the prompt argument captured from the mocked LLMClient.generate call. The structured fields ('curriculum_accuracy', '0.9') ARE asserted present, proving the test exercises a real revise path.",
+        "notes": "_assemble_revise_prompt only reads entry.criterion_id and entry.target_score per RubricFeedback; entry.suggested_focus is structurally never accessed (verifiable by inspection of the f-string template \u2014 no `.suggested_focus` reference exists in the module). test_revise_does_not_leak_suggested_focus_into_prompt creates RubricFeedback(suggested_focus='DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK', ...) and asserts the literal string 'DELETE_THIS_TEXT_THIS_IS_FREE_TEXT_LEAK' is NOT present in the prompt argument captured from the mocked LLMClient.generate call. The structured fields ('curriculum_accuracy', '0.9') ARE asserted present, proving the test exercises a real revise path."
+      },
+      {
+        "criterion_id": "AC-LCA",
+        "criterion_text": "AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-LCA",
+        "notes": "No completion promise for AC-LCA"
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Assembled `revise()` prompt contains NO substring from `RubricFeedback.suggested_focus` (asserted by unit test)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "PlayerLike is declared @runtime_checkable Protocol at src/study_tutor/tutoring/orchestrator.py:122-149 requiring async respond(*, session_state, learner_message) -> str and async revise(*, session_state, learner_message, previous_response, rubric_feedback) -> str. LLMPlayerAdapter defines both with matching keyword-only signatures and async-coroutine return types. test_adapter_satisfies_player_like_protocol explicitly asserts isinstance(adapter, PlayerLike) \u2014 passes. This validates the structural conformance at runtime, not just at type-check time.",
+        "notes": "PlayerLike is declared @runtime_checkable Protocol at src/study_tutor/tutoring/orchestrator.py:122-149 requiring async respond(*, session_state, learner_message) -> str and async revise(*, session_state, learner_message, previous_response, rubric_feedback) -> str. LLMPlayerAdapter defines both with matching keyword-only signatures and async-coroutine return types. test_adapter_satisfies_player_like_protocol explicitly asserts isinstance(adapter, PlayerLike) \u2014 passes. This validates the structural conformance at runtime, not just at type-check time."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Assembled `revise()` prompt contains NO Coach evidence / verdict / reasoning text (asserted by unit test using a fixture verdict)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Both respond() and revise() declare session_state with the Protocol-matching `Any` type annotation (mirroring PlayerLike). Inside the bodies session_state is bound only via `del session_state` (no subscript access whatsoever \u2014 verifiable by grep: zero `session_state[` occurrences in the module). The adapters package __init__.py re-exports the production SessionState frozen dataclass from session_state.py (TASK-LCA-003 already delivered) so production wiring constructs SessionState(session_id, student_id, ...) and threads it through unchanged. The unit tests use a _StubSessionState class with attribute-only access mirroring the producer contract.",
+        "notes": "Both respond() and revise() declare session_state with the Protocol-matching `Any` type annotation (mirroring PlayerLike). Inside the bodies session_state is bound only via `del session_state` (no subscript access whatsoever \u2014 verifiable by grep: zero `session_state[` occurrences in the module). The adapters package __init__.py re-exports the production SessionState frozen dataclass from session_state.py (TASK-LCA-003 already delivered) so production wiring constructs SessionState(session_id, student_id, ...) and threads it through unchanged. The unit tests use a _StubSessionState class with attribute-only access mirroring the producer contract."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "`LLMPlayerAdapter` implements `PlayerLike` (validated via `isinstance(adapter, PlayerLike)` runtime_checkable assertion)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "tests/unit/tutoring/adapters/test_llm_player_adapter.py covers all four mandated scenarios: (1) test_respond_invokes_llm_client_with_learner_message_and_system_prompt \u2014 respond happy path; (2) test_revise_with_empty_rubric_feedback_still_produces_prompt \u2014 degenerate empty list (asserts 'criterion_id:' not in prompt); (3) test_revise_assembled_prompt_contains_learner_and_previous_and_bullets \u2014 multi-criteria with two RubricFeedback entries; (4) test_revise_does_not_leak_suggested_focus_into_prompt + test_revise_does_not_leak_coach_verdict_or_evidence_text \u2014 security assertions. Plus structural tests (Protocol conformance, eager-load construction). Total: 7 tests, all passing.",
+        "notes": "tests/unit/tutoring/adapters/test_llm_player_adapter.py covers all four mandated scenarios: (1) test_respond_invokes_llm_client_with_learner_message_and_system_prompt \u2014 respond happy path; (2) test_revise_with_empty_rubric_feedback_still_produces_prompt \u2014 degenerate empty list (asserts 'criterion_id:' not in prompt); (3) test_revise_assembled_prompt_contains_learner_and_previous_and_bullets \u2014 multi-criteria with two RubricFeedback entries; (4) test_revise_does_not_leak_suggested_focus_into_prompt + test_revise_does_not_leak_coach_verdict_or_evidence_text \u2014 security assertions. Plus structural tests (Protocol conformance, eager-load construction). Total: 7 tests, all passing."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "Adapter accepts `SessionState` as the `session_state` parameter (uses attribute access, not dict subscript)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "pyproject.toml line 93 contains exactly: 'feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)' inside the [tool.pytest.ini_options].markers list. Verified by running `pytest -m feat_lca` which collects 17 feat_lca-marked tests across the Wave-1 task suite (incl. this task's 7) with zero PytestUnknownMarkWarning emissions.",
+        "notes": "pyproject.toml line 93 contains exactly: 'feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)' inside the [tool.pytest.ini_options].markers list. Verified by running `pytest -m feat_lca` which collects 17 feat_lca-marked tests across the Wave-1 task suite (incl. this task's 7) with zero PytestUnknownMarkWarning emissions."
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "Unit tests cover: respond happy path, revise with empty rubric_feedback (degenerate case), revise with multiple criteria, revise security assertion (no free-text leak)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Project pyproject.toml configures no ruff / black / flake8 / mypy / pyright sections; there is no .pre-commit-config.yaml in the repo. Therefore there is no project-configured lint/format gate to fail. All implementation files follow existing module conventions (`from __future__ import annotations`, type hints, descriptive docstrings, dataclass usage, asyncio.to_thread bridge) consistent with the patterns in src/study_tutor/tutoring/orchestrator.py and src/study_tutor/llm/client.py. Broader pytest run (198 tests) is green \u2014 no import-time syntax/typing errors.",
+        "notes": "Project pyproject.toml configures no ruff / black / flake8 / mypy / pyright sections; there is no .pre-commit-config.yaml in the repo. Therefore there is no project-configured lint/format gate to fail. All implementation files follow existing module conventions (`from __future__ import annotations`, type hints, descriptive docstrings, dataclass usage, asyncio.to_thread bridge) consistent with the patterns in src/study_tutor/tutoring/orchestrator.py and src/study_tutor/llm/client.py. Broader pytest run (198 tests) is green \u2014 no import-time syntax/typing errors."
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "`feat_lca` pytest marker is registered in `pyproject.toml` (`[tool.pytest.ini_options].markers`) with description `\"feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)\"` so other Wave-1 tasks can use the marker without producing PytestUnknownMarkWarning",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-009",
+        "notes": "No completion promise for AC-009"
+      },
+      {
+        "criterion_id": "AC-010",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "rejected",
+        "status": "rejected",
+        "evidence": "No completion promise for AC-010",
+        "notes": "No completion promise for AC-010"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "missing_requirement",
+      "description": "Not all acceptance criteria met",
+      "missing_criteria": [
+        "AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_model()).generate(prompt=learner_message, system=player_prompt)`; returns the result string verbatim",
+        "AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:",
+        "`feat_lca` pytest marker is registered in `pyproject.toml` (`[tool.pytest.ini_options].markers`) with description `\"feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)\"` so other Wave-1 tasks can use the marker without producing PytestUnknownMarkWarning",
+        "All modified files pass project-configured lint/format checks with zero errors"
+      ]
+    }
+  ],
+  "rationale": "Missing 4 acceptance criteria: AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_model()).generate(prompt=learner_message, system=player_prompt)`; returns the result string verbatim, AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:, `feat_lca` pytest marker is registered in `pyproject.toml` (`[tool.pytest.ini_options].markers`) with description `\"feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)\"` so other Wave-1 tasks can use the marker without producing PytestUnknownMarkWarning, All modified files pass project-configured lint/format checks with zero errors",
+  "context_used": "## Job-Specific Context\n\nBudget: 1094/7892 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- CREATED_AT_PATTERN_VERSION\n- SOURCE_OF_PATTERN\n\n### \u26a0\ufe0f Warnings\n- USES_ENDPOINT\n- CREATES\n\n### \ud83c\udfad Role Constraints\n- DELEGATES_TO\n- PROJECT_INVOLVES\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- ASSOCIATED_WITH_PROJECT\n- HAS_MODE\n\n\n## Previous Turn Summary (Turn 1)\n**What was attempted**: Implementation attempt\n**Player decision**: feedback\n**Coach decision**: feedback\n**Coach feedback**: - Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 AC-LCA-03** `respond(session_state, learner_message)` invokes `LLMClient(provider=_default_player_mo\n  \u2022 Player prompt is loaded once at adapter construction via `RoleConfig.load_player_prompt()` (existing\n  \u2022 AC-LCA-04** `revise(...)` assembles a deterministic prompt that contains:\n  \u2022 Assembled `revise()` prompt contains NO substring from `RubricFeedback.suggested_focus` (asserted by\n  \u2022 Assembled `revise()` prompt contains NO Coach evidence / verdict / reasoning text (asserted by unit \n  (5 more)\n\n**Acceptance Criteria Status**:\n  \u2717 AC-LCA: rejected\n  \u2717 AC-002: rejected\n  \u2717 AC-004: rejected\n  \u2717 AC-005: rejected\n  \u2717 AC-006: rejected\n  \u2717 AC-007: rejected\n  \u2717 AC-008: rejected\n  \u2717 AC-009: rejected\n  \u2717 AC-010: rejected",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false
+}

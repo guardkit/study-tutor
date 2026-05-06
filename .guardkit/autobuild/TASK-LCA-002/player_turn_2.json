@@ -1,22 +1,6 @@
 {
   "task_id": "TASK-LCA-002",
-  "timestamp": "2026-05-06T12:20:54.411835",
-  "completed": true,
-  "phases": {
-    "phase_3": {
-      "detected": true,
-      "text": "Implementation",
-      "completed": true
-    }
-  },
-  "quality_gates": {
-    "tests_passing": true,
-    "tests_passed": 11,
-    "tests_failed": 0,
-    "coverage": null,
-    "coverage_met": null,
-    "all_passed": true
-  },
+  "turn": 2,
   "files_modified": [
     ".claude/task-plans/TASK-LCA-001-implementation-plan.md",
     ".claude/task-plans/TASK-LCA-002-implementation-plan.md",
@@ -91,119 +75,28 @@
     "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-6CC5/.guardkit/autobuild/TASK-LCA-002/player_turn_2.json"
   ],
   "tests_written": [],
-  "summary": "11 tests passed, all quality gates passed",
-  "sdk_turns": {
-    "turns_used": 4,
-    "max_turns": 160,
-    "ceiling_hit": false
-  },
-  "bdd_results": {
-    "scenarios_passed": 0,
-    "scenarios_failed": 0,
-    "scenarios_pending": 13,
-    "failures": [],
-    "pending": [
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_the_coach_adapter_returns_a_fullyshaped_verdict_for_a_valid_response",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_at_and_inside_the_clamp_boundary_are_accepted[0.0-0.0]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_at_and_inside_the_clamp_boundary_are_accepted[0.001-0.001]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_at_and_inside_the_clamp_boundary_are_accepted[0.5-0.5]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_at_and_inside_the_clamp_boundary_are_accepted[0.999-0.999]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_at_and_inside_the_clamp_boundary_are_accepted[1.0-1.0]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_outside_the_clamp_boundary_are_clamped[-0.1-0.0]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_percriterion_scores_outside_the_clamp_boundary_are_clamped[1.1-1.0]",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_a_nonjson_coach_llm_response_routes_the_turn_to_fallback",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_coach_json_missing_required_criteria_routes_the_turn_to_fallback",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_a_coach_transport_failure_routes_the_turn_to_the_unevaluated_fallback",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_concurrent_coach_evaluations_construct_independent_llm_clients",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      },
-      {
-        "feature_file": "features.mcp-llm-player-coach-adapters.test_mcp_llm_player_coach_adapters",
-        "scenario_name": "test_coach_json_with_extra_unknown_criteria_is_accepted_with_the_extras_ignored",
-        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
-      }
-    ],
-    "feature_files": [
-      "features/mcp-llm-player-coach-adapters/mcp-llm-player-coach-adapters.feature"
-    ],
-    "tag": "@task:TASK-LCA-002"
-  },
-  "task_type": "feature",
-  "agent_invocations_validation": {
-    "status": "violation",
-    "expected_phases": 3,
-    "actual_invocations": 1,
-    "missing_phases": [
-      "4",
-      "5"
-    ],
-    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 1 completed invocations\n\nMissing phases:\n  - Phase 4 (Testing)\n  - Phase 5 (Code Review)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 3 (Phase 3): Implementation (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
-  },
-  "plan_audit": {
-    "status": "skipped",
-    "severity": null,
-    "violations": 0,
-    "extra_files": [],
-    "missing_files": [],
-    "extra_dependencies": [],
-    "missing_dependencies": [],
-    "loc_variance_pct": null,
-    "discrepancies_count": 0,
-    "message": "no implementation plan on disk"
-  },
-  "unconfirmed_low_confidence_assumptions": {
-    "status": "ok",
-    "unconfirmed": [],
-    "files_scanned": 0,
-    "files_skipped": 0,
-    "message": null
-  },
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-LCA-001 (was AC-LCA-05) \u2014 evaluate invokes LLMClient(provider=_default_coach_model()).generate",
+    "AC-LCA-002 \u2014 parse_coach_output produces fully-shaped CoachVerdict",
+    "AC-LCA-003 (was AC-LCA-06) \u2014 MalformedCoachOutputError surfaces unwrapped",
+    "AC-LCA-004 \u2014 coach.md exists, <300 words, structured rubric, JSON-only",
+    "AC-LCA-005 (was ASSUM-LCA-005) \u2014 unknown criterion_ids silently dropped",
+    "AC-LCA-006 \u2014 RoleConfig.load_coach_prompt() mirrors load_player_prompt",
+    "AC-LCA-007 \u2014 LLMCoachAdapter satisfies CoachLike via isinstance",
+    "AC-LCA-008 \u2014 adapter consumes SessionState.text_name + .topic for prompt grounding"
+  ],
+  "requirements_remaining": [
+    "AC-LCA-009 (lint/format) \u2014 reported 'uncertain'; no project lint command configured in this default-template worktree."
+  ],
+  "sdk_turns_used": 4,
+  "sdk_max_turns": 160,
+  "sdk_ceiling_hit": false,
+  "tests_passed_count": 11,
   "completion_promises": [
     {
       "criterion_id": "AC-LCA-001",
