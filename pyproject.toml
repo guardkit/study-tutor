@@ -25,12 +25,14 @@ dependencies = [
     # for the next drift; until that test exists, the version bound is the
     # only line of defence.
     # TASK-FORK-PATCH (2026-05-04): repin from PyPI 0.29.x to the guardkit fork
-    # tag v0.29.5-guardkit.2. Fork is based on upstream 0.29.0 (preserves the
-    # constraint above) and ships fixes for bugs #5/#11 (RediSearch dash-as-NOT
-    # / @group_id filter), #6/#7 (factories OpenAI mis-routing), #8 (decorator
-    # single-group), #9 (edge search endpoints), #10 (backtick sanitiser),
-    # #12/#13 (FastMCP host binding). See FORK-NOTES.md in the fork repo.
-    "graphiti-core[falkordb] @ git+https://github.com/guardkit/graphiti.git@v0.29.5-guardkit.2",
+    # tag v0.29.5-guardkit.3 (bumped 2026-05-07; .3 re-applies the four-file
+    # patch set on the guardkit-tooling branch after the re-init dropped them).
+    # Fork is based on upstream 0.29.0 (preserves the constraint above) and
+    # ships fixes for bugs #5/#11 (RediSearch dash-as-NOT / @group_id filter),
+    # #6/#7 (factories OpenAI mis-routing), #8 (decorator single-group),
+    # #9 (edge search endpoints), #10 (backtick sanitiser), #12/#13 (FastMCP
+    # host binding). See FORK-NOTES.md in the fork repo.
+    "graphiti-core[falkordb] @ git+https://github.com/guardkit/graphiti.git@v0.29.5-guardkit.3",
 ]
 
 [project.scripts]
