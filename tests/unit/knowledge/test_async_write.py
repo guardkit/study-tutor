@@ -248,6 +248,41 @@ class TestPerformWriteFailure:
         assert any(getattr(r, "error_class", None) == "RuntimeError" for r in failed)
 
     @pytest.mark.asyncio
+    async def test_perform_write_logs_actual_error_message(
+        self, valid_groups: list[str], caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """TASK-GSE-001 regression: the ``graphiti_write_failed`` log line
+        must surface both the exception class AND its message.
+
+        Before this change the log captured ``error_class`` but not the
+        message, which meant downstream graphiti-core failures (e.g.
+        RediSearch parse errors on hyphenated group_ids) were observable
+        only as a class name with no diagnostic content.
+        """
+        boom_msg = "redis fulltext: Syntax error at offset 8 near lilymay"
+
+        async def boom(*_args: Any, **_kwargs: Any) -> None:
+            raise ValueError(boom_msg)
+
+        client = FakeClient(behavior=boom)
+        helper = GraphitiWriteHelper(client=client)
+        with caplog.at_level(logging.WARNING):
+            task = helper.schedule_write(valid_groups, make_session_episode(), "F3")
+            assert task is not None
+            await task
+
+        failed = [
+            r for r in caplog.records
+            if getattr(r, "event", None) == "graphiti_write_failed"
+        ]
+        assert len(failed) == 1
+        record = failed[0]
+        assert getattr(record, "error_class", None) == "ValueError"
+        assert getattr(record, "error", None) == boom_msg
+        assert "ValueError" in getattr(record, "error_repr", "")
+        assert boom_msg in getattr(record, "error_repr", "")
+
+    @pytest.mark.asyncio
     async def test_succeeded_log_carries_latency_ms(
         self, valid_groups: list[str], caplog: pytest.LogCaptureFixture
     ) -> None:

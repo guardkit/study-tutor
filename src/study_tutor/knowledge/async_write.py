@@ -351,6 +351,8 @@ class GraphitiWriteHelper:
             try:
                 sanitised = sanitise_misconception_text(raw_text)
             except ValueError as exc:
+                # TASK-GSE-001: surface the exception message alongside the
+                # class so the dropped-write reason is observable.
                 logger.warning(
                     "graphiti write dropped (prompt-injection pattern detected)",
                     extra={
@@ -359,6 +361,8 @@ class GraphitiWriteHelper:
                         "episode_kind": episode_kind,
                         "group_ids": list(group_ids),
                         "error_class": exc.__class__.__name__,
+                        "error": str(exc),
+                        "error_repr": repr(exc),
                     },
                 )
                 return None
@@ -440,6 +444,11 @@ class GraphitiWriteHelper:
             await self._client.add_episode(**kwargs)
         except BaseException as exc:  # noqa: BLE001 -- log-only failure required by ADR-ARCH-019
             latency_ms = int((time.monotonic() - start) * 1000)
+            # TASK-GSE-001: ``error`` and ``error_repr`` are load-bearing —
+            # without them the silent-swallow surface emits the exception
+            # *class* but not its *message*, which is what we need to
+            # diagnose downstream graphiti-core failures (e.g. RediSearch
+            # parse errors on hyphenated group_ids).
             logger.warning(
                 "graphiti write failed",
                 extra={
@@ -448,6 +457,8 @@ class GraphitiWriteHelper:
                     "episode_kind": episode_kind,
                     "group_ids": group_ids,
                     "error_class": exc.__class__.__name__,
+                    "error": str(exc),
+                    "error_repr": repr(exc),
                     "latency_ms": latency_ms,
                 },
             )
@@ -525,7 +536,12 @@ class GraphitiWriteHelper:
         group_ids: list[str],
         error_class: str,
     ) -> None:
-        """Emit a structured ``graphiti_write_dropped_invalid`` warning."""
+        """Emit a structured ``graphiti_write_dropped_invalid`` warning.
+
+        TASK-GSE-001: ``error`` mirrors the human-readable reason as a
+        structured field so log consumers don't have to parse it out of the
+        ``%s`` formatted message.
+        """
         logger.warning(
             "graphiti write dropped (invalid input): %s",
             reason,
@@ -535,6 +551,7 @@ class GraphitiWriteHelper:
                 "episode_kind": episode_kind,
                 "group_ids": group_ids,
                 "error_class": error_class,
+                "error": reason,
             },
         )
 

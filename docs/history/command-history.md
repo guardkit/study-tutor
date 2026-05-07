@@ -2754,6 +2754,85 @@ So my one-liner pick: /task-review TASK-FORK-PATCH --mode=decision --depth=stand
 
 
 
+
+
+/task-create please create a review task to analyse the smoke test failure in /Users/richardwoollcott/Projects/appmilla_github/study-tutor/docs/history/autobuild-FEAT-PH1-002-history.md - all the tasks appear to have passed
+
+
+=========================================================================
+REVIEW COMPLETE: TASK-DSP-008
+=========================================================================
+
+Mode: post-mortem (root cause + disposition)
+Depth: standard
+Report: .claude/reviews/TASK-DSP-008-review-report.md
+
+Findings: 6
+Recommendations: 4
+Disposition: PASS-WITH-FOLLOWUP
+
+Key findings:
+  1. Literal cause CONFIRMED: pytest exit 5 (no tests collected) —
+     reproduced in worktree, 391 deselected / 0 selected.
+  2. Markers `smoke` and `feat-ph1-002` are NOT registered in pyproject.toml
+     — only `seam` and `integration_contract` are.
+  3. Zero tests under tests/ carry @pytest.mark.smoke or the feature marker.
+  4. NO implementation task (DSP-001..006) was asked to author smoke tests
+     — the gate config was added without a corresponding authoring task.
+  5. All 6 implementation tasks were independently approved (100% rate);
+     the only red signal is a misconfigured gate.
+  6. Orchestrator currently conflates exit 5 (config gap) with exit 1
+     (real regression) — both surface as identical FAILED.
+
+Recommendations (chosen path = Option c):
+  R1. Disposition: FEAT-PH1-002 = pass-with-followup.
+  R2. Create TASK-DSP-009-author-feat-ph1-002-smoke-tests (the actual fix).
+  R3. File a GuardKit-side note: smoke_gates module should distinguish
+      exit 5 from exit 1 in reporting (process improvement).
+  R4. (Optional) Feature-spec lint to catch unwired smoke gates pre-flight.
+
+Decision Options:
+  [A]ccept    — Approve findings, leave it here. You then create the
+                follow-up task manually whenever you're ready.
+  [R]evise    — Request deeper analysis on a specific area.
+  [I]mplement — Auto-create the follow-up implementation task
+                (recommended: R2 only — TASK-DSP-009 in this repo;
+                R3 belongs in the GuardKit project, not study-tutor).
+  [C]ancel    — Discard this review.
+
+Recommended: [I]mplement (R2 only)
+=========================================================================
+The task is now status: review_complete with review_results populated. Tell me your choice ([A], [R], [I], or [C]) and I'll proceed — for [I], I'll draft TASK-DSP-009-author-feat-ph1-002-smoke-tests in the same feature folder.
+
+TASK-DSP-008-review-report.md
+[I]mplement please also create a task using the task tool to invoke /create-task to fix R3. File a GuardKit-side note: smoke_gates module should distinguise exit 5 from exit 1 in reporting (process improvement).
+Got it — I'll create TASK-DSP-009 directly in this repo for R2, and spawn an Agent to create the GuardKit-side R3 task. Let me first check an existing implementation task's shape so DSP-009 matches.
+
+Summary
+R2 — Implementation task in study-tutor:
+
+Created TASK-DSP-009-author-feat-ph1-002-smoke-tests.md
+Status: backlog, complexity 3, ~45 min, parent_review: TASK-DSP-008
+Acceptance: register smoke + feat-ph1-002 markers in pyproject.toml, author ≥1 smoke test covering happy path + fallback, confirm gate command exits 0 with ≥1 selected, flip FEAT-PH1-002.yaml status to passed.
+Includes a note about the hyphen-vs-underscore marker-name gotcha so the implementer doesn't trip on pytest.mark.feat-ph1-002 not being a valid Python attribute.
+R3 — Process-improvement task in GuardKit:
+
+Created guardkit/tasks/backlog/TASK-FIX-SG05-smoke-gates-distinguish-exit-5-from-exit-1.md
+Task ID: TASK-FIX-SG05 (mnemonic: SmokeGates exit-5; matches GuardKit's 4-char TASK-FIX-XXXX convention)
+Cross-repo reference to study-tutor/TASK-DSP-008 is in the task body — agent omitted parent_review from frontmatter because that field is set up to point to same-repo IDs and would dangle for cross-repo tooling. Worth knowing for next time you do a cross-repo follow-up.
+Module path confirmed by the agent: guardkit/orchestrator/smoke_gates.py.
+TASK-DSP-008 status: review_complete, with review_results populated (decision: pass-with-followup, report path, followup task). Left in the feature subfolder; you can /task-complete TASK-DSP-008 whenever you want to archive it.
+
+Suggested next moves (your call):
+
+/task-work TASK-DSP-009 to wire up the smoke tests and unblock FEAT-PH1-002.
+Re-run the autobuild's smoke gate (or just the local command) to confirm green.
+Hand TASK-FIX-SG05 to whoever owns GuardKit when convenient — it's priority: medium, not on the critical path.
+/task-complete TASK-DSP-008
+
+
+
+
 /task-create please create a review task to analyse docs/reviews/REVIEW-TASK-GR-DEMO-2026-05-05.md which are the results from running tasks/backlog/TASK-GR-DEMO-end-to-end-mcp-tutor-session.md
 
 
@@ -2949,6 +3028,7 @@ TASK-GR-PMT and TASK-GR-WIRE have no hard build dependency between them. I encod
 TASK-GR-CONF has a hard dependency on TASK-GR-WIRE because TASK-GR-WIRE is what adds the write_helper injection point on MCPAdapter.__init__ that TASK-GR-CONF consumes.
 Coach + Player provider env-var convention: AC-WIRE-01 references a AGENT_MODELS__COACH_MODEL env var which I introduced as a suggestion. If the FEAT-PH1-003 close-out PR established a different convention, the implementer should follow that — flagged in the implementation notes.
 The review task is left in tasks/backlog/ with decision_taken: implement recorded; run /task-complete TASK-REV-GRD5 when you want to archive it formally.
+
 
 /feature-spec "player coach adapters" --context docs/research/ideas/llm-player-coach-adapters-brief.md
 
