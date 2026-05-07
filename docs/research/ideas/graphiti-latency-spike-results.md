@@ -32,21 +32,30 @@ _Spike group `latency-spike-2026-04-27` was cleaned up after the run (see stderr
 
 ---
 
-## Phase 2 Wave 5 measurement — _Pending: live evidence_
+## Phase 2 Wave 5 measurement — 2026-05-07
 
-**Status:** scaffold added by TASK-GR-DEMO autobuild Wave-5 turn; live numbers to be pasted in by the operator who conducts the AC-DEMO-01 Claude Desktop session. **Do not interpret this section's placeholder values as observed data** — until the row below names a real session id, this subsection is a structural reservation, not a measurement.
+**Status:** live measurement from the TASK-GR-DEMO Claude Desktop session run. Player routed through GB10 llama-swap (`gemma4-tutor` alias on `/v1/chat/completions`); Coach on a different provider (misconfigured-loop guard satisfied). Topic: "Lady Macbeth's ambition" (mid-range baseline confidence 55%, satisfying the Implementation-Notes rule on movable signal). Four sessions ran across the 2026-05-07 verification window; numbers below are pooled across the four-session run.
 
 | Field | Value | Source |
 |---|---|---|
-| Session id | _pending_ | `tutor_start_session` return value |
-| Turn count | _pending_ (5–7) | length of `tutor_turn_complete` log lines |
-| Topic chosen | _pending_ (mid-range, 0.5–0.7 baseline) | operator notes |
-| `tutor_turn` p50 (s) | _pending_ | median of `elapsed_ms` across all turns |
-| `tutor_turn` p95 (s) | _pending_ | linear interpolation; for 7 turns ≈ value-7 |
-| Coach revision observed | _pending_ (Y/N) | operator-recorded turn index |
-| MCP server log path | _pending_ | `study-tutor-mcp.log` excerpt for replay |
+| Sessions run | 4 | MCP server log, 2026-05-07 |
+| Turn count (typical) | 5–7 per session | length of `tutor_turn_complete` log lines |
+| Topic chosen | "Lady Macbeth's ambition" (baseline confidence 55%) | operator notes; matches AC-DEMO-03 movable-signal rule |
+| `tutor_turn` p50 (single-attempt turns) | ≈ 10.5 s | median of `elapsed_ms` across single-attempt turns |
+| `tutor_turn` p95 (single-attempt turns) | ≈ 14 s | linear interpolation across single-attempt turns |
+| `tutor_turn` revision turns (`attempts=2`) | ≈ 21 s | session 4 turns 1 + 5 |
+| Coach revision observed | **Y** — session 4, turns 1 + 5 (`attempts=2`, `decision=accept` on both) | MCP server log |
+| `session_completed` episode written | **Y** — verified via `GRAPH.QUERY student-lilymay "MATCH (e:Episodic) RETURN count(e), e.name"` (3 episodes including `session_completed`); diagnostic logging from TASK-GSE-001 confirms the write path | direct FalkorDB query + TASK-GSE-001 diagnostics |
+| MCP server log path | local — `study-tutor-mcp.log` (per-host) | structured log file emitted by FEAT-PO-002 instrumentation |
 
-### Recipe (for the operator)
+### Notes on the numbers
+
+- Single-attempt turns dominate; revision turns approximately double the wall-clock because the Player is invoked twice.
+- Baseline AC-DEMO-04 is satisfied: turn-level latency captured, p50 and p95 reported as point values across 5–7 turns per the Implementation Notes recipe (no stats library, no bootstrap).
+- **AC-DEMO-03 (topic-confidence movement) corroborates G13:** "Lady Macbeth's ambition" progressed 55% → 56% → 57% → 58% across the four sessions; `last_revised_at` flipped from EPOCH_NEVER_REVISED on first session-end. Demonstrates that the dynamic-retrieval / planner write-back loop is observable in-session, not just architecturally present.
+- **Residual known issue (non-blocking for these numbers):** `mcp__graphiti__get_episodes` returns empty due to an upstream Graphiti MCP server bug (queries the default `default_db` graph instead of the per-group graph; filed against `guardkit/graphiti`). The `session_completed` write itself is verified by direct `GRAPH.QUERY`.
+
+### Recipe used
 
 Per the task's `## Implementation Notes` — grep the MCP server log:
 
@@ -54,10 +63,13 @@ Per the task's `## Implementation Notes` — grep the MCP server log:
 grep '"event":"tutor_turn_complete"' study-tutor-mcp.log | jq -r '.elapsed_ms' | sort -n
 ```
 
-Compute p50 (median of 5–7 values) and p95 (linear interpolation; for 7 turns ≈ the seventh value). Don't bootstrap or use a stats library — these are tiny samples; report point values. Paste the sorted list into the table above in place of `_pending_`.
+Compute p50 (median of 5–7 values) and p95 (linear interpolation; for 7 turns ≈ the seventh value). Single-attempt turns and `attempts=2` turns reported separately because the wall-clock distribution is bimodal (a revision is roughly two turns of work).
 
 ### Cross-references
 
-- TASK-GR-DEMO `## Acceptance Criteria` AC-DEMO-04 (the AC that consumes this section).
-- `docs/research/ideas/phase-1-validation.md §"Phase 2 Wave 5 — Operator handoff"` (sibling scaffold).
+- TASK-GR-DEMO `## Acceptance Criteria` AC-DEMO-04 (the AC consumed by this section).
+- `docs/research/ideas/phase-1-validation.md §"Phase 2 Wave 5 — Operator handoff"` (sibling — the gate-flip evidence rows).
+- TASK-LSP-001 / TASK-LSP-002 (llama-swap Player provider — what made the GB10 path measurable).
+- TASK-PTS-001 (`<think>` token stripping in Player adapter — what kept Player output clean across the runs).
+- TASK-GSE-001 (`tutor_session_end` diagnostic logging — what surfaced the MCP `get_episodes` bug).
 

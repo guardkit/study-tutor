@@ -2,10 +2,14 @@
 id: TASK-REV-GR1A
 title: "Plan: Graphiti Runtime Integration Repair"
 task_type: review
-status: review_complete
+status: completed
+completed: 2026-05-07T00:00:00+00:00
+completed_location: tasks/completed/TASK-REV-GR1A/
+completion_reason: "Plan executed end-to-end. Parent feature TASK-PH2-GR-001 closed by TASK-GR-DEMO AC-DEMO-06 on 2026-05-07. All five wave subtasks shipped as planned; G3/G4/G5/G6/G13 flipped to Held."
+previous_state: review_complete
 priority: high
 created: 2026-05-02T00:00:00+00:00
-updated: 2026-05-02T00:00:00+00:00
+updated: 2026-05-07T00:00:00+00:00
 complexity: 5
 tags:
   - feature-plan

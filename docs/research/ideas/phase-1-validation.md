@@ -49,12 +49,12 @@ The cluster below was the load-bearing finding of the close-out gate run. Each i
 ### Falsified items
 
 - **G2 — Student model populated for Lilymay.** `python scripts/seed_student_model.py` runs to exit code 0 but **0 of 25 entity writes persist** (all fail in `_perform_write` with `openai.AuthenticationError` once the LLM/embedder root cause is reached). The `seeded Lilymay baseline (subjects=0, confidences=0, succeeded_writes=25)` log line is misleading: `succeeded_writes` counts tasks that completed without abandonment in the drain window — it does not count tasks that actually wrote to FalkorDB. Verified empty: `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returns `{"message":"No relevant nodes found","nodes":[]}` and `mcp__graphiti__get_episodes(group_ids=["student-lilymay"])` returns `{"message":"No episodes found","episodes":[]}`. **Falsified.**
-- **G3 — Session planner produces explainable plans, exercised against live state.** `get_topic_recommendations("lilymay", count=3)` reads via the same broken client path. Cannot be exercised end-to-end until G2's blocker is cleared. Pure-functional ranking module ([src/study_tutor/planner/](src/study_tutor/planner/)) is correct; it just has nothing to read. **Falsified at the runtime layer; held at the unit-test layer.**
-- **G4 (runtime) — Player-Coach tutoring loop runs end-to-end.** `tutor_start_session` calls `get_student_state` which hits the same client path. The orchestrator architecture is sound (see Held above); the runtime hop into graphiti will fail with the same `AuthenticationError` until the LLM/embedder are wired. **Falsified at the runtime layer.**
-- **G5 — Session completion writes to Graphiti.** F3 `record_session_completion` dispatches via `GraphitiWriteHelper.schedule_write` → `_perform_write` → `add_episode`. Same OpenAI default; same 401. **Falsified at the runtime layer.**
-- **G6 — End-to-end demo flow works.** Cannot run without G2/G4/G5. **Falsified.**
+- **G3 — Session planner produces explainable plans, exercised against live state.** `get_topic_recommendations("lilymay", count=3)` reads via the same broken client path. Cannot be exercised end-to-end until G2's blocker is cleared. Pure-functional ranking module ([src/study_tutor/planner/](src/study_tutor/planner/)) is correct; it just has nothing to read. **Falsified at the runtime layer; held at the unit-test layer.** **Superseded 2026-05-07 — flipped to Held by TASK-GR-DEMO live demo. See "Phase 2 Wave 5 — Operator handoff" below for evidence.**
+- **G4 (runtime) — Player-Coach tutoring loop runs end-to-end.** `tutor_start_session` calls `get_student_state` which hits the same client path. The orchestrator architecture is sound (see Held above); the runtime hop into graphiti will fail with the same `AuthenticationError` until the LLM/embedder are wired. **Falsified at the runtime layer.** **Superseded 2026-05-07 — flipped to Held by TASK-GR-DEMO live demo. See "Phase 2 Wave 5 — Operator handoff" below for evidence.**
+- **G5 — Session completion writes to Graphiti.** F3 `record_session_completion` dispatches via `GraphitiWriteHelper.schedule_write` → `_perform_write` → `add_episode`. Same OpenAI default; same 401. **Falsified at the runtime layer.** **Superseded 2026-05-07 — flipped to Held by TASK-GR-DEMO live demo. See "Phase 2 Wave 5 — Operator handoff" below for evidence.**
+- **G6 — End-to-end demo flow works.** Cannot run without G2/G4/G5. **Falsified.** **Superseded 2026-05-07 — flipped to Held by TASK-GR-DEMO live demo. See "Phase 2 Wave 5 — Operator handoff" below for evidence.**
 - **G8 — Technical write-up has content, not stubs.** `docs/submission/technical-writeup.md` not yet drafted with real content. Not blocking but acknowledged. **Falsified for now; defer-into-Phase-2 acceptable per Phase 1 G5's allowance and per the Phase-2 build plan's "POLISH-WRITEUP" continuous track.**
-- **G13 — Dynamic retrieval decision observable in a session.** Cannot be observed without a running session. **Falsified at the runtime layer; module logic correct in unit tests.**
+- **G13 — Dynamic retrieval decision observable in a session.** Cannot be observed without a running session. **Falsified at the runtime layer; module logic correct in unit tests.** **Superseded 2026-05-07 — flipped to Held by TASK-GR-DEMO live demo. See "Phase 2 Wave 5 — Operator handoff" below for evidence.**
 
 ### Secondary findings discovered during the close-out repair sweep (2026-05-02)
 
@@ -233,11 +233,11 @@ TASK-GR-SEED is moving back to `blocked/` pending an operator decision among R-W
 
 ---
 
-## Phase 2 Wave 5 — Operator handoff (_Pending: live evidence_)
+## Phase 2 Wave 5 — Operator handoff (_Live evidence captured 2026-05-07_)
 
-**Status:** scaffold added by TASK-GR-DEMO autobuild Wave-5 turn; the gate flips themselves remain in `Falsified` above until the operator who conducts the live AC-DEMO-01 Claude Desktop session pastes the real artifacts into the rows below. **Do not read this subsection as an asserted status change** — every row currently says `_pending_` because the live demo has not yet been conducted. The flip from "Falsified" to "Held" must happen in the section above this line, with citations into the rows below as the supporting evidence.
+**Status:** live AC-DEMO-01 Claude Desktop session conducted 2026-05-07 against GB10 llama-swap (`gemma4-tutor` for Player, Coach on a different provider). Four sessions ran; evidence below is from the run that exercised the Coach revise loop and a `session_completed` write. **G3, G4, G5, G6 and G13 flip from Falsified to Held — the Falsified entries above are tagged as Superseded with a back-reference to this section.** The Phase 1 → Phase 2 boundary is now structurally closed.
 
-### Why this scaffold exists
+### Why this section exists
 
 TASK-GR-DEMO's `## Acceptance Criteria` (AC-DEMO-05) requires this doc to record:
 - G3 flip + cite read-back-through-MCP evidence,
@@ -246,46 +246,56 @@ TASK-GR-DEMO's `## Acceptance Criteria` (AC-DEMO-05) requires this doc to record
 - G6 flip + paste a `mcp__graphiti__get_episodes` JSON,
 - G13 flip + cite session log + p50/p95 latency.
 
-Autobuild can structurally reserve where each excerpt lands; it cannot conduct the live session that produces them. Keeping this scaffold separate from the `Held` / `Falsified` / `Drifted` blocks above preserves the audit-trail invariant that every status flip is backed by a real artifact, not by a placeholder.
+The audit-trail invariant — every status flip backed by a real artifact, not a placeholder — is now satisfied by the rows below.
 
-### Operator checklist
-
-| Gate | Evidence required | Paste location |
-|---|---|---|
-| G3 | `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returning a populated Student entity *via the MCP boundary* (not just via the seed script). | row below: G3 |
-| G4 | `tutor_start_session` → 5–7 `tutor_turn` → `tutor_session_end` transcript excerpt. | row below: G4 |
-| G5 | A turn where the Coach disagreed with the initial Player reply and the corrected reply is what reached the user. | row below: G5 |
-| G6 | `mcp__graphiti__get_episodes(group_ids=["student-lilymay"])` JSON containing the `session_completed` episode written by the demo. | row below: G6 |
-| G13 | Session log + p50/p95 from the latency-results sibling doc. | row below: G13 |
+### Evidence (gate flips)
 
 | Gate | Excerpt / artifact | Source |
 |---|---|---|
-| G3 (read-back via MCP) | _pending_ | `mcp__graphiti__search_nodes` |
-| G4 (session round-trip) | _pending_ | session transcript |
-| G5 (Coach revision) | _pending_ | Coach-revised turn excerpt |
-| G6 (`session_completed` episode) | _pending_ | `mcp__graphiti__get_episodes` JSON |
-| G13 (latency + log) | _pending_ | sibling doc + transcript |
+| G3 (read-back via MCP) | `get_student_state(client, "lilymay")` returns a populated `StudentState` (year_group=10, target_grade="7", non-empty subjects, six topic_confidences). MCP `tutor_start_session` consumed it on every session start; planner produced a topic recommendation. The companion `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returns the typed-entity Student node landed by TASK-GSM-009 (already cited under "TASK-GSM-009 — Typed-entity seed landed — 2026-05-04" further down this doc — TASK-GSM-009 is the seed-side proof, this row is the planner-consumed proof). | `tutor_start_session` MCP handler reading via `get_student_state` |
+| G4 (session round-trip) | Four sessions completed end-to-end on 2026-05-07. Each: `tutor_start_session(student_id="lilymay")` → 5–7 `tutor_turn(...)` → `tutor_session_end(session_id=...)` returned cleanly. Player adapter routed through llama-swap (`/v1/chat/completions`, model alias `gemma4-tutor`); Coach on a different provider as required by the misconfigured-loop guard. Topic: "Lady Macbeth's ambition" (mid-range baseline confidence 55%, satisfying the Implementation-Notes rule on movable signal). | MCP server log, four-session run 2026-05-07 |
+| G5 (Coach revision) | Session 4, turns 1 and 5: `attempts=2`, `decision=accept`. The revise loop fired — Player produced the initial reply, Coach disagreed, Player revised with Coach feedback, second attempt was accepted, and the corrected reply is what reached the user. Satisfies AC-DEMO-01.2's "at least one Coach revision observed" with two observed in the same session. | MCP server log, session 4 turns 1 + 5 (`attempts=2`, `decision=accept`) |
+| G6 (`session_completed` episode) | Confirmed via direct FalkorDB query: `GRAPH.QUERY student-lilymay "MATCH (e:Episodic) RETURN count(e), e.name"` returns 3 episodes including the `session_completed` episode written by `record_session_completion` at session-end. **Caveat (non-blocking for this gate):** `mcp__graphiti__get_episodes(group_ids=["student-lilymay"])` returns empty due to a bug in the upstream Graphiti MCP server (`get_episodes` queries the default `default_db` graph instead of the per-group graph — filed against `guardkit/graphiti`). The write itself is verified by direct FalkorDB query; the read-back gap is in the MCP tool, not in study-tutor's write path, so G6 holds on the basis of the verified write. | `GRAPH.QUERY` against FalkorDB (`student-lilymay` graph); diagnostic logging added by TASK-GSE-001 confirmed write success |
+| G13 (latency + log) | Single-attempt turns: p50 ≈ 10.5s, p95 ≈ 14s. Revision turns (attempts=2): ~21s. Numbers and the recipe used to compute them are in `docs/research/ideas/graphiti-latency-spike-results.md §"Phase 2 Wave 5 measurement"`. Session-log evidence is the same MCP server log that backs G4. | sibling doc + MCP server log |
 
-### Pre-flight checklist (before opening the session)
+### In-flight unblockers landed during the demo run
 
-Per the task's `## Implementation Notes`:
+Five issues surfaced during the live session and were resolved in-session before the gate-closing run; these are the reason today's run produced clean evidence where the 2026-05-05 attempt did not:
 
-1. Confirm Wave-4 seed: `mcp__graphiti__search_nodes(query="Lilymay", group_ids=["student-lilymay"])` returns a Student entity.
-2. Confirm `get_student_state(client, "lilymay")` returns non-empty (covered by `tests/integration/test_lilymay_seed_seam.py` once `STUDY_TUTOR_LIVE_GRAPHITI_SMOKE` is set on the host).
-3. Confirm Claude Desktop's MCP config points at the study-tutor server and is reachable.
-4. Confirm the LLM endpoint is up (`curl http://promaxgb10-41b1:9000/v1/models` or the MacBook fallback URL).
+1. `OLLAMA_BASE_URL` pointed at Mac Ollama instead of GB10 llama-swap — fixed in `.env`.
+2. `OLLAMA_MODEL` used the Ollama tag `gcse-tutor-gemma4-moe:latest` instead of the llama-swap alias `gemma4-tutor` — fixed in `.env`.
+3. The local provider hit `/api/generate` (Ollama-shaped) which llama-swap doesn't expose — addressed by the new llama-swap provider routing Player through `/v1/chat/completions` (TASK-LSP-001 / TASK-LSP-002).
+4. `<think>` tokens leaked from Gemma 4 reasoning into Player output — stripped in the Player adapter (TASK-PTS-001), verified clean across 5 turns.
+5. The revise path was suspected broken; first proven architecturally reachable (TASK-RVP-001) and then observed working in production with `attempts=2` on two separate turns this session.
 
-If any pre-flight fails, fix and re-run before opening the session — don't push through and pollute the evidence trail.
+A sixth confirmed in-flight: TASK-GSE-001 added diagnostic logging to `tutor_session_end`, which is what allowed today's run to confirm the `session_completed` episode is written successfully and locate the MCP `get_episodes` graph-name bug as the residual read-back gap.
 
-### Coach-revision rule
+### Topic-confidence movement (AC-DEMO-03)
 
-AC-DEMO-01.2 explicitly requires "at least one Coach revision observed". If the Coach never disagrees in 7 turns, that's evidence the Coach calibration is too lax — note it for the FEAT-PH2-001 follow-up but flag the wave as Held only if a revision is observed. Re-conduct the session with a more challenging topic if no revision occurs.
+"Lady Macbeth's ambition" progressed 55% → 56% → 57% → 58% across the four sessions. `last_revised_at` flipped from the EPOCH_NEVER_REVISED sentinel on first session-end. Confirms the Graphiti round-trip: write at session-end → entity update via `record_session_completion` → read on subsequent `tutor_start_session`.
+
+### Pre-flight (verified before opening the session)
+
+Per the task's `## Implementation Notes` — all four pre-flight items confirmed green before the gate-closing run:
+
+1. Wave-4 seed in place: typed Student entity present in `student-lilymay` (per TASK-GSM-009).
+2. `get_student_state(client, "lilymay")` returns non-empty (consumed at session start).
+3. Claude Desktop's MCP config points at the study-tutor server and is reachable (4 sessions consummated).
+4. LLM endpoint up: GB10 llama-swap returned `gemma4-tutor` model alias.
 
 ### Cross-references
 
 - TASK-GR-DEMO `## Acceptance Criteria` (the upstream contract).
-- `docs/research/ideas/graphiti-latency-spike-results.md §"Phase 2 Wave 5 measurement"` (sibling scaffold for AC-DEMO-04).
-- `tests/integration/test_lilymay_seed_seam.py` (the Wave-5 seam pinning the runtime contract this demo exercises).
+- `docs/research/ideas/graphiti-latency-spike-results.md §"Phase 2 Wave 5 measurement"` (sibling — AC-DEMO-04 numbers).
+- `tests/integration/test_lilymay_seed_seam.py` (the Wave-5 seam pinning the runtime contract this demo exercised).
+- TASK-LSP-001 / TASK-LSP-002 (llama-swap Player provider — the routing fix).
+- TASK-PTS-001 (Player `<think>` token stripping).
+- TASK-RVP-001 (revise-path reachability proof).
+- TASK-GSE-001 (`tutor_session_end` diagnostic logging that surfaced the MCP `get_episodes` graph-name bug).
+
+### Residual known issue (filed, non-blocking)
+
+- **MCP `get_episodes` graph-name bug.** `mcp__graphiti__get_episodes(group_ids=["student-lilymay"])` returns empty because the upstream Graphiti MCP server queries the default `default_db` graph instead of the per-group graph. Filed against `guardkit/graphiti`. Study-tutor's runtime write path is unaffected (writes verified by direct FalkorDB query, see G6 row above). This does not change the G6 flip — write was confirmed at the FalkorDB layer — but it is the reason G6's evidence cell quotes a `GRAPH.QUERY` instead of an `mcp__graphiti__get_episodes` JSON.
 
 ---
 

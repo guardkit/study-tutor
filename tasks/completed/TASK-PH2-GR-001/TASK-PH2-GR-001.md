@@ -7,10 +7,14 @@ phase: 2
 implementation_mode: design-first
 complexity: 5
 estimated_minutes: 240
-status: backlog
+status: completed
+completed: 2026-05-07T00:00:00+00:00
+completed_location: tasks/completed/TASK-PH2-GR-001/
+completion_reason: "Closed by TASK-GR-DEMO AC-DEMO-06 on 2026-05-07. All five wave subtasks (TASK-GR-LOAD, TASK-GR-WIRE, TASK-GR-SMOK, TASK-GR-SEED, TASK-GR-DEMO) shipped. Live demo on 2026-05-07 confirmed end-to-end Graphiti runtime integration via the new wired client; G3/G4/G5/G6/G13 flipped to Held in phase-1-validation.md."
 priority: critical
 created: 2026-05-02 00:00:00+00:00
-updated: 2026-05-02 00:00:00+00:00
+updated: 2026-05-07T00:00:00+00:00
+previous_state: backlog
 dependencies: []
 blocks:
 - FEAT-PH2-001
