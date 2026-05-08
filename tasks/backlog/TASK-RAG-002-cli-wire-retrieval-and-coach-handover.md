@@ -12,12 +12,15 @@ created: 2026-05-08T00:00:00Z
 updated: 2026-05-08T00:00:00Z
 dependencies:
   - TASK-RAG-001
+  - TASK-RAG-001A
 related:
   - src/study_tutor/cli/main.py
   - src/study_tutor/tutoring/orchestrator.py
   - src/study_tutor/knowledge/retrieval.py
   - src/study_tutor/knowledge/coach_handover.py
   - src/study_tutor/mcp/adapter.py
+external_references:
+  - guardkit/docs/decisions/DECISION-RAG-001-unified-chromadb-approach.md
 tags:
   - rag
   - cli
@@ -84,21 +87,49 @@ the existing FEAT-PH1-003 callers that pass `coach_handover=None`
 
 ### 2. Build the production providers in `cli/main.py`
 
+Per [DECISION-RAG-001](../../../guardkit/docs/decisions/DECISION-RAG-001-unified-chromadb-approach.md),
+all fleet RAG (specialist-agent + study-tutor) uses
+`chromadb.PersistentClient` with `OpenAIEmbeddingFunction` pointing at
+llama-swap (`localhost:9000/v1`, `nomic-embed-text`, 768 dim).
+**Critical:** the runtime MUST construct the same embedding function and
+pass it to `get_or_create_collection(...)`. Chroma's PersistentClient
+does not persist the EF across opens; if the runtime opens the
+collection without an EF, queries embed via the bundled default
+(384-dim all-MiniLM-L6-v2) against vectors written with nomic-embed-text
+(768-dim) — dimension mismatch, every query returns garbage or errors.
+
 Add a new helper `_build_rag_providers(role_config) -> RagProviders`
 (or equivalent) that, **at `serve` startup** (not per turn):
 
-1. Reads `STUDY_TUTOR_CHROMA_DIR` env var (default `./chroma/gcse-english/`)
-   and `STUDY_TUTOR_COLLECTION` (default `gcse-english`).
+1. Reads the four DECISION-RAG-001 §3.1 env vars with the canonical
+   defaults (same shape as the ingestion script — fleet alignment):
+
+   | Variable | Default |
+   |---|---|
+   | `CHROMA_PERSIST_DIR` | `data/chroma` |
+   | `CHROMA_COLLECTION` | `gcse-english-v1` |
+   | `LLM_EMBEDDINGS_BASE_URL` | `http://localhost:9000/v1` |
+   | `LLM_EMBEDDINGS_API_KEY` | `not-needed` |
+   | `LLM_EMBEDDINGS_MODEL` | `nomic-embed-text` |
+
 2. If `chromadb` is importable AND the persist dir exists:
-   - Open `chromadb.PersistentClient(path=...)` once.
-   - Resolve the collection once via `get_or_create_collection(...)`.
-   - Wrap it in a zero-arg lambda and call
+   - Build the `OpenAIEmbeddingFunction` from the env vars above. **MUST**
+     match the function the ingestion script (TASK-RAG-001 / TASK-RAG-001A)
+     used at write time.
+   - Open `chromadb.PersistentClient(path=persist_dir)` once.
+   - Resolve the collection once via
+     `get_or_create_collection(name=..., embedding_function=ef)` — the
+     `embedding_function` argument is non-negotiable.
+   - Wrap the collection in a zero-arg lambda and call
      `set_collection_provider(lambda: collection)`.
-   - Read the sidecar `chroma/<domain>/.primary_text_index` written by
-     TASK-RAG-001's ingestion script and replay each entry through
+   - Read the sidecar `<persist_dir>/.primary_text_index` written by the
+     ingestion script and replay each entry through
      `register_primary_text(...)`. Log a structured line per registration.
-3. If `chromadb` is **not** importable OR the persist dir is missing:
-   - Log a single WARNING `event=rag_disabled, reason=<chromadb_missing|persist_dir_missing>`.
+3. If `chromadb` is **not** importable OR the persist dir is missing OR
+   `OpenAIEmbeddingFunction` construction fails (e.g. the `openai`
+   package is absent from a degraded install):
+   - Log a single WARNING
+     `event=rag_disabled, reason=<chromadb_missing|persist_dir_missing|embedding_function_unavailable>`.
    - Leave the collection provider unset (`retrieve()` returns `[]`).
    - The `coach_handover` closure (below) still wires up — its retrieval
      call returns `[]` and the verifier runs against an empty corpus,
@@ -106,11 +137,17 @@ Add a new helper `_build_rag_providers(role_config) -> RagProviders`
      graceful-degradation envelope and must be preserved.
 4. Optionally install the BGE reranker via `set_reranker_factory(...)` if
    `sentence_transformers` is importable; otherwise let the default
-   `ImportError → no_rerank` path fire.
-5. Optionally install an embedder probe via `set_embedder_probe(...)` —
-   for Phase 1 a no-op probe is acceptable (Chroma's local embedder is
-   in-process and does not need a network ping). Document the deferral in
-   a code comment.
+   `ImportError → no_rerank` path fire. (The reranker is independent of
+   the embedding function — different model, different role.)
+5. Optionally install an embedder probe via `set_embedder_probe(...)`
+   that pings llama-swap's `/v1/embeddings` endpoint with a single
+   one-token payload. This is the **runtime** counterpart to the ingest
+   script's lazy embedding — if llama-swap is unreachable at serve
+   startup, the probe trips `EMBEDDER_TIMEOUT_SECONDS` and the
+   four-branch decision routes to AnalysisMode (`reason=analysis_mode:embedder_timeout`).
+   Phase 1 may keep the no-op default if a real probe is too much work
+   for the demo deadline; document the deferral with a TODO that
+   references DECISION-RAG-001.
 
 ### 3. Build the `coach_handover` closure
 
@@ -174,6 +211,19 @@ the orchestrator construction. Extend the smoke so that:
       the wired closure is constructed at serve startup.
 - [ ] `set_collection_provider(...)` is called exactly once per `serve`
       invocation when `chromadb` is importable AND the persist dir exists.
+- [ ] The collection is opened with an `OpenAIEmbeddingFunction` whose
+      `api_base`, `api_key`, and `model_name` are read from
+      `LLM_EMBEDDINGS_BASE_URL`, `LLM_EMBEDDINGS_API_KEY`,
+      `LLM_EMBEDDINGS_MODEL` (DECISION-RAG-001 §3.1 defaults). Asserted
+      by a test that introspects the wired collection's
+      `_embedding_function` instance.
+- [ ] The four DECISION-RAG-001 env vars have the canonical defaults and
+      are read by both the ingest script and the CLI runtime (single
+      source of truth). Exposed via the `serve` `--help` output.
+- [ ] If `OpenAIEmbeddingFunction` construction fails (e.g. `openai`
+      missing), `serve` logs
+      `event=rag_disabled, reason=embedding_function_unavailable` and
+      continues with the verifier-against-empty-corpus fallback.
 - [ ] The `.primary_text_index` sidecar from TASK-RAG-001 is read at
       startup and every entry is replayed via `register_primary_text(...)`.
 - [ ] When `chromadb` is missing or the persist dir is absent, `serve`
@@ -236,9 +286,20 @@ Add tests in `tests/integration/test_cli_rag_wiring.py`:
   response. This matches the @key-example test fixtures in TASK-PRV-004
   and is what grounds the verification corpus in the question being
   asked, not the answer being given.
-- Surface a single new env var `STUDY_TUTOR_CHROMA_DIR` (default
-  `./chroma/gcse-english/`) so the operator can point at a different
-  domain without code changes. Document it in the `serve` docstring.
+- Env vars are the four DECISION-RAG-001 §3.1 names
+  (`CHROMA_PERSIST_DIR`, `CHROMA_COLLECTION`, `LLM_EMBEDDINGS_BASE_URL`,
+  `LLM_EMBEDDINGS_API_KEY`, `LLM_EMBEDDINGS_MODEL`) with the canonical
+  defaults. **Do not** introduce study-tutor-specific names like
+  `STUDY_TUTOR_CHROMA_DIR` — the fleet decision is that these env vars
+  are shared across specialist-agent and study-tutor (and any future
+  agent) so a single environment block in `docker-compose` configures
+  all RAG-using services.
+- Construct the `OpenAIEmbeddingFunction` in a helper shared with the
+  ingestion script (extract the helper from
+  `scripts/ingest_corpus.py` after TASK-RAG-001A lands, or at minimum
+  duplicate it with a comment pointing at the canonical site). Two
+  copies that drift would re-introduce the embedding-space-mismatch
+  failure mode the decision warns about.
 - Keep the closure synchronous; `apply_quote_verification` and `retrieve`
   are sync. The orchestrator already runs the handover inside its async
   pipeline via the existing `_apply_coach_handover` shim.
@@ -267,3 +328,5 @@ Add tests in `tests/integration/test_cli_rag_wiring.py`:
 - [tasks/completed/TASK-PRV-006-coach-handover-seam.md](../completed/TASK-PRV-006-coach-handover-seam.md)
 - [tasks/completed/TASK-LCA-005-cli-factory-closure-and-integration-smokes.md](../completed/TASK-LCA-005-cli-factory-closure-and-integration-smokes.md)
 - [docs/talks/ddd-southwest-demo-strategy.md](../../docs/talks/ddd-southwest-demo-strategy.md) — load-pane signal requirements
+- [DECISION-RAG-001 — Unified ChromaDB approach for fleet RAG](../../../guardkit/docs/decisions/DECISION-RAG-001-unified-chromadb-approach.md) — fleet-wide embedding & topology contract this task implements
+- [tasks/backlog/TASK-RAG-001A-align-with-fleet-rag-decision.md](TASK-RAG-001A-align-with-fleet-rag-decision.md) — sibling task aligning the ingest script (must land first)

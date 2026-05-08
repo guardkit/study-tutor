@@ -256,6 +256,13 @@ domains/*/sources/**/*.txt
 domains/*/sources/*.xhtml
 domains/*/sources/**/*.xhtml
 
+# In-copyright / unusable source material kept out of `domains/*/sources/`
+# so the loader (load_corpus) never walks into it. Files here are operator-
+# acquired and stay on the operator's machine — see TASK-RAG-001A discussion
+# notes (2026-05-08) for why each file lives here rather than in the
+# corpus tree.
+docs/research/in-copyright-quarantine/
+
 # RAG knowledge layer persistence (Phase 1 onward).
 # DECISION-RAG-001 standardises on ``data/chroma/`` as the per-project
 # persist root; the older ``chroma/`` / ``chroma_data*/`` entries stay for
