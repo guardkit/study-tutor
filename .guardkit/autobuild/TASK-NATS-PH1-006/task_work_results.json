@@ -1,0 +1,189 @@
+{
+  "task_id": "TASK-NATS-PH1-006",
+  "timestamp": "2026-05-08T20:46:31.472154",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 6,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": true
+  },
+  "files_modified": [
+    ".claude/task-plans/TASK-NATS-PH1-006-implementation-plan.md",
+    ".env.example",
+    ".guardkit/autobuild/TASK-NATS-PH1-001/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-002/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-002/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-002/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-002/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-002/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-002/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-003/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-003/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-003/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-003/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-003/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-007/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-007/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-007/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-007/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-007/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-007/turn_state_turn_1.json",
+    ".guardkit/bootstrap_state.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/cli/main.py",
+    "src/study_tutor/cli/main.py",
+    "src/study_tutor/roles/__init__.py",
+    "src/study_tutor/roles/registry.py",
+    "src/study_tutor/roles/tutor/__init__.py",
+    "tasks/design_approved/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md",
+    "tests/unit/roles/test_registry.py",
+    "tests/unit/test_env_example_nats.py"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-NATS-PH1-003/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/task_work_results.json",
+    ".guardkit/bdd/TASK-NATS-PH1-006_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-006/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/cli/test_serve_nats.py",
+    "tests/unit/cli/test_serve_nats.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/cli/test_serve_nats.py"
+  ],
+  "summary": "6 tests passed, all quality gates passed",
+  "sdk_turns": {
+    "turns_used": 56,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "bdd_results": {
+    "scenarios_passed": 0,
+    "scenarios_failed": 1,
+    "scenarios_pending": 0,
+    "failures": [
+      {
+        "feature_file": "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/nats-fleet-integration.feature",
+        "scenario_name": "pytest_runner_error",
+        "failing_step": "",
+        "reason": "pytest_runner_error: exit=4; ERROR: not found: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/nats-fleet-integration.feature\n(no match in any of [<Dir..."
+      }
+    ],
+    "pending": [],
+    "feature_files": [
+      "features/nats-fleet-integration/nats-fleet-integration.feature"
+    ],
+    "tag": "@task:TASK-NATS-PH1-006"
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "study-tutor serve-nats --help prints flag surface matching --nats, --agent-id, --log-level.",
+      "status": "complete",
+      "evidence": "Added click subcommand with three click.option decorators (--nats, --agent-id, --log-level) on serve_nats() in src/study_tutor/cli/main.py. CliRunner-driven test test_serve_nats_help_lists_required_flags asserts all three flag names appear in --help output and the command exits 0. Manual verification: `python -c '...' | grep -E '(--nats|--agent-id|--log-level)'` returns matches for all three.",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "study-tutor serve-nats --nats nats://localhost:4222 starts the adapter, blocks until SIGTERM, then shuts down cleanly.",
+      "status": "complete",
+      "evidence": "_serve_adapter() awaits adapter.start(), installs SIGINT/SIGTERM handlers via loop.add_signal_handler() (with NotImplementedError fallback for Windows), awaits a shared shutdown_event.wait(), and on completion runs adapter.stop() in a finally block followed by runtime_shutdown(write_helper). The CLI body wires --nats into config.nats.url before calling _build_nats_runtime() and runs the lifecycle via asyncio.run(_serve_adapter(...)). Verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set (asserts start.assert_awaited_once + stop.assert_awaited_once when the event is set) and test_serve_adapter_registers_sigterm_and_sigint_handlers (asserts both signal.SIGTERM and signal.SIGINT are passed to add_signal_handler).",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "SIGTERM during a running tutor process triggers adapter.stop() and the process exits with code 0 within the drain window (30s).",
+      "status": "complete",
+      "evidence": "Signal handlers registered for SIGINT and SIGTERM both call _request_shutdown(), which sets shutdown_event. The wait()\u2192finally branch then awaits adapter.stop() (NATSAdapter owns the 30s drain timeout per TASK-NATS-PH1-005 scope) before runtime_shutdown(). On the happy path (no exception during start), no SystemExit is raised so click reports exit code 0. test_serve_adapter_registers_sigterm_and_sigint_handlers regression-guards the SIGTERM/SIGINT registration and test_serve_adapter_starts_then_stops_when_shutdown_event_is_set covers the start\u2192stop sequencing.",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "If nats-core's AgentConfig validation fails (e.g. invalid NATS_URL), the CLI exits 1 with a clear error message.",
+      "status": "complete",
+      "evidence": "_load_agent_config() wraps any AgentConfig() construction failure in a typed _AgentConfigValidationError. The serve_nats body catches that exception, emits '[study-tutor] Error: AgentConfig validation failed: {exc.cause}' to stderr (preserving the underlying pydantic field names), and raises SystemExit(1). _serve_adapter additionally exits 1 when adapter.start() raises (with a separate banner and a best-effort stop()). Verified by test_serve_nats_exits_1_when_agent_config_validation_fails (asserts exit code 1, banner present, and underlying field name AGENT_MODELS__REASONING_MODEL flows through into stderr) and test_serve_adapter_exits_1_when_start_raises.",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "`ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py` reports 'All checks passed!' (zero violations). The Coach validation block in the task file specifies exactly that command.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/cli/main.py",
+        "tests/unit/cli/test_serve_nats.py"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 56.41501162503846
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 513.2665140000172
+    }
+  ]
+}

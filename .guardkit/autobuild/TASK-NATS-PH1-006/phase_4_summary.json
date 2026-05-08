@@ -1,0 +1,7 @@
+{
+  "tests_run": 40,
+  "tests_failed": 0,
+  "coverage_pct": 38.72,
+  "output_summary": "pytest: 40 passed, 0 failed across changed CLI/roles/env tests; line coverage 38.72% (src/study_tutor)",
+  "quality_gates_passed": true
+}

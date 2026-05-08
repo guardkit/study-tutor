@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 import sys
 from typing import Any, Callable
 
@@ -383,6 +384,325 @@ def serve(role: str, transport: str, log_level: str) -> None:
         # runtime_shutdown swallows its own exceptions — process exit
         # never blocks on a drain failure.
         asyncio.run(runtime_shutdown(write_helper))
+
+
+# ---------------------------------------------------------------------------
+# serve-nats subcommand (TASK-NATS-PH1-006)
+# ---------------------------------------------------------------------------
+#
+# Wires the existing tutor stack into a long-running NATS fleet service.
+# Mirrors specialist-agent's ``serve-nats`` subcommand
+# (``specialist-agent/src/specialist_agent/cli/main.py:1515-1769``).
+#
+# Architecture: command envelope arrives on ``agents.command.<agent_id>``
+# → :class:`NATSAdapter` (lifecycle + subscription) hands it to
+# :class:`CommandRouter` (alias resolution, dispatch, reply_to honouring)
+# which calls into the existing :class:`MCPAdapter` business logic.
+#
+# Lazy imports: TASK-NATS-PH1-004 (CommandRouter) and TASK-NATS-PH1-005
+# (NATSAdapter) ship after this CLI lands. The runtime imports inside
+# :func:`_build_nats_runtime` keep the module-load path clean so
+# ``study-tutor serve`` (the existing stdio MCP path) is unaffected if
+# either downstream module is in flight.
+
+
+class _AgentConfigValidationError(RuntimeError):
+    """Wraps a failure constructing :class:`nats_core.AgentConfig`.
+
+    Carries the original pydantic / pydantic-settings validation error
+    so the CLI can surface a single, prefixed error line that includes
+    the underlying field names (e.g. ``AGENT_MODELS__REASONING_MODEL``)
+    without leaking the entire pydantic stack trace into stderr.
+    """
+
+    def __init__(self, cause: BaseException) -> None:
+        self.cause = cause
+        super().__init__(str(cause))
+
+
+def _load_agent_config() -> Any:
+    """Load :class:`nats_core.AgentConfig` from the process environment.
+
+    Wraps any construction failure in :class:`_AgentConfigValidationError`
+    so the CLI can convert a missing-env-var or invalid-URL error into a
+    non-zero exit with a single ``except`` arm. The lazy import keeps
+    the module-load path of ``study_tutor.cli.main`` independent of
+    nats-core's import-time side effects (pydantic-settings reads the
+    environment eagerly when ``AgentConfig()`` is instantiated).
+
+    Returns:
+        A populated ``AgentConfig`` instance.
+
+    Raises:
+        _AgentConfigValidationError: If construction fails for any
+            reason (missing required fields, invalid types, invalid
+            ``NATS_URL`` shape, etc.).
+    """
+    from nats_core.agent_config import AgentConfig
+
+    try:
+        return AgentConfig()
+    except Exception as exc:  # noqa: BLE001 — re-raised as a typed wrapper
+        raise _AgentConfigValidationError(exc) from exc
+
+
+def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
+    """Wire MCPAdapter → CommandRouter → NATSAdapter for the tutor role.
+
+    Mirrors :func:`serve` for the tutor-side wiring (RAG providers,
+    Graphiti client, write helper, event bus, orchestrator factory,
+    :class:`MCPAdapter`) and then layers the NATS plumbing on top:
+
+    1. :func:`_tutor_manifest_factory` — produces the manifest published
+       to ``agent-registry`` at adapter start.
+    2. :class:`NATSClient` — typed publish/subscribe channel reused by
+       the router for ``reply_to`` raw publishes (Bug #1 fix).
+    3. :class:`CommandRouter` — translates incoming
+       :class:`CommandPayload` envelopes into ``MCPAdapter.tutor_*``
+       calls; reads ``tool_to_command`` from the role registry so the
+       Bug #2 alias map stays single-sourced.
+    4. :class:`NATSAdapter` — owns the lifecycle (connect, register,
+       heartbeat, subscribe, drain, deregister, disconnect).
+
+    Args:
+        config: Validated :class:`AgentConfig` (caller is responsible
+            for any CLI-flag overrides like ``config.nats.url``).
+        agent_id: Manifest agent identifier (kebab-case;
+            :func:`_tutor_manifest_factory` enforces the format).
+
+    Returns:
+        Tuple of ``(adapter, write_helper)``. The write helper is
+        returned so :func:`_serve_adapter` can hand it to
+        :func:`runtime_shutdown` for the F3 drain on the way out.
+
+    Raises:
+        ImportError: If TASK-NATS-PH1-004 / TASK-NATS-PH1-005 modules
+            have not been merged yet — the lazy import surfaces a
+            clear failure mode rather than a cryptic ``AttributeError``.
+    """
+    from nats_core.client import NATSClient
+
+    from study_tutor.adapters.command_router import CommandRouter
+    from study_tutor.adapters.manifest import _tutor_manifest_factory
+    from study_tutor.adapters.nats_adapter import NATSAdapter
+    from study_tutor.roles.registry import get_role
+
+    manifest = _tutor_manifest_factory(agent_id)
+    role_config = load_role("tutor")
+
+    # RAG wiring must happen before MCPAdapter construction — the boot
+    # smoke check inside ``MCPAdapter.__init__`` reads the wired
+    # collection provider via ``get_collection_provider`` (see ``serve``
+    # above for the same ordering invariant).
+    build_rag_providers(role_config)
+
+    # Graphiti client construction is async (it does a healthcheck); we
+    # use a one-shot ``asyncio.run`` here because :func:`_build_nats_runtime`
+    # itself is sync and ``serve`` uses the same pattern.
+    graphiti_cfg = load_graphiti_config_from_yaml()
+    wrapper = asyncio.run(get_client(graphiti_cfg))
+    inner = wrapper.client_or_none if wrapper is not None else None
+    write_helper = GraphitiWriteHelper(client=inner)
+    event_bus = EventBus()
+    orchestrator_factory = _build_orchestrator_factory(role_config)
+
+    mcp_adapter = MCPAdapter(
+        role_config=role_config,
+        orchestrator_factory=orchestrator_factory,
+        write_helper=write_helper,
+        event_bus=event_bus,
+        graphiti_client=wrapper,
+    )
+
+    role_entry = get_role("tutor")
+    nats_client = NATSClient(config.nats, source_id=agent_id)
+    router = CommandRouter(
+        mcp_adapter=mcp_adapter,
+        tool_to_command=role_entry.tool_to_command,
+        agent_id=agent_id,
+        client=nats_client,
+    )
+    adapter = NATSAdapter(config, manifest, command_router=router)
+    return adapter, write_helper
+
+
+async def _serve_adapter(
+    adapter: Any,
+    write_helper: Any,
+    *,
+    agent_id: str,
+    nats_url: str,
+    shutdown_event: asyncio.Event | None = None,
+) -> None:
+    """Run the NATS adapter lifecycle until SIGTERM / SIGINT.
+
+    Implements the run-forever loop described in the task scope:
+
+    1. ``await adapter.start()`` — connect, register, subscribe,
+       heartbeat, set ``_ready``. If start fails the process exits 1
+       and ``stop()`` is still attempted (best effort) so any partial
+       connection is released.
+    2. Install signal handlers for ``SIGTERM`` (supervisor shutdown,
+       Docker SIGTERM, systemd ``TERM``) and ``SIGINT`` (Ctrl-C). Both
+       set the shared ``shutdown_event``. The ``NotImplementedError``
+       fallback matches Windows / non-default-loop platforms — the
+       caller can still drive shutdown via the injected event in tests.
+    3. ``await shutdown_event.wait()`` — block here until a signal
+       arrives.
+    4. ``await adapter.stop()`` — drain in-flight, cancel heartbeat,
+       deregister, disconnect (TASK-NATS-PH1-005 owns the 30 s drain
+       window so AC-003 holds without timing logic in this layer).
+    5. ``await runtime_shutdown(write_helper)`` — drain in-flight F3
+       graphiti writes (mirrors ``serve``'s shutdown path).
+
+    Args:
+        adapter: The :class:`NATSAdapter` instance.
+        write_helper: The :class:`GraphitiWriteHelper` to drain on exit.
+        agent_id: For the human-facing banner only.
+        nats_url: For the banner only.
+        shutdown_event: Optional pre-built event. Tests pass one in so
+            they can drive shutdown without sending real signals; the
+            CLI path leaves it as ``None`` and we build a fresh event
+            here.
+
+    Raises:
+        SystemExit: With code 1 on a start failure (after attempting a
+            clean ``stop()``).
+    """
+    if shutdown_event is None:
+        shutdown_event = asyncio.Event()
+
+    def _request_shutdown() -> None:
+        """Signal handler — set the event so the wait returns."""
+        shutdown_event.set()
+
+    try:
+        await adapter.start()
+    except Exception as exc:
+        click.echo(
+            f"[study-tutor] Error: failed to start NATSAdapter: {exc}",
+            err=True,
+        )
+        try:
+            await adapter.stop()
+        except Exception:
+            # Best-effort cleanup — the start failure is the load-bearing
+            # error to surface; a stop failure on a half-started adapter
+            # is noise compared to the real cause.
+            logger.exception("event=nats_serve_stop_after_start_failure")
+        raise SystemExit(1) from exc
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, _request_shutdown)
+        except NotImplementedError:
+            # Windows / non-default loops: tests still set the event
+            # directly so this branch does not affect the AC-003 path.
+            pass
+
+    click.echo(
+        f"[study-tutor] Serving via NATS as agent_id={agent_id} "
+        f"url={nats_url}. Press Ctrl+C to stop.",
+        err=True,
+    )
+
+    try:
+        await shutdown_event.wait()
+    finally:
+        try:
+            await adapter.stop()
+        finally:
+            try:
+                await runtime_shutdown(write_helper)
+            except Exception:
+                # ``runtime_shutdown`` already swallows its own errors
+                # in production code; the outer guard is here so a
+                # MagicMock in unit tests cannot break the shutdown path.
+                logger.exception("event=nats_serve_runtime_shutdown_error")
+
+
+@cli.command("serve-nats")
+@click.option(
+    "--nats",
+    "nats_url",
+    default=None,
+    show_default=False,
+    help=(
+        "NATS server URL (e.g. nats://localhost:4222). When provided, "
+        "overrides the AGENT_NATS__URL environment variable."
+    ),
+)
+@click.option(
+    "--agent-id",
+    default="gcse-tutor",
+    show_default=True,
+    help=(
+        "Agent ID published in the manifest. Must be kebab-case "
+        "(regex ^[a-z][a-z0-9-]*$)."
+    ),
+)
+@click.option(
+    "--log-level",
+    type=click.Choice(
+        ["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False
+    ),
+    default="INFO",
+    show_default=True,
+    help="Root logger level.",
+)
+def serve_nats(nats_url: str | None, agent_id: str, log_level: str) -> None:
+    """Run the tutor as a NATS fleet service.
+
+    \b
+    Loads ``AgentConfig`` from the environment, builds the manifest via
+    ``_tutor_manifest_factory``, instantiates ``MCPAdapter`` →
+    ``CommandRouter`` → ``NATSAdapter``, and blocks on the run-forever
+    loop until ``SIGTERM`` / ``SIGINT`` arrives.
+
+    \b
+    Environment variables (a non-exhaustive selection — see
+    ``nats_core.AgentConfig`` for the full surface):
+
+    \b
+      AGENT_MODELS__REASONING_MODEL  Required. LLM provider for the
+                                     reasoning / orchestration model.
+      AGENT_NATS__URL                NATS server URL (overridden by
+                                     ``--nats`` when provided).
+      AGENT_HEARTBEAT_INTERVAL_SECONDS
+                                     Heartbeat cadence; default 30.
+    """
+    logging.basicConfig(
+        level=log_level.upper(),
+        stream=sys.stderr,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    try:
+        config = _load_agent_config()
+    except _AgentConfigValidationError as exc:
+        click.echo(
+            f"[study-tutor] Error: AgentConfig validation failed: {exc.cause}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    if nats_url is not None:
+        # CLI flag wins over the env-var-sourced default. Mutating the
+        # validated config in-place mirrors specialist-agent's pattern
+        # (cli/main.py:1578) and keeps the config object as the single
+        # source of truth handed downstream.
+        config.nats.url = nats_url
+
+    adapter, write_helper = _build_nats_runtime(config, agent_id)
+    asyncio.run(
+        _serve_adapter(
+            adapter,
+            write_helper,
+            agent_id=agent_id,
+            nats_url=config.nats.url,
+        )
+    )
 
 
 if __name__ == "__main__":
