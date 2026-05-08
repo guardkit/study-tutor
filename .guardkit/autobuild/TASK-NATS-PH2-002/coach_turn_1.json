@@ -1,0 +1,137 @@
+{
+  "task_id": "TASK-NATS-PH2-002",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "skipped",
+      "test_output_summary": "Independent test verification skipped (tests not required for testing tasks)",
+      "duration_seconds": 0.0
+    },
+    "requirements": {
+      "criteria_total": 4,
+      "criteria_met": 4,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Test observes a KV put event for `gcse-tutor` within 5s of `adapter.start()` completing.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "test_register_emits_put_event_within_budget subscribes to kv.watch('>') on the agent-registry bucket BEFORE starting the NATSAdapter, then asserts a PUT event for key='gcse-tutor' arrives within 5s (constant _EVENT_TIMEOUT_SECONDS). The assertion also round-trips the value through AgentManifest.model_validate_json so a corrupt PUT cannot pass. Test passes against a live nats-server subprocess fixture with JetStream + agent-registry bucket pre-provisioned.",
+      "notes": "test_register_emits_put_event_within_budget subscribes to kv.watch('>') on the agent-registry bucket BEFORE starting the NATSAdapter, then asserts a PUT event for key='gcse-tutor' arrives within 5s (constant _EVENT_TIMEOUT_SECONDS). The assertion also round-trips the value through AgentManifest.model_validate_json so a corrupt PUT cannot pass. Test passes against a live nats-server subprocess fixture with JetStream + agent-registry bucket pre-provisioned."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Test observes a KV delete event for `gcse-tutor` within 5s of `adapter.stop()` completing.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "test_graceful_stop_emits_delete_event_within_budget settles the PUT event first, snapshots the event count, calls adapter.stop(), then asserts a DEL or PURGE event for key='gcse-tutor' arrives within 5s. _DEREGISTRATION_OPS = frozenset({'DEL', 'PURGE'}) accepts both shapes so a future tightening of the registry's cleanup semantics (purge to remove tombstones) does not break the test. Passes against the live server fixture.",
+      "notes": "test_graceful_stop_emits_delete_event_within_budget settles the PUT event first, snapshots the event count, calls adapter.stop(), then asserts a DEL or PURGE event for key='gcse-tutor' arrives within 5s. _DEREGISTRATION_OPS = frozenset({'DEL', 'PURGE'}) accepts both shapes so a future tightening of the registry's cleanup semantics (purge to remove tombstones) does not break the test. Passes against the live server fixture."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Test confirms SIGKILL leaves a stale row (no TTL cleanup) \u2014 this is documentation-of-known-limitation, not a failure mode (Decision 3, 2026-05-08).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "test_sigkill_equivalent_leaves_stale_row boots a fresh adapter, verifies the row is in agent-registry, then invokes _simulate_sigkill (cancels heartbeat task + abruptly closes the underlying nats-py connection without invoking adapter.stop()). After abandonment, a fresh observer connection reads the bucket and asserts the entry is still present and parseable as the original AgentManifest. Comments explicitly cite Decision 3 (2026-05-08) and TASK-NATS-FU-002 (jarvis-side reaper). The task's reference to os.kill(pid, SIGKILL) against a subprocess fixture is acknowledged in the docstring; the in-process equivalent (close connection without dereg) yields the same end state and is safer to run inside pytest.",
+      "notes": "test_sigkill_equivalent_leaves_stale_row boots a fresh adapter, verifies the row is in agent-registry, then invokes _simulate_sigkill (cancels heartbeat task + abruptly closes the underlying nats-py connection without invoking adapter.stop()). After abandonment, a fresh observer connection reads the bucket and asserts the entry is still present and parseable as the original AgentManifest. Comments explicitly cite Decision 3 (2026-05-08) and TASK-NATS-FU-002 (jarvis-side reaper). The task's reference to os.kill(pid, SIGKILL) against a subprocess fixture is acknowledged in the docstring; the in-process equivalent (close connection without dereg) yields the same end state and is safer to run inside pytest."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Ran `ruff check tests/integration/test_kv_watch_lifecycle.py` -> 'All checks passed!'. Ran `ruff format --check tests/integration/test_kv_watch_lifecycle.py` -> '1 file already formatted'. No lint or format errors.",
+      "notes": "Ran `ruff check tests/integration/test_kv_watch_lifecycle.py` -> 'All checks passed!'. Ran `ruff format --check tests/integration/test_kv_watch_lifecycle.py` -> '1 file already formatted'. No lint or format errors."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Test observes a KV put event for `gcse-tutor` within 5s of `adapter.start()` completing.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "test_register_emits_put_event_within_budget subscribes to kv.watch('>') on the agent-registry bucket BEFORE starting the NATSAdapter, then asserts a PUT event for key='gcse-tutor' arrives within 5s (constant _EVENT_TIMEOUT_SECONDS). The assertion also round-trips the value through AgentManifest.model_validate_json so a corrupt PUT cannot pass. Test passes against a live nats-server subprocess fixture with JetStream + agent-registry bucket pre-provisioned.",
+        "notes": "test_register_emits_put_event_within_budget subscribes to kv.watch('>') on the agent-registry bucket BEFORE starting the NATSAdapter, then asserts a PUT event for key='gcse-tutor' arrives within 5s (constant _EVENT_TIMEOUT_SECONDS). The assertion also round-trips the value through AgentManifest.model_validate_json so a corrupt PUT cannot pass. Test passes against a live nats-server subprocess fixture with JetStream + agent-registry bucket pre-provisioned."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Test observes a KV delete event for `gcse-tutor` within 5s of `adapter.stop()` completing.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "test_graceful_stop_emits_delete_event_within_budget settles the PUT event first, snapshots the event count, calls adapter.stop(), then asserts a DEL or PURGE event for key='gcse-tutor' arrives within 5s. _DEREGISTRATION_OPS = frozenset({'DEL', 'PURGE'}) accepts both shapes so a future tightening of the registry's cleanup semantics (purge to remove tombstones) does not break the test. Passes against the live server fixture.",
+        "notes": "test_graceful_stop_emits_delete_event_within_budget settles the PUT event first, snapshots the event count, calls adapter.stop(), then asserts a DEL or PURGE event for key='gcse-tutor' arrives within 5s. _DEREGISTRATION_OPS = frozenset({'DEL', 'PURGE'}) accepts both shapes so a future tightening of the registry's cleanup semantics (purge to remove tombstones) does not break the test. Passes against the live server fixture."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Test confirms SIGKILL leaves a stale row (no TTL cleanup) \u2014 this is documentation-of-known-limitation, not a failure mode (Decision 3, 2026-05-08).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "test_sigkill_equivalent_leaves_stale_row boots a fresh adapter, verifies the row is in agent-registry, then invokes _simulate_sigkill (cancels heartbeat task + abruptly closes the underlying nats-py connection without invoking adapter.stop()). After abandonment, a fresh observer connection reads the bucket and asserts the entry is still present and parseable as the original AgentManifest. Comments explicitly cite Decision 3 (2026-05-08) and TASK-NATS-FU-002 (jarvis-side reaper). The task's reference to os.kill(pid, SIGKILL) against a subprocess fixture is acknowledged in the docstring; the in-process equivalent (close connection without dereg) yields the same end state and is safer to run inside pytest.",
+        "notes": "test_sigkill_equivalent_leaves_stale_row boots a fresh adapter, verifies the row is in agent-registry, then invokes _simulate_sigkill (cancels heartbeat task + abruptly closes the underlying nats-py connection without invoking adapter.stop()). After abandonment, a fresh observer connection reads the bucket and asserts the entry is still present and parseable as the original AgentManifest. Comments explicitly cite Decision 3 (2026-05-08) and TASK-NATS-FU-002 (jarvis-side reaper). The task's reference to os.kill(pid, SIGKILL) against a subprocess fixture is acknowledged in the docstring; the in-process equivalent (close connection without dereg) yields the same end state and is safer to run inside pytest."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran `ruff check tests/integration/test_kv_watch_lifecycle.py` -> 'All checks passed!'. Ran `ruff format --check tests/integration/test_kv_watch_lifecycle.py` -> '1 file already formatted'. No lint or format errors.",
+        "notes": "Ran `ruff check tests/integration/test_kv_watch_lifecycle.py` -> 'All checks passed!'. Ran `ruff format --check tests/integration/test_kv_watch_lifecycle.py` -> '1 file already formatted'. No lint or format errors."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "rationale": "All quality gates passed. Tests not required for this task type. All acceptance criteria met. Architecture context: 375 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1656/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- ASSIGNS_TASK_TO\n- IS_USED_IN_PROJECT\n- INSTRUCTS_USER_TO_START\n- HAS_METADATA_PROJECT\n\n### \u26a0\ufe0f Warnings\n- CAUSES\n- IS_IMPLEMENTED_AS\n- CAUSES\n\n### \ud83c\udfad Role Constraints\n- RUNS_TESTS_BEFORE_REPORTING\n- DELEGATE_TO_TASK_WORK\n- DELEGATES_TO\n- IS_CREATED_FOR\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- AVOIDED_OUTCOME\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": [
+      {
+        "claimed": "tasks/backlog/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+        "resolved_to": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-002-kv-watch-test.md",
+        "task_id": "TASK-NATS-PH2-002"
+      },
+      {
+        "claimed": "tasks/backlog/TASK-NATS-PH1-009-live-discovery-smoke.md",
+        "resolved_to": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-002-kv-watch-test.md",
+        "task_id": "TASK-NATS-PH2-002"
+      },
+      {
+        "claimed": "tasks/backlog/TASK-NATS-PH3-001-dockerfile.md",
+        "resolved_to": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-002-kv-watch-test.md",
+        "task_id": "TASK-NATS-PH2-002"
+      }
+    ]
+  }
+}
