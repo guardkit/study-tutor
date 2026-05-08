@@ -1,27 +1,27 @@
 ---
-id: TASK-NATS-PH1-008
-title: Smoke test - all 4 commands round-trip through NATS adapter (no PubAck leakage)
-task_type: testing
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 5
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 90
-status: pending
-priority: critical
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-005
-  - TASK-NATS-PH1-006
+- TASK-NATS-PH1-005
+- TASK-NATS-PH1-006
+estimated_minutes: 90
+feature_id: FEAT-NATS
+id: TASK-NATS-PH1-008
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: critical
+status: design_approved
 tags:
-  - nats
-  - testing
-  - smoke
-  - phase-1
-  - bug-1
-  - bug-2
+- nats
+- testing
+- smoke
+- phase-1
+- bug-1
+- bug-2
+task_type: testing
+title: Smoke test - all 4 commands round-trip through NATS adapter (no PubAck leakage)
+updated: 2026-05-08 00:00:00+00:00
+wave: 5
 ---
 
 # Task: Smoke test - all 4 commands round-trip through NATS adapter (no PubAck leakage)

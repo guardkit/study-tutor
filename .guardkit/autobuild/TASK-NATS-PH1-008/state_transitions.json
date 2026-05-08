@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-NATS-PH1-008",
+    "pre_path": "tasks/backlog/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+    "timestamp": "2026-05-08T22:46:59.326793+00:00",
+    "kind": "design_approved_transition"
+  }
+]

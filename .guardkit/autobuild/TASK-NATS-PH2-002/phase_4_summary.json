@@ -1,0 +1,7 @@
+{
+  "tests_run": 3,
+  "tests_failed": 0,
+  "coverage_pct": 48.82,
+  "output_summary": "3/3 passed in tests/integration/test_kv_watch_lifecycle.py (AC-001/002/003); pytest --cov on study_tutor.adapters: 48.82% line coverage (nats_adapter 80%).",
+  "quality_gates_passed": true
+}

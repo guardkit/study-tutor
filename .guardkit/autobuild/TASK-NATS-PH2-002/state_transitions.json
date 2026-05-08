@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-NATS-PH2-002",
+    "pre_path": "tasks/backlog/TASK-NATS-PH2-002-kv-watch-test.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH2-002-kv-watch-test.md",
+    "timestamp": "2026-05-08T22:46:59.425361+00:00",
+    "kind": "design_approved_transition"
+  }
+]

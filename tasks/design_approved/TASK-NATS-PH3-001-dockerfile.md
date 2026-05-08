@@ -1,24 +1,24 @@
 ---
-id: TASK-NATS-PH3-001
-title: Build study-tutor Dockerfile mirroring specialist-agent pattern
-task_type: scaffolding
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 8
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 90
-status: pending
-priority: medium
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-005
+- TASK-NATS-PH1-005
+estimated_minutes: 90
+feature_id: FEAT-NATS
+id: TASK-NATS-PH3-001
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: medium
+status: design_approved
 tags:
-  - nats
-  - scaffolding
-  - docker
-  - phase-3
+- nats
+- scaffolding
+- docker
+- phase-3
+task_type: scaffolding
+title: Build study-tutor Dockerfile mirroring specialist-agent pattern
+updated: 2026-05-08 00:00:00+00:00
+wave: 8
 ---
 
 # Task: Build study-tutor Dockerfile mirroring specialist-agent pattern

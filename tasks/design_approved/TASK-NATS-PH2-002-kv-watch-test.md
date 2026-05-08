@@ -1,24 +1,24 @@
 ---
-id: TASK-NATS-PH2-002
-title: Add NATSKVManifestRegistry-backed Phase 2 KV-watch test for reg/dereg events
-task_type: testing
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 8
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 90
-status: pending
-priority: medium
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-005
+- TASK-NATS-PH1-005
+estimated_minutes: 90
+feature_id: FEAT-NATS
+id: TASK-NATS-PH2-002
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: medium
+status: design_approved
 tags:
-  - nats
-  - testing
-  - kv-watch
-  - phase-2
+- nats
+- testing
+- kv-watch
+- phase-2
+task_type: testing
+title: Add NATSKVManifestRegistry-backed Phase 2 KV-watch test for reg/dereg events
+updated: 2026-05-08 00:00:00+00:00
+wave: 8
 ---
 
 # Task: Add NATSKVManifestRegistry-backed Phase 2 KV-watch test for reg/dereg events

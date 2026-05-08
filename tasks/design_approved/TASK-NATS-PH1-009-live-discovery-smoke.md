@@ -1,26 +1,26 @@
 ---
-id: TASK-NATS-PH1-009
-title: Live-discovery smoke - jarvis sees gcse-tutor without any stub-yaml fallback
-task_type: testing
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 5
-implementation_mode: task-work
 complexity: 4
-estimated_minutes: 60
-status: pending
-priority: critical
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-005
+- TASK-NATS-PH1-005
+estimated_minutes: 60
+feature_id: FEAT-NATS
+id: TASK-NATS-PH1-009
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: critical
+status: design_approved
 tags:
-  - nats
-  - testing
-  - smoke
-  - phase-1
-  - decision-1
-  - discovery
+- nats
+- testing
+- smoke
+- phase-1
+- decision-1
+- discovery
+task_type: testing
+title: Live-discovery smoke - jarvis sees gcse-tutor without any stub-yaml fallback
+updated: 2026-05-08 00:00:00+00:00
+wave: 5
 ---
 
 # Task: Live-discovery smoke - jarvis sees gcse-tutor without any stub-yaml fallback
