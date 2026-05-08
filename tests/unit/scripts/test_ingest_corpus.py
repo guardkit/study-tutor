@@ -31,16 +31,27 @@ import pytest
 # importorskip raises Skipped at collection time so tests aren't even
 # discovered if chromadb is unavailable.
 chromadb = pytest.importorskip("chromadb")
+from chromadb.utils.embedding_functions import (  # noqa: E402
+    DefaultEmbeddingFunction,
+)
 
 # Import the script under test AFTER importorskip so the module imports
 # don't blow up on the dev path. ``ingest_corpus`` itself imports chromadb
 # lazily inside ``main``, so this import is cheap.
-from scripts import ingest_corpus
-from study_tutor.knowledge.corpus_models import CorpusChunk
-from study_tutor.knowledge.retrieval import (
+from scripts import ingest_corpus  # noqa: E402
+from study_tutor.knowledge.corpus_models import CorpusChunk  # noqa: E402
+from study_tutor.knowledge.retrieval import (  # noqa: E402
     clear_primary_text_index,
     has_primary_text,
 )
+
+# Capture the production ``_make_embedding_function`` *before* the autouse
+# stub fixture below replaces it on the module. The env-var wiring test
+# (``test_make_embedding_function_uses_decision_defaults``) needs to invoke
+# the real function to assert it constructs an ``OpenAIEmbeddingFunction``
+# from the decision-§3.1 env vars; reaching for ``ingest_corpus`` after the
+# fixture runs would dispatch to the stub instead.
+_REAL_MAKE_EMBEDDING_FUNCTION = ingest_corpus._make_embedding_function
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +65,28 @@ def _reset_primary_text_index() -> Any:
     clear_primary_text_index()
     yield
     clear_primary_text_index()
+
+
+@pytest.fixture(autouse=True)
+def _stub_embedding_function(monkeypatch: pytest.MonkeyPatch) -> Any:
+    """Replace ``_make_embedding_function`` with the in-process default EF.
+
+    DECISION-RAG-001 wires ingest through llama-swap at ``localhost:9000``,
+    which is unreachable on CI. Stubbing at module level (rather than at
+    each call site) makes every existing end-to-end test hermetic without
+    threading a parameter through ``main`` → ``_open_collection``.
+
+    ``DefaultEmbeddingFunction`` is chromadb's bundled in-process model
+    (all-MiniLM-L6-v2, 384-dim). The test fixtures are tiny — first-call
+    download is cached for the rest of the test session. The new env-var
+    test bypasses this stub via ``_REAL_MAKE_EMBEDDING_FUNCTION``.
+    """
+    monkeypatch.setattr(
+        ingest_corpus,
+        "_make_embedding_function",
+        lambda: DefaultEmbeddingFunction(),
+    )
+    yield
 
 
 # ---------------------------------------------------------------------------
@@ -342,3 +375,51 @@ def test_help_mentions_uv_sync_extra() -> None:
     assert "uv sync --extra rag" in result.stdout, (
         f"--help output should mention the install command; got:\n{result.stdout}"
     )
+
+
+# ---------------------------------------------------------------------------
+# AC: _make_embedding_function reads the DECISION-RAG-001 §3.1 env vars
+# (LLM_EMBEDDINGS_BASE_URL / LLM_EMBEDDINGS_API_KEY / LLM_EMBEDDINGS_MODEL)
+# ---------------------------------------------------------------------------
+
+
+def test_make_embedding_function_uses_decision_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The three env vars must flow through to the constructed EF instance.
+
+    Bypasses the autouse stub via the captured ``_REAL_MAKE_EMBEDDING_FUNCTION``
+    reference. ``OpenAIEmbeddingFunction.__init__`` is offline — it stores
+    ``api_base`` / ``api_key`` / ``model_name`` on private attributes
+    (``_api_base`` / ``_api_key`` / ``_model_name``) without contacting the
+    endpoint, which is exactly the introspection point we need.
+    """
+    monkeypatch.setenv("LLM_EMBEDDINGS_BASE_URL", "http://override:1234/v1")
+    monkeypatch.setenv("LLM_EMBEDDINGS_API_KEY", "override-key")
+    monkeypatch.setenv("LLM_EMBEDDINGS_MODEL", "override-model")
+
+    ef = _REAL_MAKE_EMBEDDING_FUNCTION()
+
+    # Attribute names match what chromadb's ``OpenAIEmbeddingFunction``
+    # exposes (public ``api_base`` / ``api_key`` / ``model_name`` on
+    # chromadb 1.5+). If the lib renames these in a future major, the test
+    # will fail loudly — that's intentional, the wiring contract goes
+    # through this exact attribute surface.
+    assert ef.api_base == "http://override:1234/v1"
+    assert ef.api_key == "override-key"
+    assert ef.model_name == "override-model"
+
+
+def test_make_embedding_function_default_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without env overrides, the EF carries the decision-§3.1 defaults."""
+    monkeypatch.delenv("LLM_EMBEDDINGS_BASE_URL", raising=False)
+    monkeypatch.delenv("LLM_EMBEDDINGS_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_EMBEDDINGS_MODEL", raising=False)
+
+    ef = _REAL_MAKE_EMBEDDING_FUNCTION()
+
+    assert ef.api_base == ingest_corpus.DEFAULT_EMBEDDINGS_BASE_URL
+    assert ef.api_key == ingest_corpus.DEFAULT_EMBEDDINGS_API_KEY
+    assert ef.model_name == ingest_corpus.DEFAULT_EMBEDDINGS_MODEL

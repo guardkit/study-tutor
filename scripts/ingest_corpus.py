@@ -9,6 +9,22 @@ to: it imports ``chromadb`` lazily, walks a four-folder corpus root through
 The script is one-shot — it ingests and exits. **Runtime wiring of the
 collection into ``set_collection_provider`` is out of scope** (TASK-RAG-002).
 
+Fleet alignment (DECISION-RAG-001)
+----------------------------------
+Defaults and embedding wiring conform to
+``guardkit/docs/decisions/DECISION-RAG-001-unified-chromadb-approach.md``
+(accepted 2026-05-07). Both the specialist-agent and study-tutor share a
+single ChromaDB pattern: ``PersistentClient`` co-located with the agent on
+the GB10, with ``OpenAIEmbeddingFunction`` pointing at llama-swap's
+OpenAI-compatible ``/v1/embeddings`` endpoint (``nomic-embed-text``, 768
+dimensions). No Ollama, no Chroma server process, no cross-network hops.
+The decision-§3.1 env vars (``CHROMA_PERSIST_DIR``, ``CHROMA_COLLECTION``,
+``LLM_EMBEDDINGS_BASE_URL``, ``LLM_EMBEDDINGS_API_KEY``,
+``LLM_EMBEDDINGS_MODEL``) override the hard-coded defaults; CLI flags
+override env vars. If llama-swap is unreachable at ingest time the
+embedding-side error propagates up from ``collection.upsert`` — there is no
+silent fallback to the in-process default model.
+
 Metadata contract
 -----------------
 The retrieval module's ``_hydrate_chunk`` (``retrieval.py:502``) reads each
@@ -56,6 +72,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -82,8 +99,22 @@ logger = logging.getLogger("study_tutor.ingest_corpus")
 
 
 DEFAULT_DOMAIN_ROOT: Path = Path("domains/gcse-english/sources")
-DEFAULT_COLLECTION_NAME: str = "gcse-english"
-DEFAULT_PERSIST_DIR: Path = Path("./chroma/gcse-english")
+# DECISION-RAG-001 §3.1 / §4.2: versioned collection name and per-project
+# ``data/chroma/`` persist root. The earlier values (unversioned name +
+# ``./chroma/gcse-english/``) predated the fleet decision; aligning here so
+# TASK-RAG-002, the docker-compose mounts, and the operator runbook all
+# resolve to the same on-disk shape.
+DEFAULT_COLLECTION_NAME: str = "gcse-english-v1"
+DEFAULT_PERSIST_DIR: Path = Path("data/chroma")
+
+# DECISION-RAG-001 §3.1 / §2.2: llama-swap defaults for the embedding
+# function. ``api_key="not-needed"`` is the load-bearing magic string —
+# llama-swap ignores auth, but ``OpenAIEmbeddingFunction`` rejects an empty
+# string at construction time, so we must pass *something*. A future
+# deployment that does require auth flips ``LLM_EMBEDDINGS_API_KEY`` only.
+DEFAULT_EMBEDDINGS_BASE_URL: str = "http://localhost:9000/v1"
+DEFAULT_EMBEDDINGS_API_KEY: str = "not-needed"
+DEFAULT_EMBEDDINGS_MODEL: str = "nomic-embed-text"
 
 PRIMARY_TEXT_INDEX_FILENAME: str = ".primary_text_index"
 
@@ -121,20 +152,27 @@ def _build_parser() -> argparse.ArgumentParser:
             f"context_historical/. Default: {DEFAULT_DOMAIN_ROOT}"
         ),
     )
+    # CHROMA_COLLECTION / CHROMA_PERSIST_DIR (DECISION-RAG-001 §3.1) supply
+    # the argparse default; passing the flag at the CLI still wins. Reading
+    # the env var here (rather than later in ``main``) means ``--help``
+    # surfaces whatever the operator's environment actually resolves to.
     parser.add_argument(
         "--collection-name",
         type=str,
-        default=DEFAULT_COLLECTION_NAME,
-        help=f"ChromaDB collection name. Default: {DEFAULT_COLLECTION_NAME}",
+        default=os.environ.get("CHROMA_COLLECTION", DEFAULT_COLLECTION_NAME),
+        help=(
+            "ChromaDB collection name. Default: $CHROMA_COLLECTION or "
+            f"{DEFAULT_COLLECTION_NAME}"
+        ),
     )
     parser.add_argument(
         "--persist-dir",
         type=Path,
-        default=DEFAULT_PERSIST_DIR,
+        default=Path(os.environ.get("CHROMA_PERSIST_DIR", str(DEFAULT_PERSIST_DIR))),
         help=(
             "Directory for the persistent ChromaDB client. Will be created "
             "if missing. The .primary_text_index sidecar is written here too. "
-            f"Default: {DEFAULT_PERSIST_DIR}"
+            f"Default: $CHROMA_PERSIST_DIR or {DEFAULT_PERSIST_DIR}"
         ),
     )
     parser.add_argument(
@@ -188,11 +226,36 @@ def _chunk_metadata(chunk: CorpusChunk) -> dict[str, str | int]:
 # ---------------------------------------------------------------------------
 
 
+def _make_embedding_function() -> Any:
+    """Build the ``OpenAIEmbeddingFunction`` per DECISION-RAG-001 §2.2.
+
+    Reads the three decision-§3.1 env vars (``LLM_EMBEDDINGS_BASE_URL``,
+    ``LLM_EMBEDDINGS_API_KEY``, ``LLM_EMBEDDINGS_MODEL``) with defaults
+    pointing at llama-swap on localhost. Construction is offline — the EF
+    stores config and only contacts the endpoint when the collection's
+    upsert/query paths invoke ``__call__``.
+
+    Lazy import of ``chromadb`` mirrors ``_open_collection``: the module
+    stays importable without the ``rag`` extra installed, and the dependency
+    cost is paid only when the function is actually called.
+    """
+    from chromadb.utils.embedding_functions import (  # type: ignore[import-not-found]
+        OpenAIEmbeddingFunction,
+    )
+
+    return OpenAIEmbeddingFunction(
+        api_base=os.environ.get("LLM_EMBEDDINGS_BASE_URL", DEFAULT_EMBEDDINGS_BASE_URL),
+        api_key=os.environ.get("LLM_EMBEDDINGS_API_KEY", DEFAULT_EMBEDDINGS_API_KEY),
+        model_name=os.environ.get("LLM_EMBEDDINGS_MODEL", DEFAULT_EMBEDDINGS_MODEL),
+    )
+
+
 def _open_collection(
     persist_dir: Path,
     collection_name: str,
     *,
     reset: bool,
+    embedding_function: Any | None = None,
 ) -> Any:
     """Open a persistent ChromaDB collection, creating ``persist_dir`` if needed.
 
@@ -200,6 +263,11 @@ def _open_collection(
     yields a fresh, empty one. The drop is best-effort: if the collection
     doesn't exist yet, swallow the ``ValueError`` chromadb raises rather than
     treating "nothing to delete" as an error.
+
+    ``embedding_function`` defaults to ``None`` meaning "build the production
+    ``OpenAIEmbeddingFunction`` via :func:`_make_embedding_function`". Tests
+    that need to avoid contacting llama-swap pass an in-process EF (e.g.
+    ``DefaultEmbeddingFunction()``) so collection writes are hermetic.
 
     Lazy import of ``chromadb`` keeps the module importable on the dev path
     (no ``rag`` extra installed) — tests that don't exercise the chromadb
@@ -219,7 +287,13 @@ def _open_collection(
                 extra={"detail": f"{type(exc).__name__}: {exc}"},
             )
 
-    return client.get_or_create_collection(name=collection_name)
+    if embedding_function is None:
+        embedding_function = _make_embedding_function()
+
+    return client.get_or_create_collection(
+        name=collection_name,
+        embedding_function=embedding_function,
+    )
 
 
 def _upsert_chunks(collection: Any, chunks: Sequence[CorpusChunk]) -> None:

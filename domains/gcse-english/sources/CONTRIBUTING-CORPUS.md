@@ -67,10 +67,37 @@ off (see `_infer_play_anchor` in `src/study_tutor/knowledge/corpus.py`).
    {"event": "per_text_count", "text_name": "macbeth", "source_type": "PRIMARY_TEXT", "chunk_count": 412}
    ```
 
-The ChromaDB collection is persisted to `./chroma/gcse-english/`
-(gitignored). A sidecar `.primary_text_index` lists the registered
-`text_name`s so the runtime CLI in TASK-RAG-002 can replay registration
-at startup.
+The ChromaDB collection is persisted to `data/chroma/` (gitignored). A
+sidecar `.primary_text_index` lists the registered `text_name`s so the
+runtime CLI in TASK-RAG-002 can replay registration at startup.
+
+---
+
+## 1a. Embeddings & topology
+
+Per [DECISION-RAG-001 — Unified ChromaDB approach for fleet
+RAG](../../../guardkit/docs/decisions/DECISION-RAG-001-unified-chromadb-approach.md)
+(accepted 2026-05-07), the ingestion script and the runtime retriever both
+share a single fleet-wide ChromaDB pattern:
+
+| Concern | Setting | Override |
+|---|---|---|
+| Embeddings endpoint | llama-swap at `http://localhost:9000/v1` | `LLM_EMBEDDINGS_BASE_URL` |
+| Embedding model | `nomic-embed-text` (v1.5, 768 dim) | `LLM_EMBEDDINGS_MODEL` |
+| Auth | `not-needed` (llama-swap ignores it) | `LLM_EMBEDDINGS_API_KEY` |
+| Persist directory | `data/chroma/` (per-project root) | `CHROMA_PERSIST_DIR` |
+| Collection name | `gcse-english-v1` (versioned) | `CHROMA_COLLECTION` |
+
+CLI flags on `scripts/ingest_corpus.py` (`--persist-dir`, `--collection-name`)
+still win over env vars.
+
+**Ingestion runs on the GB10** where llama-swap and the persist dir are both
+localhost — zero network hops for embedding or storage. The fleet shares
+the persist root across collections (e.g. a future `gcse-maths-v1` lives in
+the same `data/chroma/` directory as a separate collection), which is the
+shape Chroma is designed for. The specialist-agent (architect role) follows
+the same pattern with its own `architect-knowledge-v1` collection — see
+DECISION-RAG-001 §4.
 
 ---
 
@@ -138,7 +165,7 @@ edition, and every text that isn't free to ingest is handled out-of-band.
 | This file, `README.md` | ✅ | Structure + sourcing guidance |
 | `.keep` placeholders in each folder | ✅ | Preserves folder layout |
 | Source files you add (`.txt`, `.xhtml`, `.epub`, `.pdf`) | ❌ | Gitignored; your acquired materials stay yours |
-| ChromaDB collection (`./chroma/gcse-english/`) | ❌ | Gitignored; rebuildable from sources |
+| ChromaDB collection (`data/chroma/`) | ❌ | Gitignored; rebuildable from sources |
 | `.primary_text_index` sidecar | ❌ | Gitignored (lives next to the chroma dir) |
 
 The `.gitignore` entry that enforces this (extended in TASK-RAG-001):
@@ -147,6 +174,7 @@ The `.gitignore` entry that enforces this (extended in TASK-RAG-001):
 domains/*/sources/*.{pdf,PDF,epub,txt,xhtml}
 domains/*/sources/**/*.{pdf,PDF,epub,txt,xhtml}
 chroma/
+data/chroma/
 ```
 
 `git status` after dropping a source file should show **no new files**.

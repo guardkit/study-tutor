@@ -54,9 +54,16 @@ providers = [
 # the ingestion script itself does NOT import it (the dev path stays lightweight),
 # but it ships in the same extra so a single ``uv sync --extra rag`` pins both
 # wave-2 dependencies for the runtime caller.
+#
+# TASK-RAG-001A / DECISION-RAG-001 §7 (2026-05-08): pin ``openai`` explicitly.
+# DECISION-RAG-001 wires ingest through chromadb's ``OpenAIEmbeddingFunction``,
+# which imports ``openai`` at construction time. Today ``openai`` is present
+# transitively via ``graphiti-core`` and ``langchain-openai``; pinning it here
+# guarantees the EF stays importable even if those upstreams drop the dep.
 rag = [
     "chromadb>=0.5",
     "sentence-transformers>=3.0",
+    "openai>=1.0",
 ]
 dev = [
     "pytest>=9.0.2",
