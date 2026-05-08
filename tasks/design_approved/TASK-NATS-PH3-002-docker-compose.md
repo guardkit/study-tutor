@@ -1,32 +1,33 @@
 ---
-id: TASK-NATS-PH3-002
-title: Build docker-compose.study-tutor.yml with full env block (OPENAI_BASE_URL /v1)
-task_type: scaffolding
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 9
-implementation_mode: task-work
 complexity: 5
-estimated_minutes: 60
-status: pending
-priority: medium
-created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
-dependencies:
-  - TASK-NATS-PH3-001
 consumer_context:
-  - task: TASK-NATS-PH1-007
-    consumes: OPENAI_BASE_URL
-    framework: 'langchain-openai (ChatOpenAI client)'
-    driver: 'OpenAI HTTP API (compatible endpoint via llama-swap)'
-    format_note: 'URL must include /v1 suffix or langchain-openai POSTs to /chat/completions instead of /v1/chat/completions and gets 404. See Bug #3.'
+- consumes: OPENAI_BASE_URL
+  driver: OpenAI HTTP API (compatible endpoint via llama-swap)
+  format_note: 'URL must include /v1 suffix or langchain-openai POSTs to /chat/completions
+    instead of /v1/chat/completions and gets 404. See Bug #3.'
+  framework: langchain-openai (ChatOpenAI client)
+  task: TASK-NATS-PH1-007
+created: 2026-05-08 00:00:00+00:00
+dependencies:
+- TASK-NATS-PH3-001
+estimated_minutes: 60
+feature_id: FEAT-NATS
+id: TASK-NATS-PH3-002
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: medium
+status: design_approved
 tags:
-  - nats
-  - scaffolding
-  - docker
-  - compose
-  - phase-3
-  - bug-3
+- nats
+- scaffolding
+- docker
+- compose
+- phase-3
+- bug-3
+task_type: scaffolding
+title: Build docker-compose.study-tutor.yml with full env block (OPENAI_BASE_URL /v1)
+updated: 2026-05-08 00:00:00+00:00
+wave: 9
 ---
 
 # Task: Build docker-compose.study-tutor.yml with full env block (OPENAI_BASE_URL /v1)
