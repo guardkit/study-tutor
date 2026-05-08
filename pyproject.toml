@@ -46,6 +46,18 @@ providers = [
     "langchain-aws>=1.4,<2",
     "langchain-ollama>=1.1,<2",
 ]
+# TASK-RAG-001 / FEAT-PRV4: optional dependency group for the primary-text-RAG
+# pipeline. ``chromadb`` is the persistent vector store the ingestion script
+# (``scripts/ingest_corpus.py``) writes into and that the runtime CLI
+# (TASK-RAG-002) hands to ``set_collection_provider``. ``sentence-transformers``
+# is the BGE reranker baseline used by ``study_tutor.knowledge.retrieval``;
+# the ingestion script itself does NOT import it (the dev path stays lightweight),
+# but it ships in the same extra so a single ``uv sync --extra rag`` pins both
+# wave-2 dependencies for the runtime caller.
+rag = [
+    "chromadb>=0.5",
+    "sentence-transformers>=3.0",
+]
 dev = [
     "pytest>=9.0.2",
     "pytest-asyncio>=0.23",

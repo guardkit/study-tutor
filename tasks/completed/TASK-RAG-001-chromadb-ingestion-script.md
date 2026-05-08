@@ -6,10 +6,13 @@ feature_id: FEAT-PRV4
 implementation_mode: direct
 complexity: 4
 estimated_minutes: 120
-status: backlog
+status: completed
 priority: high
 created: 2026-05-08T00:00:00Z
 updated: 2026-05-08T00:00:00Z
+completed: 2026-05-08T00:00:00Z
+previous_state: in_review
+state_transition_reason: "All ACs satisfied; 7/7 ingest tests pass, 91% coverage on scripts/ingest_corpus.py, no regressions in 383-test RAG/knowledge suite"
 dependencies: []
 related:
   - src/study_tutor/knowledge/corpus.py
@@ -221,3 +224,26 @@ Unit + integration tests live under `tests/scripts/test_ingest_corpus.py`:
 - [tests/integration/test_rag_end_to_end.py](../../tests/integration/test_rag_end_to_end.py) — fake Chroma collection shape (model for the real one)
 - [tasks/completed/TASK-PRV-002-source-typed-corpus-loader.md](../completed/TASK-PRV-002-source-typed-corpus-loader.md)
 - [tasks/completed/TASK-PRV-007-integration-smoke-and-sources-readme.md](../completed/TASK-PRV-007-integration-smoke-and-sources-readme.md)
+
+## Implementation Summary
+
+Closed the wave-1 → wave-2 boundary for FEAT-PRV4: the Phase 1 RAG modules (corpus loader, retriever, verifier, coach handover) shipped in TASK-PRV-002..007 but no caller was persisting `CorpusChunk` records into a vector store. This task provides the missing thin caller.
+
+**Delivered (10 files, ~620 LOC)**:
+- `pyproject.toml` — `[rag]` optional-dependency group: `chromadb>=0.5`, `sentence-transformers>=3.0`. The script itself does not import the reranker; the dep ships in the same extra so TASK-RAG-002 pins both with one `uv sync --extra rag`.
+- `scripts/ingest_corpus.py` (chmod +x, 320 lines) — argparse CLI, lazy `chromadb` import inside `_open_collection`, NDJSON to stdout (event types: `refusal`, `skip`, `per_text_count`, `ingest_summary`), regular logging to stderr, `--reset` via `client.delete_collection` + `get_or_create_collection`, sidecar `<persist_dir>/.primary_text_index` for runtime registration replay. Bootstraps `sys.path` so `./scripts/ingest_corpus.py` works without a prior `uv sync` on the dev path.
+- `tests/unit/scripts/test_ingest_corpus.py` (7 tests, all passing, 91% coverage on the new module) — module-level `pytest.importorskip("chromadb")` keeps the dev path light. Fixture corpora are built in `tmp_path` (no real Standard Ebooks texts in repo per CONTRIBUTING-CORPUS.md legal posture).
+- `domains/gcse-english/sources/{primary_text,secondary_study_guide,secondary_critical,context_historical}/.keep` — four-folder layout committed.
+- `domains/gcse-english/sources/CONTRIBUTING-CORPUS.md` (~120 lines) — Standard Ebooks workflow, four-folder→`SourceType` map, AQA refusal regex (`(past[_-]?paper|mark[_-]?scheme|examiner[_-]?report)`), in-copyright deny-list.
+- `.gitignore` — extended `domains/*/sources/**/*.{txt,xhtml}` exclusions (PDFs and EPUBs were already ignored).
+
+**Approach**: argparse not click (script is one-shot, no CLI overhead). `_chunk_id` is `f"{source_type}:{text_name}:{chunk_index}"` — a 3-tuple, not the spec's 2-tuple, because the loader's `_derive_text_name` uses just the file stem so `primary_text/macbeth.txt` and `secondary_study_guide/macbeth.txt` both yield `text_name="macbeth"` and would collide with the spec's ID scheme. The metadata shape mirrors what `study_tutor.knowledge.retrieval._hydrate_chunk` reads (`chunk_json` carries the full `CorpusChunk.model_dump_json()`; flat scalars `text_name` / `source_type` / `source_path` / `chunk_index` are surfaced separately so Chroma's `where`-clause filtering still works).
+
+**Result**: All 8 acceptance criteria satisfied. 7/7 ingest tests pass. 91% coverage on the new module. The broader 383-test RAG/knowledge suite has no regressions (one pre-existing failure on main in `test_graphiti_client_wiring.py`, unrelated). Operator can now run `uv sync --extra rag && python scripts/ingest_corpus.py` against a Standard Ebooks Macbeth download to produce `./chroma/gcse-english/` with a primary-text-indexed collection.
+
+**Lessons**:
+- The chunk-ID spec was a 2-tuple but had to become a 3-tuple to avoid `chromadb.errors.DuplicateIDError` when the same `text_name` lives under multiple source-type folders. Future ingestion-script specs should explicitly state which scope levels need to be in the ID.
+- `tests/scripts/__init__.py` collides with the top-level `scripts/` package on `sys.path` (pytest's `prepend` import mode). Resolved by placing tests at `tests/unit/scripts/` with no `__init__.py`. Worth a CLAUDE.md note for future test layout near package-name collisions.
+- The script's `chmod +x` AC implies operators will invoke it directly (not via `python -m`), so `sys.path` bootstrapping from `Path(__file__).parent.parent / "src"` is needed — `seed_student_model.py` does NOT do this and only works via the editable install. Worth backporting that bootstrap pattern.
+
+**Out of scope for this task (deferred to TASK-RAG-002)**: `set_collection_provider` runtime wiring, CLI startup replay of the `.primary_text_index` sidecar, the `coach_handover` closure that wires retrieval + verifier into the orchestrator.

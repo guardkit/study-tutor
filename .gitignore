@@ -239,13 +239,22 @@ Temporary Items
 # ---------------------------------------------------------------------------
 
 # Bring-your-own-sources — operator-acquired study guides stay on the
-# operator's machine. See domains/gcse-english/sources/README.md.
+# operator's machine. See domains/gcse-english/sources/README.md and
+# domains/gcse-english/sources/CONTRIBUTING-CORPUS.md.
+# TASK-RAG-001 (2026-05-08): extend to .txt and .xhtml so Standard Ebooks
+# plain-text downloads (the canonical primary-text source per CONTRIBUTING-CORPUS.md)
+# also stay out of the repo. The ingestion script (scripts/ingest_corpus.py)
+# walks domains/*/sources/ but the texts themselves never get committed.
 domains/*/sources/*.pdf
 domains/*/sources/**/*.pdf
 domains/*/sources/*.PDF
 domains/*/sources/**/*.PDF
 domains/*/sources/*.epub
 domains/*/sources/**/*.epub
+domains/*/sources/*.txt
+domains/*/sources/**/*.txt
+domains/*/sources/*.xhtml
+domains/*/sources/**/*.xhtml
 
 # RAG knowledge layer persistence (Phase 1 onward)
 chroma/
