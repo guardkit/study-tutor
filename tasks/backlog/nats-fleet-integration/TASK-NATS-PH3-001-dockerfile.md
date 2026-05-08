@@ -25,7 +25,7 @@ tags:
 
 ## Description
 
-Containerise study-tutor so it can run alongside specialist-agent on GB10. Mirrors specialist-agent's Dockerfile pattern at [specialist-agent/Dockerfile:1-37](../../../../specialist-agent/Dockerfile), particularly the BuildKit named context for sibling `nats-core` (since `nats-core` is consumed via editable install).
+Containerise study-tutor so it can run alongside specialist-agent on GB10. Mirrors specialist-agent's Dockerfile pattern at [specialist-agent/Dockerfile:1-37](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/Dockerfile), particularly the BuildKit named context for sibling `nats-core` (since `nats-core` is consumed via editable install).
 
 ## Scope
 
@@ -48,8 +48,8 @@ Create `study-tutor/Dockerfile`:
 
 ## Implementation notes
 
-- Reference: [specialist-agent/Dockerfile:1-37](../../../../specialist-agent/Dockerfile). Match the layering (deps before source) so cache invalidation is minimal.
-- For the nats-core named context, see [specialist-agent/scripts/docker-build.sh](../../../../specialist-agent/scripts/) (replicated by TASK-NATS-PH3-003).
+- Reference: [specialist-agent/Dockerfile:1-37](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/Dockerfile). Match the layering (deps before source) so cache invalidation is minimal.
+- For the nats-core named context, see [specialist-agent/scripts/docker-build.sh](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/scripts/) (replicated by TASK-NATS-PH3-003).
 - Do NOT bake credentials. Env vars come from runtime via `docker-compose` or `--env-file`.
 
 ## Coach validation

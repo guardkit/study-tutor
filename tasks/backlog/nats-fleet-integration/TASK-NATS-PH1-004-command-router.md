@@ -38,7 +38,7 @@ Build the dispatch layer that translates incoming `CommandPayload` envelopes int
 1. **Bug #2 fix** (`tool_to_command.get(c, c)` alias resolution): incoming command names like `tutor_start_session` (the MCP tool name) must resolve to canonical commands like `start_session` before the dispatch table lookup. Without this, every jarvis dispatch fails with "command not supported".
 2. **Bug #1 fix** (`reply_to` honouring): when the envelope carries a `reply_to` inbox header, the result must be **raw-published** to that inbox via `client.publish_raw(reply_to, ...)` *in addition to* the canonical envelope publish on `agents.result.<agent_id>`. Without this, jarvis's `client.request()` future resolves with the JetStream PubAck instead of the actual result.
 
-Reference: [specialist-agent/src/specialist_agent/adapters/command_router.py:328-406](../../../../specialist-agent/src/specialist_agent/adapters/command_router.py) (`on_command`), `:496-503` (Bug #2 fix line), `:1052-1103` (`_publish_result` Bug #1 fix).
+Reference: [specialist-agent/src/specialist_agent/adapters/command_router.py:328-406](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/adapters/command_router.py) (`on_command`), `:496-503` (Bug #2 fix line), `:1052-1103` (`_publish_result` Bug #1 fix).
 
 ## Scope
 
@@ -64,7 +64,7 @@ Create `src/study_tutor/adapters/command_router.py` with:
 
 - **DO NOT inline the `tool_to_command` map.** Read it from `get_role("tutor").tool_to_command` so it stays single-sourced.
 - The architect's `command_router.py` is ~1100 lines because it handles many roles, mode inference, tool-call subjects, etc. study-tutor's router is ~150-200 lines. Match the *shape* of the canonical functions, not the full surface area.
-- For the `_publish_result` raw-publish, see [`nats-core/src/nats_core/client.py:225-243`](../../../../nats-core/src/nats_core/client.py) for the `publish_raw` signature.
+- For the `_publish_result` raw-publish, see [`nats-core/src/nats_core/client.py:225-243`](/Users/richardwoollcott/Projects/appmilla_github/nats-core/src/nats_core/client.py) for the `publish_raw` signature.
 
 ## Coach validation
 

@@ -51,7 +51,7 @@ Create `tests/integration/test_live_discovery.py` with:
 ## Implementation notes
 
 - If jarvis is not importable from this repo, mock the resolver shape: read `agent-registry` KV directly via `nats-py` and assert presence + manifest validity.
-- Cross-check: see [jarvis/src/jarvis/infrastructure/capabilities_registry.py:227-515](../../../../jarvis/src/jarvis/infrastructure/capabilities_registry.py) for the actual `LiveCapabilitiesRegistry` shape.
+- Cross-check: see [jarvis/src/jarvis/infrastructure/capabilities_registry.py:227-515](/Users/richardwoollcott/Projects/appmilla_github/jarvis/src/jarvis/infrastructure/capabilities_registry.py) for the actual `LiveCapabilitiesRegistry` shape.
 
 ## Coach validation
 

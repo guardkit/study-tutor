@@ -27,7 +27,7 @@ tags:
 
 Create the role-registration pattern that mirrors specialist-agent's. study-tutor has only one role (`tutor`), but the shape must match for fleet parity. The `tool_to_command` map is the canonical place to declare aliases between MCP tool names (`tutor_start_session`, etc.) and internal canonical commands (`start_session`, etc.).
 
-Reference: [specialist-agent/src/specialist_agent/roles/registry.py:18-54](../../../../specialist-agent/src/specialist_agent/roles/registry.py) and `roles/architect/__init__.py:32-47`.
+Reference: [specialist-agent/src/specialist_agent/roles/registry.py:18-54](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/roles/registry.py) and `roles/architect/__init__.py:32-47`.
 
 ## Scope
 

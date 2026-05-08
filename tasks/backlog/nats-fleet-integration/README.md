@@ -32,7 +32,7 @@ Plus 5 risk-tracked follow-ups (TASK-NATS-FU-001 through TASK-NATS-FU-005) for p
 
 ## Bug regression guards from day one
 
-All four bugs documented in the [jarvis 2026-05-08 runbook](../../../../jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md) plus a predicted Bug #5 are wired into Coach validation:
+All four bugs documented in the [jarvis 2026-05-08 runbook](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md) plus a predicted Bug #5 are wired into Coach validation:
 
 - **Bug #1** PubAck race → PH1-004 (`_publish_result` raw-publish to inbox) + PH1-005 (`subscribe_with_reply`) + PH1-008 (smoke test asserts both paths)
 - **Bug #2** `on_command` mapping miss → PH1-003 (declares map) + PH1-004 (`tool_to_command.get(c, c)` line) + PH1-008 (alias dispatch test)

@@ -58,7 +58,7 @@ Create `tests/integration/test_nats_smoke.py` with:
 ## Implementation notes
 
 - For the NATS fixture, two viable options: `testcontainers-python` with the `nats:2-alpine` image, or a `pytest_asyncio` fixture that subprocesses `nats-server -js -p <random_port>`. Either works; pick the lighter-weight option.
-- The wire-tap assertion needs a separate `client.subscribe("agents.result.gcse-tutor", ...)` set up *before* the dispatch — see jarvis runbook patterns at [jarvis/docs/runbooks/evidence/dddsw-demo/](../../../../jarvis/docs/runbooks/evidence/dddsw-demo/) for the wire-tap shape.
+- The wire-tap assertion needs a separate `client.subscribe("agents.result.gcse-tutor", ...)` set up *before* the dispatch — see jarvis runbook patterns at [jarvis/docs/runbooks/evidence/dddsw-demo/](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/evidence/dddsw-demo/) for the wire-tap shape.
 - Do NOT use `agents.result.gcse-tutor.>` for the wire-tap subject — that pattern returns 0 envelopes (Bug #4). Use the flat subject.
 - Guard against flakiness: use explicit `await asyncio.sleep(0.05)` after dispatch before reading the wire-tap, or better, use a `nats_client.subscribe` with an `asyncio.Event` set on first message.
 

@@ -45,7 +45,7 @@ The lifecycle manager. Connects to NATS, registers the manifest in the `agent-re
 
 This task collapses the review doc's TASK-NATS-PH1-005/006/007 into a single cohesive adapter (per Decision 1 — Phase 1 includes live registration + heartbeat from day one, no stub-yaml fallback).
 
-Reference: [specialist-agent/src/specialist_agent/adapters/nats_adapter.py:42-312](../../../../specialist-agent/src/specialist_agent/adapters/nats_adapter.py). Mirror its structure closely — the architect's adapter is the canonical template.
+Reference: [specialist-agent/src/specialist_agent/adapters/nats_adapter.py:42-312](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/adapters/nats_adapter.py). Mirror its structure closely — the architect's adapter is the canonical template.
 
 ## Scope
 
@@ -79,10 +79,10 @@ Create `src/study_tutor/adapters/nats_adapter.py` with:
 
 ## Implementation notes
 
-- The architect's adapter has `_shutdown_timeout: float = 30.0` hardcoded ([nats_adapter.py:72](../../../../specialist-agent/src/specialist_agent/adapters/nats_adapter.py)). Match this value for parity.
+- The architect's adapter has `_shutdown_timeout: float = 30.0` hardcoded ([nats_adapter.py:72](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/adapters/nats_adapter.py)). Match this value for parity.
 - Heartbeat interval comes from `AgentConfig.heartbeat_interval_seconds` (default 30) — read it from config, do not hardcode.
 - For the active-task counter: the architect tracks this in `self._active_tasks: int` and decrements in a `try/finally` around `command_router.on_command`. Mirror exactly.
-- See [nats-core/src/nats_core/client.py:177-223](../../../../nats-core/src/nats_core/client.py) for `subscribe_with_reply` signature.
+- See [nats-core/src/nats_core/client.py:177-223](/Users/richardwoollcott/Projects/appmilla_github/nats-core/src/nats_core/client.py) for `subscribe_with_reply` signature.
 
 ## Coach validation
 

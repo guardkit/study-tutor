@@ -28,7 +28,7 @@ tags:
 
 Build the `_tutor_manifest_factory(agent_id)` function that produces an `AgentManifest` advertising study-tutor's 4 commands as `ToolCapability` entries plus at least one `IntentCapability` (Bug #5 regression guard — `InMemoryManifestRegistry.register` rejects empty intents arrays).
 
-Mirror the structure of [specialist-agent/src/specialist_agent/adapters/manifest.py](../../../../specialist-agent/src/specialist_agent/adapters/manifest.py) lines 23-218 — particularly the architect role's manifest at lines 42-76 (3 IntentCapabilities + ToolCapabilities) and the product-owner role at lines 243-281.
+Mirror the structure of [specialist-agent/src/specialist_agent/adapters/manifest.py](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/adapters/manifest.py) lines 23-218 — particularly the architect role's manifest at lines 42-76 (3 IntentCapabilities + ToolCapabilities) and the product-owner role at lines 243-281.
 
 ## Scope
 
@@ -50,7 +50,7 @@ Create `src/study_tutor/adapters/manifest.py` with:
 
 ## Implementation notes
 
-Reference: [specialist-agent/src/specialist_agent/adapters/manifest.py:42-76](../../../../specialist-agent/src/specialist_agent/adapters/manifest.py) (architect role manifest) and `:243-281` (product-owner role manifest).
+Reference: [specialist-agent/src/specialist_agent/adapters/manifest.py:42-76](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/adapters/manifest.py) (architect role manifest) and `:243-281` (product-owner role manifest).
 
 Tool parameter schemas: cross-reference [src/study_tutor/mcp/server.py](../../../src/study_tutor/mcp/server.py) lines 19-58 where the same tools are registered for MCP — keep parameter names and types identical.
 

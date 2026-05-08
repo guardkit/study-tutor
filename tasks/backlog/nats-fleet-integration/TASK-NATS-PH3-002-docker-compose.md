@@ -67,7 +67,7 @@ Create `study-tutor/docker-compose.study-tutor.yml`:
 
 ## Implementation notes
 
-- Reference: [specialist-agent/docker-compose.dual-role.yml:1-49](../../../../specialist-agent/docker-compose.dual-role.yml). Mirror the env-var-with-default pattern and the `extra_hosts` directive.
+- Reference: [specialist-agent/docker-compose.dual-role.yml:1-49](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/docker-compose.dual-role.yml). Mirror the env-var-with-default pattern and the `extra_hosts` directive.
 - Do NOT define a NATS service in this compose file — NATS is provisioned elsewhere (`nats-infrastructure/`); this compose file only adds the tutor container.
 
 ## Coach validation

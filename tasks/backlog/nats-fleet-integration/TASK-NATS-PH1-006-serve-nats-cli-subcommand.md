@@ -25,7 +25,7 @@ tags:
 
 ## Description
 
-Wire the existing CLI surface to launch the NATSAdapter as a long-running process. Mirrors specialist-agent's `serve-nats` subcommand at [cli/main.py:1515-1670, 1712-1769](../../../../specialist-agent/src/specialist_agent/cli/main.py).
+Wire the existing CLI surface to launch the NATSAdapter as a long-running process. Mirrors specialist-agent's `serve-nats` subcommand at [cli/main.py:1515-1670, 1712-1769](/Users/richardwoollcott/Projects/appmilla_github/specialist-agent/src/specialist_agent/cli/main.py).
 
 The subcommand is the entry point used by Phase 3's Docker image and by anyone running the tutor against a local NATS for development.
 

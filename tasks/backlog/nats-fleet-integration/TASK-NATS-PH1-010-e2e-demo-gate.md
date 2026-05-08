@@ -62,8 +62,8 @@ This task is `task_type: operator_handoff` — AutoBuild will not attempt it. Th
 
 The runbook structure is documented in [docs/reviews/REVIEW-NATS-FLEET-PATTERNS-2026-05-08.md § Runbook artifact pattern](../../../docs/reviews/REVIEW-NATS-FLEET-PATTERNS-2026-05-08.md). Use the jarvis runbooks as the canonical template:
 
-- [jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md](../../../../jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md) — procedure
-- [jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08.md](../../../../jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08.md) — RESULTS shape
-- [jarvis/docs/runbooks/evidence/dddsw-demo/](../../../../jarvis/docs/runbooks/evidence/dddsw-demo/) — evidence directory shape
+- [jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md) — procedure
+- [jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08.md](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08.md) — RESULTS shape
+- [jarvis/docs/runbooks/evidence/dddsw-demo/](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/evidence/dddsw-demo/) — evidence directory shape
 
 If anything blocks (PubAck leakage, dispatch timeout, registry missing), file a bug with the same shape as the jarvis runbook's bug catalogue (symptom / cause / fix / where-it-must-live).

@@ -63,7 +63,7 @@ The RESULTS template must include:
 
 ## Implementation notes
 
-Reference: [jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md](../../../../jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md) and [RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md](../../../../jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md). Mirror their structure exactly so cross-runbook comparisons are trivial.
+Reference: [jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/RUNBOOK-jarvis-architect-align-dddsw-demo.md) and [RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md](/Users/richardwoollcott/Projects/appmilla_github/jarvis/docs/runbooks/RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md). Mirror their structure exactly so cross-runbook comparisons are trivial.
 
 ## Coach validation
 
