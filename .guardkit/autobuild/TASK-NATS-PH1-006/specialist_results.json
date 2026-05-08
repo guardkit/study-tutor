@@ -1,17 +1,17 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 56.41501162503846,
+    "duration_seconds": 134.6499474159209,
     "error": null,
-    "tests_run": 40,
+    "tests_run": 41,
     "tests_failed": 0,
-    "coverage_pct": 38.72,
-    "output_summary": "pytest: 40 passed, 0 failed across changed CLI/roles/env tests; line coverage 38.72% (src/study_tutor)",
+    "coverage_pct": 59.0,
+    "output_summary": "pytest: 41 passed (40 unit + 1 in-scope BDD @task:TASK-NATS-PH1-006), 0 failed; coverage 59% on changed cli/main.py + roles/*",
     "quality_gates_passed": true
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 513.2665140000172,
+    "duration_seconds": 285.317843249999,
     "error": null,
     "issues": [],
     "quality_score": 0.0,

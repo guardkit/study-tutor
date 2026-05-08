@@ -1,7 +1,23 @@
 {
-  "tests_run": 40,
+  "tests_run": 41,
   "tests_failed": 0,
-  "coverage_pct": 38.72,
-  "output_summary": "pytest: 40 passed, 0 failed across changed CLI/roles/env tests; line coverage 38.72% (src/study_tutor)",
-  "quality_gates_passed": true
+  "coverage_pct": 59.0,
+  "output_summary": "pytest: 41 passed (40 unit + 1 in-scope BDD @task:TASK-NATS-PH1-006), 0 failed; coverage 59% on changed cli/main.py + roles/*",
+  "quality_gates_passed": true,
+  "test_runner": "pytest (uv run)",
+  "test_targets": [
+    "tests/unit/cli/test_serve_nats.py",
+    "tests/unit/roles/test_registry.py",
+    "tests/unit/test_env_example_nats.py",
+    "features/nats-fleet-integration/test_nats_fleet_integration.py::test_sigterm_during_an_inflight_tutor_turn_drains_the_request_before_deregistration"
+  ],
+  "coverage_breakdown": {
+    "src/study_tutor/cli/main.py": "50%",
+    "src/study_tutor/roles/__init__.py": "100%",
+    "src/study_tutor/roles/loader.py": "44%",
+    "src/study_tutor/roles/registry.py": "98%",
+    "src/study_tutor/roles/tutor/__init__.py": "100%",
+    "total": "59%"
+  },
+  "notes": "40 other BDD scenarios in nats-fleet-integration.feature are intentionally unbound per the test module docstring; they belong to downstream TASK-NATS-PH1-002/-004/-005/-007/-008/-009 and PH2/PH3 tasks. Only the @task:TASK-NATS-PH1-006 scenario is in scope and it passed. coverage_pct reflects line coverage on files modified by this task."
 }

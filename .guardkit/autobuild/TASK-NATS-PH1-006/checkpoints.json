@@ -1,0 +1,15 @@
+{
+  "task_id": "TASK-NATS-PH1-006",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "ed5a8377664c81c892a49c44e5ff7a7f6b9dc9d6",
+      "timestamp": "2026-05-08T20:56:13.348357",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": false
+    }
+  ],
+  "last_updated": "2026-05-08T20:56:13.348617"
+}
