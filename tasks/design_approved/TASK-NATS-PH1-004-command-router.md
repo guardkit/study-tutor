@@ -1,32 +1,34 @@
 ---
-id: TASK-NATS-PH1-004
-title: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug #2), and reply_to honouring (Bug #1)
-task_type: feature
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 3
-implementation_mode: task-work
 complexity: 6
-estimated_minutes: 120
-status: pending
-priority: critical
-created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
-dependencies:
-  - TASK-NATS-PH1-003
 consumer_context:
-  - task: TASK-NATS-PH1-003
-    consumes: tool_to_command_map
-    framework: 'study_tutor.roles.registry.get_role'
-    driver: 'in-process Python registry'
-    format_note: 'Map keys are MCP tool names (e.g. "tutor_start_session"); values are canonical commands (e.g. "start_session"). Router MUST call self.tool_to_command.get(c, c) — passthrough when not present, alias when present.'
+- consumes: tool_to_command_map
+  driver: in-process Python registry
+  format_note: Map keys are MCP tool names (e.g. "tutor_start_session"); values are
+    canonical commands (e.g. "start_session"). Router MUST call self.tool_to_command.get(c,
+    c) — passthrough when not present, alias when present.
+  framework: study_tutor.roles.registry.get_role
+  task: TASK-NATS-PH1-003
+created: 2026-05-08 00:00:00+00:00
+dependencies:
+- TASK-NATS-PH1-003
+estimated_minutes: 120
+feature_id: FEAT-NATS
+id: TASK-NATS-PH1-004
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: critical
+status: design_approved
 tags:
-  - nats
-  - feature
-  - command-router
-  - phase-1
-  - bug-1
-  - bug-2
+- nats
+- feature
+- command-router
+- phase-1
+- bug-1
+- bug-2
+task_type: feature
+title: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug
+updated: 2026-05-08 00:00:00+00:00
+wave: 3
 ---
 
 # Task: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug #2), and reply_to honouring (Bug #1)

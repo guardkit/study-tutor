@@ -1,0 +1,220 @@
+{
+  "task_id": "TASK-NATS-PH1-004",
+  "timestamp": "2026-05-08T23:12:25.062330",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 9,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": true
+  },
+  "files_modified": [
+    ".guardkit/autobuild/TASK-NATS-PH1-006/checkpoints.json"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-NATS-PH1-004-implementation-plan.md",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/turn_context.json",
+    ".guardkit/bdd/TASK-NATS-PH1-004_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py",
+    "tasks/design_approved/TASK-NATS-PH1-004-command-router.md"
+  ],
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py"
+  ],
+  "summary": "9 tests passed, all quality gates passed",
+  "sdk_turns": {
+    "turns_used": 46,
+    "max_turns": 160,
+    "ceiling_hit": false
+  },
+  "bdd_results": {
+    "scenarios_passed": 0,
+    "scenarios_failed": 0,
+    "scenarios_pending": 8,
+    "failures": [],
+    "pending": [
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_command_with_an_unknown_name_is_rejected_with_a_list_of_supported_commands",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_malformed_command_envelope_is_rejected_without_disrupting_the_adapter",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_command_targeted_at_another_agent_is_not_processed_by_the_tutor",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_toolname_dispatch_resolves_to_the_canonical_command_through_the_tool_to_command_map[tutor_start_session-start_session]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_toolname_dispatch_resolves_to_the_canonical_command_through_the_tool_to_command_map[tutor_turn-tutor_turn]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_toolname_dispatch_resolves_to_the_canonical_command_through_the_tool_to_command_map[tutor_session_status-session_status]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_a_toolname_dispatch_resolves_to_the_canonical_command_through_the_tool_to_command_map[tutor_session_end-end_session]",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      },
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_two_concurrent_tutor_turn_commands_for_the_same_session_are_serialised",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      }
+    ],
+    "feature_files": [
+      "features/nats-fleet-integration/nats-fleet-integration.feature"
+    ],
+    "tag": "@task:TASK-NATS-PH1-004"
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Unit test: on_command with command=\"tutor_start_session\" resolves to start_session via tool_to_command and invokes MCPAdapter.tutor_start_session (Bug #2 regression guard).",
+      "status": "complete",
+      "evidence": "Implemented Bug #2 alias resolution in CommandRouter._dispatch_command: `resolved_command = self.tool_to_command.get(command, command)` runs before the _command_map lookup. Test test_on_command_alias_resolves_tutor_start_session passes \u2014 sends a CommandPayload with command='tutor_start_session', asserts mcp_adapter.tutor_start_session is awaited once with student_id='lilymay', and that no other handler fires. Pulls the alias map from get_role('tutor').tool_to_command per the implementation note's single-source-of-truth requirement.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Unit test: on_command with command=\"start_session\" (canonical) bypasses the alias map and works directly (passthrough behaviour).",
+      "status": "complete",
+      "evidence": "The .get(c, c) form is the passthrough idiom: canonical names are absent from tool_to_command (which only maps MCP tool names) so they fall through unchanged. Test test_on_command_canonical_command_passes_through sends command='start_session' and asserts the same adapter.tutor_start_session call lands. Both AC-001 and AC-002 hold simultaneously without duplicating dispatch keys.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Unit test: _publish_result with reply_to=\"_INBOX.abc\" calls client.publish_raw(\"_INBOX.abc\", ...) AND publishes to agents.result.gcse-tutor (Bug #1 regression guard).",
+      "status": "complete",
+      "evidence": "Implemented Bug #1 dual-publish in CommandRouter._publish_result: when reply_to is set, raw-publishes ResultPayload.model_dump_json().encode() to the inbox, then ALWAYS also publishes the canonical envelope to Topics.resolve(Topics.Agents.RESULT, agent_id='gcse-tutor') = 'agents.result.gcse-tutor'. Test test_publish_result_with_reply_to_publishes_both asserts both client.publish_raw and client.publish are awaited; raw body is parseable as ResultPayload (raw on the wire, not envelope-wrapped) \u2014 the exact wire format jarvis's dispatch.py expects.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Unit test: _publish_result with reply_to=None only publishes to the canonical result topic.",
+      "status": "complete",
+      "evidence": "Test test_publish_result_without_reply_to_only_canonical asserts client.publish_raw is NOT awaited and client.publish is awaited exactly once on subject 'agents.result.gcse-tutor'. The reply_to=None branch in _publish_result skips the raw-publish entirely and runs only the canonical envelope publish path.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Unit test: unknown command name returns ResultPayload(success=False, error=...) and the error message includes the list of supported commands.",
+      "status": "complete",
+      "evidence": "Implemented UnsupportedCommandError(KeyError) raised by _dispatch_command for unknown commands; on_command catches it and synthesises ResultPayload(success=False, result={'error': ..., 'error_type': 'UnsupportedCommandError'}). Two tests pin this: test_dispatch_command_raises_unsupported_command_error verifies the inner contract (raises with sorted supported list); test_on_command_unknown_command_returns_error_result verifies the outer contract (no propagation, error string contains 'bogus_command' and every canonical command name: start_session, tutor_turn, session_status, end_session).",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "Unit test: handler exception is caught and surfaces as ResultPayload(success=False, error=...) (no propagation past on_command).",
+      "status": "complete",
+      "evidence": "Implemented boundary catch in CommandRouter._safe_invoke: any exception from the underlying MCP method is captured into ResultPayload(success=False, result={'error': str(exc), 'error_type': type(exc).__name__}); the original traceback goes to logger.exception. Test test_on_command_handler_exception_caught wires mcp_adapter.tutor_start_session.side_effect = RuntimeError('boom'), calls on_command (must not raise), and asserts the published ResultPayload.success is False with 'boom' in error and error_type='RuntimeError'.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `ruff check src/study_tutor/adapters/command_router.py tests/unit/adapters/test_command_router.py` \u2014 output: 'All checks passed!'. Both files use `from __future__ import annotations`, type hints, docstrings on every public function, and follow the existing module patterns in src/study_tutor (e.g. logger = logging.getLogger(__name__), module-level __all__).",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 41.71712183300406
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 250.71852679201402
+    }
+  ]
+}
