@@ -15,8 +15,19 @@ deterministically unsatisfiable for any single-task autobuild run.
 This module sidesteps that by binding **only** the focused subset
 ``TASK-NATS-PH1-006.feature``, which contains the single
 ``@task:TASK-NATS-PH1-006`` scenario. With this in place,
-``pytest features/nats-fleet-integration/by-task/test_TASK-NATS-PH1-006.py``
+``pytest features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py``
 collects exactly one scenario and the gate is satisfiable.
+
+Filename note
+=============
+
+The module is named ``test_TASK_NATS_PH1_006.py`` (underscores) rather
+than ``test_TASK-NATS-PH1-006.py`` (hyphens) because GuardKit's BDD
+oracle (``bdd_runner._build_pytest_argv``) passes the ``.feature`` path
+directly to pytest, and the collection bridge in
+``features/conftest.py:97`` resolves the sibling glue via
+``file_path.stem.replace('-', '_')``. The hyphenated form would never
+be discovered by the bridge.
 
 How it reuses the master step definitions
 =========================================

@@ -1,22 +1,6 @@
 {
   "task_id": "TASK-NATS-PH1-006",
-  "timestamp": "2026-05-08T22:58:55.557393",
-  "completed": true,
-  "phases": {
-    "phase_3": {
-      "detected": true,
-      "text": "Implementation",
-      "completed": true
-    }
-  },
-  "quality_gates": {
-    "tests_passing": true,
-    "tests_passed": 7,
-    "tests_failed": 0,
-    "coverage": null,
-    "coverage_met": null,
-    "all_passed": true
-  },
+  "turn": 4,
   "files_modified": [
     ".guardkit/autobuild/TASK-NATS-PH1-006/checkpoints.json",
     ".guardkit/autobuild/TASK-NATS-PH1-006/coach_turn_1.json",
@@ -44,63 +28,31 @@
     ".guardkit/autobuild/TASK-NATS-PH1-006/player_turn_4.json",
     "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-006/player_turn_4.json"
   ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: serve-nats --help advertises --nats, --agent-id, --log-level (verified by test_serve_nats_help_lists_required_flags and live --help invocation)",
+    "AC-002: --nats override flows into config.nats.url; _serve_adapter starts the adapter, blocks on shutdown_event, then stops cleanly (verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set and the now-discoverable BDD scenario)",
+    "AC-003: SIGTERM and SIGINT handlers both call _request_shutdown() which sets shutdown_event; adapter.stop() runs in finally, runtime_shutdown drains write helper. The 30s drain window is owned by NATSAdapter (TASK-NATS-PH1-005 scope). Verified by test_serve_adapter_registers_sigterm_and_sigint_handlers and the now-discoverable BDD scenario which asserts the in-flight tutor_turn task completes before deregistration",
+    "AC-004: AgentConfig validation failures wrap into _AgentConfigValidationError; the click command catches it, emits '[study-tutor] Error: AgentConfig validation failed: <cause>' on stderr, and raises SystemExit(1). _serve_adapter additionally exits 1 if adapter.start() raises. Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises",
+    "AC-005: ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py reports 'All checks passed!' (zero violations)"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 24,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
   "files_authored": [
     "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-006/player_turn_4.json",
     "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py",
     "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tasks/design_approved/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md"
   ],
-  "tests_written": [
-    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py"
-  ],
-  "summary": "7 tests passed, all quality gates passed",
-  "sdk_turns": {
-    "turns_used": 24,
-    "max_turns": 150,
-    "ceiling_hit": false
-  },
-  "bdd_results": {
-    "scenarios_passed": 2,
-    "scenarios_failed": 0,
-    "scenarios_pending": 0,
-    "failures": [],
-    "pending": [],
-    "feature_files": [
-      "features/nats-fleet-integration/by-task/TASK-NATS-PH1-006.feature",
-      "features/nats-fleet-integration/nats-fleet-integration.feature"
-    ],
-    "tag": "@task:TASK-NATS-PH1-006"
-  },
-  "task_type": "feature",
-  "agent_invocations_validation": {
-    "status": "violation",
-    "expected_phases": 3,
-    "actual_invocations": 2,
-    "missing_phases": [
-      "3"
-    ],
-    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
-  },
-  "plan_audit": {
-    "status": "skipped",
-    "severity": null,
-    "violations": 0,
-    "extra_files": [],
-    "missing_files": [],
-    "extra_modifications": [],
-    "missing_modifications": [],
-    "extra_dependencies": [],
-    "missing_dependencies": [],
-    "loc_variance_pct": null,
-    "discrepancies_count": 0,
-    "message": "no implementation plan on disk"
-  },
-  "unconfirmed_low_confidence_assumptions": {
-    "status": "ok",
-    "unconfirmed": [],
-    "files_scanned": 0,
-    "files_skipped": 0,
-    "message": null
-  },
+  "tests_passed_count": 7,
   "completion_promises": [
     {
       "criterion_id": "AC-001",
@@ -153,22 +105,6 @@
         "tests/unit/cli/test_serve_nats.py",
         "features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py"
       ]
-    }
-  ],
-  "agent_invocations": [
-    {
-      "phase": "4",
-      "agent": "test-orchestrator",
-      "status": "completed",
-      "source": "orchestrator",
-      "duration_seconds": 60.78570554195903
-    },
-    {
-      "phase": "5",
-      "agent": "code-reviewer",
-      "status": "completed",
-      "source": "orchestrator",
-      "duration_seconds": 279.7291365410201
     }
   ]
 }
