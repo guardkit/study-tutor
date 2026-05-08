@@ -1,0 +1,200 @@
+{
+  "task_id": "TASK-NATS-PH1-008",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "skipped",
+      "test_output_summary": "Independent test verification skipped (tests not required for testing tasks)",
+      "duration_seconds": 0.0
+    },
+    "requirements": {
+      "criteria_total": 7,
+      "criteria_met": 7,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "All 4 commands round-trip through NATS and return `ResultPayload(success=True)`.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Parametrised test test_command_round_trip dispatches each of the 4 tool aliases (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end) plus 3 canonical equivalents through nc.request against a live nats-server subprocess. Each iteration parses the reply via ResultPayload.model_validate_json and asserts result.success is True. All 7 parametrised cases pass.",
+      "notes": "Parametrised test test_command_round_trip dispatches each of the 4 tool aliases (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end) plus 3 canonical equivalents through nc.request against a live nats-server subprocess. Each iteration parses the reply via ResultPayload.model_validate_json and asserts result.success is True. All 7 parametrised cases pass."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "No reply parses as a `{\"stream\":...,\"seq\":...}` PubAck (Bug #1 regression guard \u2014 explicit assertion).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Each iteration first parses response_msg.data as raw JSON and asserts the top-level keys are NOT a subset of {'stream','seq','domain'} (the JetStream PubAck shape). Belt-and-braces also asserts 'success' and 'command' keys are present (ResultPayload shape). This explicit raw-shape assertion is the Bug #1 regression guard.",
+      "notes": "Each iteration first parses response_msg.data as raw JSON and asserts the top-level keys are NOT a subset of {'stream','seq','domain'} (the JetStream PubAck shape). Belt-and-braces also asserts 'success' and 'command' keys are present (ResultPayload shape). This explicit raw-shape assertion is the Bug #1 regression guard."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Wire-tap on `agents.result.gcse-tutor` captures one envelope per dispatch (Bug #1 \u2014 topic path also exercised).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Before dispatch, the test subscribes a sidecar nats client to the flat subject 'agents.result.gcse-tutor' (NOT the wildcard form, per the task implementation note about Bug #4). An asyncio.Event is set on first message; the test waits up to 2s and then asserts len(wiretap_received) == 1. The captured envelope is parsed and asserted to have event_type=RESULT and source_id=gcse-tutor.",
+      "notes": "Before dispatch, the test subscribes a sidecar nats client to the flat subject 'agents.result.gcse-tutor' (NOT the wildcard form, per the task implementation note about Bug #4). An asyncio.Event is set on first message; the test waits up to 2s and then asserts len(wiretap_received) == 1. The captured envelope is parsed and asserted to have event_type=RESULT and source_id=gcse-tutor."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Test using `tool_to_command` alias (`command=\"tutor_start_session\"`) succeeds \u2014 proves Bug #2 fix is wired (regression guard).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Parametrise list _COMMANDS includes all 4 alias forms (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end). For each, the test asserts (a) ResultPayload.success is True, (b) ResultPayload.command equals the canonical resolved name (e.g. 'start_session' for the 'tutor_start_session' alias), and (c) the stub MCP adapter saw the canonical method invocation \u2014 proving the router applied tool_to_command alias resolution before the dispatch table lookup.",
+      "notes": "Parametrise list _COMMANDS includes all 4 alias forms (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end). For each, the test asserts (a) ResultPayload.success is True, (b) ResultPayload.command equals the canonical resolved name (e.g. 'start_session' for the 'tutor_start_session' alias), and (c) the stub MCP adapter saw the canonical method invocation \u2014 proving the router applied tool_to_command alias resolution before the dispatch table lookup."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Test using canonical name (`command=\"start_session\"`) also succeeds \u2014 proves passthrough behaviour.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Parametrise list _COMMANDS includes the 3 distinct canonical forms (start_session, session_status, end_session); tutor_turn is identical for both alias and canonical forms and is covered in the alias set. Each canonical case passes the same success+method assertions as the alias case, proving the .get(c, c) passthrough fall-through behaviour for commands absent from the tool_to_command map.",
+      "notes": "Parametrise list _COMMANDS includes the 3 distinct canonical forms (start_session, session_status, end_session); tutor_turn is identical for both alias and canonical forms and is covered in the alias set. Each canonical case passes the same success+method assertions as the alias case, proving the .get(c, c) passthrough fall-through behaviour for commands absent from the tool_to_command map."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "Tests are deterministic and CI-runnable (no manual setup beyond the fixture-provided NATS).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "The nats_server fixture spawns a per-test nats-server subprocess on an OS-assigned free port (no manual setup required), the bootstrapped_server fixture provisions the agent-registry KV bucket idempotently, and the tutor_adapter fixture builds the full NATSAdapter+CommandRouter+stub stack and tears it down cleanly. The fixture skips gracefully (pytest.skip) when nats-server is not on PATH, mirroring tests/integration/test_adapter_lifecycle.py. asyncio.Event-based wait_for replaces arbitrary sleeps for determinism. Local run of all 7 cases passes in ~0.65s.",
+      "notes": "The nats_server fixture spawns a per-test nats-server subprocess on an OS-assigned free port (no manual setup required), the bootstrapped_server fixture provisions the agent-registry KV bucket idempotently, and the tutor_adapter fixture builds the full NATSAdapter+CommandRouter+stub stack and tears it down cleanly. The fixture skips gracefully (pytest.skip) when nats-server is not on PATH, mirroring tests/integration/test_adapter_lifecycle.py. asyncio.Event-based wait_for replaces arbitrary sleeps for determinism. Local run of all 7 cases passes in ~0.65s."
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "ruff check tests/integration/test_nats_smoke.py exits with 'All checks passed!'. ruff format --check tests/integration/test_nats_smoke.py exits with '1 file already formatted' (zero changes). Both checks were run after the test file was authored and verified as clean.",
+      "notes": "ruff check tests/integration/test_nats_smoke.py exits with 'All checks passed!'. ruff format --check tests/integration/test_nats_smoke.py exits with '1 file already formatted' (zero changes). Both checks were run after the test file was authored and verified as clean."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "All 4 commands round-trip through NATS and return `ResultPayload(success=True)`.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Parametrised test test_command_round_trip dispatches each of the 4 tool aliases (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end) plus 3 canonical equivalents through nc.request against a live nats-server subprocess. Each iteration parses the reply via ResultPayload.model_validate_json and asserts result.success is True. All 7 parametrised cases pass.",
+        "notes": "Parametrised test test_command_round_trip dispatches each of the 4 tool aliases (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end) plus 3 canonical equivalents through nc.request against a live nats-server subprocess. Each iteration parses the reply via ResultPayload.model_validate_json and asserts result.success is True. All 7 parametrised cases pass."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "No reply parses as a `{\"stream\":...,\"seq\":...}` PubAck (Bug #1 regression guard \u2014 explicit assertion).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Each iteration first parses response_msg.data as raw JSON and asserts the top-level keys are NOT a subset of {'stream','seq','domain'} (the JetStream PubAck shape). Belt-and-braces also asserts 'success' and 'command' keys are present (ResultPayload shape). This explicit raw-shape assertion is the Bug #1 regression guard.",
+        "notes": "Each iteration first parses response_msg.data as raw JSON and asserts the top-level keys are NOT a subset of {'stream','seq','domain'} (the JetStream PubAck shape). Belt-and-braces also asserts 'success' and 'command' keys are present (ResultPayload shape). This explicit raw-shape assertion is the Bug #1 regression guard."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Wire-tap on `agents.result.gcse-tutor` captures one envelope per dispatch (Bug #1 \u2014 topic path also exercised).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Before dispatch, the test subscribes a sidecar nats client to the flat subject 'agents.result.gcse-tutor' (NOT the wildcard form, per the task implementation note about Bug #4). An asyncio.Event is set on first message; the test waits up to 2s and then asserts len(wiretap_received) == 1. The captured envelope is parsed and asserted to have event_type=RESULT and source_id=gcse-tutor.",
+        "notes": "Before dispatch, the test subscribes a sidecar nats client to the flat subject 'agents.result.gcse-tutor' (NOT the wildcard form, per the task implementation note about Bug #4). An asyncio.Event is set on first message; the test waits up to 2s and then asserts len(wiretap_received) == 1. The captured envelope is parsed and asserted to have event_type=RESULT and source_id=gcse-tutor."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Test using `tool_to_command` alias (`command=\"tutor_start_session\"`) succeeds \u2014 proves Bug #2 fix is wired (regression guard).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Parametrise list _COMMANDS includes all 4 alias forms (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end). For each, the test asserts (a) ResultPayload.success is True, (b) ResultPayload.command equals the canonical resolved name (e.g. 'start_session' for the 'tutor_start_session' alias), and (c) the stub MCP adapter saw the canonical method invocation \u2014 proving the router applied tool_to_command alias resolution before the dispatch table lookup.",
+        "notes": "Parametrise list _COMMANDS includes all 4 alias forms (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end). For each, the test asserts (a) ResultPayload.success is True, (b) ResultPayload.command equals the canonical resolved name (e.g. 'start_session' for the 'tutor_start_session' alias), and (c) the stub MCP adapter saw the canonical method invocation \u2014 proving the router applied tool_to_command alias resolution before the dispatch table lookup."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Test using canonical name (`command=\"start_session\"`) also succeeds \u2014 proves passthrough behaviour.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Parametrise list _COMMANDS includes the 3 distinct canonical forms (start_session, session_status, end_session); tutor_turn is identical for both alias and canonical forms and is covered in the alias set. Each canonical case passes the same success+method assertions as the alias case, proving the .get(c, c) passthrough fall-through behaviour for commands absent from the tool_to_command map.",
+        "notes": "Parametrise list _COMMANDS includes the 3 distinct canonical forms (start_session, session_status, end_session); tutor_turn is identical for both alias and canonical forms and is covered in the alias set. Each canonical case passes the same success+method assertions as the alias case, proving the .get(c, c) passthrough fall-through behaviour for commands absent from the tool_to_command map."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "Tests are deterministic and CI-runnable (no manual setup beyond the fixture-provided NATS).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The nats_server fixture spawns a per-test nats-server subprocess on an OS-assigned free port (no manual setup required), the bootstrapped_server fixture provisions the agent-registry KV bucket idempotently, and the tutor_adapter fixture builds the full NATSAdapter+CommandRouter+stub stack and tears it down cleanly. The fixture skips gracefully (pytest.skip) when nats-server is not on PATH, mirroring tests/integration/test_adapter_lifecycle.py. asyncio.Event-based wait_for replaces arbitrary sleeps for determinism. Local run of all 7 cases passes in ~0.65s.",
+        "notes": "The nats_server fixture spawns a per-test nats-server subprocess on an OS-assigned free port (no manual setup required), the bootstrapped_server fixture provisions the agent-registry KV bucket idempotently, and the tutor_adapter fixture builds the full NATSAdapter+CommandRouter+stub stack and tears it down cleanly. The fixture skips gracefully (pytest.skip) when nats-server is not on PATH, mirroring tests/integration/test_adapter_lifecycle.py. asyncio.Event-based wait_for replaces arbitrary sleeps for determinism. Local run of all 7 cases passes in ~0.65s."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "ruff check tests/integration/test_nats_smoke.py exits with 'All checks passed!'. ruff format --check tests/integration/test_nats_smoke.py exits with '1 file already formatted' (zero changes). Both checks were run after the test file was authored and verified as clean.",
+        "notes": "ruff check tests/integration/test_nats_smoke.py exits with 'All checks passed!'. ruff format --check tests/integration/test_nats_smoke.py exits with '1 file already formatted' (zero changes). Both checks were run after the test file was authored and verified as clean."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "bdd_pending",
+      "description": "BDD oracle: 4 scenario(s) reference step definitions that are not yet implemented. These do NOT block approval but should be implemented to make the scenarios runnable.",
+      "scenarios_pending": 4,
+      "feature_files": [
+        "features/nats-fleet-integration/nats-fleet-integration.feature"
+      ],
+      "pending_examples": [
+        "test_a_canonical_command_roundtrips_through_the_nats_adapter_to_the_tutor_business_logic[start_session] \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_canonical_command_roundtrips_through_the_nats_adapter_to_the_tutor_business_logic[tutor_turn] \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_canonical_command_roundtrips_through_the_nats_adapter_to_the_tutor_business_logic[session_status] \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_canonical_command_roundtrips_through_the_nats_adapter_to_the_tutor_business_logic[end_session] \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      ]
+    }
+  ],
+  "rationale": "All quality gates passed. Tests not required for this task type. All acceptance criteria met. Architecture context: 348 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1628/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- HAS_METHOD\n- DERIVES_PARALLEL_GROUP\n- ASSIGNS_TASK_TO\n- IS_PART_OF_WORKFLOW\n\n### \u26a0\ufe0f Warnings\n- HAS_FIX\n- REQUIRES_USE_OF\n- INVOLVES\n\n### \ud83c\udfad Role Constraints\n- RUNS_TESTS_BEFORE_REPORTING\n- DELEGATE_TO_TASK_WORK\n- HAS_ROLE_MUST_DO\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- APPLIES_TO\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": [
+      {
+        "claimed": "tasks/backlog/TASK-NATS-PH1-009-live-discovery-smoke.md",
+        "resolved_to": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+        "task_id": "TASK-NATS-PH1-008"
+      },
+      {
+        "claimed": "tasks/backlog/TASK-NATS-PH2-002-kv-watch-test.md",
+        "resolved_to": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+        "task_id": "TASK-NATS-PH1-008"
+      },
+      {
+        "claimed": "tasks/backlog/TASK-NATS-PH3-001-dockerfile.md",
+        "resolved_to": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+        "task_id": "TASK-NATS-PH1-008"
+      }
+    ]
+  }
+}

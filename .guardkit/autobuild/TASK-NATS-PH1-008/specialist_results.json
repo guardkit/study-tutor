@@ -8,5 +8,14 @@
     "coverage_pct": 73.0,
     "output_summary": "7/7 NATS smoke tests passed (alias+canonical x 4 commands); 73% line coverage on adapters+roles wire path; all gates green.",
     "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "passed",
+    "duration_seconds": 274.69730983302,
+    "error": null,
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
   }
 }
