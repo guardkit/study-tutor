@@ -451,6 +451,17 @@ def reset_collection_provider() -> None:
     _collection_provider = None
 
 
+def get_collection_provider() -> Callable[[], Any] | None:
+    """Return the currently-installed collection provider, or ``None``.
+
+    Inverse of :func:`set_collection_provider`. The orchestrator's boot
+    smoke (TASK-RAG-002 / TASK-LCA-004 extension) calls this once at
+    ``MCPAdapter.__init__`` time to verify the collection is wired
+    before serving any traffic.
+    """
+    return _collection_provider
+
+
 # Reranker-factory injection. The factory is a zero-arg callable that
 # returns a reranker object exposing a ``predict(pairs)`` method matching
 # ``sentence_transformers.CrossEncoder``. The default factory is ``None``
@@ -790,6 +801,7 @@ __all__ = [
     "clear_primary_text_index",
     "decide_retrieval",
     "embedder_available_within",
+    "get_collection_provider",
     "get_last_retrieval_mode",
     "has_primary_text",
     "register_primary_text",

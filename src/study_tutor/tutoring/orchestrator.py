@@ -41,13 +41,16 @@ logger = logging.getLogger(__name__)
 
 #: Signature of the optional coach-handover callable wired into the
 #: orchestrator between Player and Coach. Given the Player's raw
-#: response and the opaque session_state, it returns
-#: ``(response_for_coach, verifier_metadata)``. Production wiring binds
-#: :func:`study_tutor.knowledge.coach_handover.apply_quote_verification`
+#: response, the learner's message (used as the retrieval query — see
+#: TASK-RAG-002), and the opaque session_state, it returns
+#: ``(response_for_coach, verifier_metadata)``. The arg order is
+#: ``(raw_response, learner_message, session_state)``. Production wiring
+#: binds :func:`study_tutor.knowledge.coach_handover.apply_quote_verification`
 #: with corpus chunks / session_text_name / retrieval_skipped_reason
-#: derived from session_state at call time. Tests inject simple lambdas
-#: or stubs.
-CoachHandover = Callable[[str, Any], tuple[str, VerifierMetadata]]
+#: derived from session_state at call time, and uses ``learner_message``
+#: as the retrieval query (matches the @key-example fixtures in
+#: TASK-PRV-004). Tests inject simple lambdas or stubs.
+CoachHandover = Callable[[str, str, Any], tuple[str, VerifierMetadata]]
 
 
 # ---------------------------------------------------------------------------
@@ -370,8 +373,12 @@ class PlayerCoachOrchestrator:
                 one).
             coach_handover: Optional callable wiring TASK-PRV-005's
                 :func:`verify_quotes` into the per-turn pipeline
-                (TASK-PRV-006). Given ``(player_response, session_state)``
-                it returns ``(response_for_coach, verifier_metadata)``.
+                (TASK-PRV-006). Given
+                ``(player_response, learner_message, session_state)`` it
+                returns ``(response_for_coach, verifier_metadata)``. The
+                ``learner_message`` arg (added by TASK-RAG-002) is the
+                retrieval query — without it the closure cannot ground
+                its primary-text RAG against what the learner asked.
                 When supplied, the orchestrator runs it after every
                 Player call (initial and revisions) and routes the
                 rewritten response to the Coach instead of the raw
@@ -482,7 +489,7 @@ class PlayerCoachOrchestrator:
         # don't need it), the response is passed through unchanged and
         # ``verifier_metadata`` stays ``None``.
         first_response, first_metadata = self._apply_coach_handover(
-            first_raw_response, session_state
+            first_raw_response, learner_message, session_state
         )
 
         # Coach evaluation. If the Coach is unreachable here, we return
@@ -559,7 +566,7 @@ class PlayerCoachOrchestrator:
             # previous verification did not see (per TASK-PRV-006: the
             # Coach must always evaluate the rewritten text).
             revised_response, revised_metadata = self._apply_coach_handover(
-                revised_raw_response, session_state
+                revised_raw_response, learner_message, session_state
             )
 
             try:
@@ -632,7 +639,10 @@ class PlayerCoachOrchestrator:
     # ------------------------------------------------------------------
 
     def _apply_coach_handover(
-        self, raw_response: str, session_state: Any
+        self,
+        raw_response: str,
+        learner_message: str,
+        session_state: Any,
     ) -> tuple[str, VerifierMetadata | None]:
         """Run the configured handover, or pass-through if none is wired.
 
@@ -645,10 +655,14 @@ class PlayerCoachOrchestrator:
         internally and return ``verifier_exception=True`` metadata; any
         exception escaping the handover is a bug at the handover layer
         and propagates to the caller for visibility.
+
+        The ``learner_message`` argument (TASK-RAG-002) is forwarded
+        verbatim to the handover so it can use it as the retrieval
+        query.
         """
         if self._coach_handover is None:
             return raw_response, None
-        return self._coach_handover(raw_response, session_state)
+        return self._coach_handover(raw_response, learner_message, session_state)
 
     async def _evaluate_with_metadata(
         self,

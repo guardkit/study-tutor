@@ -186,6 +186,30 @@ class MCPAdapter:
         if self._orchestrator_factory is not None:
             self._orchestrator_factory()  # noqa: F841 — discarded; smoke-check invocation only
 
+            # TASK-RAG-002 — RAG boot smoke. The collection provider is
+            # wired by ``cli.rag_wiring.build_rag_providers`` at serve
+            # startup. If wired, verify it returns a non-None
+            # collection; if unwired (graceful-degradation envelope),
+            # log structured ``rag_disabled`` so the operator's log pane
+            # shows the state. Gated on ``orchestrator_factory is not
+            # None`` because the Phase-0 backward-compat path doesn't
+            # build orchestrators (and therefore doesn't run RAG).
+            from study_tutor.knowledge.retrieval import (
+                get_collection_provider as _get_cp,
+            )
+
+            provider = _get_cp()
+            if provider is not None:
+                if provider() is None:
+                    logger.warning(
+                        "event=rag_disabled "
+                        "reason=collection_provider_returned_none"
+                    )
+            else:
+                logger.warning(
+                    "event=rag_disabled reason=collection_provider_unwired"
+                )
+
     async def tutor_start_session(
         self,
         student_id: str,

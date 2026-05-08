@@ -41,10 +41,18 @@ from typing import Any, Callable
 
 import click
 
+from study_tutor.cli.rag_wiring import build_rag_providers
 from study_tutor.knowledge.async_write import GraphitiWriteHelper
+from study_tutor.knowledge.coach_handover import apply_quote_verification
 from study_tutor.knowledge.graphiti_client import (
     get_client,
     load_graphiti_config_from_yaml,
+)
+from study_tutor.knowledge.quote_verifier import VerifierMetadata
+from study_tutor.knowledge.retrieval import (
+    decide_retrieval,
+    get_last_retrieval_mode,
+    retrieve,
 )
 from study_tutor.llm.client import _default_coach_model, _default_player_model
 from study_tutor.mcp.adapter import MCPAdapter
@@ -57,10 +65,112 @@ from study_tutor.tutoring.coach.factory import (
     PlayerConfig,
     validate_coach_config,
 )
-from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
+from study_tutor.tutoring.orchestrator import (
+    CoachHandover,
+    PlayerCoachOrchestrator,
+)
 from study_tutor.tutoring.session_end import EventBus, runtime_shutdown
 
 logger = logging.getLogger(__name__)
+
+
+def _build_coach_handover() -> CoachHandover:
+    """Construct the production coach-handover closure (TASK-RAG-002).
+
+    The closure routes the four-branch retrieval decision into the
+    verifier seam (:func:`apply_quote_verification`) on every Player
+    turn:
+
+    * No ``text_name`` on the session_state (baseline-degraded plan) —
+      verifier runs against an empty corpus with
+      ``retrieval_skipped_reason=None``; ``quote_fidelity`` defaults
+      because there's nothing to ground against and no skip-reason to
+      surface to the Coach.
+    * ``decide_retrieval`` says skip (AO3-only / AnalysisMode /
+      embedder-timeout) — verifier runs with empty chunks and the
+      decision's ``reason`` forwarded to
+      :class:`VerifierMetadata.retrieval_skipped_reason` so the Coach
+      suppresses its ``quote_fidelity`` down-rank.
+    * Decision says retrieve — :func:`retrieve` is called with the
+      learner message as the query (matches the @key-example fixtures
+      in TASK-PRV-004), the resulting chunks are passed to
+      :func:`apply_quote_verification`, and the rewritten response goes
+      to the Coach.
+
+    Every branch emits a single structured ``event=orchestrator_turn_completed``
+    log line so the demo log pane has a single filter for retrieval
+    state (per plan AD-6).
+
+    The closure is process-scoped (built once at boot) — same lifecycle
+    as ``coach_system_prompt`` in :func:`_build_orchestrator_factory`.
+
+    Returns
+    -------
+    CoachHandover
+        A callable matching the widened :class:`CoachHandover` signature
+        ``(raw_response, learner_message, session_state) -> (rewritten,
+        metadata)``.
+    """
+
+    def coach_handover(
+        raw_response: str,
+        learner_message: str,
+        session_state: Any,
+    ) -> tuple[str, VerifierMetadata]:
+        text_name = getattr(session_state, "text_name", None)
+        focus_aos_raw = getattr(session_state, "focus_aos", ()) or ()
+        focus_aos = set(focus_aos_raw)
+
+        if not text_name:
+            # Baseline-degraded plan with no text_name — verifier still
+            # runs against empty chunks so quote_fidelity defaults
+            # appropriately.
+            logger.info(
+                "event=orchestrator_turn_completed text_name=%s "
+                "retrieval_mode=skipped reason=no_text_name",
+                "",
+            )
+            return apply_quote_verification(
+                raw_response, [], "", retrieval_skipped_reason=None
+            )
+
+        decision = decide_retrieval(text_name, focus_aos)
+        if not decision.retrieve:
+            logger.info(
+                "event=orchestrator_turn_completed text_name=%s "
+                "retrieval_mode=skipped reason=%s",
+                text_name,
+                decision.reason,
+            )
+            return apply_quote_verification(
+                raw_response,
+                [],
+                text_name,
+                retrieval_skipped_reason=decision.reason,
+            )
+
+        # TODO (TASK-RAG-002 / Phase 2 — AD-6): thread retrieval_mode
+        # into TurnResult so consumers can read it without parsing logs.
+        # Phase 1 demo signal is the structured log line below.
+        chunks = retrieve(
+            query=learner_message, text_name=text_name, focus_aos=focus_aos
+        )
+        retrieval_mode = get_last_retrieval_mode()
+        logger.info(
+            "event=orchestrator_turn_completed text_name=%s "
+            "retrieval_mode=%s chunks=%d",
+            text_name,
+            retrieval_mode,
+            len(chunks),
+        )
+        return apply_quote_verification(
+            raw_response,
+            chunks,
+            text_name,
+            retrieval_skipped_reason=None,
+        )
+
+    return coach_handover
 
 
 def _build_orchestrator_factory(
@@ -110,6 +220,14 @@ def _build_orchestrator_factory(
     # for the lifetime of the process; rotation requires a server restart.
     coach_system_prompt = role_config.load_coach_prompt()
 
+    # TASK-RAG-002 — build the coach-handover closure once at boot.
+    # Same lifecycle as ``coach_system_prompt``: process-scoped, no
+    # per-turn construction cost. The closure reads module-level state
+    # in ``study_tutor.knowledge.retrieval`` (collection provider,
+    # primary-text index) which is wired by ``build_rag_providers`` in
+    # ``serve`` *before* this factory is constructed.
+    coach_handover_closure = _build_coach_handover()
+
     def _on_flag(reason: str, extra: dict[str, Any]) -> None:
         """Logger-only flag callback (D-COACH-07).
 
@@ -146,7 +264,7 @@ def _build_orchestrator_factory(
             player=LLMPlayerAdapter(role_config),
             coach=LLMCoachAdapter(role_config),
             quote_verifier=None,  # ASSUM-LCA-015 — follow-up subtask
-            coach_handover=None,  # ASSUM-LCA-015 — follow-up subtask
+            coach_handover=coach_handover_closure,
             on_flag=_on_flag,
         )
 
@@ -181,7 +299,25 @@ def cli() -> None:
     show_default=True,
 )
 def serve(role: str, transport: str, log_level: str) -> None:
-    """Run the MCP server for the given role."""
+    """Run the MCP server for the given role.
+
+    \b
+    Environment variables (DECISION-RAG-001 §3.1 — fleet-shared):
+
+    \b
+      CHROMA_PERSIST_DIR        Persistent ChromaDB directory.
+                                Default: data/chroma
+      CHROMA_COLLECTION         Collection name to open.
+                                Default: gcse-english-v1
+      LLM_EMBEDDINGS_BASE_URL   llama-swap OpenAI-compat endpoint.
+                                Default: http://localhost:9000/v1
+      LLM_EMBEDDINGS_API_KEY    API key (load-bearing magic string —
+                                llama-swap ignores auth but the EF
+                                rejects empty strings).
+                                Default: not-needed
+      LLM_EMBEDDINGS_MODEL      Embedding model name.
+                                Default: nomic-embed-text
+    """
     logging.basicConfig(
         level=log_level.upper(),
         stream=sys.stderr,
@@ -189,6 +325,18 @@ def serve(role: str, transport: str, log_level: str) -> None:
     )
 
     role_config = load_role(role)
+
+    # TASK-RAG-002 — wire the persistent ChromaDB collection into the
+    # retrieval module's collection-provider seam *before* the
+    # orchestrator factory is built. The boot-smoke check inside
+    # ``MCPAdapter.__init__`` reads the wired provider via
+    # ``get_collection_provider`` to verify wiring; that check would
+    # see ``None`` if we wired RAG after adapter construction. On any
+    # failure mode (chromadb missing / persist dir missing / EF
+    # construction failure) the helper logs ``event=rag_disabled`` and
+    # returns — the runtime continues with the verifier-against-empty
+    # corpus fallback per the graceful-degradation envelope.
+    build_rag_providers(role_config)
 
     # Graphiti client construction is async (it does a healthcheck), but
     # the FastMCP server.run loop is sync. We use a one-shot asyncio.run

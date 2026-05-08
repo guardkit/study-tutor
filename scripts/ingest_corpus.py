@@ -94,6 +94,9 @@ if _SRC_PATH not in sys.path:
 # ``main`` so the module imports cleanly without the optional ``rag`` extra.
 from study_tutor.knowledge.corpus import IngestResult, load_corpus  # noqa: E402
 from study_tutor.knowledge.corpus_models import CorpusChunk, SourceType  # noqa: E402
+from study_tutor.knowledge.embedding_function import (  # noqa: E402
+    build_openai_embedding_function,
+)
 
 logger = logging.getLogger("study_tutor.ingest_corpus")
 
@@ -229,25 +232,20 @@ def _chunk_metadata(chunk: CorpusChunk) -> dict[str, str | int]:
 def _make_embedding_function() -> Any:
     """Build the ``OpenAIEmbeddingFunction`` per DECISION-RAG-001 §2.2.
 
-    Reads the three decision-§3.1 env vars (``LLM_EMBEDDINGS_BASE_URL``,
-    ``LLM_EMBEDDINGS_API_KEY``, ``LLM_EMBEDDINGS_MODEL``) with defaults
-    pointing at llama-swap on localhost. Construction is offline — the EF
-    stores config and only contacts the endpoint when the collection's
-    upsert/query paths invoke ``__call__``.
+    Delegates to
+    :func:`study_tutor.knowledge.embedding_function.build_openai_embedding_function`
+    — the single source of truth for the EF construction shared with the
+    runtime CLI (TASK-RAG-002). Two copies (writer + reader) would
+    re-introduce the embedding-space mismatch failure mode DECISION-RAG-001
+    §3.1 warns about.
 
-    Lazy import of ``chromadb`` mirrors ``_open_collection``: the module
-    stays importable without the ``rag`` extra installed, and the dependency
-    cost is paid only when the function is actually called.
+    The local module-level constants
+    (:data:`DEFAULT_EMBEDDINGS_BASE_URL`, :data:`DEFAULT_EMBEDDINGS_API_KEY`,
+    :data:`DEFAULT_EMBEDDINGS_MODEL`) remain because they're referenced by
+    ``--help`` text; behaviour is identical because the shared helper
+    reads its own copies from env vars with the same canonical defaults.
     """
-    from chromadb.utils.embedding_functions import (  # type: ignore[import-not-found]
-        OpenAIEmbeddingFunction,
-    )
-
-    return OpenAIEmbeddingFunction(
-        api_base=os.environ.get("LLM_EMBEDDINGS_BASE_URL", DEFAULT_EMBEDDINGS_BASE_URL),
-        api_key=os.environ.get("LLM_EMBEDDINGS_API_KEY", DEFAULT_EMBEDDINGS_API_KEY),
-        model_name=os.environ.get("LLM_EMBEDDINGS_MODEL", DEFAULT_EMBEDDINGS_MODEL),
-    )
+    return build_openai_embedding_function()
 
 
 def _open_collection(
