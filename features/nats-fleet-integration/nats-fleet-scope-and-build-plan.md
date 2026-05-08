@@ -6,7 +6,8 @@
 **Dependencies:**
 - `nats-core` — shared contract library (Pydantic models, NATSClient, Topics)
 - `specialist-agent` — `serve-nats` reference implementation
-- `fleet-gateway` — Open WebUI Pipe Function + Reachy Mini Scholar profile (the consumers of this work)
+- `fleet-gateway` — Open WebUI Pipe Function + Reachy Mini Scholar profile
+- `jarvis` — intent router; dispatches structured `CommandPayload` to the study-tutor via NATS (the primary consumer of this work)
 
 **Architecture decision:** `docs/talks/openwebui-nats-pipe-architecture.md`
 
@@ -20,11 +21,13 @@ The study-tutor's `MCPAdapter` already contains all the business logic: session 
 
 ### Who consumes this work
 
-Two consumers in the `fleet-gateway` repo depend on the study-tutor being reachable via NATS:
+The primary consumer is **Jarvis** (the fleet's intent router). The user types a message in Open WebUI → the Pipe Function sends it to Jarvis → Jarvis's supervisor understands the intent and calls `dispatch_by_capability(agent_id="gcse-tutor", command="tutor_turn", ...)` → the study-tutor receives the structured `CommandPayload` on `agents.command.gcse-tutor`.
 
-1. **Open WebUI NATS Pipe Function** (`fleet-gateway/openwebui/nats_fleet_pipe.py`) — publishes `CommandPayload` to `agents.command.gcse-tutor`, expects `ResultPayload` back. This is the DDD demo and everyday user surface.
+The study-tutor's NATS adapter doesn't care who publishes the `CommandPayload` — it just handles whatever arrives on its topic. Today that's Jarvis. Post-hackathon, Reachy Mini Scholar could also publish directly (voice-transcribed commands). The adapter is consumer-agnostic by design.
 
-2. **Reachy Mini "Scholar"** (`fleet-gateway/reachy/`) — for the hackathon, Scholar reads directly from Graphiti (no NATS needed). Post-hackathon, Scholar becomes a NATS publisher like the Pipe Function, sending voice-transcribed commands to the tutor agent. The study-tutor `serve-nats` mode is a prerequisite for that future path.
+**Jarvis scope:** `jarvis/features/feat-jarvis-006-nats-chat-gateway/nats-chat-gateway-scope-and-build-plan.md`
+**Pipe Function:** `fleet-gateway/openwebui/nats_fleet_pipe.py` (sends all messages to Jarvis, not to agents directly)
+**Scholar (hackathon):** reads directly from Graphiti (no NATS needed). Post-hackathon: NATS gateway through Jarvis.
 
 ---
 
@@ -46,7 +49,7 @@ The fleet-gateway repo contains the consumers:
 
 | Component | Path | Purpose |
 |---|---|---|
-| NATS Pipe Function | `fleet-gateway/openwebui/nats_fleet_pipe.py` | Open WebUI → NATS gateway (manifold exposing all agents) |
+| NATS Pipe Function | `fleet-gateway/openwebui/nats_fleet_pipe.py` | Open WebUI → NATS gateway (sends all messages to Jarvis) |
 | Scholar profile | `fleet-gateway/reachy/external_content/` | Reachy Mini companion (reads Graphiti; future NATS publisher) |
 | Gateway architecture | `fleet-gateway/docs/architecture.md` | Gateway design principles and topology |
 
@@ -275,5 +278,5 @@ When spinning up a Claude Code session to implement Phase 1, these files provide
 ---
 
 *Drafted: 7 May 2026*
-*Updated: 7 May 2026 — added fleet-gateway references after repo creation*
+*Updated: 7 May 2026 — added fleet-gateway references; updated consumer from Pipe Function to Jarvis (v4 architecture)*
 *For: Claude Code implementation session (Phase 1 target: 11 May)*

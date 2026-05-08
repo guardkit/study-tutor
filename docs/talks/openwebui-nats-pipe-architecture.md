@@ -1,14 +1,18 @@
-# Open WebUI + NATS Pipe Functions — Architecture Decision
+# Open WebUI + NATS via Jarvis — Architecture Decision
 
-**Status:** Proposed (7 May 2026)
+**Status:** Agreed (7 May 2026, evolved same day through v1→v4)
 **Scope:** Fleet-wide — affects DDD Southwest demo, Gemma 4 Good Hackathon, and long-term fleet UI surface
-**Related:** `ddd-southwest-demo-strategy.md` (v2), `distributed_agent_orchestration_architecture.md`, DECISION-DF-001
+**Related:** `ddd-southwest-demo-strategy.md` (v4), `distributed_agent_orchestration_architecture.md`, DECISION-DF-001
+**Companion scopes:**
+- `jarvis/features/feat-jarvis-006-nats-chat-gateway/` — Jarvis serve-nats
+- `study-tutor/features/nats-fleet-integration/` — study-tutor serve-nats
+- `fleet-gateway/` — Pipe Function + Reachy Scholar profile
 
 ---
 
 ## The decision in one paragraph
 
-Replace Claude Desktop as the user-facing surface for the software factory with Open WebUI, connected to the agent fleet via NATS Pipe Functions. Each agent (architect, product-owner, study-tutor, forge) appears as a named model in Open WebUI's model selector. The Pipe Function is a thin NATS client — it publishes the user's message to the selected agent's NATS topic and streams the response back. No MCP, no intermediary routing model, no tool calling. NATS is already the fleet backbone; this makes Open WebUI another participant on the bus.
+Replace Claude Desktop as the user-facing surface for the software factory with Open WebUI, connected to **Jarvis** (the fleet's intent router) via a NATS Pipe Function. The Pipe Function sends every user message to Jarvis over NATS. Jarvis's supervisor — powered by Qwen3.6-35B-A3B (3B active params via llama-swap) — understands the user's intent, constructs structured `CommandPayload` messages, and dispatches to the right specialist agent (architect, product-owner, study-tutor, forge) over NATS. The specialist agents receive clean, structured arguments — exactly as their `CommandRouter` was designed to handle. Jarvis replaces Claude in the routing role; Open WebUI replaces Claude Desktop as the UI shell. The Pipe Function is ~60 lines of Python. All intelligence lives in Jarvis and the agents.
 
 ---
 
@@ -16,286 +20,95 @@ Replace Claude Desktop as the user-facing surface for the software factory with 
 
 ### The Claude Desktop problem
 
-The current demo surface is Claude Desktop acting as an MCP client to the study-tutor and specialist-agent. This works for development but fails for two audiences:
-
-- **DDD Southwest (16 May):** The audience sees Claude Desktop and thinks "he's just using Claude." The actual intelligence — fine-tuned Gemma 4 models, Player-Coach quality loops, Graphiti knowledge graphs — is invisible behind a Claude-branded shell. The narrative is about local inference and zero marginal cost; the UI contradicts the story.
-- **Gemma 4 Good Hackathon (18 May):** Judges evaluating an education-track submission won't understand MCP tools in Claude Desktop. They need to see a student-facing interface that's obviously not a commercial AI product.
+Claude Desktop makes the DDD audience think "he's just using Claude." The actual intelligence — fine-tuned models, Player-Coach loops, Graphiti — is invisible behind a Claude-branded shell.
 
 ### Why not MCP via Open WebUI?
 
-Open WebUI supports MCP natively (v0.6.31+, Streamable HTTP) and via the `mcpo` proxy for stdio MCP servers. The study-tutor and specialist-agent already expose stdio MCP servers. So the path exists.
+MCP tool calling requires the model to output structured function-call JSON. The fine-tuned specialist models weren't trained for tool calling. A separate routing model would be needed. And MCP is a second transport alongside NATS.
 
-The problem is that MCP tool calling in Open WebUI requires the **model** to decide when to call tools. That means the fine-tuned Gemma 4 models would need to output structured function-call JSON in Open WebUI's Native Mode. These models weren't trained for tool calling — they were trained for architecture review and Socratic tutoring. You'd need a separate routing model that does tool calling, adding complexity and an extra inference step. And it doesn't use NATS — it's a completely different transport from the fleet architecture.
+### Why not a Pipe Function manifold (individual agents)?
 
-MCP solves the right problem (tool discovery and routing) for general-purpose assistants. It's the wrong abstraction when you have purpose-built agents that already know what they do.
+The v3 approach exposed each agent as a separate model in the Open WebUI dropdown. This created a wire format mismatch: the specialist-agent's `CommandRouter` expects structured arguments (`context`, `proposal`, `question` for align; `docs_path`, `scope` for greenfield), but a chat UI sends natural language. Something needs to bridge that gap.
 
-### Why NATS Pipe Functions?
+### Why Jarvis?
 
-NATS is already the fleet message bus. The specialist-agent already has `serve-nats` mode (see `docker-compose.dual-role.yml`). Every agent in the fleet will eventually be a NATS subscriber. Making Open WebUI a NATS publisher is the natural extension — it becomes another node on the bus, not a special case.
+Jarvis is that bridge — and it already exists. On 4 May 2026, Jarvis ran on GB10 with `qwen36-workhorse` (Qwen3.6 via llama-swap), successfully called `queue_build` with structured arguments, and completed a full NATS round-trip to Forge. The supervisor, dispatch infrastructure, fleet registration, and capabilities registry are all proven (FEAT-JARVIS-004/005, all tasks complete).
 
-Open WebUI Pipe Functions are Python classes that register as custom "models" in the model selector. The `pipe()` method receives the user's message and returns the response. Inside, it can run any Python — including an async NATS client. The Pipe Function doesn't need a model to decide what to do; the user already selected the agent from the dropdown.
+Jarvis replaces Claude in the same role Claude played in Claude Desktop: receive natural language, understand intent, construct structured tool calls, dispatch. The difference: Jarvis runs on the GB10 using a 3B-active-parameter local model, not a cloud API.
 
 ---
 
 ## Architecture
-
-### Before (Claude Desktop + MCP)
-
-```
-┌───────────────────────┐         ┌─────────────────────────┐
-│ Claude Desktop (Mac)  │  stdio  │ study-tutor MCP server  │
-│                       │ ───────►│ (Mac, Python process)   │
-│ Claude (the LLM)      │         │                         │
-│ decides when to call  │         │ Player-Coach orchestrator│
-│ MCP tools             │         │ Graphiti, RAG, Coach QG  │
-│                       │  stdio  │                         │
-│                       │ ───────►│ specialist-agent MCP    │
-│                       │         │ (Mac, Python process)   │
-└───────────────────────┘         └────────────┬────────────┘
-                                               │ Tailscale
-                                               ▼
-                                        ┌──────────────┐
-                                        │ GB10         │
-                                        │ llama-swap   │
-                                        └──────────────┘
-```
-
-Problems: Claude is the UI *and* the router. Audience sees Claude. Agents run on Mac. Cross-network inference calls. MCP is a second transport alongside NATS.
-
-### After (Open WebUI + NATS)
 
 ```
 Browser (Mac / any device)
     │
     │ Tailscale (or LAN)
     ▼
-┌──────────────────────────────────────────────────────────┐
-│  GB10 (promaxgb10-41b1) — everything runs here           │
-│                                                           │
-│  Open WebUI (:3000)                                       │
-│    │                                                      │
-│    │ Model selector shows:                                │
-│    │   • Architect Agent                                  │
-│    │   • Product Owner                                    │
-│    │   • GCSE Study Tutor                                 │
-│    │   • Forge Build Pipeline                             │
-│    │   • (+ direct llama-swap models for free chat)       │
-│    │                                                      │
-│    ▼                                                      │
-│  NATS Pipe Function (Python, in Open WebUI / Pipelines)   │
-│    │                                                      │
-│    │ nats.request("agents.architect.align", payload)       │
-│    │ nats.request("agents.tutor.turn", payload)            │
-│    │                                                      │
-│    ▼                                                      │
-│  NATS JetStream (:4222)                                   │
-│    │                     │                     │          │
-│    ▼                     ▼                     ▼          │
-│  specialist-agent      study-tutor           forge        │
-│  (Docker, dual-role)   (NATS subscriber)     (pipeline)   │
-│  ├─ architect           │                     │          │
-│  └─ product-owner       │                     │          │
-│    │                     │                     │          │
-│    ▼                     ▼                     ▼          │
-│  llama-swap (:9000) ◄───┘─────────────────────┘          │
-│    ├─ architect-agent (Gemma 4 MoE fine-tune)             │
-│    ├─ gcse-tutor-gemma4-moe (tutor fine-tune)             │
-│    ├─ nomic-embed-text (/v1/embeddings)                   │
-│    ├─ Coder-Next (code gen)                               │
-│    └─ GPT-OSS-120B (reasoning, swappable)                 │
-│                                                           │
-│  ChromaDB (PersistentClient, data/chroma/)                │
-│    ├─ architect-knowledge-v1                              │
-│    └─ gcse-english-v1                                     │
-│                                                           │
-│  Graphiti → FalkorDB (Synology, via Tailscale)            │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  GB10 — everything runs here                                  │
+│                                                               │
+│  Open WebUI (:3000)                                           │
+│    │ Dropdown: "Jarvis"                                       │
+│    ▼                                                          │
+│  NATS Pipe Function (~60 lines)                               │
+│    │ nats.request("agents.command.jarvis", message)            │
+│    ▼                                                          │
+│  Jarvis (serve-nats, Qwen3.6-35B-A3B, 3B active)             │
+│    │ Supervisor decides: dispatch_by_capability / queue_build  │
+│    │ Constructs structured CommandPayload                      │
+│    ▼                                                          │
+│  NATS JetStream (:4222)                                       │
+│    │                    │                    │                 │
+│    ▼                    ▼                    ▼                 │
+│  specialist-agent     study-tutor          forge               │
+│  (architect / PO)     (tutor)              (autobuild)         │
+│    │                    │                    │                 │
+│    ▼                    ▼                    ▼                 │
+│  llama-swap (:9000)                                           │
+│    ├── qwen36-workhorse (routing, 3B active, always-on)       │
+│    ├── architect-agent (fine-tune, 26B)                        │
+│    ├── gcse-tutor-gemma4-moe (fine-tune, 26B)                 │
+│    ├── nomic-embed-text (embeddings, always-on)               │
+│    └── Coder-Next / GPT-OSS-120B (swappable)                 │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-Benefits:
-- **One transport.** NATS everywhere. No MCP, no stdio, no second protocol.
-- **One box.** Open WebUI, Pipe Function, NATS, agents, llama-swap, ChromaDB — all localhost on GB10. Zero cross-network hops for internal operations.
-- **Named agents, not "Claude."** The audience sees "Architect Agent" in the dropdown, not a Claude-branded shell. The intelligence is visibly local and purpose-built.
-- **The agents are the product.** Player-Coach loops, Graphiti integration, RAG pipelines, quality gates — all preserved. The Pipe Function is a thin transport adapter, not a replacement.
-- **The Mac is just glass.** A browser pointed at Open WebUI over Tailscale. Nothing runs on the Mac except the browser.
+**Two LLM calls per request:** one small (3B routing) and one large (26B specialist). Both local. Both via llama-swap. Zero cloud.
 
 ---
 
-## Pipe Function design
+## The Pipe Function
 
-### Shape
-
-A single Pipe Function file (registered in Open WebUI Workspace → Functions, or deployed via Pipelines container) that exposes all agents as a manifold:
+A single Python file (~60 lines) deployed into Open WebUI. It does one thing: send every message to Jarvis.
 
 ```python
-from pydantic import BaseModel, Field
-from typing import AsyncGenerator
+def pipes(self):
+    return [{"id": "jarvis", "name": "Jarvis"}]
 
-class Pipe:
-    """NATS Fleet Gateway — exposes fleet agents as Open WebUI models."""
-
-    class Valves(BaseModel):
-        NATS_URL: str = Field(
-            default="nats://localhost:4222",
-            description="NATS server URL (localhost on GB10)",
-        )
-        REQUEST_TIMEOUT: int = Field(
-            default=120,
-            description="NATS request timeout in seconds",
-        )
-
-    def __init__(self):
-        self.valves = self.Valves()
-
-    def pipes(self):
-        """Register each fleet agent as a selectable model."""
-        return [
-            {"id": "architect-align", "name": "Architect Agent (Align)"},
-            {"id": "product-owner", "name": "Product Owner"},
-            {"id": "gcse-tutor", "name": "GCSE Study Tutor"},
-            {"id": "forge-build", "name": "Forge Build Pipeline"},
-        ]
-
-    async def pipe(self, body: dict) -> str | AsyncGenerator[str, None]:
-        """
-        Publish user message to the selected agent's NATS topic,
-        await and return the response.
-
-        Wire format: nats-core Pydantic models (JSON over NATS).
-        """
-        import nats  # lazy import — nats.py must be installed in the container
-
-        agent_id = body.get("model", "").split(".")[-1]  # strip manifold prefix
-        messages = body.get("messages", [])
-        user_message = messages[-1]["content"] if messages else ""
-
-        # Build nats-core wire payload
-        # (actual implementation uses nats-core Pydantic models)
-        payload = {
-            "agent": agent_id,
-            "message": user_message,
-            "conversation_history": messages,
-        }
-
-        nc = await nats.connect(self.valves.NATS_URL)
-        try:
-            topic = f"agents.{agent_id}.request"
-            response = await nc.request(
-                topic,
-                json.dumps(payload).encode(),
-                timeout=self.valves.REQUEST_TIMEOUT,
-            )
-            return response.data.decode()
-        finally:
-            await nc.close()
+async def pipe(self, body):
+    # Every message goes to Jarvis. Jarvis routes.
+    response = await nc.request("agents.command.jarvis", payload)
+    return response.data.decode()
 ```
 
-This is a sketch. The production version needs:
-- **nats-core Pydantic models** as the wire contract (not raw JSON)
-- **Streaming support** — the `pipe()` method can return an `AsyncGenerator[str, None]` for SSE streaming; the NATS subscriber in the agent would publish incremental chunks to a reply subject
-- **Session state** — the study-tutor's `tutor_turn` needs session context (text_name, focus_aos, session_id); this comes from the conversation history or from Open WebUI's chat metadata
-- **Error handling** — NATS timeouts, agent unavailability, malformed responses
-- **Connection pooling** — don't open/close a NATS connection per request; use a persistent connection initialised in `__init__` or a module-level singleton
+No manifold. No per-agent argument mappers. No tool calling. The Pipe Function doesn't know what agents exist — Jarvis does.
 
-### What the Pipe Function does NOT do
-
-- **No LLM routing.** The user selects the agent from the dropdown. The Pipe Function publishes to a deterministic NATS topic based on that selection. No model needs to "decide" which tool to call.
-- **No agent logic.** The Player-Coach loop, RAG retrieval, Graphiti writes, quality gates — all of that stays inside the agents. The Pipe Function is a transport adapter.
-- **No MCP.** The Pipe Function speaks NATS directly. No mcpo proxy, no tool schemas, no function-call JSON.
-- **No direct model calls.** The Pipe Function never calls llama-swap directly. All inference goes through the agents, which call llama-swap themselves.
+Full implementation: `fleet-gateway/openwebui/nats_fleet_pipe.py`
 
 ---
 
-## What the audience sees (DDD demo)
+## Design principles
 
-**Screen layout:** Open WebUI on the left, terminal tailing NATS / llama-swap logs on the right.
+1. **Jarvis is the only entry point from the UI.** The Pipe Function sends everything to Jarvis. Jarvis routes. Adding a new agent means registering it in the fleet (NATS manifest + KV); the Pipe Function doesn't change.
 
-**Demo 1 — Architect review:**
-Rich selects "Architect Agent (Align)" from the model dropdown. Types: "Is the selective retrieval decision in ADR-FLEET-002 still defensible given the study-tutor's architecture?" The terminal shows: NATS message published → specialist-agent receives → llama-swap loads architect fine-tune → inference runs → Coach evaluates → response streams back into Open WebUI. The audience sees a structured architecture judgment appear in a clean chat interface.
+2. **Gateways are thin.** The Pipe Function is a transport adapter. Reachy Mini Scholar is a transport adapter. All intelligence lives in Jarvis and the agents.
 
-**Demo 2 — Build pipeline:**
-Rich selects "Forge Build Pipeline." Types: "Build a FastAPI CRUD endpoint for a task manager with Pydantic models." The terminal shows: NATS message → forge receives → autobuild stages tick through (planning → coding → review → complete) → code output returned. The audience sees the pipeline progression in real time.
+3. **NATS is the only internal transport.** Open WebUI → NATS → Jarvis → NATS → agents. No MCP, no HTTP between agents, no second protocol.
 
-**Demo 3 — Study tutor:**
-Rich selects "GCSE Study Tutor." Types a question about Macbeth. The terminal shows: NATS message → study-tutor receives → Player generates response → Coach reviews (attempts=2) → Graphiti writes session state → response streams back. The audience sees a Socratic tutoring exchange.
+4. **nats-core is the wire contract.** `MessageEnvelope`, `CommandPayload`, `ResultPayload`. Same models everywhere.
 
-**The key moment:** Three different agents, three different fine-tuned models, three different orchestration patterns — all accessed through the same chat interface, all running on one box, all communicating over NATS. That's the software factory.
-
----
-
-## What the hackathon judges see
-
-Same Open WebUI interface, but configured for the education story:
-- Model selector shows "GCSE Study Tutor" (primary) plus subject-specific presets
-- Lilymay (or Rich as student) has a tutoring session — Socratic questioning, essay feedback, quote analysis
-- Terminal briefly shown to prove local inference
-- Reachy Mini Scholar (if integration lands) asks "How's Lilymay's revision going?" — Scholar is another NATS consumer reading from Graphiti
-- The architecture slide shows the pipeline: curriculum PDFs → Player-Coach data gen → fine-tuning → NATS fleet → Open WebUI
-
-Judges see a student-facing product, not a developer tool. They don't need to understand NATS or MCP or Claude Desktop. They see a chat interface, a tutoring session, and a robot.
-
----
-
-## ChromaDB: unified approach (both projects)
-
-With everything on GB10, the ChromaDB topology resolves cleanly:
-
-- **PersistentClient on GB10** — co-located with agents and llama-swap
-- **Embeddings via llama-swap** — `OpenAIEmbeddingFunction` pointing at `http://localhost:9000/v1/embeddings` with model `nomic-embed-text`
-- **No Ollama** — llama-swap is the single inference front door (DECISION-DF-001)
-- **Ingestion runs on GB10** — all localhost, zero network hops
-- **Specialist-agent ingestion script** — needs updating from Ollama endpoint shape to OpenAI-compatible (`/v1/embeddings`); small patch since the endpoint URL is already parameterised
-- **Study-tutor ingestion script** — needs writing; follows the same pattern
-
-Both projects use identical connection code:
-
-```python
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-
-ef = OpenAIEmbeddingFunction(
-    api_base="http://localhost:9000/v1",
-    api_key="not-needed",
-    model_name="nomic-embed-text",
-)
-client = chromadb.PersistentClient(path="data/chroma")
-collection = client.get_collection(name="<collection>", embedding_function=ef)
-```
-
----
-
-## Implementation work
-
-### Must-build for DDD demo (16 May)
-
-| # | Item | Owner | Estimate | Dependencies |
-|---|---|---|---|---|
-| 1 | Forge gap features F010.L + F010.M | Claude Code | 3–6 hrs | — |
-| 2 | Open WebUI → llama-swap connection on GB10 (Admin → Connections → OpenAI, URL = localhost:9000) | Rich | 15 min | Open WebUI running on GB10 |
-| 3 | NATS Pipe Function (manifold: architect, product-owner, forge) | Claude Code | 4–6 hrs | NATS running on GB10, specialist-agent `serve-nats` working |
-| 4 | Verify specialist-agent `serve-nats` works on GB10 Docker | Rich / Claude Code | 1–2 hrs | Docker image built |
-| 5 | Open WebUI demo presets (system prompts, model display names) | Rich | 30 min | Item 3 |
-| 6 | DDD dry runs (Open WebUI + terminal split-screen) | Rich | Half day | Items 1–5 |
-
-### Must-build for hackathon (18 May)
-
-| # | Item | Owner | Estimate | Dependencies |
-|---|---|---|---|---|
-| 7 | Study-tutor `serve-nats` mode (NATS subscriber calling orchestrator) | Claude Code | 4–6 hrs | nats-core contract, study-tutor orchestrator |
-| 8 | Add study-tutor to Pipe Function manifold | Claude Code | 30 min | Item 7 |
-| 9 | Reachy SDK hello world + Scenario 1 (Fri–Sun) | Rich / Claude Code | 5–8 hrs | Scholar hardware |
-| 10 | Specialist-agent RAG: patch ingestion script (Ollama→llama-swap), run ingest | Claude Code | 1–2 hrs | llama-swap embedding endpoint |
-| 11 | Study-tutor RAG: write ingestion script, populate sources, wire CLI | Claude Code | 4–6 hrs | Item 10 pattern |
-| 12 | Record hackathon video | Rich | Half day | Items 7–9 |
-| 13 | Finalise public repo, README, technical write-up, submit | Rich | 1 day | — |
-
-### Stretch (post-demo)
-
-| Item | Notes |
-|---|---|
-| Streaming support in Pipe Function | Return `AsyncGenerator` from `pipe()`, agent publishes incremental chunks to NATS reply subject |
-| Connection pooling in Pipe Function | Persistent NATS connection rather than connect/close per request |
-| Forge pipeline progress events in Open WebUI | Pipe Function subscribes to lifecycle NATS topics, emits status updates as chat events |
-| Bridge (Reachy Mini #2) as NATS gateway | Ship's Computer pattern — voice in → NATS → agents → voice out |
+5. **Two LLM calls is the right architecture.** The routing model (3B) is cheap and fast. The specialist model (26B) is the expensive call. Separating them means the specialist's `CommandRouter` receives clean structured arguments — no argument-mapping hacks in the gateway.
 
 ---
 
@@ -303,40 +116,34 @@ collection = client.get_collection(name="<collection>", embedding_function=ef)
 
 | Before | After |
 |---|---|
-| Claude Desktop as MCP client | Open WebUI as NATS publisher |
+| Claude Desktop as MCP client | Open WebUI as NATS publisher → Jarvis |
+| Claude (cloud LLM) decides tool calls | Jarvis (local 3B MoE) decides tool calls |
 | MCP stdio transport to agents | NATS request/reply to agents |
-| Claude (the LLM) decides when to call tools | User selects agent from dropdown; Pipe Function routes deterministically |
-| Agents run on Mac | Agents run on GB10 (Docker) |
-| Cross-network inference (Mac → Tailscale → GB10) | Localhost inference (agent → llama-swap, same box) |
-| ChromaDB topology unclear (ASSUM-002) | PersistentClient on GB10, co-located with everything |
-| Embeddings via Ollama | Embeddings via llama-swap `/v1/embeddings` |
+| Pipe Function knows about all agents | Pipe Function knows about Jarvis only |
+| Per-agent argument mappers | Jarvis's supervisor handles arg extraction |
+| Agents on Mac | Agents on GB10 (Docker) |
 | Two transports (MCP + NATS) | One transport (NATS everywhere) |
 
 ---
 
 ## What this does NOT replace
 
-- **Claude Desktop for development.** Rich still uses Claude Desktop + MCP for research, planning, and iterative development sessions. This decision is about the *demo and production surface*, not the development workflow.
-- **Claude Code for implementation.** Autonomous runbook execution on GB10 continues unchanged.
-- **The agents themselves.** study-tutor, specialist-agent, forge — all preserved. Their orchestration logic, Player-Coach loops, RAG pipelines, Graphiti integration, quality gates — untouched. Only the transport to the user changes.
-
----
-
-## Risks
-
-| Risk | Mitigation |
-|---|---|
-| Study-tutor `serve-nats` doesn't land in time | For DDD: demo architect and product-owner via NATS; study-tutor falls back to direct Open WebUI → llama-swap connection (already working for Lilymay). For hackathon: study-tutor via direct connection still tells the story. |
-| NATS Pipe Function is new code under demo pressure | The Pipe Function is ~100 lines of Python. The specialist-agent's `serve-nats` is proven. The risk is in the glue, not the components. |
-| Open WebUI Pipe Function container can't install `nats.py` | Pipelines container supports `pip install` via requirements; alternatively, use Open WebUI's built-in Workspace Functions which run in the main process. |
-| llama-swap model swap latency visible in Open WebUI | Pre-warm models before demo (send a dummy request 2 min before each segment). llama-swap's `/logs/stream` endpoint lets Rich monitor warm-up from the terminal pane. |
-| Audience still doesn't understand it's local | Terminal log pane showing llama-swap inference + NATS messages is the proof. Opening line: "Everything you're about to see runs on that box. No cloud, no API keys, no Claude." |
+- **Claude Desktop for development.** Rich uses Claude Desktop + MCP for research, planning, and iterative sessions.
+- **Claude Code for implementation.** Autonomous runbook execution on GB10 unchanged.
+- **The agents themselves.** study-tutor, specialist-agent, forge — all preserved. Only the transport to the user changes.
+- **Scholar's hackathon path.** Scholar reads directly from Graphiti for the hackathon (no NATS needed). Post-hackathon, Scholar becomes another NATS gateway in fleet-gateway.
 
 ---
 
 ## Decision record
 
-**Preferred direction:** Open WebUI + NATS Pipe Functions as the user-facing surface for the software factory, replacing Claude Desktop for demos and production use. Challenge only with new evidence — for example, if NATS Pipe Functions prove unreliable under demo conditions, fall back to Open WebUI → llama-swap direct connection (still better than Claude Desktop for audience perception).
+**Preferred direction:** Open WebUI → NATS Pipe Function → Jarvis → agents. Jarvis is the intent router. The Pipe Function is thin. Challenge only with new evidence.
+
+**Evolution:**
+- v1: Claude Desktop + MCP (working but audience perception problem)
+- v2: Open WebUI + NATS Pipe Function manifold (individual agents) — wire format mismatch discovered
+- v3: Open WebUI + Jarvis routing — the natural architecture; Jarvis already proven on 4 May
+- v4: Agreed — Jarvis serve-nats scoped, Pipe Function simplified, demo strategy updated
 
 **Decided:** 7 May 2026
 **Participants:** Rich Woollcott, Claude (research + analysis)
