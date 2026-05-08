@@ -16,7 +16,8 @@ Defaults and embedding wiring conform to
 (accepted 2026-05-07). Both the specialist-agent and study-tutor share a
 single ChromaDB pattern: ``PersistentClient`` co-located with the agent on
 the GB10, with ``OpenAIEmbeddingFunction`` pointing at llama-swap's
-OpenAI-compatible ``/v1/embeddings`` endpoint (``nomic-embed-text``, 768
+OpenAI-compatible ``/v1/embeddings`` endpoint (``nomic-embed`` — the
+llama-swap alias for upstream ``nomic-ai/nomic-embed-text-v1.5``, 768
 dimensions). No Ollama, no Chroma server process, no cross-network hops.
 The decision-§3.1 env vars (``CHROMA_PERSIST_DIR``, ``CHROMA_COLLECTION``,
 ``LLM_EMBEDDINGS_BASE_URL``, ``LLM_EMBEDDINGS_API_KEY``,
@@ -115,9 +116,18 @@ DEFAULT_PERSIST_DIR: Path = Path("data/chroma")
 # llama-swap ignores auth, but ``OpenAIEmbeddingFunction`` rejects an empty
 # string at construction time, so we must pass *something*. A future
 # deployment that does require auth flips ``LLM_EMBEDDINGS_API_KEY`` only.
+#
+# Model name: ``nomic-embed`` is the llama-swap alias for upstream
+# ``nomic-ai/nomic-embed-text-v1.5`` (768-dim) on the canonical GB10
+# deployment (verified 2026-05-08, TASK-RAG-002 smoke). DECISION-RAG-001
+# §3.1 originally drafted this as ``nomic-embed-text`` (the upstream id);
+# the deployment registers the shorter alias instead. The shared helper
+# at ``study_tutor.knowledge.embedding_function`` carries the same
+# default — keep them in sync to avoid the writer/reader EF-mismatch
+# failure mode the decision warns about.
 DEFAULT_EMBEDDINGS_BASE_URL: str = "http://localhost:9000/v1"
 DEFAULT_EMBEDDINGS_API_KEY: str = "not-needed"
-DEFAULT_EMBEDDINGS_MODEL: str = "nomic-embed-text"
+DEFAULT_EMBEDDINGS_MODEL: str = "nomic-embed"
 
 PRIMARY_TEXT_INDEX_FILENAME: str = ".primary_text_index"
 

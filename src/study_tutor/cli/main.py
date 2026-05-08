@@ -315,8 +315,9 @@ def serve(role: str, transport: str, log_level: str) -> None:
                                 llama-swap ignores auth but the EF
                                 rejects empty strings).
                                 Default: not-needed
-      LLM_EMBEDDINGS_MODEL      Embedding model name.
-                                Default: nomic-embed-text
+      LLM_EMBEDDINGS_MODEL      Embedding model name (llama-swap alias
+                                for nomic-ai/nomic-embed-text-v1.5).
+                                Default: nomic-embed
     """
     logging.basicConfig(
         level=log_level.upper(),

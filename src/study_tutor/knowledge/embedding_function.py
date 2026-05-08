@@ -25,8 +25,14 @@ The function reads three env vars (DECISION-RAG-001 §3.1):
 * ``LLM_EMBEDDINGS_API_KEY`` (default ``not-needed``) — load-bearing
   magic string. llama-swap ignores auth, but
   ``OpenAIEmbeddingFunction`` rejects empty strings at construction.
-* ``LLM_EMBEDDINGS_MODEL`` (default ``nomic-embed-text``) — 768-dim
-  embedding model the GB10 fleet has standardised on.
+* ``LLM_EMBEDDINGS_MODEL`` (default ``nomic-embed``) — 768-dim
+  embedding model the GB10 fleet has standardised on. ``nomic-embed``
+  is the **llama-swap alias** for the upstream HuggingFace model
+  ``nomic-ai/nomic-embed-text-v1.5``; DECISION-RAG-001 §3.1 was drafted
+  assuming the alias would be ``nomic-embed-text`` but the canonical
+  deployment on ``promaxgb10-41b1`` registers it as ``nomic-embed``
+  (verified 2026-05-08, TASK-RAG-002 smoke). Operators running against
+  a different llama-swap config can override via env var.
 
 Lazy imports of ``chromadb`` keep the module importable on the dev path
 that does not have the optional ``[rag]`` extra installed; ``ImportError``
@@ -50,8 +56,14 @@ DEFAULT_EMBEDDINGS_BASE_URL: str = "http://localhost:9000/v1"
 DEFAULT_EMBEDDINGS_API_KEY: str = "not-needed"
 
 #: DECISION-RAG-001 §3.1 canonical default for ``LLM_EMBEDDINGS_MODEL``.
-#: 768-dim ``nomic-embed-text`` is the fleet-standard embedding model.
-DEFAULT_EMBEDDINGS_MODEL: str = "nomic-embed-text"
+#: 768-dim ``nomic-embed`` is the fleet-standard embedding model — the
+#: llama-swap alias for upstream ``nomic-ai/nomic-embed-text-v1.5``.
+#: The decision document used the upstream id (``nomic-embed-text``) but
+#: the canonical GB10 deployment registers it under the shorter alias;
+#: this constant matches the alias the deployment actually serves
+#: (verified 2026-05-08, TASK-RAG-002 smoke). Operators running against
+#: a different llama-swap config can override via ``LLM_EMBEDDINGS_MODEL``.
+DEFAULT_EMBEDDINGS_MODEL: str = "nomic-embed"
 
 
 def build_openai_embedding_function() -> Any:
