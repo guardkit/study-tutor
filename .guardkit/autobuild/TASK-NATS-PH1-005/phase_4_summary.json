@@ -1,7 +1,7 @@
 {
-  "tests_run": 30,
+  "tests_run": 32,
   "tests_failed": 0,
   "coverage_pct": 95.96,
-  "output_summary": "30/30 passed in tests/unit/adapters/test_nats_adapter.py; nats_adapter.py line coverage 95.96% (95/99 stmts, 4 missing).",
+  "output_summary": "32/32 passed (30 unit test_nats_adapter.py + 2 integration test_adapter_lifecycle.py vs live nats-server); nats_adapter.py 95.96% (95/99 stmts, 4 missing).",
   "quality_gates_passed": true
 }

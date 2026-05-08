@@ -1,0 +1,185 @@
+{
+  "task_id": "TASK-NATS-PH1-005",
+  "turn": 2,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/integration/test_adapter_lifecycle.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/integration/test_adapter_lifecycle.py::TestAdapterLifecycleRoundTrip::test_full_lifecycle_round_trip PASSED [ 50%]\ntests/integration/test_adapter_lifecycle.py::TestAdapterLifecycleRoundTrip::test_heartbeat_published_on_live_server PASSED [100%]\ntests/integration/test_adapter_lifecycle.py: 10 warnings\n======================== 2 passed, 10 warnings in 0.29s ========================",
+      "duration_seconds": 0.8574109077453613
+    },
+    "requirements": {
+      "criteria_total": 7,
+      "criteria_met": 7,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`await adapter.start()` connects to NATS, registers the manifest in `agent-registry`, subscribes to the command subject, starts the heartbeat loop, and sets `_ready` \u2014 verified via mocked `NATSClient` in unit tests.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "NATSAdapter.start() in src/study_tutor/adapters/nats_adapter.py performs all five steps in order: client.connect() \u2192 client.register_agent(manifest) \u2192 client.subscribe_with_reply(...) \u2192 asyncio.create_task(_heartbeat_loop) \u2192 self._ready.set(). TestStartLifecycle in tests/unit/adapters/test_nats_adapter.py covers each step with a dedicated test. Verified: 30 unit tests pass.",
+      "notes": "NATSAdapter.start() in src/study_tutor/adapters/nats_adapter.py performs all five steps in order: client.connect() \u2192 client.register_agent(manifest) \u2192 client.subscribe_with_reply(...) \u2192 asyncio.create_task(_heartbeat_loop) \u2192 self._ready.set(). TestStartLifecycle in tests/unit/adapters/test_nats_adapter.py covers each step with a dedicated test. Verified: 30 unit tests pass."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Subscription uses `subscribe_with_reply`, **not** `subscribe` (Bug #1 regression guard \u2014 assert via mock call inspection).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "NATSAdapter.start() calls self._client.subscribe_with_reply(command_subject, self._on_command). TestSubscribeWithReplyContract has three guard tests \u2014 including test_start_does_not_use_plain_subscribe which asserts the mock's plain subscribe was NEVER awaited. The integration test test_full_lifecycle_round_trip additionally proves end-to-end that reply_to propagates through to the router (assertion: received_reply.startswith('_INBOX.')).",
+      "notes": "NATSAdapter.start() calls self._client.subscribe_with_reply(command_subject, self._on_command). TestSubscribeWithReplyContract has three guard tests \u2014 including test_start_does_not_use_plain_subscribe which asserts the mock's plain subscribe was NEVER awaited. The integration test test_full_lifecycle_round_trip additionally proves end-to-end that reply_to propagates through to the router (assertion: received_reply.startswith('_INBOX.'))."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "`await adapter.stop()` deregisters, cancels heartbeat, drains in-flight (within 30s shutdown_timeout), and closes the connection.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "NATSAdapter.stop() runs unsubscribe \u2192 drain (deadline + 50ms poll up to self._shutdown_timeout=30.0s) \u2192 cancel heartbeat \u2192 deregister \u2192 disconnect \u2192 clear _ready. TestStopLifecycle has 8 unit tests covering happy path, drain success, drain timeout, deregister failure recovery, and the 30.0s default. The integration test additionally verifies that after stop() the manifest is removed from the live agent-registry KV bucket.",
+      "notes": "NATSAdapter.stop() runs unsubscribe \u2192 drain (deadline + 50ms poll up to self._shutdown_timeout=30.0s) \u2192 cancel heartbeat \u2192 deregister \u2192 disconnect \u2192 clear _ready. TestStopLifecycle has 8 unit tests covering happy path, drain success, drain timeout, deregister failure recovery, and the 30.0s default. The integration test additionally verifies that after stop() the manifest is removed from the live agent-registry KV bucket."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Heartbeat publishes at the configured interval (test with a stub clock or short interval).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "NATSAdapter._heartbeat_loop reads self._config.heartbeat_interval_seconds and loops with asyncio.sleep(interval). TestHeartbeatLoop has 6 unit tests that override the interval to 0.01s post-construction and assert \u22653 publishes in 100ms. The integration test test_heartbeat_published_on_live_server subscribes to fleet.heartbeat.gcse-tutor on the live nats-server and verifies a real heartbeat envelope arrives within 1.5s with EventType.AGENT_HEARTBEAT and the correct source_id.",
+      "notes": "NATSAdapter._heartbeat_loop reads self._config.heartbeat_interval_seconds and loops with asyncio.sleep(interval). TestHeartbeatLoop has 6 unit tests that override the interval to 0.01s post-construction and assert \u22653 publishes in 100ms. The integration test test_heartbeat_published_on_live_server subscribes to fleet.heartbeat.gcse-tutor on the live nats-server and verifies a real heartbeat envelope arrives within 1.5s with EventType.AGENT_HEARTBEAT and the correct source_id."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Active-task counter increments on `on_command` start and decrements on completion (so `stop()` knows when to wait).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "NATSAdapter._on_command wraps router.on_command in try/finally that increments and decrements self._active_tasks. TestActiveTaskCounter has 4 tests verifying: starts at 0, increments to 1 mid-call (via observing handler), decrements to 0 after, and remains exception-safe (counter resets even when router raises). The drain wait in stop() spins on this counter until it reaches 0 or the 30s timeout \u2014 covered by test_stop_waits_for_active_tasks_to_drain.",
+      "notes": "NATSAdapter._on_command wraps router.on_command in try/finally that increments and decrements self._active_tasks. TestActiveTaskCounter has 4 tests verifying: starts at 0, increments to 1 mid-call (via observing handler), decrements to 0 after, and remains exception-safe (counter resets even when router raises). The drain wait in stop() spins on this counter until it reaches 0 or the 30s timeout \u2014 covered by test_stop_waits_for_active_tasks_to_drain."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "Integration test (against a real NATS via `nats-server` in test fixture or `testcontainers`): full start \u2192 dispatch one command \u2192 stop round-trip succeeds, with the manifest visible in `agent-registry` between start and stop.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Created tests/integration/test_adapter_lifecycle.py with two integration tests. The nats_server fixture spawns the local nats-server binary as a subprocess on a random free port with JetStream enabled and an isolated store_dir. The bootstrapped_server fixture provisions the agent-registry KV bucket (mirroring nats-infrastructure/kv/provision-kv.sh). test_full_lifecycle_round_trip exercises: (a) adapter.start(); (b) reads agent-registry via client.get_fleet_registry() and asserts the manifest is present mid-lifecycle; (c) publishes a COMMAND envelope via nc.request() and verifies the round-tripped ResultPayload comes back through the reply inbox; (d) calls adapter.stop(); (e) re-reads the KV bucket and asserts the manifest has been removed. test_heartbeat_published_on_live_server additionally verifies a real heartbeat envelope arrives on fleet.heartbeat.<agent_id>. Both tests pass against a live nats-server v2.12.8: `pytest tests/integration/test_adapter_lifecycle.py` \u2192 2 passed in 0.28s. Skip marker @_skip_no_server gracefully degrades on machines without the binary.",
+      "notes": "Created tests/integration/test_adapter_lifecycle.py with two integration tests. The nats_server fixture spawns the local nats-server binary as a subprocess on a random free port with JetStream enabled and an isolated store_dir. The bootstrapped_server fixture provisions the agent-registry KV bucket (mirroring nats-infrastructure/kv/provision-kv.sh). test_full_lifecycle_round_trip exercises: (a) adapter.start(); (b) reads agent-registry via client.get_fleet_registry() and asserts the manifest is present mid-lifecycle; (c) publishes a COMMAND envelope via nc.request() and verifies the round-tripped ResultPayload comes back through the reply inbox; (d) calls adapter.stop(); (e) re-reads the KV bucket and asserts the manifest has been removed. test_heartbeat_published_on_live_server additionally verifies a real heartbeat envelope arrives on fleet.heartbeat.<agent_id>. Both tests pass against a live nats-server v2.12.8: `pytest tests/integration/test_adapter_lifecycle.py` \u2192 2 passed in 0.28s. Skip marker @_skip_no_server gracefully degrades on machines without the binary."
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Ran `ruff check src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_nats_adapter.py tests/integration/test_adapter_lifecycle.py` \u2192 All checks passed! All three files use `from __future__ import annotations`, complete type hints, and ruff-compliant boundary-catch noqa comments where broad except clauses are required.",
+      "notes": "Ran `ruff check src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_nats_adapter.py tests/integration/test_adapter_lifecycle.py` \u2192 All checks passed! All three files use `from __future__ import annotations`, complete type hints, and ruff-compliant boundary-catch noqa comments where broad except clauses are required."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`await adapter.start()` connects to NATS, registers the manifest in `agent-registry`, subscribes to the command subject, starts the heartbeat loop, and sets `_ready` \u2014 verified via mocked `NATSClient` in unit tests.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "NATSAdapter.start() in src/study_tutor/adapters/nats_adapter.py performs all five steps in order: client.connect() \u2192 client.register_agent(manifest) \u2192 client.subscribe_with_reply(...) \u2192 asyncio.create_task(_heartbeat_loop) \u2192 self._ready.set(). TestStartLifecycle in tests/unit/adapters/test_nats_adapter.py covers each step with a dedicated test. Verified: 30 unit tests pass.",
+        "notes": "NATSAdapter.start() in src/study_tutor/adapters/nats_adapter.py performs all five steps in order: client.connect() \u2192 client.register_agent(manifest) \u2192 client.subscribe_with_reply(...) \u2192 asyncio.create_task(_heartbeat_loop) \u2192 self._ready.set(). TestStartLifecycle in tests/unit/adapters/test_nats_adapter.py covers each step with a dedicated test. Verified: 30 unit tests pass."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Subscription uses `subscribe_with_reply`, **not** `subscribe` (Bug #1 regression guard \u2014 assert via mock call inspection).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "NATSAdapter.start() calls self._client.subscribe_with_reply(command_subject, self._on_command). TestSubscribeWithReplyContract has three guard tests \u2014 including test_start_does_not_use_plain_subscribe which asserts the mock's plain subscribe was NEVER awaited. The integration test test_full_lifecycle_round_trip additionally proves end-to-end that reply_to propagates through to the router (assertion: received_reply.startswith('_INBOX.')).",
+        "notes": "NATSAdapter.start() calls self._client.subscribe_with_reply(command_subject, self._on_command). TestSubscribeWithReplyContract has three guard tests \u2014 including test_start_does_not_use_plain_subscribe which asserts the mock's plain subscribe was NEVER awaited. The integration test test_full_lifecycle_round_trip additionally proves end-to-end that reply_to propagates through to the router (assertion: received_reply.startswith('_INBOX.'))."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`await adapter.stop()` deregisters, cancels heartbeat, drains in-flight (within 30s shutdown_timeout), and closes the connection.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "NATSAdapter.stop() runs unsubscribe \u2192 drain (deadline + 50ms poll up to self._shutdown_timeout=30.0s) \u2192 cancel heartbeat \u2192 deregister \u2192 disconnect \u2192 clear _ready. TestStopLifecycle has 8 unit tests covering happy path, drain success, drain timeout, deregister failure recovery, and the 30.0s default. The integration test additionally verifies that after stop() the manifest is removed from the live agent-registry KV bucket.",
+        "notes": "NATSAdapter.stop() runs unsubscribe \u2192 drain (deadline + 50ms poll up to self._shutdown_timeout=30.0s) \u2192 cancel heartbeat \u2192 deregister \u2192 disconnect \u2192 clear _ready. TestStopLifecycle has 8 unit tests covering happy path, drain success, drain timeout, deregister failure recovery, and the 30.0s default. The integration test additionally verifies that after stop() the manifest is removed from the live agent-registry KV bucket."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Heartbeat publishes at the configured interval (test with a stub clock or short interval).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "NATSAdapter._heartbeat_loop reads self._config.heartbeat_interval_seconds and loops with asyncio.sleep(interval). TestHeartbeatLoop has 6 unit tests that override the interval to 0.01s post-construction and assert \u22653 publishes in 100ms. The integration test test_heartbeat_published_on_live_server subscribes to fleet.heartbeat.gcse-tutor on the live nats-server and verifies a real heartbeat envelope arrives within 1.5s with EventType.AGENT_HEARTBEAT and the correct source_id.",
+        "notes": "NATSAdapter._heartbeat_loop reads self._config.heartbeat_interval_seconds and loops with asyncio.sleep(interval). TestHeartbeatLoop has 6 unit tests that override the interval to 0.01s post-construction and assert \u22653 publishes in 100ms. The integration test test_heartbeat_published_on_live_server subscribes to fleet.heartbeat.gcse-tutor on the live nats-server and verifies a real heartbeat envelope arrives within 1.5s with EventType.AGENT_HEARTBEAT and the correct source_id."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Active-task counter increments on `on_command` start and decrements on completion (so `stop()` knows when to wait).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "NATSAdapter._on_command wraps router.on_command in try/finally that increments and decrements self._active_tasks. TestActiveTaskCounter has 4 tests verifying: starts at 0, increments to 1 mid-call (via observing handler), decrements to 0 after, and remains exception-safe (counter resets even when router raises). The drain wait in stop() spins on this counter until it reaches 0 or the 30s timeout \u2014 covered by test_stop_waits_for_active_tasks_to_drain.",
+        "notes": "NATSAdapter._on_command wraps router.on_command in try/finally that increments and decrements self._active_tasks. TestActiveTaskCounter has 4 tests verifying: starts at 0, increments to 1 mid-call (via observing handler), decrements to 0 after, and remains exception-safe (counter resets even when router raises). The drain wait in stop() spins on this counter until it reaches 0 or the 30s timeout \u2014 covered by test_stop_waits_for_active_tasks_to_drain."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "Integration test (against a real NATS via `nats-server` in test fixture or `testcontainers`): full start \u2192 dispatch one command \u2192 stop round-trip succeeds, with the manifest visible in `agent-registry` between start and stop.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created tests/integration/test_adapter_lifecycle.py with two integration tests. The nats_server fixture spawns the local nats-server binary as a subprocess on a random free port with JetStream enabled and an isolated store_dir. The bootstrapped_server fixture provisions the agent-registry KV bucket (mirroring nats-infrastructure/kv/provision-kv.sh). test_full_lifecycle_round_trip exercises: (a) adapter.start(); (b) reads agent-registry via client.get_fleet_registry() and asserts the manifest is present mid-lifecycle; (c) publishes a COMMAND envelope via nc.request() and verifies the round-tripped ResultPayload comes back through the reply inbox; (d) calls adapter.stop(); (e) re-reads the KV bucket and asserts the manifest has been removed. test_heartbeat_published_on_live_server additionally verifies a real heartbeat envelope arrives on fleet.heartbeat.<agent_id>. Both tests pass against a live nats-server v2.12.8: `pytest tests/integration/test_adapter_lifecycle.py` \u2192 2 passed in 0.28s. Skip marker @_skip_no_server gracefully degrades on machines without the binary.",
+        "notes": "Created tests/integration/test_adapter_lifecycle.py with two integration tests. The nats_server fixture spawns the local nats-server binary as a subprocess on a random free port with JetStream enabled and an isolated store_dir. The bootstrapped_server fixture provisions the agent-registry KV bucket (mirroring nats-infrastructure/kv/provision-kv.sh). test_full_lifecycle_round_trip exercises: (a) adapter.start(); (b) reads agent-registry via client.get_fleet_registry() and asserts the manifest is present mid-lifecycle; (c) publishes a COMMAND envelope via nc.request() and verifies the round-tripped ResultPayload comes back through the reply inbox; (d) calls adapter.stop(); (e) re-reads the KV bucket and asserts the manifest has been removed. test_heartbeat_published_on_live_server additionally verifies a real heartbeat envelope arrives on fleet.heartbeat.<agent_id>. Both tests pass against a live nats-server v2.12.8: `pytest tests/integration/test_adapter_lifecycle.py` \u2192 2 passed in 0.28s. Skip marker @_skip_no_server gracefully degrades on machines without the binary."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran `ruff check src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_nats_adapter.py tests/integration/test_adapter_lifecycle.py` \u2192 All checks passed! All three files use `from __future__ import annotations`, complete type hints, and ruff-compliant boundary-catch noqa comments where broad except clauses are required.",
+        "notes": "Ran `ruff check src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_nats_adapter.py tests/integration/test_adapter_lifecycle.py` \u2192 All checks passed! All three files use `from __future__ import annotations`, complete type hints, and ruff-compliant boundary-catch noqa comments where broad except clauses are required."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "bdd_pending",
+      "description": "BDD oracle: 8 scenario(s) reference step definitions that are not yet implemented. These do NOT block approval but should be implemented to make the scenarios runnable.",
+      "scenarios_pending": 8,
+      "feature_files": [
+        "features/nats-fleet-integration/nats-fleet-integration.feature"
+      ],
+      "pending_examples": [
+        "test_adapter_boot_registers_the_tutor_in_the_fleet_and_advertises_its_capabilities \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_live_adapter_publishes_heartbeats_on_its_fleet_subject \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_graceful_shutdown_deregisters_the_tutor_and_stops_heartbeats \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_an_unreachable_nats_server_at_boot_fails_fast_with_a_clear_error \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_reply_to_a_requeststyle_dispatch_lands_on_the_callers_inbox_not_only_on_the_result_topic \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      ]
+    }
+  ],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 1149 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1980/7892 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- DESCRIBES\n- USES_FUNCTION\n- ASSIGNS_TASK_TO\n- DESCRIPTION_OF\n\n### \u26a0\ufe0f Warnings\n- HAS_ROOT_CAUSE\n- CALLS\n- HAS_IMPLEMENTATION_TARGET\n- REPLACES\n\n### \ud83c\udfad Role Constraints\n- DELEGATE_TO_TASK_WORK\n- IS_CREATED_FOR\n- DELEGATES_TO\n- DELEGATES_TO\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- ASSOCIATED_WITH_PROJECT\n- APPLIES_TO\n\n\n## Previous Turn Summary (Turn 1)\n**What was attempted**: Implementation attempt\n**Player decision**: feedback\n**Coach decision**: feedback\n**Coach feedback**: - Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance criteria met:\n  \u2022 Integration test (against a real NATS via `nats-server` in test fixture or `testcontainers`): full s\n\n**Acceptance Criteria Status**:\n  \u25cb AC-001: verified\n  \u25cb AC-002: verified\n  \u25cb AC-003: verified\n  \u25cb AC-004: verified\n  \u25cb AC-005: verified\n  \u2717 AC-006: rejected\n  \u25cb AC-007: verified",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}
