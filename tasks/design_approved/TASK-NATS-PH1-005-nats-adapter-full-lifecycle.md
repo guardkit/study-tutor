@@ -1,40 +1,43 @@
 ---
-id: TASK-NATS-PH1-005
-title: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat, deregister)
-task_type: feature
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 4
-implementation_mode: task-work
 complexity: 8
-estimated_minutes: 180
-status: pending
-priority: critical
-created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
-dependencies:
-  - TASK-NATS-PH1-002
-  - TASK-NATS-PH1-004
 consumer_context:
-  - task: TASK-NATS-PH1-002
-    consumes: AgentManifest
-    framework: 'nats_core.NATSClient.register_agent'
-    driver: 'NATS KV (agent-registry bucket)'
-    format_note: 'Manifest must be a fully-validated nats_core.manifest.AgentManifest with len(intents) >= 1 (Bug #5 guard).'
-  - task: TASK-NATS-PH1-004
-    consumes: CommandRouter
-    framework: 'nats_core.NATSClient.subscribe_with_reply'
-    driver: 'asyncio NATS subscription'
-    format_note: 'Adapter MUST call subscribe_with_reply (NOT subscribe) so the reply_to inbox propagates to CommandRouter._publish_result (Bug #1 guard).'
+- consumes: AgentManifest
+  driver: NATS KV (agent-registry bucket)
+  format_note: 'Manifest must be a fully-validated nats_core.manifest.AgentManifest
+    with len(intents) >= 1 (Bug #5 guard).'
+  framework: nats_core.NATSClient.register_agent
+  task: TASK-NATS-PH1-002
+- consumes: CommandRouter
+  driver: asyncio NATS subscription
+  format_note: 'Adapter MUST call subscribe_with_reply (NOT subscribe) so the reply_to
+    inbox propagates to CommandRouter._publish_result (Bug #1 guard).'
+  framework: nats_core.NATSClient.subscribe_with_reply
+  task: TASK-NATS-PH1-004
+created: 2026-05-08 00:00:00+00:00
+dependencies:
+- TASK-NATS-PH1-002
+- TASK-NATS-PH1-004
+estimated_minutes: 180
+feature_id: FEAT-NATS
+id: TASK-NATS-PH1-005
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: critical
+status: design_approved
 tags:
-  - nats
-  - feature
-  - adapter
-  - lifecycle
-  - phase-1
-  - bug-1
-  - bug-5
-  - decision-1
+- nats
+- feature
+- adapter
+- lifecycle
+- phase-1
+- bug-1
+- bug-5
+- decision-1
+task_type: feature
+title: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat,
+  deregister)
+updated: 2026-05-08 00:00:00+00:00
+wave: 4
 ---
 
 # Task: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat, deregister)
