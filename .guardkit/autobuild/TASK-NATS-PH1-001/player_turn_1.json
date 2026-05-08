@@ -1,0 +1,87 @@
+{
+  "task_id": "TASK-NATS-PH1-001",
+  "turn": 1,
+  "files_modified": [
+    "pyproject.toml"
+  ],
+  "files_created": [
+    "src/study_tutor/adapters/__init__.py",
+    "tests/unit/adapters/__init__.py",
+    "tests/unit/adapters/test_scaffolding.py"
+  ],
+  "tests_written": [
+    "tests/unit/adapters/test_scaffolding.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "uv run pytest tests/unit/adapters/ -v: 3 passed in 0.11s. ruff check + ruff format --check on src/study_tutor/adapters/, tests/unit/adapters/, pyproject.toml all pass with zero errors. Manual AC verification: `uv run python -c 'from nats_core import Topics, AgentConfig; from nats_core.events._agent import CommandPayload, ResultPayload'` and `uv run python -c 'import study_tutor.adapters'` both succeed.",
+  "implementation_notes": "Added nats-core>=0.4 to [project] dependencies and wired the editable sibling install via [tool.uv.sources] (nats-core = { path = '../nats-core', editable = true }), mirroring specialist-agent's pattern. The TOML comments document the PyPI namespace conflict (an unrelated 'nats-core' on PyPI exposes the 'nats' module, not 'nats_core') so the next maintainer understands why the path source is non-optional. Created src/study_tutor/adapters/__init__.py with a docstring describing it as the home for transport-layer adapters that subsequent Phase-1 tasks will populate (manifest, command_router, nats_adapter, result_wrapper). Wrote tests/unit/adapters/test_scaffolding.py with three import-surface tests pinning AC-003 (nats_core.Topics, AgentConfig, CommandPayload, ResultPayload) and AC-004 (study_tutor.adapters package import) so a regression in the editable install or package layout is caught by the test suite. WORKTREE NOTE: this work was performed in .guardkit/worktrees/FEAT-39E1, where '../nats-core' resolves to .guardkit/worktrees/nats-core rather than the actual sibling. To make `uv sync` succeed in the worktree without changing the canonical path (which must stay `../nats-core` to work from the merged main repo), a symlink was created at /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/nats-core -> /Users/richardwoollcott/Projects/appmilla_github/nats-core. The symlink lives outside the worktree's working tree so it does not affect the merged PR; the merged pyproject.toml's '../nats-core' path resolves correctly from the main repo root.",
+  "concerns": [
+    "Worktree-only symlink at .guardkit/worktrees/nats-core points at the real sibling so uv sync resolves '../nats-core' in this worktree. The symlink is outside the worktree's tracked tree and does not affect the merged PR. If the autobuild gate re-runs uv sync from a fresh worktree clone the symlink will need to be re-created (or the gate run from the canonical repo root)."
+  ],
+  "requirements_addressed": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005"
+  ],
+  "requirements_remaining": [],
+  "implementation_mode": "direct",
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] `nats-core` appears in `pyproject.toml` `[project] dependencies` (or `[tool.uv.sources]`) as an editable sibling install.",
+      "status": "complete",
+      "evidence": "Added `nats-core>=0.4` to `[project] dependencies` in pyproject.toml and added `[tool.uv.sources]` stanza wiring `nats-core = { path = '../nats-core', editable = true }`, mirroring specialist-agent/pyproject.toml. Both stanzas carry comments referencing TASK-NATS-PH1-001 and explaining the PyPI-name-collision motivation for the path source.",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] `uv sync` (or `pip install -e .`) succeeds without errors.",
+      "status": "complete",
+      "evidence": "Ran `uv sync` from the worktree root; output: 'Resolved 179 packages in 1.16s ... Installed 3 packages in 3ms + nats-core==0.4.0 (from file://.../nats-core) + nats-py==2.14.0 ~ study-tutor==0.1.0'. Exit status 0; no errors.",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] `python -c \"from nats_core import Topics, AgentConfig; from nats_core.events._agent import CommandPayload, ResultPayload\"` runs without ImportError.",
+      "status": "complete",
+      "evidence": "Ran the exact command verbatim under `uv run python -c ...`; exit status 0, no ImportError. Pinned by tests/unit/adapters/test_scaffolding.py::test_nats_core_topics_and_agent_config_are_importable and ::test_nats_core_event_payloads_are_importable (both PASSED).",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] `python -c \"import study_tutor.adapters\"` runs without ImportError.",
+      "status": "complete",
+      "evidence": "Ran `uv run python -c 'import study_tutor.adapters'`; exit status 0, no ImportError. Created src/study_tutor/adapters/__init__.py with a docstring describing the package's role. Pinned by tests/unit/adapters/test_scaffolding.py::test_study_tutor_adapters_package_is_importable (PASSED).",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/__init__.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "[ ] All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `uv run ruff check src/study_tutor/adapters/ tests/unit/adapters/ pyproject.toml` -> 'All checks passed!'. Ran `uv run ruff format --check src/study_tutor/adapters/ tests/unit/adapters/` -> '3 files already formatted'. Zero lint or format errors on any modified or created file.",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml",
+        "src/study_tutor/adapters/__init__.py",
+        "tests/unit/adapters/__init__.py",
+        "tests/unit/adapters/test_scaffolding.py"
+      ]
+    }
+  ],
+  "success": true
+}
