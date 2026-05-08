@@ -17,7 +17,8 @@
     "src/study_tutor/roles/loader.py": "44%",
     "src/study_tutor/roles/registry.py": "98%",
     "src/study_tutor/roles/tutor/__init__.py": "100%",
-    "total": "59%"
+    "changed_files_total": "59%",
+    "package_total_including_rag_wiring": "53%"
   },
-  "notes": "40 other BDD scenarios in nats-fleet-integration.feature are intentionally unbound per the test module docstring; they belong to downstream TASK-NATS-PH1-002/-004/-005/-007/-008/-009 and PH2/PH3 tasks. Only the @task:TASK-NATS-PH1-006 scenario is in scope and it passed. coverage_pct reflects line coverage on files modified by this task."
+  "notes": "40 other BDD scenarios in nats-fleet-integration.feature are intentionally unbound per the test module docstring; they belong to downstream TASK-NATS-PH1-002/-004/-005/-007/-008/-009 and PH2/PH3 tasks. Only the @task:TASK-NATS-PH1-006 scenario is in scope and it passed. coverage_pct (59%) reflects line coverage on files modified by this task (cli/main.py + roles/*); the 53% package-wide figure additionally includes cli/rag_wiring.py which is out of scope for this task."
 }
