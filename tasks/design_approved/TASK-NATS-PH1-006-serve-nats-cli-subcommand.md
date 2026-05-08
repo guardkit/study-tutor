@@ -52,10 +52,17 @@ Update `src/study_tutor/cli/main.py` to add:
 - The architect uses `argparse` subparsers. Match study-tutor's existing CLI pattern (look at `cli/main.py` for the convention).
 - For signal handlers, see specialist-agent's pattern: `loop.add_signal_handler(signal.SIGTERM, partial(asyncio.create_task, adapter.stop()))`.
 - Do not re-implement adapter wiring — instantiate the components from this task and let TASK-NATS-PH1-005 own the lifecycle.
+- BDD oracle is scoped to a focused per-task feature file
+  (`features/nats-fleet-integration/by-task/TASK-NATS-PH1-006.feature` +
+  `test_TASK-NATS-PH1-006.py`) to work around the pytest-bdd v8 unbound-step
+  failure mode. See TASK-NATS-FIX-001 and TASK-REV-CC40 for context. The
+  upstream GuardKit fix is tracked as TASK-FIX-CC-BDD; once that lands the
+  focused pair can be deleted and validation can point back at the master.
 
 ## Coach validation
 
 ```bash
+pytest features/nats-fleet-integration/by-task/test_TASK-NATS-PH1-006.py -v
 pytest tests/unit/cli/test_serve_nats.py -v
 study-tutor serve-nats --help | grep -E '(--nats|--agent-id|--log-level)'
 ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py
