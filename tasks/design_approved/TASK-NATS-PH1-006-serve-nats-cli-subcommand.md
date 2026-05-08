@@ -1,24 +1,24 @@
 ---
-id: TASK-NATS-PH1-006
-title: Add study-tutor serve-nats CLI subcommand
-task_type: feature
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 3
-implementation_mode: task-work
 complexity: 4
-estimated_minutes: 60
-status: pending
-priority: critical
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-001
+- TASK-NATS-PH1-001
+estimated_minutes: 60
+feature_id: FEAT-NATS
+id: TASK-NATS-PH1-006
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: critical
+status: design_approved
 tags:
-  - nats
-  - feature
-  - cli
-  - phase-1
+- nats
+- feature
+- cli
+- phase-1
+task_type: feature
+title: Add study-tutor serve-nats CLI subcommand
+updated: 2026-05-08 00:00:00+00:00
+wave: 3
 ---
 
 # Task: Add study-tutor serve-nats CLI subcommand

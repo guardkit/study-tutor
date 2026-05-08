@@ -1,0 +1,53 @@
+{
+  "task_id": "TASK-NATS-PH1-007",
+  "turn": 1,
+  "files_modified": [".env.example"],
+  "files_created": ["tests/unit/test_env_example_nats.py"],
+  "tests_written": ["tests/unit/test_env_example_nats.py"],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "12 passed in 0.04s — uv run pytest tests/unit/test_env_example_nats.py -v. Covers AC-001 (file existence + each of NATS_URL, NATS_USER, NATS_PASSWORD, AGENT_ID, OPENAI_BASE_URL, LLM_BASE_URL, LOCAL_MODEL, OPENAI_API_KEY, HEARTBEAT_INTERVAL_SECONDS via parametrize), AC-002 (OPENAI_BASE_URL ends in /v1), and AC-003 (Bug #3 comment block immediately above OPENAI_BASE_URL contains 'Bug #3' and '/v1'). Ruff check + ruff format both clean on the new file.",
+  "implementation_notes": "Appended a new '--- NATS fleet (FEAT-NATS Phase 1) ---' section to .env.example containing the exact scope block from TASK-NATS-PH1-007: NATS_URL=nats://localhost:4222, empty NATS_USER / NATS_PASSWORD, AGENT_ID=gcse-tutor, the three-line Bug #3 explanatory comment, OPENAI_BASE_URL=http://host.docker.internal:9000/v1, LLM_BASE_URL=http://host.docker.internal:9000, LOCAL_MODEL=gemma4-tutor, OPENAI_API_KEY=local-no-auth-required, and HEARTBEAT_INTERVAL_SECONDS=30. To prevent shell-parse duplication of LOCAL_MODEL and OPENAI_API_KEY (which were set with <angle-bracket> placeholders earlier in the file), I replaced those earlier lines with comments pointing operators down to the canonical NATS-fleet block — so each key is now defined exactly once in the export-order ordering shells follow. Also added a CI-automatable regression test (tests/unit/test_env_example_nats.py) that mirrors the task's coach-validation grep ('^OPENAI_BASE_URL=.*/v1$') and asserts the Bug #3 comment block is contiguous immediately above the OPENAI_BASE_URL line. Project-wide ruff already has 22 pre-existing violations unrelated to this change; ruff explicitly skips .env.example, and ruff check + ruff format both pass on the new test file, so AC-004 (no introduced violations) holds.",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004"
+  ],
+  "requirements_remaining": [],
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] `.env.example` exists and contains all variables listed above.",
+      "status": "complete",
+      "evidence": "Verified .env.example exists at repo root and now contains every variable from the task scope: NATS_URL, NATS_USER, NATS_PASSWORD, AGENT_ID, OPENAI_BASE_URL, LLM_BASE_URL, LOCAL_MODEL, OPENAI_API_KEY, HEARTBEAT_INTERVAL_SECONDS. Test test_env_example_contains_required_var is parametrized over all nine vars and all parametrizations passed (9/9 PASSED).",
+      "test_file": "tests/unit/test_env_example_nats.py",
+      "implementation_files": [".env.example"]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] `grep -E '^OPENAI_BASE_URL=' .env.example` matches a value ending in `/v1` (Bug #3 regression guard — automate this check in CI).",
+      "status": "complete",
+      "evidence": "OPENAI_BASE_URL=http://host.docker.internal:9000/v1 is set on line 64 of .env.example. The coach-validation grep `grep -qE '^OPENAI_BASE_URL=.*\\/v1$' .env.example` exits 0 (verified in shell). The same invariant is automated in CI via tests/unit/test_env_example_nats.py::test_openai_base_url_ends_with_v1, which uses the regex '(?m)^OPENAI_BASE_URL=(.*)$' and asserts the value endswith('/v1'). Test PASSED.",
+      "test_file": "tests/unit/test_env_example_nats.py",
+      "implementation_files": [".env.example"]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] The Bug #3 explanatory comment is present immediately above the `OPENAI_BASE_URL` line.",
+      "status": "complete",
+      "evidence": "Lines 61-63 of .env.example carry the three-line comment block ('# IMPORTANT: OPENAI_BASE_URL MUST include the /v1 suffix.' / '# Without it, langchain-openai POSTs to /chat/completions instead of /v1/chat/completions' / '# and gets a 404. See docs/reviews/REVIEW-NATS-FLEET-PATTERNS-2026-05-08.md Bug #3.') directly above OPENAI_BASE_URL on line 64 with no intervening blank line. Automated guard test_bug_3_comment_immediately_above_openai_base_url walks upward over contiguous '#' lines from the OPENAI_BASE_URL line and asserts the joined block contains both 'Bug #3' and '/v1'. Test PASSED.",
+      "test_file": "tests/unit/test_env_example_nats.py",
+      "implementation_files": [".env.example"]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] No project lint/format violations introduced.",
+      "status": "complete",
+      "evidence": "Ruff does not lint .env.example as part of `uv run ruff check .` (.env.example does not appear in ruff's output; the 22 pre-existing project-wide ruff errors are all in pre-existing src/ and tests/ files unrelated to this task). On the new test file: `uv run ruff check tests/unit/test_env_example_nats.py` reports 'All checks passed!' and `uv run ruff format tests/unit/test_env_example_nats.py` is now idempotent after applying the formatter. No new lint or format violations introduced by this change.",
+      "test_file": "tests/unit/test_env_example_nats.py",
+      "implementation_files": [".env.example", "tests/unit/test_env_example_nats.py"]
+    }
+  ]
+}

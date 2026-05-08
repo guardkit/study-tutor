@@ -1,0 +1,140 @@
+{
+  "task_id": "TASK-NATS-PH1-002",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/adapters/test_manifest.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/adapters/test_manifest.py::test_factory_rejects_non_kebab_case_agent_ids[] PASSED [ 84%]\ntests/unit/adapters/test_manifest.py::test_factory_rejects_non_kebab_case_agent_ids[-tutor] PASSED [ 89%]\ntests/unit/adapters/test_manifest.py::test_factory_rejects_non_kebab_case_agent_ids[gcse tutor] PASSED [ 94%]\ntests/unit/adapters/test_manifest.py::test_factory_rejects_non_kebab_case_agent_ids[gcse.tutor] PASSED [100%]\n============================== 19 passed in 0.12s ==============================",
+      "duration_seconds": 0.8153579235076904
+    },
+    "requirements": {
+      "criteria_total": 6,
+      "criteria_met": 6,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`_tutor_manifest_factory(\"gcse-tutor\")` returns a valid `AgentManifest` (Pydantic validation passes).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implemented `_tutor_manifest_factory(agent_id: str) -> AgentManifest` in src/study_tutor/adapters/manifest.py. Calling it with 'gcse-tutor' returns an AgentManifest instance whose Pydantic validation passes (no ValidationError). Pinned by tests/unit/adapters/test_manifest.py::test_factory_returns_valid_agent_manifest (PASSED) which asserts isinstance(manifest, AgentManifest) and that agent_id, name, and template are populated.",
+      "notes": "Implemented `_tutor_manifest_factory(agent_id: str) -> AgentManifest` in src/study_tutor/adapters/manifest.py. Calling it with 'gcse-tutor' returns an AgentManifest instance whose Pydantic validation passes (no ValidationError). Pinned by tests/unit/adapters/test_manifest.py::test_factory_returns_valid_agent_manifest (PASSED) which asserts isinstance(manifest, AgentManifest) and that agent_id, name, and template are populated."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "`manifest.tools` has exactly 4 entries (`tutor_start_session`, `tutor_turn`, `tutor_session_status`, `tutor_session_end`).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Manifest declares exactly 4 ToolCapability entries with names tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end \u2014 matching study_tutor/mcp/server.py:26-52. Pinned by two tests: ::test_manifest_declares_exactly_four_tools (asserts len(manifest.tools) == 4, PASSED) and ::test_manifest_tool_names_match_mcp_surface (asserts the name set equals frozenset of the four expected names, PASSED). A third test ::test_each_tool_capability_is_valid asserts each entry is a ToolCapability with a JSON object schema (PASSED).",
+      "notes": "Manifest declares exactly 4 ToolCapability entries with names tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end \u2014 matching study_tutor/mcp/server.py:26-52. Pinned by two tests: ::test_manifest_declares_exactly_four_tools (asserts len(manifest.tools) == 4, PASSED) and ::test_manifest_tool_names_match_mcp_surface (asserts the name set equals frozenset of the four expected names, PASSED). A third test ::test_each_tool_capability_is_valid asserts each entry is a ToolCapability with a JSON object schema (PASSED)."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "`manifest.intents` has length >= 1 (Bug #5 regression guard).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Manifest declares one IntentCapability with pattern='tutoring.*' and signals including 'help me revise', 'tutor me on', 'GCSE', 'revision', etc. Pinned by three tests: ::test_manifest_declares_at_least_one_intent_capability (asserts len(intents) >= 1, PASSED), ::test_manifest_declares_tutoring_intent_pattern (asserts 'tutoring.*' in patterns, PASSED), and ::test_manifest_passes_in_memory_registry_register (registers the manifest into InMemoryManifestRegistry without ValueError \u2014 the Bug #5 regression contract \u2014 and reads it back, PASSED).",
+      "notes": "Manifest declares one IntentCapability with pattern='tutoring.*' and signals including 'help me revise', 'tutor me on', 'GCSE', 'revision', etc. Pinned by three tests: ::test_manifest_declares_at_least_one_intent_capability (asserts len(intents) >= 1, PASSED), ::test_manifest_declares_tutoring_intent_pattern (asserts 'tutoring.*' in patterns, PASSED), and ::test_manifest_passes_in_memory_registry_register (registers the manifest into InMemoryManifestRegistry without ValueError \u2014 the Bug #5 regression contract \u2014 and reads it back, PASSED)."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`_tutor_manifest_factory(agent_id)` raises `ValidationError` for non-kebab-case agent_id (e.g. `\"GCSE-Tutor\"`, `\"gcse_tutor\"`, `\"1-tutor\"`, `\"\"`).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Validation is inherited from AgentManifest's `agent_id: str = Field(pattern=r'^[a-z][a-z0-9-]*$')` (nats_core.manifest:106-109). Pinned by parametrized test ::test_factory_rejects_non_kebab_case_agent_ids covering all four explicit AC examples ('GCSE-Tutor', 'gcse_tutor', '1-tutor', '') plus three additional edge cases ('-tutor', 'gcse tutor', 'gcse.tutor'). All 7 parametrizations PASSED, each raising pydantic.ValidationError as expected.",
+      "notes": "Validation is inherited from AgentManifest's `agent_id: str = Field(pattern=r'^[a-z][a-z0-9-]*$')` (nats_core.manifest:106-109). Pinned by parametrized test ::test_factory_rejects_non_kebab_case_agent_ids covering all four explicit AC examples ('GCSE-Tutor', 'gcse_tutor', '1-tutor', '') plus three additional edge cases ('-tutor', 'gcse tutor', 'gcse.tutor'). All 7 parametrizations PASSED, each raising pydantic.ValidationError as expected."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Unit tests cover: happy path, agent_id boundary cases (kebab vs not), tool count assertion, intent count >= 1 assertion.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "tests/unit/adapters/test_manifest.py contains 19 tests grouped by AC: happy path (test_factory_returns_valid_agent_manifest); kebab boundary cases \u2014 5 accepted (gcse-tutor, tutor, english-literature-tutor, tutor-1, a) and 7 rejected (GCSE-Tutor, gcse_tutor, 1-tutor, '', -tutor, 'gcse tutor', gcse.tutor); tool count assertion (test_manifest_declares_exactly_four_tools + test_manifest_tool_names_match_mcp_surface + test_each_tool_capability_is_valid); intent count >= 1 assertion (test_manifest_declares_at_least_one_intent_capability + test_manifest_declares_tutoring_intent_pattern + test_manifest_passes_in_memory_registry_register). All 19 tests PASSED.",
+      "notes": "tests/unit/adapters/test_manifest.py contains 19 tests grouped by AC: happy path (test_factory_returns_valid_agent_manifest); kebab boundary cases \u2014 5 accepted (gcse-tutor, tutor, english-literature-tutor, tutor-1, a) and 7 rejected (GCSE-Tutor, gcse_tutor, 1-tutor, '', -tutor, 'gcse tutor', gcse.tutor); tool count assertion (test_manifest_declares_exactly_four_tools + test_manifest_tool_names_match_mcp_surface + test_each_tool_capability_is_valid); intent count >= 1 assertion (test_manifest_declares_at_least_one_intent_capability + test_manifest_declares_tutoring_intent_pattern + test_manifest_passes_in_memory_registry_register). All 19 tests PASSED."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Ran `uv run ruff check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> 'All checks passed!'. Ran `uv run ruff format --check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> '2 files already formatted'. Zero lint or format errors on either file. (manifest.py was reformatted once with `uv run ruff format` to satisfy the format check; the post-format check now passes.)",
+      "notes": "Ran `uv run ruff check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> 'All checks passed!'. Ran `uv run ruff format --check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> '2 files already formatted'. Zero lint or format errors on either file. (manifest.py was reformatted once with `uv run ruff format` to satisfy the format check; the post-format check now passes.)"
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`_tutor_manifest_factory(\"gcse-tutor\")` returns a valid `AgentManifest` (Pydantic validation passes).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented `_tutor_manifest_factory(agent_id: str) -> AgentManifest` in src/study_tutor/adapters/manifest.py. Calling it with 'gcse-tutor' returns an AgentManifest instance whose Pydantic validation passes (no ValidationError). Pinned by tests/unit/adapters/test_manifest.py::test_factory_returns_valid_agent_manifest (PASSED) which asserts isinstance(manifest, AgentManifest) and that agent_id, name, and template are populated.",
+        "notes": "Implemented `_tutor_manifest_factory(agent_id: str) -> AgentManifest` in src/study_tutor/adapters/manifest.py. Calling it with 'gcse-tutor' returns an AgentManifest instance whose Pydantic validation passes (no ValidationError). Pinned by tests/unit/adapters/test_manifest.py::test_factory_returns_valid_agent_manifest (PASSED) which asserts isinstance(manifest, AgentManifest) and that agent_id, name, and template are populated."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`manifest.tools` has exactly 4 entries (`tutor_start_session`, `tutor_turn`, `tutor_session_status`, `tutor_session_end`).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Manifest declares exactly 4 ToolCapability entries with names tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end \u2014 matching study_tutor/mcp/server.py:26-52. Pinned by two tests: ::test_manifest_declares_exactly_four_tools (asserts len(manifest.tools) == 4, PASSED) and ::test_manifest_tool_names_match_mcp_surface (asserts the name set equals frozenset of the four expected names, PASSED). A third test ::test_each_tool_capability_is_valid asserts each entry is a ToolCapability with a JSON object schema (PASSED).",
+        "notes": "Manifest declares exactly 4 ToolCapability entries with names tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end \u2014 matching study_tutor/mcp/server.py:26-52. Pinned by two tests: ::test_manifest_declares_exactly_four_tools (asserts len(manifest.tools) == 4, PASSED) and ::test_manifest_tool_names_match_mcp_surface (asserts the name set equals frozenset of the four expected names, PASSED). A third test ::test_each_tool_capability_is_valid asserts each entry is a ToolCapability with a JSON object schema (PASSED)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`manifest.intents` has length >= 1 (Bug #5 regression guard).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Manifest declares one IntentCapability with pattern='tutoring.*' and signals including 'help me revise', 'tutor me on', 'GCSE', 'revision', etc. Pinned by three tests: ::test_manifest_declares_at_least_one_intent_capability (asserts len(intents) >= 1, PASSED), ::test_manifest_declares_tutoring_intent_pattern (asserts 'tutoring.*' in patterns, PASSED), and ::test_manifest_passes_in_memory_registry_register (registers the manifest into InMemoryManifestRegistry without ValueError \u2014 the Bug #5 regression contract \u2014 and reads it back, PASSED).",
+        "notes": "Manifest declares one IntentCapability with pattern='tutoring.*' and signals including 'help me revise', 'tutor me on', 'GCSE', 'revision', etc. Pinned by three tests: ::test_manifest_declares_at_least_one_intent_capability (asserts len(intents) >= 1, PASSED), ::test_manifest_declares_tutoring_intent_pattern (asserts 'tutoring.*' in patterns, PASSED), and ::test_manifest_passes_in_memory_registry_register (registers the manifest into InMemoryManifestRegistry without ValueError \u2014 the Bug #5 regression contract \u2014 and reads it back, PASSED)."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`_tutor_manifest_factory(agent_id)` raises `ValidationError` for non-kebab-case agent_id (e.g. `\"GCSE-Tutor\"`, `\"gcse_tutor\"`, `\"1-tutor\"`, `\"\"`).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Validation is inherited from AgentManifest's `agent_id: str = Field(pattern=r'^[a-z][a-z0-9-]*$')` (nats_core.manifest:106-109). Pinned by parametrized test ::test_factory_rejects_non_kebab_case_agent_ids covering all four explicit AC examples ('GCSE-Tutor', 'gcse_tutor', '1-tutor', '') plus three additional edge cases ('-tutor', 'gcse tutor', 'gcse.tutor'). All 7 parametrizations PASSED, each raising pydantic.ValidationError as expected.",
+        "notes": "Validation is inherited from AgentManifest's `agent_id: str = Field(pattern=r'^[a-z][a-z0-9-]*$')` (nats_core.manifest:106-109). Pinned by parametrized test ::test_factory_rejects_non_kebab_case_agent_ids covering all four explicit AC examples ('GCSE-Tutor', 'gcse_tutor', '1-tutor', '') plus three additional edge cases ('-tutor', 'gcse tutor', 'gcse.tutor'). All 7 parametrizations PASSED, each raising pydantic.ValidationError as expected."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Unit tests cover: happy path, agent_id boundary cases (kebab vs not), tool count assertion, intent count >= 1 assertion.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "tests/unit/adapters/test_manifest.py contains 19 tests grouped by AC: happy path (test_factory_returns_valid_agent_manifest); kebab boundary cases \u2014 5 accepted (gcse-tutor, tutor, english-literature-tutor, tutor-1, a) and 7 rejected (GCSE-Tutor, gcse_tutor, 1-tutor, '', -tutor, 'gcse tutor', gcse.tutor); tool count assertion (test_manifest_declares_exactly_four_tools + test_manifest_tool_names_match_mcp_surface + test_each_tool_capability_is_valid); intent count >= 1 assertion (test_manifest_declares_at_least_one_intent_capability + test_manifest_declares_tutoring_intent_pattern + test_manifest_passes_in_memory_registry_register). All 19 tests PASSED.",
+        "notes": "tests/unit/adapters/test_manifest.py contains 19 tests grouped by AC: happy path (test_factory_returns_valid_agent_manifest); kebab boundary cases \u2014 5 accepted (gcse-tutor, tutor, english-literature-tutor, tutor-1, a) and 7 rejected (GCSE-Tutor, gcse_tutor, 1-tutor, '', -tutor, 'gcse tutor', gcse.tutor); tool count assertion (test_manifest_declares_exactly_four_tools + test_manifest_tool_names_match_mcp_surface + test_each_tool_capability_is_valid); intent count >= 1 assertion (test_manifest_declares_at_least_one_intent_capability + test_manifest_declares_tutoring_intent_pattern + test_manifest_passes_in_memory_registry_register). All 19 tests PASSED."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran `uv run ruff check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> 'All checks passed!'. Ran `uv run ruff format --check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> '2 files already formatted'. Zero lint or format errors on either file. (manifest.py was reformatted once with `uv run ruff format` to satisfy the format check; the post-format check now passes.)",
+        "notes": "Ran `uv run ruff check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> 'All checks passed!'. Ran `uv run ruff format --check src/study_tutor/adapters/manifest.py tests/unit/adapters/test_manifest.py` -> '2 files already formatted'. Zero lint or format errors on either file. (manifest.py was reformatted once with `uv run ruff format` to satisfy the format check; the post-format check now passes.)"
+      }
+    ]
+  },
+  "issues": [],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 408 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 2046/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- INSTRUCTS_USER_TO_START\n- IS_USED_AS_FIELD_TYPE_IN\n- ASSIGNS_TASK_TO\n- APPLIES_TO\n\n### \u26a0\ufe0f Warnings\n- IS_A_FAILURE_PATTERN_OF\n- IS_IMPLEMENTED_AS\n- REPORTED_BY\n\n### \ud83c\udfad Role Constraints\n- DELEGATE_TO_TASK_WORK\n- HAS_ROLE_MUST_DO\n- DELEGATES_TO\n- INTERACTS_WITH\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- APPLIES_TO\n- APPLIES_TO_TASK\n- APPLIES_TO\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}

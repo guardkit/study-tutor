@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-NATS-PH1-006",
+    "pre_path": "tasks/backlog/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md",
+    "timestamp": "2026-05-08T19:35:21.924559+00:00",
+    "kind": "design_approved_transition"
+  }
+]
