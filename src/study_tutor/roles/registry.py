@@ -38,9 +38,7 @@ class UnknownRoleError(KeyError):
         self.registered = registered
         # KeyError stringifies its first arg with repr(); pass a
         # human-readable message as a single arg so str(exc) reads cleanly.
-        super().__init__(
-            f"Unknown role {role_name!r}. Registered roles: {registered}"
-        )
+        super().__init__(f"Unknown role {role_name!r}. Registered roles: {registered}")
 
 
 @dataclass(frozen=True)
@@ -142,6 +140,7 @@ def _ensure_roles_registered() -> None:
         # Importing this sub-package runs its top-level register_role(...).
         # Imported lazily to keep registry.py free of role-specific deps.
         from study_tutor.roles import tutor  # noqa: F401
+
         _ROLES_REGISTERED = True
 
 
