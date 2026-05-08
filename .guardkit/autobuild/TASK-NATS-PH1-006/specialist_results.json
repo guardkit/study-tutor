@@ -1,7 +1,7 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 134.6499474159209,
+    "duration_seconds": 59.032360249897465,
     "error": null,
     "tests_run": 41,
     "tests_failed": 0,
@@ -11,7 +11,7 @@
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 285.317843249999,
+    "duration_seconds": 186.34530395804904,
     "error": null,
     "issues": [],
     "quality_score": 0.0,
