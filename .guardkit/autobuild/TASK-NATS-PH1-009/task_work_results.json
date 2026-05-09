@@ -1,0 +1,182 @@
+{
+  "task_id": "TASK-NATS-PH1-009",
+  "timestamp": "2026-05-08T23:51:36.786267",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 2,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": true
+  },
+  "files_modified": [
+    ".guardkit/autobuild/TASK-NATS-PH1-005/checkpoints.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_live_discovery.py",
+    "tasks/backlog/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+    "tasks/backlog/TASK-NATS-PH2-002-kv-watch-test.md",
+    "tasks/backlog/TASK-NATS-PH3-001-dockerfile.md"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-NATS-PH1-008-implementation-plan.md",
+    ".claude/task-plans/TASK-NATS-PH1-009-implementation-plan.md",
+    ".claude/task-plans/TASK-NATS-PH2-002-implementation-plan.md",
+    ".claude/task-plans/TASK-NATS-PH3-001-implementation-plan.md",
+    ".guardkit/autobuild/TASK-NATS-PH1-008/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-008/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-002/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-002/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-001/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-001/turn_context.json",
+    ".guardkit/bdd/TASK-NATS-PH1-009_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-009/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_live_discovery.py",
+    "tasks/design_approved/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+    "tasks/design_approved/TASK-NATS-PH1-009-live-discovery-smoke.md",
+    "tasks/design_approved/TASK-NATS-PH2-002-kv-watch-test.md",
+    "tasks/design_approved/TASK-NATS-PH3-001-dockerfile.md",
+    "tests/integration/test_kv_watch_lifecycle.py",
+    "tests/integration/test_live_discovery.py",
+    "tests/unit/test_dockerfile_structure.py"
+  ],
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-009/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_live_discovery.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_live_discovery.py"
+  ],
+  "summary": "2 tests passed, all quality gates passed",
+  "sdk_turns": {
+    "turns_used": 31,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "bdd_results": {
+    "scenarios_passed": 0,
+    "scenarios_failed": 0,
+    "scenarios_pending": 1,
+    "failures": [],
+    "pending": [
+      {
+        "feature_file": "features.nats-fleet-integration.test_nats_fleet_integration",
+        "scenario_name": "test_jarvis_discovers_the_tutor_through_live_capability_registration_without_any_stub_configuration",
+        "pending_step": "All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      }
+    ],
+    "feature_files": [
+      "features/nats-fleet-integration/nats-fleet-integration.feature"
+    ],
+    "tag": "@task:TASK-NATS-PH1-009"
+  },
+  "task_type": "testing",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Test boots tutor adapter, queries agent-registry KV, finds gcse-tutor row with the correct manifest payload.",
+      "status": "complete",
+      "evidence": "test_jarvis_discovers_gcse_tutor_via_live_kv constructs NATSAdapter with the production _tutor_manifest_factory(agent_id='gcse-tutor'), calls adapter.start() against a live nats-server subprocess, then opens a sidecar NATSKVManifestRegistry on the same agent-registry bucket and asserts: stored.agent_id == 'gcse-tutor', name/template/trust_tier match the manifest, len(stored.intents) >= 1 with at least one 'tutoring.*' intent, and all four MCP tools (tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end) are present in stored.tools.",
+      "test_file": "tests/integration/test_live_discovery.py",
+      "implementation_files": [
+        "tests/integration/test_live_discovery.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Test asserts capability resolution for tutor_start_session returns gcse-tutor (Decision 1 regression guard \u2014 discovery does NOT depend on stub yaml).",
+      "status": "complete",
+      "evidence": "After verifying the row, the same test calls consumer_registry.find_by_tool('tutor_start_session') \u2014 the same KV-backed surface jarvis's LiveCapabilitiesRegistry consumes (capabilities_registry.py L575-590) \u2014 and asserts the result is non-empty AND that 'gcse-tutor' is in the candidate agent_ids list. The resolver call uses NATSKVManifestRegistry directly because jarvis is not importable from this repo; the task explicitly permits this stand-in ('mock the resolver shape: read agent-registry KV directly').",
+      "test_file": "tests/integration/test_live_discovery.py",
+      "implementation_files": [
+        "tests/integration/test_live_discovery.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Test tears down tutor and asserts the KV row is removed within 30s.",
+      "status": "complete",
+      "evidence": "After the resolver assertions, the test calls adapter.stop() and then opens a fresh observer connection to poll the agent-registry bucket. A while-loop with a 30.0s deadline calls observer_registry.get(manifest.agent_id) every 100ms and breaks when the result is None; if the deadline elapses with the row still present, pytest.fail() is invoked with a message naming the Decision 1 graceful-deregister contract. Final assertions confirm adapter.is_ready is False and adapter.active_tasks == 0.",
+      "test_file": "tests/integration/test_live_discovery.py",
+      "implementation_files": [
+        "tests/integration/test_live_discovery.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "No stub-capabilities yaml file is loaded or referenced by the test (assert path).",
+      "status": "complete",
+      "evidence": "test_no_stub_capabilities_yaml_loaded_by_test parses this test file's source via ast.parse() and walks every Import, ImportFrom, Attribute, and string-literal Constant node, collecting any reference containing 'stub_capabilities'. The assertion then checks the production-side adapter modules the test imports (study_tutor.adapters.nats_adapter, study_tutor.adapters.manifest, study_tutor.adapters.command_router) by reading each module's __file__ and asserting 'stub_capabilities' does not appear in the source. AST-based scanning prevents false positives from comments while still catching imports/paths.",
+      "test_file": "tests/integration/test_live_discovery.py",
+      "implementation_files": [
+        "tests/integration/test_live_discovery.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `ruff check tests/integration/test_live_discovery.py` \u2014 output: 'All checks passed!'. The test file uses `from __future__ import annotations`, type hints, pathlib.Path, and follows the existing test_adapter_lifecycle.py module conventions for fixtures and asyncio patterns.",
+      "test_file": "tests/integration/test_live_discovery.py",
+      "implementation_files": [
+        "tests/integration/test_live_discovery.py"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 39.33413079206366
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 204.87428804207593
+    }
+  ]
+}

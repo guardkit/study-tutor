@@ -1,0 +1,7 @@
+{
+  "tests_run": 25,
+  "tests_failed": 0,
+  "coverage_pct": 0.0,
+  "output_summary": "All 25 Phase-3 structural tests pass (Dockerfile + .env.example); 0% src coverage is by-design — these are file-level invariant checks.",
+  "quality_gates_passed": true
+}

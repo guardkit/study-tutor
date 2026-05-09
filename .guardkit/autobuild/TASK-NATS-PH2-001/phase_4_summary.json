@@ -1,0 +1,7 @@
+{
+  "tests_run": 15,
+  "tests_failed": 0,
+  "coverage_pct": 92.5,
+  "output_summary": "15/15 tests passed in tests/unit/adapters/test_command_router{_readiness,}.py; command_router.py line coverage 92.5% (>=80% gate).",
+  "quality_gates_passed": true
+}

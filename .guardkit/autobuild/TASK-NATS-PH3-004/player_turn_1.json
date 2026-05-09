@@ -1,0 +1,80 @@
+{
+  "task_id": "TASK-NATS-PH3-004",
+  "turn": 1,
+  "files_modified": [],
+  "files_created": [
+    "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md",
+    "docs/runbooks/templates/RESULTS-template.md",
+    "docs/runbooks/evidence/.gitkeep"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "Documentation-only task \u2014 validation is the coach-spec'd shell-level acceptance script. Ran the four checks the task spec encodes: (1) `test -f docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` \u2192 exists. (2) `test -f docs/runbooks/templates/RESULTS-template.md` \u2192 exists. (3) `test -f docs/runbooks/evidence/.gitkeep` \u2192 exists. (4) `! grep -E 'agents\\.command\\.[a-z-]+\\.>' docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` \u2192 no broken Bug-#4 wildcard pattern present. All four pass. Bonus: the parallel `agents.result.<id>.>` shape is also absent. The flat patterns `agents.command.>` and `agents.result.>` ARE present in \u00a74.1, \u00a74.2, the Phase \u00d7 Gate table, and the Bug #4 reference. No Python files touched, so no ruff/format surface affected (AC-005 trivially holds).",
+  "implementation_notes": "Created the three artefacts the task scope demands, mirroring the structural shape of jarvis's RUNBOOK-jarvis-architect-align-dddsw-demo.md and RESULTS-jarvis-architect-align-dddsw-demo-2026-05-08-followup-post-W2.md so cross-runbook comparisons are trivial.\n\nRUNBOOK structure (mirrored from jarvis):\n- Header: status / purpose / topology arrow / companion references / machine layout / wall-clock / outputs.\n- 'What this runbook does NOT cover' (forge path; mid-session Graphiti checkpoints \u2014 Decision 2; stale-agent reaper \u2014 Decision 3).\n- Demo narrative / talk track.\n- Phase 0 pre-flight (six gates: study-tutor HEAD, sibling repos, image freshness, llama-swap + gemma4-tutor, NATS + creds, canonical NATS provisioning).\n- Phase 1 study-tutor compose up (compose, env propagation incl. /v1 trap, KV registration, four-tool manifest, heartbeat).\n- Phase 2 jarvis chat boot + capability surfacing.\n- Phase 3 the demo turn (start_session + tutor_turn round-trip on Macbeth dagger soliloquy).\n- Phase 4 wire-level evidence (FLAT subjects only \u2014 `agents.command.>` and `agents.result.>` per Bug #4).\n- Phase \u00d7 Gate \u00d7 Outcome \u00d7 Evidence summary table.\n- Bug catalogue: a four-field template (symptom / cause / fix / where-it-must-live) plus the four canonical reference bugs reproduced as worked examples (PubAck race / on_command mapping miss / OPENAI_BASE_URL /v1 / wire-tap pattern).\n- Phase 6 failure modes table.\n- \u00a76 Known issue: stale registry entries \u2014 symptom + cause + manual `nats kv del agent-registry gcse-tutor` cleanup + reference to TASK-NATS-FU-002 as the long-term jarvis-side fix (per Decision 3).\n- Phase 7 evidence capture (transcript, traces, command_history, RESULTS file).\n- Phase 8 demo close.\n- See also.\n\nRESULTS template structure: how-to header, repo HEAD table for study-tutor / jarvis / specialist-agent / nats-core / fleet-gateway plus image tags, Outcome line (\u2705/\u23f8/\u274c), Demo blocking? line, deltas vs prior run, Phase \u00d7 Gate \u00d7 Outcome \u00d7 Evidence summary table mirroring the runbook, Bug catalogue (same four-field shape), What's working narrative, Next steps fix-and-rerun list, hygiene flags, evidence index.\n\nBug #4 negative-grep guard: the natural way to write the warning was to literally show the broken pattern `agents.command.<agent_id>.>` as a 'do not do this' example, which trips the negative-grep regression check the task encodes. Rewrote the warning to describe the broken shape in prose ('agent-id segment followed by a trailing wildcard token') without including the literal pattern, so the regression guard passes while still teaching the operator the gotcha. Same for the Reference Bug #4 worked example.\n\nNo Python code, tests, or production source touched \u2014 pure documentation, so AC-005 (no lint/format violations) holds trivially.",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: RUNBOOK file created with full procedure (Phases 0-8, talk track, failure-modes table, see-also).",
+    "AC-002: Wire-tap commands use flat `agents.command.>` and `agents.result.>`. Negative-grep guard `! grep -E 'agents\\.command\\.[a-z-]+\\.>' ...` passes.",
+    "AC-003: RESULTS template created with all required sections (HEADs, Outcome, Demo blocking?, Phase \u00d7 Gate table, Bug catalogue, What's working, Next steps).",
+    "AC-004: Empty `.gitkeep` placed under `docs/runbooks/evidence/`.",
+    "AC-005: Only markdown + empty .gitkeep added; no project lint surface affected."
+  ],
+  "requirements_remaining": [],
+  "implementation_mode": "direct",
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] `docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` exists with the full procedure.",
+      "status": "complete",
+      "evidence": "Created `docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` (~33 KB / 760+ lines). Mirrors jarvis's RUNBOOK-jarvis-architect-align-dddsw-demo.md structure: header (status/purpose/topology/references/machine layout/wall-clock/outputs), 'What this runbook does NOT cover', demo narrative, Phase 0 pre-flight (6 gates), Phase 1 compose up + KV registration + manifest + heartbeat, Phase 2 jarvis chat + catalogue, Phase 3 demo turn, Phase 4 wire-level evidence, Phase \u00d7 Gate \u00d7 Outcome \u00d7 Evidence summary table, Bug catalogue (template + four worked examples), Phase 6 failure modes, \u00a76 Known issue: stale registry entries, Phase 7 capture, Phase 8 close, See-also. `test -f` passes.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] Wire-tap subject patterns in the runbook are `agents.command.>` and `agents.result.>` (Bug #4 regression \u2014 automate the negative check via `! grep -E 'agents\\.command\\.[a-z-]+\\.>'` in the runbook).",
+      "status": "complete",
+      "evidence": "All wire-tap commands in \u00a74.1 / \u00a74.2 / Phase \u00d7 Gate table / Bug #4 reference use the FLAT `agents.command.>` and `agents.result.>` patterns. Initially the Bug #4 cautionary text contained the literal broken pattern `agents.command.<id>.>` as a 'do not do this' example, which tripped the negative grep; rewrote the warning to describe the broken shape in prose without literally including it, plus did the same for the Reference Bug #4 worked example. Verified: `grep -nE 'agents\\.command\\.[a-z-]+\\.>' docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` returns no matches (exit 1). The parallel `agents.result.<id>.>` shape is also absent. `grep -nE '`agents\\.command\\.>`|`agents\\.result\\.>`'` confirms 8 hits of the correct flat patterns.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] `docs/runbooks/templates/RESULTS-template.md` exists with all required sections.",
+      "status": "complete",
+      "evidence": "Created `docs/runbooks/templates/RESULTS-template.md` (~7.7 KB). Includes every required section per task spec: how-to header, participating-repo HEADs table (study-tutor, jarvis, specialist-agent, nats-core, fleet-gateway) plus image tags, Outcome line (\u2705/\u23f8/\u274c), Demo blocking? line, 'What's new vs prior run' delta table, Phase \u00d7 Gate \u00d7 Outcome \u00d7 Evidence summary table mirroring the runbook's gate sequence, Bug catalogue with the canonical four-field shape (symptom / cause / fix / where-it-must-live), 'What's working \u2014 narrative' bullets, 'Next steps with concrete fix-and-rerun list' numbered actions, hygiene-flags section, evidence-index. `test -f` passes.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/templates/RESULTS-template.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] `docs/runbooks/evidence/.gitkeep` exists (empty file is fine).",
+      "status": "complete",
+      "evidence": "Created empty `docs/runbooks/evidence/.gitkeep` (0 bytes). `test -f docs/runbooks/evidence/.gitkeep` passes; `ls -la` confirms 0-byte file. Establishes the per-execution evidence directory placeholder so git tracks the empty parent.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/evidence/.gitkeep"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "[ ] No project lint/format violations introduced.",
+      "status": "complete",
+      "evidence": "Documentation-only change: only markdown files (`RUNBOOK-study-tutor-nats-fleet-demo.md`, `RESULTS-template.md`) and an empty `.gitkeep` were added. No Python source / tests / config touched. Project uses `ruff` for Python lint (per `pyproject.toml [extra=dev]`); markdown is not in ruff's surface and the project has no markdownlint / prettier / mdformat configured (`find . -maxdepth 2 -name '.markdownlint*' -o -name '.prettierrc*' -o -name '.pre-commit-config.yaml'` returned nothing). No lint/format surface affected.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md",
+        "docs/runbooks/templates/RESULTS-template.md",
+        "docs/runbooks/evidence/.gitkeep"
+      ]
+    }
+  ],
+  "success": true
+}

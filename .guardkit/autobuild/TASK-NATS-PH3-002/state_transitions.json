@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-NATS-PH3-002",
+    "pre_path": "tasks/backlog/TASK-NATS-PH3-002-docker-compose.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH3-002-docker-compose.md",
+    "timestamp": "2026-05-08T23:04:37.894984+00:00",
+    "kind": "design_approved_transition"
+  }
+]

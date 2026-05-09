@@ -1,0 +1,140 @@
+{
+  "task_id": "TASK-NATS-PH1-003",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "skipped",
+      "test_output_summary": "Independent test verification skipped (tests not required for scaffolding tasks)",
+      "duration_seconds": 0.0
+    },
+    "requirements": {
+      "criteria_total": 6,
+      "criteria_met": 6,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`from study_tutor.roles.registry import get_role; get_role(\"tutor\")` returns a non-None role descriptor.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implemented register_role/get_role in src/study_tutor/roles/registry.py and the tutor role registration in src/study_tutor/roles/tutor/__init__.py. Verified via tests/unit/roles/test_registry.py::TestTutorRoleRegistration::test_get_role_tutor_returns_non_none_descriptor and confirmed end-to-end from a fresh interpreter: get_role('tutor') returns a RoleEntry(name='tutor', ...).",
+      "notes": "Implemented register_role/get_role in src/study_tutor/roles/registry.py and the tutor role registration in src/study_tutor/roles/tutor/__init__.py. Verified via tests/unit/roles/test_registry.py::TestTutorRoleRegistration::test_get_role_tutor_returns_non_none_descriptor and confirmed end-to-end from a fresh interpreter: get_role('tutor') returns a RoleEntry(name='tutor', ...)."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "`get_role(\"tutor\").tool_to_command` returns a 4-key dict matching the table above exactly.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "TOOL_TO_COMMAND in src/study_tutor/roles/tutor/__init__.py declares exactly the 4 entries from the spec: tutor_start_session->start_session, tutor_turn->tutor_turn, tutor_session_status->session_status, tutor_session_end->end_session. Coverage is layered: (a) test_tool_to_command_is_exactly_four_keys asserts cardinality, (b) test_tool_to_command_matches_canonical_table asserts the full dict, (c) test_each_canonical_alias_present is parametrized so a single drifted key names itself in the failure. The map is exposed as a read-only MappingProxyType so consumers cannot silently mutate it.",
+      "notes": "TOOL_TO_COMMAND in src/study_tutor/roles/tutor/__init__.py declares exactly the 4 entries from the spec: tutor_start_session->start_session, tutor_turn->tutor_turn, tutor_session_status->session_status, tutor_session_end->end_session. Coverage is layered: (a) test_tool_to_command_is_exactly_four_keys asserts cardinality, (b) test_tool_to_command_matches_canonical_table asserts the full dict, (c) test_each_canonical_alias_present is parametrized so a single drifted key names itself in the failure. The map is exposed as a read-only MappingProxyType so consumers cannot silently mutate it."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "`_ensure_roles_registered()` is idempotent (calling it twice does not raise or duplicate-register).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "_ensure_roles_registered is double-guarded: (1) a module-level boolean _ROLES_REGISTERED short-circuits subsequent calls, (2) the underlying register_role call returns the existing entry (no duplicate, no exception) when re-invoked with an identical mapping. A threading.Lock prevents concurrent first-call races from running registration twice. Three tests cover this: test_double_call_does_not_raise, test_double_call_does_not_duplicate_register (snapshot-equality), and test_idempotent_after_flag_reset (which resets the boolean and confirms identity-stable RoleEntry across re-runs).",
+      "notes": "_ensure_roles_registered is double-guarded: (1) a module-level boolean _ROLES_REGISTERED short-circuits subsequent calls, (2) the underlying register_role call returns the existing entry (no duplicate, no exception) when re-invoked with an identical mapping. A threading.Lock prevents concurrent first-call races from running registration twice. Three tests cover this: test_double_call_does_not_raise, test_double_call_does_not_duplicate_register (snapshot-equality), and test_idempotent_after_flag_reset (which resets the boolean and confirms identity-stable RoleEntry across re-runs)."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`get_role(\"nonexistent\")` raises a clear, named exception (`UnknownRoleError` or equivalent).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Defined UnknownRoleError(KeyError) in src/study_tutor/roles/registry.py. The exception carries .role_name and .registered attributes and stringifies as \"Unknown role 'nonexistent'. Registered roles: ['tutor']\" \u2014 the operator can see both what was asked for and what is actually available without dropping into a debugger. Five tests cover the contract: raises the named error, subclasses KeyError (back-compat), message names the requested role, message lists the registered roles, and the named attributes are populated.",
+      "notes": "Defined UnknownRoleError(KeyError) in src/study_tutor/roles/registry.py. The exception carries .role_name and .registered attributes and stringifies as \"Unknown role 'nonexistent'. Registered roles: ['tutor']\" \u2014 the operator can see both what was asked for and what is actually available without dropping into a debugger. Five tests cover the contract: raises the named error, subclasses KeyError (back-compat), message names the requested role, message lists the registered roles, and the named attributes are populated."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Unit tests cover: registry round-trip, idempotency, unknown role, mapping integrity.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "tests/unit/roles/test_registry.py has 22 tests organised into four classes mapping 1:1 to the four required test areas: TestRegistryRoundTrip (register-then-get returns same entry, identical re-registration returns existing entry, conflicting re-registration raises ValueError, frozen dataclass), TestEnsureRolesRegisteredIdempotent (no-raise, no-duplicate, idempotent across flag reset), TestUnknownRoleError (raises, KeyError subclass, message naming, message lists registered, attributes), and TestTutorToolToCommandMapping including test_tool_to_command_is_read_only and test_caller_mutation_does_not_leak_into_registry \u2014 both of which guard mapping integrity (the registered map cannot be silently mutated by consumers or by callers mutating the dict they handed in).",
+      "notes": "tests/unit/roles/test_registry.py has 22 tests organised into four classes mapping 1:1 to the four required test areas: TestRegistryRoundTrip (register-then-get returns same entry, identical re-registration returns existing entry, conflicting re-registration raises ValueError, frozen dataclass), TestEnsureRolesRegisteredIdempotent (no-raise, no-duplicate, idempotent across flag reset), TestUnknownRoleError (raises, KeyError subclass, message naming, message lists registered, attributes), and TestTutorToolToCommandMapping including test_tool_to_command_is_read_only and test_caller_mutation_does_not_leak_into_registry \u2014 both of which guard mapping integrity (the registered map cannot be silently mutated by consumers or by callers mutating the dict they handed in)."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "`ruff check src/study_tutor/roles/ tests/unit/roles/` reports 'All checks passed!' (zero lint errors). `ruff format --check` reports the four touched files (src/study_tutor/roles/registry.py, src/study_tutor/roles/tutor/__init__.py, src/study_tutor/roles/__init__.py, tests/unit/roles/test_registry.py) as 'already formatted'. Two pre-existing files (loader.py, test_loader.py) have unrelated format drift but were not modified by this task.",
+      "notes": "`ruff check src/study_tutor/roles/ tests/unit/roles/` reports 'All checks passed!' (zero lint errors). `ruff format --check` reports the four touched files (src/study_tutor/roles/registry.py, src/study_tutor/roles/tutor/__init__.py, src/study_tutor/roles/__init__.py, tests/unit/roles/test_registry.py) as 'already formatted'. Two pre-existing files (loader.py, test_loader.py) have unrelated format drift but were not modified by this task."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`from study_tutor.roles.registry import get_role; get_role(\"tutor\")` returns a non-None role descriptor.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented register_role/get_role in src/study_tutor/roles/registry.py and the tutor role registration in src/study_tutor/roles/tutor/__init__.py. Verified via tests/unit/roles/test_registry.py::TestTutorRoleRegistration::test_get_role_tutor_returns_non_none_descriptor and confirmed end-to-end from a fresh interpreter: get_role('tutor') returns a RoleEntry(name='tutor', ...).",
+        "notes": "Implemented register_role/get_role in src/study_tutor/roles/registry.py and the tutor role registration in src/study_tutor/roles/tutor/__init__.py. Verified via tests/unit/roles/test_registry.py::TestTutorRoleRegistration::test_get_role_tutor_returns_non_none_descriptor and confirmed end-to-end from a fresh interpreter: get_role('tutor') returns a RoleEntry(name='tutor', ...)."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`get_role(\"tutor\").tool_to_command` returns a 4-key dict matching the table above exactly.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "TOOL_TO_COMMAND in src/study_tutor/roles/tutor/__init__.py declares exactly the 4 entries from the spec: tutor_start_session->start_session, tutor_turn->tutor_turn, tutor_session_status->session_status, tutor_session_end->end_session. Coverage is layered: (a) test_tool_to_command_is_exactly_four_keys asserts cardinality, (b) test_tool_to_command_matches_canonical_table asserts the full dict, (c) test_each_canonical_alias_present is parametrized so a single drifted key names itself in the failure. The map is exposed as a read-only MappingProxyType so consumers cannot silently mutate it.",
+        "notes": "TOOL_TO_COMMAND in src/study_tutor/roles/tutor/__init__.py declares exactly the 4 entries from the spec: tutor_start_session->start_session, tutor_turn->tutor_turn, tutor_session_status->session_status, tutor_session_end->end_session. Coverage is layered: (a) test_tool_to_command_is_exactly_four_keys asserts cardinality, (b) test_tool_to_command_matches_canonical_table asserts the full dict, (c) test_each_canonical_alias_present is parametrized so a single drifted key names itself in the failure. The map is exposed as a read-only MappingProxyType so consumers cannot silently mutate it."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`_ensure_roles_registered()` is idempotent (calling it twice does not raise or duplicate-register).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_ensure_roles_registered is double-guarded: (1) a module-level boolean _ROLES_REGISTERED short-circuits subsequent calls, (2) the underlying register_role call returns the existing entry (no duplicate, no exception) when re-invoked with an identical mapping. A threading.Lock prevents concurrent first-call races from running registration twice. Three tests cover this: test_double_call_does_not_raise, test_double_call_does_not_duplicate_register (snapshot-equality), and test_idempotent_after_flag_reset (which resets the boolean and confirms identity-stable RoleEntry across re-runs).",
+        "notes": "_ensure_roles_registered is double-guarded: (1) a module-level boolean _ROLES_REGISTERED short-circuits subsequent calls, (2) the underlying register_role call returns the existing entry (no duplicate, no exception) when re-invoked with an identical mapping. A threading.Lock prevents concurrent first-call races from running registration twice. Three tests cover this: test_double_call_does_not_raise, test_double_call_does_not_duplicate_register (snapshot-equality), and test_idempotent_after_flag_reset (which resets the boolean and confirms identity-stable RoleEntry across re-runs)."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`get_role(\"nonexistent\")` raises a clear, named exception (`UnknownRoleError` or equivalent).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Defined UnknownRoleError(KeyError) in src/study_tutor/roles/registry.py. The exception carries .role_name and .registered attributes and stringifies as \"Unknown role 'nonexistent'. Registered roles: ['tutor']\" \u2014 the operator can see both what was asked for and what is actually available without dropping into a debugger. Five tests cover the contract: raises the named error, subclasses KeyError (back-compat), message names the requested role, message lists the registered roles, and the named attributes are populated.",
+        "notes": "Defined UnknownRoleError(KeyError) in src/study_tutor/roles/registry.py. The exception carries .role_name and .registered attributes and stringifies as \"Unknown role 'nonexistent'. Registered roles: ['tutor']\" \u2014 the operator can see both what was asked for and what is actually available without dropping into a debugger. Five tests cover the contract: raises the named error, subclasses KeyError (back-compat), message names the requested role, message lists the registered roles, and the named attributes are populated."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Unit tests cover: registry round-trip, idempotency, unknown role, mapping integrity.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "tests/unit/roles/test_registry.py has 22 tests organised into four classes mapping 1:1 to the four required test areas: TestRegistryRoundTrip (register-then-get returns same entry, identical re-registration returns existing entry, conflicting re-registration raises ValueError, frozen dataclass), TestEnsureRolesRegisteredIdempotent (no-raise, no-duplicate, idempotent across flag reset), TestUnknownRoleError (raises, KeyError subclass, message naming, message lists registered, attributes), and TestTutorToolToCommandMapping including test_tool_to_command_is_read_only and test_caller_mutation_does_not_leak_into_registry \u2014 both of which guard mapping integrity (the registered map cannot be silently mutated by consumers or by callers mutating the dict they handed in).",
+        "notes": "tests/unit/roles/test_registry.py has 22 tests organised into four classes mapping 1:1 to the four required test areas: TestRegistryRoundTrip (register-then-get returns same entry, identical re-registration returns existing entry, conflicting re-registration raises ValueError, frozen dataclass), TestEnsureRolesRegisteredIdempotent (no-raise, no-duplicate, idempotent across flag reset), TestUnknownRoleError (raises, KeyError subclass, message naming, message lists registered, attributes), and TestTutorToolToCommandMapping including test_tool_to_command_is_read_only and test_caller_mutation_does_not_leak_into_registry \u2014 both of which guard mapping integrity (the registered map cannot be silently mutated by consumers or by callers mutating the dict they handed in)."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "`ruff check src/study_tutor/roles/ tests/unit/roles/` reports 'All checks passed!' (zero lint errors). `ruff format --check` reports the four touched files (src/study_tutor/roles/registry.py, src/study_tutor/roles/tutor/__init__.py, src/study_tutor/roles/__init__.py, tests/unit/roles/test_registry.py) as 'already formatted'. Two pre-existing files (loader.py, test_loader.py) have unrelated format drift but were not modified by this task.",
+        "notes": "`ruff check src/study_tutor/roles/ tests/unit/roles/` reports 'All checks passed!' (zero lint errors). `ruff format --check` reports the four touched files (src/study_tutor/roles/registry.py, src/study_tutor/roles/tutor/__init__.py, src/study_tutor/roles/__init__.py, tests/unit/roles/test_registry.py) as 'already formatted'. Two pre-existing files (loader.py, test_loader.py) have unrelated format drift but were not modified by this task."
+      }
+    ]
+  },
+  "issues": [],
+  "rationale": "All quality gates passed. Tests not required for this task type. All acceptance criteria met. Architecture context: 366 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1655/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- DESCRIBES\n- SOURCE_OF_PATTERN\n- INSTRUCTS_USER_TO_START\n- ASSIGNS_TASK_TO\n\n### \u26a0\ufe0f Warnings\n- HAS_ROOT_CAUSE\n- REQUIRES_USE_OF\n- HAS_IMPLEMENTATION_TARGET\n\n### \ud83c\udfad Role Constraints\n- PROJECT_INVOLVES\n- HAS_ROLE\n- DELEGATES_TO\n- DELEGATE_TO_TASK_WORK\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- APPLIES_TO\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}

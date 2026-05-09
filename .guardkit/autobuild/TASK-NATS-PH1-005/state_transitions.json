@@ -1,0 +1,16 @@
+[
+  {
+    "task_id": "TASK-NATS-PH1-005",
+    "pre_path": "tasks/backlog/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md",
+    "timestamp": "2026-05-08T22:17:30.517977+00:00",
+    "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-NATS-PH1-005",
+    "pre_path": "tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md",
+    "timestamp": "2026-05-08T22:32:33.616659+00:00",
+    "kind": "design_approved_transition"
+  }
+]

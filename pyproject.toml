@@ -33,6 +33,13 @@ dependencies = [
     # #9 (edge search endpoints), #10 (backtick sanitiser), #12/#13 (FastMCP
     # host binding). See FORK-NOTES.md in the fork repo.
     "graphiti-core[falkordb] @ git+https://github.com/guardkit/graphiti.git@v0.29.5-guardkit.3",
+    # TASK-NATS-PH1-001 / FEAT-NATS (2026-05-08): nats-core is the shared
+    # contract library (Topics, AgentConfig, MessageEnvelope, CommandPayload,
+    # ResultPayload, NATSClient) used across the Jarvis Ship's Computer fleet.
+    # The runtime requirement is pinned here; the editable sibling install is
+    # wired through ``[tool.uv.sources]`` below, mirroring specialist-agent's
+    # pattern. See features/nats-fleet-integration/nats-fleet-scope-and-build-plan.md.
+    "nats-core>=0.4",
 ]
 
 [project.scripts]
@@ -84,6 +91,28 @@ dev = [
 # hatchling. Switch back to a PyPI version pin when the fork's fixes land
 # upstream and we re-base onto a release that ships them.
 allow-direct-references = true
+
+# ---------------------------------------------------------------------------
+# uv path sources — TASK-NATS-PH1-001 / FEAT-NATS (2026-05-08)
+# ---------------------------------------------------------------------------
+# ``nats-core`` is installed from the sibling repository at ``../nats-core/``.
+#
+# An unrelated package on PyPI also publishes the name ``nats-core``; its
+# Python module is ``nats`` (not ``nats_core``), so without this stanza
+# ``uv pip install`` resolves the runtime dep above (``nats-core>=0.4``) to
+# the wrong project and ``import nats_core`` fails with
+# ``ModuleNotFoundError: No module named 'nats_core'``. Mirrors the pattern
+# specialist-agent uses (see ``specialist-agent/pyproject.toml``), and the
+# canonical layout assumes ``nats-core`` is a sibling of ``study-tutor``:
+#
+#   …/appmilla_github/study-tutor/   ← this project
+#   …/appmilla_github/nats-core/     ← target of ``../nats-core``
+#
+# When the upstream namespace conflict is resolved (or the sibling repo is
+# republished under a different name), this stanza can be removed and the
+# runtime dep above will resolve from PyPI cleanly.
+[tool.uv.sources]
+nats-core = { path = "../nats-core", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/study_tutor"]

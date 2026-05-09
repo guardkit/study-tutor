@@ -1,0 +1,137 @@
+{
+  "task_id": "TASK-NATS-PH1-006",
+  "turn": 4,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/cli/test_serve_nats.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/cli/test_serve_nats.py::test_serve_adapter_starts_then_stops_when_shutdown_event_is_set PASSED [ 66%]\ntests/unit/cli/test_serve_nats.py::test_serve_adapter_registers_sigterm_and_sigint_handlers PASSED [ 83%]\ntests/unit/cli/test_serve_nats.py::test_serve_adapter_exits_1_when_start_raises PASSED [100%]\n/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/graphiti_core/driver/search_interface/search_interface.py:22: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/\n========================= 6 passed, 1 warning in 0.58s =========================",
+      "duration_seconds": 1.392275094985962
+    },
+    "requirements": {
+      "criteria_total": 5,
+      "criteria_met": 5,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`study-tutor serve-nats --help` prints flag surface matching `--nats`, `--agent-id`, `--log-level`.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Three click.option decorators (--nats, --agent-id, --log-level) on serve_nats() in src/study_tutor/cli/main.py. test_serve_nats_help_lists_required_flags asserts all three flag names appear in --help output and the command exits 0 \u2014 passes on Turn 4. Live verification via PYTHONPATH=src python -m study_tutor.cli.main serve-nats --help shows '--nats TEXT', '--agent-id TEXT', '--log-level [debug|info|warning|error]' all present in the Options block. The coach validation grep `study-tutor serve-nats --help | grep -E '(--nats|--agent-id|--log-level)'` returns matches for all three. Turn 4 unchanged \u2014 already verified on Turn 3.",
+      "notes": "Three click.option decorators (--nats, --agent-id, --log-level) on serve_nats() in src/study_tutor/cli/main.py. test_serve_nats_help_lists_required_flags asserts all three flag names appear in --help output and the command exits 0 \u2014 passes on Turn 4. Live verification via PYTHONPATH=src python -m study_tutor.cli.main serve-nats --help shows '--nats TEXT', '--agent-id TEXT', '--log-level [debug|info|warning|error]' all present in the Options block. The coach validation grep `study-tutor serve-nats --help | grep -E '(--nats|--agent-id|--log-level)'` returns matches for all three. Turn 4 unchanged \u2014 already verified on Turn 3."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "`study-tutor serve-nats --nats nats://localhost:4222` starts the adapter, blocks until SIGTERM, then shuts down cleanly.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "_serve_adapter() (cli/main.py:529-622) awaits adapter.start(), installs SIGINT/SIGTERM handlers via loop.add_signal_handler() (with NotImplementedError fallback), awaits a shared shutdown_event, and on completion runs adapter.stop() in a finally block followed by runtime_shutdown(write_helper). The serve_nats body wires --nats into config.nats.url before _build_nats_runtime() and runs the lifecycle via asyncio.run(_serve_adapter(...)). Verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set, test_serve_adapter_registers_sigterm_and_sigint_handlers, and the focused BDD scenario 'SIGTERM during an in-flight tutor turn drains the request before deregistration'. On Turn 4 the BDD scenario is now discoverable by the oracle's pytest invocation (the conftest collection bridge can resolve the sibling glue after the rename); oracle-style invocation reports 2 passed, 40 deselected.",
+      "notes": "_serve_adapter() (cli/main.py:529-622) awaits adapter.start(), installs SIGINT/SIGTERM handlers via loop.add_signal_handler() (with NotImplementedError fallback), awaits a shared shutdown_event, and on completion runs adapter.stop() in a finally block followed by runtime_shutdown(write_helper). The serve_nats body wires --nats into config.nats.url before _build_nats_runtime() and runs the lifecycle via asyncio.run(_serve_adapter(...)). Verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set, test_serve_adapter_registers_sigterm_and_sigint_handlers, and the focused BDD scenario 'SIGTERM during an in-flight tutor turn drains the request before deregistration'. On Turn 4 the BDD scenario is now discoverable by the oracle's pytest invocation (the conftest collection bridge can resolve the sibling glue after the rename); oracle-style invocation reports 2 passed, 40 deselected."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "SIGTERM during a running tutor process triggers `adapter.stop()` and the process exits with code 0 within the drain window (30s).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Signal handlers registered for SIGINT and SIGTERM both call _request_shutdown() (cli/main.py:575-577), which sets shutdown_event. The wait()->finally branch awaits adapter.stop() (NATSAdapter owns the 30s drain window per TASK-NATS-PH1-005 scope) before runtime_shutdown(). On the happy path no SystemExit is raised so click reports exit code 0. The BDD scenario @task:TASK-NATS-PH1-006 in the focused feature file is the load-bearing regression guard: a fake adapter starts an in-flight tutor_turn task, the When-step sets shutdown_event (SIGTERM-equivalent), and the Then-steps assert the in-flight task completed, the result was published, and the registry entry was removed, all within 30s. test_serve_adapter_registers_sigterm_and_sigint_handlers also pins the signal handler registration. Both scenarios pass on Turn 4 via the oracle-style pytest invocation (fixed by renaming the glue file to match conftest's underscore convention).",
+      "notes": "Signal handlers registered for SIGINT and SIGTERM both call _request_shutdown() (cli/main.py:575-577), which sets shutdown_event. The wait()->finally branch awaits adapter.stop() (NATSAdapter owns the 30s drain window per TASK-NATS-PH1-005 scope) before runtime_shutdown(). On the happy path no SystemExit is raised so click reports exit code 0. The BDD scenario @task:TASK-NATS-PH1-006 in the focused feature file is the load-bearing regression guard: a fake adapter starts an in-flight tutor_turn task, the When-step sets shutdown_event (SIGTERM-equivalent), and the Then-steps assert the in-flight task completed, the result was published, and the registry entry was removed, all within 30s. test_serve_adapter_registers_sigterm_and_sigint_handlers also pins the signal handler registration. Both scenarios pass on Turn 4 via the oracle-style pytest invocation (fixed by renaming the glue file to match conftest's underscore convention)."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "If `nats-core`'s `AgentConfig` validation fails (e.g. invalid `NATS_URL`), the CLI exits 1 with a clear error message.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "_load_agent_config() (cli/main.py:423-446) wraps any AgentConfig() construction failure in a typed _AgentConfigValidationError. The serve_nats body (cli/main.py:681-688) catches that exception, emits '[study-tutor] Error: AgentConfig validation failed: {exc.cause}' to stderr (preserving the underlying pydantic field names), and raises SystemExit(1). _serve_adapter additionally exits 1 when adapter.start() raises (cli/main.py:579-593) with a separate banner ('[study-tutor] Error: failed to start NATSAdapter: {exc}') and a best-effort stop(). Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises \u2014 both pass on Turn 4. Turn 4 unchanged \u2014 already verified on Turn 3.",
+      "notes": "_load_agent_config() (cli/main.py:423-446) wraps any AgentConfig() construction failure in a typed _AgentConfigValidationError. The serve_nats body (cli/main.py:681-688) catches that exception, emits '[study-tutor] Error: AgentConfig validation failed: {exc.cause}' to stderr (preserving the underlying pydantic field names), and raises SystemExit(1). _serve_adapter additionally exits 1 when adapter.start() raises (cli/main.py:579-593) with a separate banner ('[study-tutor] Error: failed to start NATSAdapter: {exc}') and a best-effort stop(). Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises \u2014 both pass on Turn 4. Turn 4 unchanged \u2014 already verified on Turn 3."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "`ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py` reports 'All checks passed!' on Turn 4 (zero violations). Includes the renamed-and-edited BDD glue file. Matches the project-configured lint config in pyproject.toml that the coach validation block in the task file references.",
+      "notes": "`ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py` reports 'All checks passed!' on Turn 4 (zero violations). Includes the renamed-and-edited BDD glue file. Matches the project-configured lint config in pyproject.toml that the coach validation block in the task file references."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`study-tutor serve-nats --help` prints flag surface matching `--nats`, `--agent-id`, `--log-level`.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Three click.option decorators (--nats, --agent-id, --log-level) on serve_nats() in src/study_tutor/cli/main.py. test_serve_nats_help_lists_required_flags asserts all three flag names appear in --help output and the command exits 0 \u2014 passes on Turn 4. Live verification via PYTHONPATH=src python -m study_tutor.cli.main serve-nats --help shows '--nats TEXT', '--agent-id TEXT', '--log-level [debug|info|warning|error]' all present in the Options block. The coach validation grep `study-tutor serve-nats --help | grep -E '(--nats|--agent-id|--log-level)'` returns matches for all three. Turn 4 unchanged \u2014 already verified on Turn 3.",
+        "notes": "Three click.option decorators (--nats, --agent-id, --log-level) on serve_nats() in src/study_tutor/cli/main.py. test_serve_nats_help_lists_required_flags asserts all three flag names appear in --help output and the command exits 0 \u2014 passes on Turn 4. Live verification via PYTHONPATH=src python -m study_tutor.cli.main serve-nats --help shows '--nats TEXT', '--agent-id TEXT', '--log-level [debug|info|warning|error]' all present in the Options block. The coach validation grep `study-tutor serve-nats --help | grep -E '(--nats|--agent-id|--log-level)'` returns matches for all three. Turn 4 unchanged \u2014 already verified on Turn 3."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`study-tutor serve-nats --nats nats://localhost:4222` starts the adapter, blocks until SIGTERM, then shuts down cleanly.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_serve_adapter() (cli/main.py:529-622) awaits adapter.start(), installs SIGINT/SIGTERM handlers via loop.add_signal_handler() (with NotImplementedError fallback), awaits a shared shutdown_event, and on completion runs adapter.stop() in a finally block followed by runtime_shutdown(write_helper). The serve_nats body wires --nats into config.nats.url before _build_nats_runtime() and runs the lifecycle via asyncio.run(_serve_adapter(...)). Verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set, test_serve_adapter_registers_sigterm_and_sigint_handlers, and the focused BDD scenario 'SIGTERM during an in-flight tutor turn drains the request before deregistration'. On Turn 4 the BDD scenario is now discoverable by the oracle's pytest invocation (the conftest collection bridge can resolve the sibling glue after the rename); oracle-style invocation reports 2 passed, 40 deselected.",
+        "notes": "_serve_adapter() (cli/main.py:529-622) awaits adapter.start(), installs SIGINT/SIGTERM handlers via loop.add_signal_handler() (with NotImplementedError fallback), awaits a shared shutdown_event, and on completion runs adapter.stop() in a finally block followed by runtime_shutdown(write_helper). The serve_nats body wires --nats into config.nats.url before _build_nats_runtime() and runs the lifecycle via asyncio.run(_serve_adapter(...)). Verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set, test_serve_adapter_registers_sigterm_and_sigint_handlers, and the focused BDD scenario 'SIGTERM during an in-flight tutor turn drains the request before deregistration'. On Turn 4 the BDD scenario is now discoverable by the oracle's pytest invocation (the conftest collection bridge can resolve the sibling glue after the rename); oracle-style invocation reports 2 passed, 40 deselected."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "SIGTERM during a running tutor process triggers `adapter.stop()` and the process exits with code 0 within the drain window (30s).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Signal handlers registered for SIGINT and SIGTERM both call _request_shutdown() (cli/main.py:575-577), which sets shutdown_event. The wait()->finally branch awaits adapter.stop() (NATSAdapter owns the 30s drain window per TASK-NATS-PH1-005 scope) before runtime_shutdown(). On the happy path no SystemExit is raised so click reports exit code 0. The BDD scenario @task:TASK-NATS-PH1-006 in the focused feature file is the load-bearing regression guard: a fake adapter starts an in-flight tutor_turn task, the When-step sets shutdown_event (SIGTERM-equivalent), and the Then-steps assert the in-flight task completed, the result was published, and the registry entry was removed, all within 30s. test_serve_adapter_registers_sigterm_and_sigint_handlers also pins the signal handler registration. Both scenarios pass on Turn 4 via the oracle-style pytest invocation (fixed by renaming the glue file to match conftest's underscore convention).",
+        "notes": "Signal handlers registered for SIGINT and SIGTERM both call _request_shutdown() (cli/main.py:575-577), which sets shutdown_event. The wait()->finally branch awaits adapter.stop() (NATSAdapter owns the 30s drain window per TASK-NATS-PH1-005 scope) before runtime_shutdown(). On the happy path no SystemExit is raised so click reports exit code 0. The BDD scenario @task:TASK-NATS-PH1-006 in the focused feature file is the load-bearing regression guard: a fake adapter starts an in-flight tutor_turn task, the When-step sets shutdown_event (SIGTERM-equivalent), and the Then-steps assert the in-flight task completed, the result was published, and the registry entry was removed, all within 30s. test_serve_adapter_registers_sigterm_and_sigint_handlers also pins the signal handler registration. Both scenarios pass on Turn 4 via the oracle-style pytest invocation (fixed by renaming the glue file to match conftest's underscore convention)."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "If `nats-core`'s `AgentConfig` validation fails (e.g. invalid `NATS_URL`), the CLI exits 1 with a clear error message.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_load_agent_config() (cli/main.py:423-446) wraps any AgentConfig() construction failure in a typed _AgentConfigValidationError. The serve_nats body (cli/main.py:681-688) catches that exception, emits '[study-tutor] Error: AgentConfig validation failed: {exc.cause}' to stderr (preserving the underlying pydantic field names), and raises SystemExit(1). _serve_adapter additionally exits 1 when adapter.start() raises (cli/main.py:579-593) with a separate banner ('[study-tutor] Error: failed to start NATSAdapter: {exc}') and a best-effort stop(). Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises \u2014 both pass on Turn 4. Turn 4 unchanged \u2014 already verified on Turn 3.",
+        "notes": "_load_agent_config() (cli/main.py:423-446) wraps any AgentConfig() construction failure in a typed _AgentConfigValidationError. The serve_nats body (cli/main.py:681-688) catches that exception, emits '[study-tutor] Error: AgentConfig validation failed: {exc.cause}' to stderr (preserving the underlying pydantic field names), and raises SystemExit(1). _serve_adapter additionally exits 1 when adapter.start() raises (cli/main.py:579-593) with a separate banner ('[study-tutor] Error: failed to start NATSAdapter: {exc}') and a best-effort stop(). Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises \u2014 both pass on Turn 4. Turn 4 unchanged \u2014 already verified on Turn 3."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "`ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py` reports 'All checks passed!' on Turn 4 (zero violations). Includes the renamed-and-edited BDD glue file. Matches the project-configured lint config in pyproject.toml that the coach validation block in the task file references.",
+        "notes": "`ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py` reports 'All checks passed!' on Turn 4 (zero violations). Includes the renamed-and-edited BDD glue file. Matches the project-configured lint config in pyproject.toml that the coach validation block in the task file references."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 1143 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 2232/7892 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- INSTRUCTS_USER_TO_START\n- CALLED_BY\n- ASSIGNS_TASK_TO\n- HAS_ERROR_HANDLER_FOR\n\n### \u26a0\ufe0f Warnings\n- HAS_ROOT_CAUSE\n- USES_FIX\n- FIX recommendation\n- OBSERVED_FAILURE symptom_of\n- ALTERNATIVE_TO\n\n### \ud83c\udfad Role Constraints\n- DELEGATE_TO_TASK_WORK\n- HAS_ROLE_MUST_DO\n- DELEGATES_TO\n- MUST_PERFORM\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- WHEN_TO_USE\n- IS_INVOCATION_METHOD_FOR\n\n\n## Previous Turn Summary (Turn 3)\n**What was attempted**: Implementation attempt\n**Player decision**: feedback\n**Coach decision**: feedback\n**Coach feedback**: - Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- BDD oracle: 1 scenario(s) failed during pytest-bdd execution. Implementation does not satisfy the Gherkin specification.\n\n**Acceptance Criteria Status**:\n  \u25cb AC-001: verified\n  \u25cb AC-002: verified\n  \u25cb AC-003: verified\n  \u25cb AC-004: verified\n  \u25cb AC-005: verified",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "task_id": "TASK-NATS-PH1-001",
+  "timestamp": "2026-05-08T20:35:18.344380",
+  "completed": true,
+  "success": true,
+  "implementation_mode": "direct",
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 1,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": true,
+    "quality_gates_relaxed": true,
+    "all_passed": true
+  },
+  "files_modified": [
+    "pyproject.toml"
+  ],
+  "files_created": [
+    "src/study_tutor/adapters/__init__.py",
+    "tests/unit/adapters/__init__.py",
+    "tests/unit/adapters/test_scaffolding.py"
+  ],
+  "tests_written": [
+    "tests/unit/adapters/test_scaffolding.py"
+  ],
+  "requirements_addressed": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005"
+  ],
+  "requirements_met": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005"
+  ],
+  "summary": "Direct mode implementation completed successfully",
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] `nats-core` appears in `pyproject.toml` `[project] dependencies` (or `[tool.uv.sources]`) as an editable sibling install.",
+      "status": "complete",
+      "evidence": "Added `nats-core>=0.4` to `[project] dependencies` in pyproject.toml and added `[tool.uv.sources]` stanza wiring `nats-core = { path = '../nats-core', editable = true }`, mirroring specialist-agent/pyproject.toml. Both stanzas carry comments referencing TASK-NATS-PH1-001 and explaining the PyPI-name-collision motivation for the path source.",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] `uv sync` (or `pip install -e .`) succeeds without errors.",
+      "status": "complete",
+      "evidence": "Ran `uv sync` from the worktree root; output: 'Resolved 179 packages in 1.16s ... Installed 3 packages in 3ms + nats-core==0.4.0 (from file://.../nats-core) + nats-py==2.14.0 ~ study-tutor==0.1.0'. Exit status 0; no errors.",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] `python -c \"from nats_core import Topics, AgentConfig; from nats_core.events._agent import CommandPayload, ResultPayload\"` runs without ImportError.",
+      "status": "complete",
+      "evidence": "Ran the exact command verbatim under `uv run python -c ...`; exit status 0, no ImportError. Pinned by tests/unit/adapters/test_scaffolding.py::test_nats_core_topics_and_agent_config_are_importable and ::test_nats_core_event_payloads_are_importable (both PASSED).",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] `python -c \"import study_tutor.adapters\"` runs without ImportError.",
+      "status": "complete",
+      "evidence": "Ran `uv run python -c 'import study_tutor.adapters'`; exit status 0, no ImportError. Created src/study_tutor/adapters/__init__.py with a docstring describing the package's role. Pinned by tests/unit/adapters/test_scaffolding.py::test_study_tutor_adapters_package_is_importable (PASSED).",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/__init__.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "[ ] All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `uv run ruff check src/study_tutor/adapters/ tests/unit/adapters/ pyproject.toml` -> 'All checks passed!'. Ran `uv run ruff format --check src/study_tutor/adapters/ tests/unit/adapters/` -> '3 files already formatted'. Zero lint or format errors on any modified or created file.",
+      "test_file": "tests/unit/adapters/test_scaffolding.py",
+      "implementation_files": [
+        "pyproject.toml",
+        "src/study_tutor/adapters/__init__.py",
+        "tests/unit/adapters/__init__.py",
+        "tests/unit/adapters/test_scaffolding.py"
+      ]
+    }
+  ]
+}

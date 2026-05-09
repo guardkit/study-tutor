@@ -1,0 +1,118 @@
+{
+  "task_id": "TASK-NATS-PH1-004",
+  "turn": 1,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-NATS-PH1-006/checkpoints.json"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-NATS-PH1-004-implementation-plan.md",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/turn_context.json",
+    ".guardkit/bdd/TASK-NATS-PH1-004_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py",
+    "tasks/design_approved/TASK-NATS-PH1-004-command-router.md"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001 Bug #2 alias resolution regression guard",
+    "AC-002 canonical passthrough",
+    "AC-003 Bug #1 reply_to dual-publish regression guard",
+    "AC-004 reply_to=None canonical-only",
+    "AC-005 unknown command surfaces error ResultPayload listing supported commands",
+    "AC-006 handler exception caught and surfaced",
+    "AC-007 ruff lint clean"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 46,
+  "sdk_max_turns": 160,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py"
+  ],
+  "tests_passed_count": 9,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Unit test: on_command with command=\"tutor_start_session\" resolves to start_session via tool_to_command and invokes MCPAdapter.tutor_start_session (Bug #2 regression guard).",
+      "status": "complete",
+      "evidence": "Implemented Bug #2 alias resolution in CommandRouter._dispatch_command: `resolved_command = self.tool_to_command.get(command, command)` runs before the _command_map lookup. Test test_on_command_alias_resolves_tutor_start_session passes \u2014 sends a CommandPayload with command='tutor_start_session', asserts mcp_adapter.tutor_start_session is awaited once with student_id='lilymay', and that no other handler fires. Pulls the alias map from get_role('tutor').tool_to_command per the implementation note's single-source-of-truth requirement.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Unit test: on_command with command=\"start_session\" (canonical) bypasses the alias map and works directly (passthrough behaviour).",
+      "status": "complete",
+      "evidence": "The .get(c, c) form is the passthrough idiom: canonical names are absent from tool_to_command (which only maps MCP tool names) so they fall through unchanged. Test test_on_command_canonical_command_passes_through sends command='start_session' and asserts the same adapter.tutor_start_session call lands. Both AC-001 and AC-002 hold simultaneously without duplicating dispatch keys.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Unit test: _publish_result with reply_to=\"_INBOX.abc\" calls client.publish_raw(\"_INBOX.abc\", ...) AND publishes to agents.result.gcse-tutor (Bug #1 regression guard).",
+      "status": "complete",
+      "evidence": "Implemented Bug #1 dual-publish in CommandRouter._publish_result: when reply_to is set, raw-publishes ResultPayload.model_dump_json().encode() to the inbox, then ALWAYS also publishes the canonical envelope to Topics.resolve(Topics.Agents.RESULT, agent_id='gcse-tutor') = 'agents.result.gcse-tutor'. Test test_publish_result_with_reply_to_publishes_both asserts both client.publish_raw and client.publish are awaited; raw body is parseable as ResultPayload (raw on the wire, not envelope-wrapped) \u2014 the exact wire format jarvis's dispatch.py expects.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Unit test: _publish_result with reply_to=None only publishes to the canonical result topic.",
+      "status": "complete",
+      "evidence": "Test test_publish_result_without_reply_to_only_canonical asserts client.publish_raw is NOT awaited and client.publish is awaited exactly once on subject 'agents.result.gcse-tutor'. The reply_to=None branch in _publish_result skips the raw-publish entirely and runs only the canonical envelope publish path.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Unit test: unknown command name returns ResultPayload(success=False, error=...) and the error message includes the list of supported commands.",
+      "status": "complete",
+      "evidence": "Implemented UnsupportedCommandError(KeyError) raised by _dispatch_command for unknown commands; on_command catches it and synthesises ResultPayload(success=False, result={'error': ..., 'error_type': 'UnsupportedCommandError'}). Two tests pin this: test_dispatch_command_raises_unsupported_command_error verifies the inner contract (raises with sorted supported list); test_on_command_unknown_command_returns_error_result verifies the outer contract (no propagation, error string contains 'bogus_command' and every canonical command name: start_session, tutor_turn, session_status, end_session).",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "Unit test: handler exception is caught and surfaces as ResultPayload(success=False, error=...) (no propagation past on_command).",
+      "status": "complete",
+      "evidence": "Implemented boundary catch in CommandRouter._safe_invoke: any exception from the underlying MCP method is captured into ResultPayload(success=False, result={'error': str(exc), 'error_type': type(exc).__name__}); the original traceback goes to logger.exception. Test test_on_command_handler_exception_caught wires mcp_adapter.tutor_start_session.side_effect = RuntimeError('boom'), calls on_command (must not raise), and asserts the published ResultPayload.success is False with 'boom' in error and error_type='RuntimeError'.",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `ruff check src/study_tutor/adapters/command_router.py tests/unit/adapters/test_command_router.py` \u2014 output: 'All checks passed!'. Both files use `from __future__ import annotations`, type hints, docstrings on every public function, and follow the existing module patterns in src/study_tutor (e.g. logger = logging.getLogger(__name__), module-level __all__).",
+      "test_file": "tests/unit/adapters/test_command_router.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    }
+  ]
+}

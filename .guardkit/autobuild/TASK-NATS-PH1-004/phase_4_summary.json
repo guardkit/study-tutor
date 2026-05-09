@@ -1,0 +1,7 @@
+{
+  "tests_run": 9,
+  "tests_failed": 0,
+  "coverage_pct": 91.0,
+  "output_summary": "9/9 pytest tests passed in tests/unit/adapters/test_command_router.py; 91% line coverage on src/study_tutor/adapters/command_router.py",
+  "quality_gates_passed": true
+}

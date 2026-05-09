@@ -1,0 +1,190 @@
+{
+  "task_id": "TASK-NATS-PH1-004",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/adapters/test_command_router.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/adapters/test_command_router.py::test_dispatch_command_raises_unsupported_command_error PASSED [ 66%]\ntests/unit/adapters/test_command_router.py::test_on_command_handler_exception_caught PASSED [ 77%]\ntests/unit/adapters/test_command_router.py::test_on_command_ignores_non_command_event_type PASSED [ 88%]\ntests/unit/adapters/test_command_router.py::test_on_command_with_reply_to_dual_publishes_aliased_command PASSED [100%]\n============================== 9 passed in 0.14s ===============================",
+      "duration_seconds": 0.7183089256286621
+    },
+    "requirements": {
+      "criteria_total": 7,
+      "criteria_met": 7,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Unit test: `on_command` with `command=\"tutor_start_session\"` resolves to `start_session` via `tool_to_command` and invokes `MCPAdapter.tutor_start_session` (Bug #2 regression guard).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implemented Bug #2 alias resolution in CommandRouter._dispatch_command: `resolved_command = self.tool_to_command.get(command, command)` runs before the _command_map lookup. Test test_on_command_alias_resolves_tutor_start_session passes \u2014 sends a CommandPayload with command='tutor_start_session', asserts mcp_adapter.tutor_start_session is awaited once with student_id='lilymay', and that no other handler fires. Pulls the alias map from get_role('tutor').tool_to_command per the implementation note's single-source-of-truth requirement.",
+      "notes": "Implemented Bug #2 alias resolution in CommandRouter._dispatch_command: `resolved_command = self.tool_to_command.get(command, command)` runs before the _command_map lookup. Test test_on_command_alias_resolves_tutor_start_session passes \u2014 sends a CommandPayload with command='tutor_start_session', asserts mcp_adapter.tutor_start_session is awaited once with student_id='lilymay', and that no other handler fires. Pulls the alias map from get_role('tutor').tool_to_command per the implementation note's single-source-of-truth requirement."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Unit test: `on_command` with `command=\"start_session\"` (canonical) bypasses the alias map and works directly (passthrough behaviour).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "The .get(c, c) form is the passthrough idiom: canonical names are absent from tool_to_command (which only maps MCP tool names) so they fall through unchanged. Test test_on_command_canonical_command_passes_through sends command='start_session' and asserts the same adapter.tutor_start_session call lands. Both AC-001 and AC-002 hold simultaneously without duplicating dispatch keys.",
+      "notes": "The .get(c, c) form is the passthrough idiom: canonical names are absent from tool_to_command (which only maps MCP tool names) so they fall through unchanged. Test test_on_command_canonical_command_passes_through sends command='start_session' and asserts the same adapter.tutor_start_session call lands. Both AC-001 and AC-002 hold simultaneously without duplicating dispatch keys."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Unit test: `_publish_result` with `reply_to=\"_INBOX.abc\"` calls `client.publish_raw(\"_INBOX.abc\", ...)` AND publishes to `agents.result.gcse-tutor` (Bug #1 regression guard).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implemented Bug #1 dual-publish in CommandRouter._publish_result: when reply_to is set, raw-publishes ResultPayload.model_dump_json().encode() to the inbox, then ALWAYS also publishes the canonical envelope to Topics.resolve(Topics.Agents.RESULT, agent_id='gcse-tutor') = 'agents.result.gcse-tutor'. Test test_publish_result_with_reply_to_publishes_both asserts both client.publish_raw and client.publish are awaited; raw body is parseable as ResultPayload (raw on the wire, not envelope-wrapped) \u2014 the exact wire format jarvis's dispatch.py expects.",
+      "notes": "Implemented Bug #1 dual-publish in CommandRouter._publish_result: when reply_to is set, raw-publishes ResultPayload.model_dump_json().encode() to the inbox, then ALWAYS also publishes the canonical envelope to Topics.resolve(Topics.Agents.RESULT, agent_id='gcse-tutor') = 'agents.result.gcse-tutor'. Test test_publish_result_with_reply_to_publishes_both asserts both client.publish_raw and client.publish are awaited; raw body is parseable as ResultPayload (raw on the wire, not envelope-wrapped) \u2014 the exact wire format jarvis's dispatch.py expects."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Unit test: `_publish_result` with `reply_to=None` only publishes to the canonical result topic.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Test test_publish_result_without_reply_to_only_canonical asserts client.publish_raw is NOT awaited and client.publish is awaited exactly once on subject 'agents.result.gcse-tutor'. The reply_to=None branch in _publish_result skips the raw-publish entirely and runs only the canonical envelope publish path.",
+      "notes": "Test test_publish_result_without_reply_to_only_canonical asserts client.publish_raw is NOT awaited and client.publish is awaited exactly once on subject 'agents.result.gcse-tutor'. The reply_to=None branch in _publish_result skips the raw-publish entirely and runs only the canonical envelope publish path."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Unit test: unknown command name returns `ResultPayload(success=False, error=...)` and the error message includes the list of supported commands.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implemented UnsupportedCommandError(KeyError) raised by _dispatch_command for unknown commands; on_command catches it and synthesises ResultPayload(success=False, result={'error': ..., 'error_type': 'UnsupportedCommandError'}). Two tests pin this: test_dispatch_command_raises_unsupported_command_error verifies the inner contract (raises with sorted supported list); test_on_command_unknown_command_returns_error_result verifies the outer contract (no propagation, error string contains 'bogus_command' and every canonical command name: start_session, tutor_turn, session_status, end_session).",
+      "notes": "Implemented UnsupportedCommandError(KeyError) raised by _dispatch_command for unknown commands; on_command catches it and synthesises ResultPayload(success=False, result={'error': ..., 'error_type': 'UnsupportedCommandError'}). Two tests pin this: test_dispatch_command_raises_unsupported_command_error verifies the inner contract (raises with sorted supported list); test_on_command_unknown_command_returns_error_result verifies the outer contract (no propagation, error string contains 'bogus_command' and every canonical command name: start_session, tutor_turn, session_status, end_session)."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "Unit test: handler exception is caught and surfaces as `ResultPayload(success=False, error=...)` (no propagation past `on_command`).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Implemented boundary catch in CommandRouter._safe_invoke: any exception from the underlying MCP method is captured into ResultPayload(success=False, result={'error': str(exc), 'error_type': type(exc).__name__}); the original traceback goes to logger.exception. Test test_on_command_handler_exception_caught wires mcp_adapter.tutor_start_session.side_effect = RuntimeError('boom'), calls on_command (must not raise), and asserts the published ResultPayload.success is False with 'boom' in error and error_type='RuntimeError'.",
+      "notes": "Implemented boundary catch in CommandRouter._safe_invoke: any exception from the underlying MCP method is captured into ResultPayload(success=False, result={'error': str(exc), 'error_type': type(exc).__name__}); the original traceback goes to logger.exception. Test test_on_command_handler_exception_caught wires mcp_adapter.tutor_start_session.side_effect = RuntimeError('boom'), calls on_command (must not raise), and asserts the published ResultPayload.success is False with 'boom' in error and error_type='RuntimeError'."
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Ran `ruff check src/study_tutor/adapters/command_router.py tests/unit/adapters/test_command_router.py` \u2014 output: 'All checks passed!'. Both files use `from __future__ import annotations`, type hints, docstrings on every public function, and follow the existing module patterns in src/study_tutor (e.g. logger = logging.getLogger(__name__), module-level __all__).",
+      "notes": "Ran `ruff check src/study_tutor/adapters/command_router.py tests/unit/adapters/test_command_router.py` \u2014 output: 'All checks passed!'. Both files use `from __future__ import annotations`, type hints, docstrings on every public function, and follow the existing module patterns in src/study_tutor (e.g. logger = logging.getLogger(__name__), module-level __all__)."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Unit test: `on_command` with `command=\"tutor_start_session\"` resolves to `start_session` via `tool_to_command` and invokes `MCPAdapter.tutor_start_session` (Bug #2 regression guard).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented Bug #2 alias resolution in CommandRouter._dispatch_command: `resolved_command = self.tool_to_command.get(command, command)` runs before the _command_map lookup. Test test_on_command_alias_resolves_tutor_start_session passes \u2014 sends a CommandPayload with command='tutor_start_session', asserts mcp_adapter.tutor_start_session is awaited once with student_id='lilymay', and that no other handler fires. Pulls the alias map from get_role('tutor').tool_to_command per the implementation note's single-source-of-truth requirement.",
+        "notes": "Implemented Bug #2 alias resolution in CommandRouter._dispatch_command: `resolved_command = self.tool_to_command.get(command, command)` runs before the _command_map lookup. Test test_on_command_alias_resolves_tutor_start_session passes \u2014 sends a CommandPayload with command='tutor_start_session', asserts mcp_adapter.tutor_start_session is awaited once with student_id='lilymay', and that no other handler fires. Pulls the alias map from get_role('tutor').tool_to_command per the implementation note's single-source-of-truth requirement."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Unit test: `on_command` with `command=\"start_session\"` (canonical) bypasses the alias map and works directly (passthrough behaviour).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The .get(c, c) form is the passthrough idiom: canonical names are absent from tool_to_command (which only maps MCP tool names) so they fall through unchanged. Test test_on_command_canonical_command_passes_through sends command='start_session' and asserts the same adapter.tutor_start_session call lands. Both AC-001 and AC-002 hold simultaneously without duplicating dispatch keys.",
+        "notes": "The .get(c, c) form is the passthrough idiom: canonical names are absent from tool_to_command (which only maps MCP tool names) so they fall through unchanged. Test test_on_command_canonical_command_passes_through sends command='start_session' and asserts the same adapter.tutor_start_session call lands. Both AC-001 and AC-002 hold simultaneously without duplicating dispatch keys."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Unit test: `_publish_result` with `reply_to=\"_INBOX.abc\"` calls `client.publish_raw(\"_INBOX.abc\", ...)` AND publishes to `agents.result.gcse-tutor` (Bug #1 regression guard).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented Bug #1 dual-publish in CommandRouter._publish_result: when reply_to is set, raw-publishes ResultPayload.model_dump_json().encode() to the inbox, then ALWAYS also publishes the canonical envelope to Topics.resolve(Topics.Agents.RESULT, agent_id='gcse-tutor') = 'agents.result.gcse-tutor'. Test test_publish_result_with_reply_to_publishes_both asserts both client.publish_raw and client.publish are awaited; raw body is parseable as ResultPayload (raw on the wire, not envelope-wrapped) \u2014 the exact wire format jarvis's dispatch.py expects.",
+        "notes": "Implemented Bug #1 dual-publish in CommandRouter._publish_result: when reply_to is set, raw-publishes ResultPayload.model_dump_json().encode() to the inbox, then ALWAYS also publishes the canonical envelope to Topics.resolve(Topics.Agents.RESULT, agent_id='gcse-tutor') = 'agents.result.gcse-tutor'. Test test_publish_result_with_reply_to_publishes_both asserts both client.publish_raw and client.publish are awaited; raw body is parseable as ResultPayload (raw on the wire, not envelope-wrapped) \u2014 the exact wire format jarvis's dispatch.py expects."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Unit test: `_publish_result` with `reply_to=None` only publishes to the canonical result topic.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Test test_publish_result_without_reply_to_only_canonical asserts client.publish_raw is NOT awaited and client.publish is awaited exactly once on subject 'agents.result.gcse-tutor'. The reply_to=None branch in _publish_result skips the raw-publish entirely and runs only the canonical envelope publish path.",
+        "notes": "Test test_publish_result_without_reply_to_only_canonical asserts client.publish_raw is NOT awaited and client.publish is awaited exactly once on subject 'agents.result.gcse-tutor'. The reply_to=None branch in _publish_result skips the raw-publish entirely and runs only the canonical envelope publish path."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Unit test: unknown command name returns `ResultPayload(success=False, error=...)` and the error message includes the list of supported commands.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented UnsupportedCommandError(KeyError) raised by _dispatch_command for unknown commands; on_command catches it and synthesises ResultPayload(success=False, result={'error': ..., 'error_type': 'UnsupportedCommandError'}). Two tests pin this: test_dispatch_command_raises_unsupported_command_error verifies the inner contract (raises with sorted supported list); test_on_command_unknown_command_returns_error_result verifies the outer contract (no propagation, error string contains 'bogus_command' and every canonical command name: start_session, tutor_turn, session_status, end_session).",
+        "notes": "Implemented UnsupportedCommandError(KeyError) raised by _dispatch_command for unknown commands; on_command catches it and synthesises ResultPayload(success=False, result={'error': ..., 'error_type': 'UnsupportedCommandError'}). Two tests pin this: test_dispatch_command_raises_unsupported_command_error verifies the inner contract (raises with sorted supported list); test_on_command_unknown_command_returns_error_result verifies the outer contract (no propagation, error string contains 'bogus_command' and every canonical command name: start_session, tutor_turn, session_status, end_session)."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "Unit test: handler exception is caught and surfaces as `ResultPayload(success=False, error=...)` (no propagation past `on_command`).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented boundary catch in CommandRouter._safe_invoke: any exception from the underlying MCP method is captured into ResultPayload(success=False, result={'error': str(exc), 'error_type': type(exc).__name__}); the original traceback goes to logger.exception. Test test_on_command_handler_exception_caught wires mcp_adapter.tutor_start_session.side_effect = RuntimeError('boom'), calls on_command (must not raise), and asserts the published ResultPayload.success is False with 'boom' in error and error_type='RuntimeError'.",
+        "notes": "Implemented boundary catch in CommandRouter._safe_invoke: any exception from the underlying MCP method is captured into ResultPayload(success=False, result={'error': str(exc), 'error_type': type(exc).__name__}); the original traceback goes to logger.exception. Test test_on_command_handler_exception_caught wires mcp_adapter.tutor_start_session.side_effect = RuntimeError('boom'), calls on_command (must not raise), and asserts the published ResultPayload.success is False with 'boom' in error and error_type='RuntimeError'."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran `ruff check src/study_tutor/adapters/command_router.py tests/unit/adapters/test_command_router.py` \u2014 output: 'All checks passed!'. Both files use `from __future__ import annotations`, type hints, docstrings on every public function, and follow the existing module patterns in src/study_tutor (e.g. logger = logging.getLogger(__name__), module-level __all__).",
+        "notes": "Ran `ruff check src/study_tutor/adapters/command_router.py tests/unit/adapters/test_command_router.py` \u2014 output: 'All checks passed!'. Both files use `from __future__ import annotations`, type hints, docstrings on every public function, and follow the existing module patterns in src/study_tutor (e.g. logger = logging.getLogger(__name__), module-level __all__)."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "consider",
+      "category": "seam_test_recommendation",
+      "description": "No seam tests detected for cross-boundary feature. Consider adding seam/contract/boundary tests to validate technology boundary interactions. This is a recommendation, not a blocking gate."
+    },
+    {
+      "severity": "should_fix",
+      "category": "bdd_pending",
+      "description": "BDD oracle: 8 scenario(s) reference step definitions that are not yet implemented. These do NOT block approval but should be implemented to make the scenarios runnable.",
+      "scenarios_pending": 8,
+      "feature_files": [
+        "features/nats-fleet-integration/nats-fleet-integration.feature"
+      ],
+      "pending_examples": [
+        "test_a_command_with_an_unknown_name_is_rejected_with_a_list_of_supported_commands \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_malformed_command_envelope_is_rejected_without_disrupting_the_adapter \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_command_targeted_at_another_agent_is_not_processed_by_the_tutor \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_toolname_dispatch_resolves_to_the_canonical_command_through_the_tool_to_command_map[tutor_start_session-start_session] \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_toolname_dispatch_resolves_to_the_canonical_command_through_the_tool_to_command_map[tutor_turn-tutor_turn] \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      ]
+    }
+  ],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 364 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1708/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- EXECUTES_STEP\n- INSTRUCTS_USER_TO_START\n- ASSIGNS_TASK_TO\n- SOURCE_PATTERN\n\n### \u26a0\ufe0f Warnings\n- HAS_ROOT_CAUSE\n- USED_WITH\n- HAS_IMPLEMENTATION_TARGET\n\n### \ud83c\udfad Role Constraints\n- DELEGATES_TO\n- DELEGATE_TO_TASK_WORK\n- MUST_NOT_MODIFY\n- DELEGATES_TO\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- APPLIES_TO\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}

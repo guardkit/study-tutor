@@ -1,0 +1,110 @@
+{
+  "task_id": "TASK-NATS-PH1-006",
+  "turn": 4,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-NATS-PH1-006/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/coach_turn_2.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/coach_turn_3.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/coverage_phase4.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/player_turn_2.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/player_turn_3.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/specialist_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/turn_state_turn_2.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/turn_state_turn_3.json",
+    ".guardkit/bdd/TASK-NATS-PH1-006_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tasks/design_approved/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md",
+    "features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py",
+    "tasks/design_approved/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-NATS-PH1-006/coach_feedback_for_turn_4.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-006/player_turn_4.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-006/player_turn_4.json"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: serve-nats --help advertises --nats, --agent-id, --log-level (verified by test_serve_nats_help_lists_required_flags and live --help invocation)",
+    "AC-002: --nats override flows into config.nats.url; _serve_adapter starts the adapter, blocks on shutdown_event, then stops cleanly (verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set and the now-discoverable BDD scenario)",
+    "AC-003: SIGTERM and SIGINT handlers both call _request_shutdown() which sets shutdown_event; adapter.stop() runs in finally, runtime_shutdown drains write helper. The 30s drain window is owned by NATSAdapter (TASK-NATS-PH1-005 scope). Verified by test_serve_adapter_registers_sigterm_and_sigint_handlers and the now-discoverable BDD scenario which asserts the in-flight tutor_turn task completes before deregistration",
+    "AC-004: AgentConfig validation failures wrap into _AgentConfigValidationError; the click command catches it, emits '[study-tutor] Error: AgentConfig validation failed: <cause>' on stderr, and raises SystemExit(1). _serve_adapter additionally exits 1 if adapter.start() raises. Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises",
+    "AC-005: ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py reports 'All checks passed!' (zero violations)"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 24,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-006/player_turn_4.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tasks/design_approved/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md"
+  ],
+  "tests_passed_count": 7,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "study-tutor serve-nats --help prints flag surface matching --nats, --agent-id, --log-level.",
+      "status": "complete",
+      "evidence": "Three click.option decorators (--nats, --agent-id, --log-level) on serve_nats() in src/study_tutor/cli/main.py. test_serve_nats_help_lists_required_flags asserts all three flag names appear in --help output and the command exits 0 \u2014 passes on Turn 4. Live verification via PYTHONPATH=src python -m study_tutor.cli.main serve-nats --help shows '--nats TEXT', '--agent-id TEXT', '--log-level [debug|info|warning|error]' all present in the Options block. The coach validation grep `study-tutor serve-nats --help | grep -E '(--nats|--agent-id|--log-level)'` returns matches for all three. Turn 4 unchanged \u2014 already verified on Turn 3.",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "study-tutor serve-nats --nats nats://localhost:4222 starts the adapter, blocks until SIGTERM, then shuts down cleanly.",
+      "status": "complete",
+      "evidence": "_serve_adapter() (cli/main.py:529-622) awaits adapter.start(), installs SIGINT/SIGTERM handlers via loop.add_signal_handler() (with NotImplementedError fallback), awaits a shared shutdown_event, and on completion runs adapter.stop() in a finally block followed by runtime_shutdown(write_helper). The serve_nats body wires --nats into config.nats.url before _build_nats_runtime() and runs the lifecycle via asyncio.run(_serve_adapter(...)). Verified by test_serve_adapter_starts_then_stops_when_shutdown_event_is_set, test_serve_adapter_registers_sigterm_and_sigint_handlers, and the focused BDD scenario 'SIGTERM during an in-flight tutor turn drains the request before deregistration'. On Turn 4 the BDD scenario is now discoverable by the oracle's pytest invocation (the conftest collection bridge can resolve the sibling glue after the rename); oracle-style invocation reports 2 passed, 40 deselected.",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "SIGTERM during a running tutor process triggers adapter.stop() and the process exits with code 0 within the drain window (30s).",
+      "status": "complete",
+      "evidence": "Signal handlers registered for SIGINT and SIGTERM both call _request_shutdown() (cli/main.py:575-577), which sets shutdown_event. The wait()->finally branch awaits adapter.stop() (NATSAdapter owns the 30s drain window per TASK-NATS-PH1-005 scope) before runtime_shutdown(). On the happy path no SystemExit is raised so click reports exit code 0. The BDD scenario @task:TASK-NATS-PH1-006 in the focused feature file is the load-bearing regression guard: a fake adapter starts an in-flight tutor_turn task, the When-step sets shutdown_event (SIGTERM-equivalent), and the Then-steps assert the in-flight task completed, the result was published, and the registry entry was removed, all within 30s. test_serve_adapter_registers_sigterm_and_sigint_handlers also pins the signal handler registration. Both scenarios pass on Turn 4 via the oracle-style pytest invocation (fixed by renaming the glue file to match conftest's underscore convention).",
+      "test_file": "features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "If nats-core's AgentConfig validation fails (e.g. invalid NATS_URL), the CLI exits 1 with a clear error message.",
+      "status": "complete",
+      "evidence": "_load_agent_config() (cli/main.py:423-446) wraps any AgentConfig() construction failure in a typed _AgentConfigValidationError. The serve_nats body (cli/main.py:681-688) catches that exception, emits '[study-tutor] Error: AgentConfig validation failed: {exc.cause}' to stderr (preserving the underlying pydantic field names), and raises SystemExit(1). _serve_adapter additionally exits 1 when adapter.start() raises (cli/main.py:579-593) with a separate banner ('[study-tutor] Error: failed to start NATSAdapter: {exc}') and a best-effort stop(). Verified by test_serve_nats_exits_1_when_agent_config_validation_fails and test_serve_adapter_exits_1_when_start_raises \u2014 both pass on Turn 4. Turn 4 unchanged \u2014 already verified on Turn 3.",
+      "test_file": "tests/unit/cli/test_serve_nats.py",
+      "implementation_files": [
+        "src/study_tutor/cli/main.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "`ruff check src/study_tutor/cli/main.py tests/unit/cli/test_serve_nats.py features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py` reports 'All checks passed!' on Turn 4 (zero violations). Includes the renamed-and-edited BDD glue file. Matches the project-configured lint config in pyproject.toml that the coach validation block in the task file references.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/cli/main.py",
+        "tests/unit/cli/test_serve_nats.py",
+        "features/nats-fleet-integration/by-task/test_TASK_NATS_PH1_006.py"
+      ]
+    }
+  ]
+}

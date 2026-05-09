@@ -1,0 +1,126 @@
+{
+  "task_id": "TASK-NATS-PH1-005",
+  "turn": 2,
+  "files_modified": [
+    ".claude/task-plans/TASK-NATS-PH1-005-implementation-plan.md",
+    ".guardkit/autobuild/TASK-NATS-PH1-004/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/phase_4_summary.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/specialist_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/turn_state_turn_1.json",
+    ".guardkit/bdd/TASK-NATS-PH1-005_junit.xml",
+    "tasks/design_approved/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-NATS-PH1-005/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/coach_feedback_for_turn_2.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-005/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-005/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_adapter_lifecycle.py",
+    "tests/integration/test_adapter_lifecycle.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_adapter_lifecycle.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: start() lifecycle (connect/register/subscribe/heartbeat/ready)",
+    "AC-002: subscribe_with_reply Bug #1 regression guard",
+    "AC-003: stop() lifecycle (unsubscribe/drain/cancel/deregister/disconnect/clear)",
+    "AC-004: heartbeat at configured interval",
+    "AC-005: active-task counter increments/decrements around _on_command",
+    "AC-006: integration test against live nats-server with mid-lifecycle agent-registry visibility",
+    "AC-007: ruff lint clean"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 19,
+  "sdk_max_turns": 180,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-005/player_turn_2.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_adapter_lifecycle.py"
+  ],
+  "tests_passed_count": 32,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "await adapter.start() connects to NATS, registers the manifest in agent-registry, subscribes to the command subject, starts the heartbeat loop, and sets _ready \u2014 verified via mocked NATSClient in unit tests.",
+      "status": "complete",
+      "evidence": "NATSAdapter.start() in src/study_tutor/adapters/nats_adapter.py performs all five steps in order: client.connect() \u2192 client.register_agent(manifest) \u2192 client.subscribe_with_reply(...) \u2192 asyncio.create_task(_heartbeat_loop) \u2192 self._ready.set(). TestStartLifecycle in tests/unit/adapters/test_nats_adapter.py covers each step with a dedicated test. Verified: 30 unit tests pass.",
+      "test_file": "tests/unit/adapters/test_nats_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Subscription uses subscribe_with_reply, not subscribe (Bug #1 regression guard \u2014 assert via mock call inspection).",
+      "status": "complete",
+      "evidence": "NATSAdapter.start() calls self._client.subscribe_with_reply(command_subject, self._on_command). TestSubscribeWithReplyContract has three guard tests \u2014 including test_start_does_not_use_plain_subscribe which asserts the mock's plain subscribe was NEVER awaited. The integration test test_full_lifecycle_round_trip additionally proves end-to-end that reply_to propagates through to the router (assertion: received_reply.startswith('_INBOX.')).",
+      "test_file": "tests/unit/adapters/test_nats_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "await adapter.stop() deregisters, cancels heartbeat, drains in-flight (within 30s shutdown_timeout), and closes the connection.",
+      "status": "complete",
+      "evidence": "NATSAdapter.stop() runs unsubscribe \u2192 drain (deadline + 50ms poll up to self._shutdown_timeout=30.0s) \u2192 cancel heartbeat \u2192 deregister \u2192 disconnect \u2192 clear _ready. TestStopLifecycle has 8 unit tests covering happy path, drain success, drain timeout, deregister failure recovery, and the 30.0s default. The integration test additionally verifies that after stop() the manifest is removed from the live agent-registry KV bucket.",
+      "test_file": "tests/unit/adapters/test_nats_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Heartbeat publishes at the configured interval (test with a stub clock or short interval).",
+      "status": "complete",
+      "evidence": "NATSAdapter._heartbeat_loop reads self._config.heartbeat_interval_seconds and loops with asyncio.sleep(interval). TestHeartbeatLoop has 6 unit tests that override the interval to 0.01s post-construction and assert \u22653 publishes in 100ms. The integration test test_heartbeat_published_on_live_server subscribes to fleet.heartbeat.gcse-tutor on the live nats-server and verifies a real heartbeat envelope arrives within 1.5s with EventType.AGENT_HEARTBEAT and the correct source_id.",
+      "test_file": "tests/unit/adapters/test_nats_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Active-task counter increments on on_command start and decrements on completion (so stop() knows when to wait).",
+      "status": "complete",
+      "evidence": "NATSAdapter._on_command wraps router.on_command in try/finally that increments and decrements self._active_tasks. TestActiveTaskCounter has 4 tests verifying: starts at 0, increments to 1 mid-call (via observing handler), decrements to 0 after, and remains exception-safe (counter resets even when router raises). The drain wait in stop() spins on this counter until it reaches 0 or the 30s timeout \u2014 covered by test_stop_waits_for_active_tasks_to_drain.",
+      "test_file": "tests/unit/adapters/test_nats_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "Integration test (against a real NATS via nats-server in test fixture or testcontainers): full start \u2192 dispatch one command \u2192 stop round-trip succeeds, with the manifest visible in agent-registry between start and stop.",
+      "status": "complete",
+      "evidence": "Created tests/integration/test_adapter_lifecycle.py with two integration tests. The nats_server fixture spawns the local nats-server binary as a subprocess on a random free port with JetStream enabled and an isolated store_dir. The bootstrapped_server fixture provisions the agent-registry KV bucket (mirroring nats-infrastructure/kv/provision-kv.sh). test_full_lifecycle_round_trip exercises: (a) adapter.start(); (b) reads agent-registry via client.get_fleet_registry() and asserts the manifest is present mid-lifecycle; (c) publishes a COMMAND envelope via nc.request() and verifies the round-tripped ResultPayload comes back through the reply inbox; (d) calls adapter.stop(); (e) re-reads the KV bucket and asserts the manifest has been removed. test_heartbeat_published_on_live_server additionally verifies a real heartbeat envelope arrives on fleet.heartbeat.<agent_id>. Both tests pass against a live nats-server v2.12.8: `pytest tests/integration/test_adapter_lifecycle.py` \u2192 2 passed in 0.28s. Skip marker @_skip_no_server gracefully degrades on machines without the binary.",
+      "test_file": "tests/integration/test_adapter_lifecycle.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `ruff check src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_nats_adapter.py tests/integration/test_adapter_lifecycle.py` \u2192 All checks passed! All three files use `from __future__ import annotations`, complete type hints, and ruff-compliant boundary-catch noqa comments where broad except clauses are required.",
+      "test_file": "tests/unit/adapters/test_nats_adapter.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/nats_adapter.py",
+        "tests/unit/adapters/test_nats_adapter.py",
+        "tests/integration/test_adapter_lifecycle.py"
+      ]
+    }
+  ]
+}

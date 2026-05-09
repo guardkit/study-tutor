@@ -1,0 +1,103 @@
+{
+  "task_id": "TASK-NATS-PH2-002",
+  "turn": 1,
+  "files_modified": [
+    ".guardkit/autobuild/TASK-NATS-PH1-005/checkpoints.json",
+    "tasks/backlog/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+    "tasks/backlog/TASK-NATS-PH1-009-live-discovery-smoke.md",
+    "tasks/backlog/TASK-NATS-PH3-001-dockerfile.md"
+  ],
+  "files_created": [
+    ".claude/task-plans/TASK-NATS-PH1-008-implementation-plan.md",
+    ".claude/task-plans/TASK-NATS-PH1-009-implementation-plan.md",
+    ".claude/task-plans/TASK-NATS-PH2-002-implementation-plan.md",
+    ".claude/task-plans/TASK-NATS-PH3-001-implementation-plan.md",
+    ".guardkit/autobuild/TASK-NATS-PH1-008/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-008/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH1-009/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-002/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-002/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-002/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-002/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-001/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-001/turn_context.json",
+    ".guardkit/bdd/TASK-NATS-PH1-009_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH2-002/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_kv_watch_lifecycle.py",
+    "tasks/design_approved/TASK-NATS-PH1-008-smoke-test-four-round-trips.md",
+    "tasks/design_approved/TASK-NATS-PH1-009-live-discovery-smoke.md",
+    "tasks/design_approved/TASK-NATS-PH2-002-kv-watch-test.md",
+    "tasks/design_approved/TASK-NATS-PH3-001-dockerfile.md",
+    "tests/integration/test_kv_watch_lifecycle.py",
+    "tests/integration/test_live_discovery.py",
+    "tests/unit/test_dockerfile_structure.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_kv_watch_lifecycle.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001 PUT event observed within 5s of adapter.start()",
+    "AC-002 DEL/PURGE event observed within 5s of adapter.stop()",
+    "AC-003 SIGKILL-equivalent abandonment leaves stale KV row (Decision 3 documentation)",
+    "AC-004 ruff lint and format both clean"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 36,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH2-002/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/integration/test_kv_watch_lifecycle.py"
+  ],
+  "tests_passed_count": 3,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Test observes a KV put event for `gcse-tutor` within 5s of `adapter.start()` completing.",
+      "status": "complete",
+      "evidence": "test_register_emits_put_event_within_budget subscribes to kv.watch('>') on the agent-registry bucket BEFORE starting the NATSAdapter, then asserts a PUT event for key='gcse-tutor' arrives within 5s (constant _EVENT_TIMEOUT_SECONDS). The assertion also round-trips the value through AgentManifest.model_validate_json so a corrupt PUT cannot pass. Test passes against a live nats-server subprocess fixture with JetStream + agent-registry bucket pre-provisioned.",
+      "test_file": "tests/integration/test_kv_watch_lifecycle.py",
+      "implementation_files": [
+        "tests/integration/test_kv_watch_lifecycle.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Test observes a KV delete event for `gcse-tutor` within 5s of `adapter.stop()` completing.",
+      "status": "complete",
+      "evidence": "test_graceful_stop_emits_delete_event_within_budget settles the PUT event first, snapshots the event count, calls adapter.stop(), then asserts a DEL or PURGE event for key='gcse-tutor' arrives within 5s. _DEREGISTRATION_OPS = frozenset({'DEL', 'PURGE'}) accepts both shapes so a future tightening of the registry's cleanup semantics (purge to remove tombstones) does not break the test. Passes against the live server fixture.",
+      "test_file": "tests/integration/test_kv_watch_lifecycle.py",
+      "implementation_files": [
+        "tests/integration/test_kv_watch_lifecycle.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Test confirms SIGKILL leaves a stale row (no TTL cleanup) \u2014 this is documentation-of-known-limitation, not a failure mode (Decision 3, 2026-05-08).",
+      "status": "complete",
+      "evidence": "test_sigkill_equivalent_leaves_stale_row boots a fresh adapter, verifies the row is in agent-registry, then invokes _simulate_sigkill (cancels heartbeat task + abruptly closes the underlying nats-py connection without invoking adapter.stop()). After abandonment, a fresh observer connection reads the bucket and asserts the entry is still present and parseable as the original AgentManifest. Comments explicitly cite Decision 3 (2026-05-08) and TASK-NATS-FU-002 (jarvis-side reaper). The task's reference to os.kill(pid, SIGKILL) against a subprocess fixture is acknowledged in the docstring; the in-process equivalent (close connection without dereg) yields the same end state and is safer to run inside pytest.",
+      "test_file": "tests/integration/test_kv_watch_lifecycle.py",
+      "implementation_files": [
+        "tests/integration/test_kv_watch_lifecycle.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran `ruff check tests/integration/test_kv_watch_lifecycle.py` -> 'All checks passed!'. Ran `ruff format --check tests/integration/test_kv_watch_lifecycle.py` -> '1 file already formatted'. No lint or format errors.",
+      "test_file": "tests/integration/test_kv_watch_lifecycle.py",
+      "implementation_files": [
+        "tests/integration/test_kv_watch_lifecycle.py"
+      ]
+    }
+  ]
+}

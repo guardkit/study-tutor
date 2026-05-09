@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-NATS-PH1-004",
+    "pre_path": "tasks/backlog/TASK-NATS-PH1-004-command-router.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH1-004-command-router.md",
+    "timestamp": "2026-05-08T22:04:51.439013+00:00",
+    "kind": "design_approved_transition"
+  }
+]

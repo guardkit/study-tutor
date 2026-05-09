@@ -1,6 +1,6 @@
 {
-  "content_hash": "f1f15323e37792d97eb8229a02da750e61c4129f8ea5ca28cd8381ede618e199",
+  "content_hash": "0b88ff7f190f8b482dacbd9441087b2a5a2ffcc9224a17e561f9cc75f79fd0a7",
   "success": true,
-  "timestamp": "2026-05-06T12:45:11.441261",
-  "venv_python": "/usr/local/bin/python3"
+  "timestamp": "2026-05-08T20:35:19.871323",
+  "venv_python": "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.venv/bin/python"
 }
