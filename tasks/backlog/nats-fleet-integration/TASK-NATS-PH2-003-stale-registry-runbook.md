@@ -12,8 +12,7 @@ status: pending
 priority: medium
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
-dependencies:
-  - TASK-NATS-PH1-010
+dependencies: []
 tags:
   - nats
   - documentation
@@ -49,3 +48,5 @@ If the demo runbook (TASK-NATS-PH3-004) doesn't exist yet at the time this task 
 ## Implementation notes
 
 This is purely documentation. Do not write any code.
+
+Dependency on PH1-010 was a temporal hint ("don't write Phase 2 docs until Phase 1 demo evidence exists"), not a real ordering constraint. Removed per [TASK-REV-D509](../../TASK-REV-D509-analyse-feat-39e1-autobuild-run-2-failure.md). Pure documentation task with no code touchpoints.

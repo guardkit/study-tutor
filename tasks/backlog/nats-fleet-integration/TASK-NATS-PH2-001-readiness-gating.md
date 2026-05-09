@@ -13,7 +13,7 @@ priority: medium
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-010
+  - TASK-NATS-PH1-005
 tags:
   - nats
   - feature
@@ -49,6 +49,7 @@ Update `src/study_tutor/adapters/command_router.py`:
 
 - The adapter's `_ready` event already exists (set at end of `start()`). Either pass a reference to `CommandRouter` at construction time or add a setter the adapter calls.
 - Do not block on `await _ready.wait()` — that turns a "fail fast with clear error" into a "queue commands until ready" semantic, which is the opposite of what we want.
+- Dependency on PH1-010 (operator_handoff demo gate) was a temporal/soft ordering hint, not a code dependency. Removed per [TASK-REV-D509](../../TASK-REV-D509-analyse-feat-39e1-autobuild-run-2-failure.md). Real code deps are PH1-004 (CommandRouter) and PH1-005 (NATSAdapter `_ready` event).
 
 ## Coach validation
 
