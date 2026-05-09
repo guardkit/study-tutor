@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-NATS-PH2-001",
+    "pre_path": "tasks/backlog/TASK-NATS-PH2-001-readiness-gating.md",
+    "post_path": "tasks/design_approved/TASK-NATS-PH2-001-readiness-gating.md",
+    "timestamp": "2026-05-09T07:01:06.709602+00:00",
+    "kind": "design_approved_transition"
+  }
+]

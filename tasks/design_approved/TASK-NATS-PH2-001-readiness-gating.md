@@ -1,24 +1,24 @@
 ---
-id: TASK-NATS-PH2-001
-title: Readiness gating - reject commands arriving before adapter is ready
-task_type: feature
-parent_review: TASK-REV-NATS-001
-feature_id: FEAT-NATS
-wave: 7
-implementation_mode: task-work
 complexity: 3
-estimated_minutes: 45
-status: pending
-priority: medium
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-010
+- TASK-NATS-PH1-010
+estimated_minutes: 45
+feature_id: FEAT-NATS
+id: TASK-NATS-PH2-001
+implementation_mode: task-work
+parent_review: TASK-REV-NATS-001
+priority: medium
+status: design_approved
 tags:
-  - nats
-  - feature
-  - readiness
-  - phase-2
+- nats
+- feature
+- readiness
+- phase-2
+task_type: feature
+title: Readiness gating - reject commands arriving before adapter is ready
+updated: 2026-05-08 00:00:00+00:00
+wave: 7
 ---
 
 # Task: Readiness gating - reject commands arriving before adapter is ready

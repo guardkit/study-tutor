@@ -1,0 +1,82 @@
+{
+  "task_id": "TASK-NATS-PH2-003",
+  "timestamp": "2026-05-09T08:03:13.849093",
+  "completed": true,
+  "success": true,
+  "implementation_mode": "direct",
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": null,
+    "tests_passed": 0,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": true,
+    "quality_gates_relaxed": true,
+    "all_passed": true
+  },
+  "files_modified": [],
+  "files_created": [
+    "docs/runbooks/known-issues.md"
+  ],
+  "tests_written": [],
+  "requirements_addressed": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004"
+  ],
+  "requirements_met": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004"
+  ],
+  "summary": "Direct mode implementation completed successfully",
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] A section titled \"Known issue: stale registry entries\" exists in either `RUNBOOK-study-tutor-nats-fleet-demo.md` or `docs/runbooks/known-issues.md`.",
+      "status": "complete",
+      "evidence": "Created docs/runbooks/known-issues.md (the fallback location specified by the task, since RUNBOOK-study-tutor-nats-fleet-demo.md does not yet exist \u2014 TASK-NATS-PH3-004 is still in tasks/backlog/). The file contains an H2 section titled exactly 'Known issue: stale registry entries' (line 19: `## Known issue: stale registry entries`).",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/known-issues.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] The section names the symptom, cause, and cleanup command verbatim.",
+      "status": "complete",
+      "evidence": "The section contains three labelled sub-sections that reproduce the verbatim wording from the task scope. Symptom (line 28-29): 'jarvis advertises `gcse-tutor` as available; commands time out instead of returning errors.' \u2014 verbatim. Cause (lines 41-55): names the SIGKILL/OOM/container-crash trigger and the agent-registry KV row persisting indefinitely with no TTL \u2014 verbatim from the task scope. Cleanup command (line 62, inside a fenced code block): `nats kv del agent-registry gcse-tutor` \u2014 verbatim.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/known-issues.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] The section references TASK-NATS-FU-002 as the long-term fix.",
+      "status": "complete",
+      "evidence": "The 'When jarvis-side reaper lands' sub-section (lines 70-76) explicitly names `TASK-NATS-FU-002` as the long-term fix and locates it ('jarvis repo, post-demo'), explaining that it will make the registry self-healing via heartbeat-miss reaping and supersede the manual cleanup command.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/known-issues.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] No project lint/format violations introduced.",
+      "status": "complete",
+      "evidence": "Only a single new Markdown file was added under docs/runbooks/. The repository has no Markdown linter configured (no .markdownlint.* file at the worktree root, no pre-commit hook covering .md). The Python toolchain (pyproject.toml ships ruff/black-style tooling for src/ and tests/ only) cannot regress on a Markdown file. The new file uses fenced code blocks, ATX headings, and trailing newlines consistent with the sibling RUNBOOK-rag-ingest-and-smoke.md style.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/known-issues.md"
+      ]
+    }
+  ]
+}
