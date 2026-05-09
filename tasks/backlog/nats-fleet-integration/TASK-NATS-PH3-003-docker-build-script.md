@@ -8,17 +8,38 @@ wave: 9
 implementation_mode: direct
 complexity: 2
 estimated_minutes: 20
-status: pending
+status: in_review
 priority: low
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH3-001
+- TASK-NATS-PH3-001
 tags:
-  - nats
-  - scaffolding
-  - docker
-  - phase-3
+- nats
+- scaffolding
+- docker
+- phase-3
+autobuild_state:
+  current_turn: 1
+  max_turns: 7
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-09T00:00:23.947455'
+  last_updated: '2026-05-09T00:07:59.756508'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-09T00:00:23.947455'
+    player_summary: 'Created scripts/docker-build.sh as a thin wrapper around `docker
+      build` for the study-tutor image, mirroring the specialist-agent/scripts/docker-build.sh
+      pattern. The wrapper resolves SCRIPT_DIR / REPO_DIR / PARENT_DIR via absolute
+      paths (works when invoked from any cwd), pre-flights the sibling `nats-core/`
+      directory, and forwards extra args to docker. Two divergences from specialist-agent''s
+      script were required by study-tutor''s Dockerfile: (a) the Dockerfile references
+      the sibling repo via a B'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Add scripts/docker-build.sh mirroring specialist-agent pattern

@@ -53,7 +53,7 @@ in-repo fix is even simpler: **PH2-001 and PH2-003 don't actually depend on PH1-
 Drop both edges. The autobuild can then `--resume` and finish Waves 8–9.
 
 This is a **demo-deadline blocker** (2026-05-11). The upstream GuardKit fix
-([TASK-GK-FIX-001](TASK-GK-FIX-001-treat-deferred-as-satisfied-in-dependency-resolver.md))
+(TASK-FIX-DEFD, in `~/Projects/appmilla_github/guardkit/tasks/backlog/TASK-FIX-DEFD-treat-deferred-as-satisfied-in-dependency-resolver.md`)
 is the durable correction, but is **not required** for this re-run.
 
 ## Scope
@@ -139,7 +139,7 @@ python -c "import yaml; f = yaml.safe_load(open('.guardkit/features/FEAT-39E1.ya
 
 ## Out of Scope
 
-- The upstream GuardKit fix — separate task ([TASK-GK-FIX-001](TASK-GK-FIX-001-treat-deferred-as-satisfied-in-dependency-resolver.md)).
+- The upstream GuardKit fix — separate task TASK-FIX-DEFD, lives in `~/Projects/appmilla_github/guardkit/tasks/backlog/TASK-FIX-DEFD-treat-deferred-as-satisfied-in-dependency-resolver.md`.
 - Re-running the autobuild — happens after this lands.
 - Implementing PH1-010 (it's the operator-driven 2026-05-11 demo, by design).
 - PH3-005 task-type re-classification — that's a separate decision at dispatch time.

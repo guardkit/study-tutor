@@ -1,6 +1,7 @@
 ---
 id: TASK-NATS-PH1-005
-title: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat, deregister)
+title: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat,
+  deregister)
 task_type: feature
 parent_review: TASK-REV-NATS-001
 feature_id: FEAT-NATS
@@ -8,33 +9,64 @@ wave: 4
 implementation_mode: task-work
 complexity: 8
 estimated_minutes: 180
-status: pending
+status: in_review
 priority: critical
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-002
-  - TASK-NATS-PH1-004
+- TASK-NATS-PH1-002
+- TASK-NATS-PH1-004
 consumer_context:
-  - task: TASK-NATS-PH1-002
-    consumes: AgentManifest
-    framework: 'nats_core.NATSClient.register_agent'
-    driver: 'NATS KV (agent-registry bucket)'
-    format_note: 'Manifest must be a fully-validated nats_core.manifest.AgentManifest with len(intents) >= 1 (Bug #5 guard).'
-  - task: TASK-NATS-PH1-004
-    consumes: CommandRouter
-    framework: 'nats_core.NATSClient.subscribe_with_reply'
-    driver: 'asyncio NATS subscription'
-    format_note: 'Adapter MUST call subscribe_with_reply (NOT subscribe) so the reply_to inbox propagates to CommandRouter._publish_result (Bug #1 guard).'
+- task: TASK-NATS-PH1-002
+  consumes: AgentManifest
+  framework: nats_core.NATSClient.register_agent
+  driver: NATS KV (agent-registry bucket)
+  format_note: 'Manifest must be a fully-validated nats_core.manifest.AgentManifest
+    with len(intents) >= 1 (Bug #5 guard).'
+- task: TASK-NATS-PH1-004
+  consumes: CommandRouter
+  framework: nats_core.NATSClient.subscribe_with_reply
+  driver: asyncio NATS subscription
+  format_note: 'Adapter MUST call subscribe_with_reply (NOT subscribe) so the reply_to
+    inbox propagates to CommandRouter._publish_result (Bug #1 guard).'
 tags:
-  - nats
-  - feature
-  - adapter
-  - lifecycle
-  - phase-1
-  - bug-1
-  - bug-5
-  - decision-1
+- nats
+- feature
+- adapter
+- lifecycle
+- phase-1
+- bug-1
+- bug-5
+- decision-1
+autobuild_state:
+  current_turn: 2
+  max_turns: 7
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-08T23:17:29.282226'
+  last_updated: '2026-05-08T23:42:51.267480'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Advisory (non-blocking): task-work produced a report with 2 of 3\
+      \ expected agent invocations. Missing phases: 3 (Implementation). Consider invoking\
+      \ these agents via the Task tool to strengthen stack-specific quality:\n- Phase\
+      \ 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Not all acceptance\
+      \ criteria met:\n  \u2022 Integration test (against a real NATS via `nats-server`\
+      \ in test fixture or `testcontainers`): full s"
+    timestamp: '2026-05-08T23:17:29.282226'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-08T23:32:33.612209'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat, deregister)

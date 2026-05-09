@@ -1,6 +1,6 @@
 ---
 id: TASK-NATS-PH1-004
-title: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug #2), and reply_to honouring (Bug #1)
+title: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug
 task_type: feature
 parent_review: TASK-REV-NATS-001
 feature_id: FEAT-NATS
@@ -8,25 +8,43 @@ wave: 3
 implementation_mode: task-work
 complexity: 6
 estimated_minutes: 120
-status: pending
+status: in_review
 priority: critical
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-003
+- TASK-NATS-PH1-003
 consumer_context:
-  - task: TASK-NATS-PH1-003
-    consumes: tool_to_command_map
-    framework: 'study_tutor.roles.registry.get_role'
-    driver: 'in-process Python registry'
-    format_note: 'Map keys are MCP tool names (e.g. "tutor_start_session"); values are canonical commands (e.g. "start_session"). Router MUST call self.tool_to_command.get(c, c) — passthrough when not present, alias when present.'
+- task: TASK-NATS-PH1-003
+  consumes: tool_to_command_map
+  framework: study_tutor.roles.registry.get_role
+  driver: in-process Python registry
+  format_note: "Map keys are MCP tool names (e.g. \"tutor_start_session\"); values\
+    \ are canonical commands (e.g. \"start_session\"). Router MUST call self.tool_to_command.get(c,\
+    \ c) \u2014 passthrough when not present, alias when present."
 tags:
-  - nats
-  - feature
-  - command-router
-  - phase-1
-  - bug-1
-  - bug-2
+- nats
+- feature
+- command-router
+- phase-1
+- bug-1
+- bug-2
+autobuild_state:
+  current_turn: 1
+  max_turns: 7
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-08T23:04:50.392149'
+  last_updated: '2026-05-08T23:17:29.244800'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-08T23:04:50.392149'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug #2), and reply_to honouring (Bug #1)

@@ -8,18 +8,38 @@ wave: 2
 implementation_mode: direct
 complexity: 3
 estimated_minutes: 60
-status: pending
+status: in_review
 priority: critical
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-001
+- TASK-NATS-PH1-001
 tags:
-  - nats
-  - declarative
-  - manifest
-  - phase-1
-  - bug-5
+- nats
+- declarative
+- manifest
+- phase-1
+- bug-5
+autobuild_state:
+  current_turn: 1
+  max_turns: 7
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-08T20:35:19.923303'
+  last_updated: '2026-05-08T20:39:21.414893'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-08T20:35:19.923303'
+    player_summary: "Implemented `_tutor_manifest_factory(agent_id: str) -> AgentManifest`\
+      \ in src/study_tutor/adapters/manifest.py, mirroring the structure of specialist-agent/src/specialist_agent/adapters/manifest.py:23-218\
+      \ (architect role) and :243-281 (product-owner role). The manifest declares:\
+      \ (a) the four MCP tools registered in study_tutor/mcp/server.py:26-52 \u2014\
+      \ tutor_start_session, tutor_turn, tutor_session_status, tutor_session_end \u2014\
+      \ with parameter schemas matching the runtime adapter signatures (study_tutor"
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Implement tutor manifest factory with 4 ToolCapabilities and >=1 IntentCapability

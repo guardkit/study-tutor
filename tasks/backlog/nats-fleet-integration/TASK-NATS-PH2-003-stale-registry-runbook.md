@@ -8,17 +8,38 @@ wave: 8
 implementation_mode: direct
 complexity: 2
 estimated_minutes: 30
-status: pending
+status: in_review
 priority: medium
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies: []
 tags:
-  - nats
-  - documentation
-  - runbook
-  - phase-2
-  - decision-3
+- nats
+- documentation
+- runbook
+- phase-2
+- decision-3
+autobuild_state:
+  current_turn: 1
+  max_turns: 7
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-09T08:01:03.444488'
+  last_updated: '2026-05-09T08:03:14.400554'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-09T08:01:03.444488'
+    player_summary: "Created docs/runbooks/known-issues.md because the demo runbook\
+      \ RUNBOOK-study-tutor-nats-fleet-demo.md (slated for TASK-NATS-PH3-004) does\
+      \ not yet exist in the repo \u2014 the task explicitly instructs to use the\
+      \ known-issues.md fallback in that case and migrate later. The new file opens\
+      \ with an audience/scope header and a top-level 'When the fleet demo runbook\
+      \ lands, migrate this' note so the migration intent is preserved. It then contains\
+      \ the required 'Known issue: stale registry entries' section wi"
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Document stale registry entry symptom and manual cleanup in runbook

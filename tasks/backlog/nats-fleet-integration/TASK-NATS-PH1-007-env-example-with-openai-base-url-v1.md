@@ -1,6 +1,7 @@
 ---
 id: TASK-NATS-PH1-007
-title: Update .env.example with NATS and LLM env vars (OPENAI_BASE_URL must include /v1 suffix - Bug #3)
+title: Update .env.example with NATS and LLM env vars (OPENAI_BASE_URL must include
+  /v1 suffix - Bug
 task_type: scaffolding
 parent_review: TASK-REV-NATS-001
 feature_id: FEAT-NATS
@@ -8,18 +9,38 @@ wave: 2
 implementation_mode: direct
 complexity: 1
 estimated_minutes: 15
-status: pending
+status: in_progress
 priority: high
 created: 2026-05-08 00:00:00+00:00
 updated: 2026-05-08 00:00:00+00:00
 dependencies:
-  - TASK-NATS-PH1-001
+- TASK-NATS-PH1-001
 tags:
-  - nats
-  - scaffolding
-  - env
-  - phase-1
-  - bug-3
+- nats
+- scaffolding
+- env
+- phase-1
+- bug-3
+autobuild_state:
+  current_turn: 1
+  max_turns: 7
+  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-08T20:35:19.926254'
+  last_updated: '2026-05-08T20:39:26.797617'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-05-08T20:35:19.926254'
+    player_summary: 'Appended a new ''--- NATS fleet (FEAT-NATS Phase 1) ---'' section
+      to .env.example containing the exact scope block from TASK-NATS-PH1-007: NATS_URL=nats://localhost:4222,
+      empty NATS_USER / NATS_PASSWORD, AGENT_ID=gcse-tutor, the three-line Bug #3
+      explanatory comment, OPENAI_BASE_URL=http://host.docker.internal:9000/v1, LLM_BASE_URL=http://host.docker.internal:9000,
+      LOCAL_MODEL=gemma4-tutor, OPENAI_API_KEY=local-no-auth-required, and HEARTBEAT_INTERVAL_SECONDS=30.
+      To prevent shell-parse duplication'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Update .env.example with NATS and LLM env vars (OPENAI_BASE_URL must include /v1 suffix - Bug #3)

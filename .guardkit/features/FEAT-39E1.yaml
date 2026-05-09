@@ -6,7 +6,7 @@ description: 'Three-phase build: study-tutor joins the NATS fleet alongside spec
   3 (by 2026-05-16): Docker/GB10 deployment. Includes regression guards for bugs #1-#5
   from the 2026-05-08 jarvis runbook.'
 created: '2026-05-08T20:17:32.328313'
-status: failed
+status: completed
 complexity: 7
 estimated_tasks: 18
 tasks:
@@ -201,22 +201,26 @@ tasks:
   turns_completed: 0
   current_turn: 0
   started_at: null
-  completed_at: '2026-05-09T00:00:23.915544'
+  completed_at: '2026-05-09T08:01:03.377213'
 - id: TASK-NATS-PH2-001
   name: Readiness gating in command router
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-001-readiness-gating.md
   complexity: 3
   dependencies:
   - TASK-NATS-PH1-005
-  status: pending
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-05-09T08:01:03.405496'
+  completed_at: '2026-05-09T08:17:44.285600'
 - id: TASK-NATS-PH2-002
   name: KV-watch lifecycle test
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-002-kv-watch-test.md
@@ -241,15 +245,19 @@ tasks:
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-003-stale-registry-runbook.md
   complexity: 2
   dependencies: []
-  status: pending
+  status: completed
   implementation_mode: direct
   estimated_minutes: 22
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-05-09T08:01:03.414384'
+  completed_at: '2026-05-09T08:17:44.293309'
 - id: TASK-NATS-PH3-001
   name: Build Dockerfile
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-001-dockerfile.md
@@ -313,15 +321,19 @@ tasks:
   complexity: 4
   dependencies:
   - TASK-NATS-PH3-002
-  status: pending
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-05-09T08:01:03.423676'
+  completed_at: '2026-05-09T08:17:44.300815'
 - id: TASK-NATS-PH3-005
   name: GB10 E2E smoke test
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-005-gb10-e2e-smoke.md
@@ -329,15 +341,19 @@ tasks:
   dependencies:
   - TASK-NATS-PH3-002
   - TASK-NATS-PH3-004
-  status: pending
+  status: deferred
   implementation_mode: task-work
   estimated_minutes: 256
   requires_infrastructure: []
-  result: null
+  result:
+    total_turns: 0
+    final_decision: deferred
+    error: null
+    deferred_reason: "operator follow-up \u2014 runtime verification required"
   turns_completed: 0
   current_turn: 0
   started_at: null
-  completed_at: null
+  completed_at: '2026-05-09T08:17:44.329318'
 orchestration:
   parallel_groups:
   - - TASK-NATS-PH1-001
@@ -363,12 +379,12 @@ orchestration:
 preflight_strict: false
 execution:
   started_at: '2026-05-08T20:30:20.639512'
-  completed_at: '2026-05-08T21:16:48.712879'
+  completed_at: '2026-05-09T08:17:44.345497'
   worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
-  total_turns: 7
-  tasks_completed: 13
+  total_turns: 20
+  tasks_completed: 18
   tasks_failed: 0
-  current_wave: 7
+  current_wave: 9
   completed_waves:
   - 1
   - 2
@@ -377,6 +393,8 @@ execution:
   - 5
   - 6
   - 7
-  last_updated: '2026-05-09T00:13:29.222847'
+  - 8
+  - 9
+  last_updated: '2026-05-09T08:17:44.337348'
   archived_at: null
   archived_to: null
