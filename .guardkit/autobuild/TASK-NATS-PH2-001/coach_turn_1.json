@@ -1,0 +1,140 @@
+{
+  "task_id": "TASK-NATS-PH2-001",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/unit/adapters/test_command_router_readiness.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/unit/adapters/test_command_router_readiness.py::test_on_command_not_ready_with_reply_to_dual_publishes PASSED [ 50%]\ntests/unit/adapters/test_command_router_readiness.py::test_not_ready_counter_increments_per_rejected_command PASSED [ 66%]\ntests/unit/adapters/test_command_router_readiness.py::test_router_without_adapter_ready_event_skips_gate PASSED [ 83%]\ntests/unit/adapters/test_command_router_readiness.py::test_set_adapter_ready_arms_gate_after_construction PASSED [100%]\n============================== 6 passed in 0.14s ===============================",
+      "duration_seconds": 0.7528190612792969
+    },
+    "requirements": {
+      "criteria_total": 4,
+      "criteria_met": 4,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Unit test: `on_command` invoked with `_adapter_ready.is_set() == False` returns `ResultPayload(success=False, error=...)` with a clear \"not ready\" message; underlying handler is NOT invoked.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added the readiness gate at the top of CommandRouter.on_command (after event_type check + payload parse, before dispatch): when self._adapter_ready is set and not is_set(), publish a ResultPayload(success=False, command=payload.command, result={'error': 'study-tutor adapter is not ready', 'error_type': 'AdapterNotReadyError'}, correlation_id=correlation_id) via _publish_result, increment self.not_ready_count, and return without invoking _dispatch_command. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_not_ready_returns_failure_result which asserts (a) mcp_adapter.tutor_start_session/tutor_turn/tutor_session_status/tutor_session_end are NOT awaited, (b) published.success is False, (c) 'not ready' substring present in result['error'], (d) error_type == 'AdapterNotReadyError'.",
+      "notes": "Added the readiness gate at the top of CommandRouter.on_command (after event_type check + payload parse, before dispatch): when self._adapter_ready is set and not is_set(), publish a ResultPayload(success=False, command=payload.command, result={'error': 'study-tutor adapter is not ready', 'error_type': 'AdapterNotReadyError'}, correlation_id=correlation_id) via _publish_result, increment self.not_ready_count, and return without invoking _dispatch_command. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_not_ready_returns_failure_result which asserts (a) mcp_adapter.tutor_start_session/tutor_turn/tutor_session_status/tutor_session_end are NOT awaited, (b) published.success is False, (c) 'not ready' substring present in result['error'], (d) error_type == 'AdapterNotReadyError'."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Unit test: same `on_command` invocation when `_adapter_ready.is_set() == True` proceeds normally.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "The gate is a guard, not a permanent block: when adapter_ready.is_set() returns True the gate falls through to the existing _dispatch_command path. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_ready_dispatches_normally which sets adapter_ready, sends a tutor_start_session command, and asserts mcp_adapter.tutor_start_session.assert_awaited_once_with(student_id='lilymay'). Backwards-compat case (no event wired at all) covered by test_router_without_adapter_ready_event_skips_gate.",
+      "notes": "The gate is a guard, not a permanent block: when adapter_ready.is_set() returns True the gate falls through to the existing _dispatch_command path. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_ready_dispatches_normally which sets adapter_ready, sends a tutor_start_session command, and asserts mcp_adapter.tutor_start_session.assert_awaited_once_with(student_id='lilymay'). Backwards-compat case (no event wired at all) covered by test_router_without_adapter_ready_event_skips_gate."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "The Bug #1 reply path is honoured even in the not-ready case (caller still gets a clean reply on the inbox, not a hung future).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "The not-ready branch routes its failure ResultPayload through self._publish_result(reply_to, not_ready_result, correlation_id) \u2014 the same dual-publish helper used by the success and unsupported-command paths. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_not_ready_with_reply_to_dual_publishes which asserts (a) client.publish_raw is awaited once with '_INBOX.notready' and a body that parses as ResultPayload(success=False) with correlation_id='corr-42', AND (b) client.publish is awaited once with subject 'agents.result.gcse-tutor' and a ResultPayload(success=False). nc.request() callers (jarvis) therefore resolve cleanly with a structured failure rather than timing out.",
+      "notes": "The not-ready branch routes its failure ResultPayload through self._publish_result(reply_to, not_ready_result, correlation_id) \u2014 the same dual-publish helper used by the success and unsupported-command paths. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_not_ready_with_reply_to_dual_publishes which asserts (a) client.publish_raw is awaited once with '_INBOX.notready' and a body that parses as ResultPayload(success=False) with correlation_id='corr-42', AND (b) client.publish is awaited once with subject 'agents.result.gcse-tutor' and a ResultPayload(success=False). nc.request() callers (jarvis) therefore resolve cleanly with a structured failure rather than timing out."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Ran 'ruff check src/study_tutor/adapters/command_router.py src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_command_router_readiness.py' \u2192 'All checks passed!'. Ran 'ruff format --check' on the same three files \u2192 '3 files already formatted' (one auto-format pass was applied to command_router.py during implementation; subsequent --check is clean). Matches the Coach validation block in the task spec verbatim.",
+      "notes": "Ran 'ruff check src/study_tutor/adapters/command_router.py src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_command_router_readiness.py' \u2192 'All checks passed!'. Ran 'ruff format --check' on the same three files \u2192 '3 files already formatted' (one auto-format pass was applied to command_router.py during implementation; subsequent --check is clean). Matches the Coach validation block in the task spec verbatim."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Unit test: `on_command` invoked with `_adapter_ready.is_set() == False` returns `ResultPayload(success=False, error=...)` with a clear \"not ready\" message; underlying handler is NOT invoked.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added the readiness gate at the top of CommandRouter.on_command (after event_type check + payload parse, before dispatch): when self._adapter_ready is set and not is_set(), publish a ResultPayload(success=False, command=payload.command, result={'error': 'study-tutor adapter is not ready', 'error_type': 'AdapterNotReadyError'}, correlation_id=correlation_id) via _publish_result, increment self.not_ready_count, and return without invoking _dispatch_command. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_not_ready_returns_failure_result which asserts (a) mcp_adapter.tutor_start_session/tutor_turn/tutor_session_status/tutor_session_end are NOT awaited, (b) published.success is False, (c) 'not ready' substring present in result['error'], (d) error_type == 'AdapterNotReadyError'.",
+        "notes": "Added the readiness gate at the top of CommandRouter.on_command (after event_type check + payload parse, before dispatch): when self._adapter_ready is set and not is_set(), publish a ResultPayload(success=False, command=payload.command, result={'error': 'study-tutor adapter is not ready', 'error_type': 'AdapterNotReadyError'}, correlation_id=correlation_id) via _publish_result, increment self.not_ready_count, and return without invoking _dispatch_command. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_not_ready_returns_failure_result which asserts (a) mcp_adapter.tutor_start_session/tutor_turn/tutor_session_status/tutor_session_end are NOT awaited, (b) published.success is False, (c) 'not ready' substring present in result['error'], (d) error_type == 'AdapterNotReadyError'."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Unit test: same `on_command` invocation when `_adapter_ready.is_set() == True` proceeds normally.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The gate is a guard, not a permanent block: when adapter_ready.is_set() returns True the gate falls through to the existing _dispatch_command path. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_ready_dispatches_normally which sets adapter_ready, sends a tutor_start_session command, and asserts mcp_adapter.tutor_start_session.assert_awaited_once_with(student_id='lilymay'). Backwards-compat case (no event wired at all) covered by test_router_without_adapter_ready_event_skips_gate.",
+        "notes": "The gate is a guard, not a permanent block: when adapter_ready.is_set() returns True the gate falls through to the existing _dispatch_command path. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_ready_dispatches_normally which sets adapter_ready, sends a tutor_start_session command, and asserts mcp_adapter.tutor_start_session.assert_awaited_once_with(student_id='lilymay'). Backwards-compat case (no event wired at all) covered by test_router_without_adapter_ready_event_skips_gate."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "The Bug #1 reply path is honoured even in the not-ready case (caller still gets a clean reply on the inbox, not a hung future).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The not-ready branch routes its failure ResultPayload through self._publish_result(reply_to, not_ready_result, correlation_id) \u2014 the same dual-publish helper used by the success and unsupported-command paths. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_not_ready_with_reply_to_dual_publishes which asserts (a) client.publish_raw is awaited once with '_INBOX.notready' and a body that parses as ResultPayload(success=False) with correlation_id='corr-42', AND (b) client.publish is awaited once with subject 'agents.result.gcse-tutor' and a ResultPayload(success=False). nc.request() callers (jarvis) therefore resolve cleanly with a structured failure rather than timing out.",
+        "notes": "The not-ready branch routes its failure ResultPayload through self._publish_result(reply_to, not_ready_result, correlation_id) \u2014 the same dual-publish helper used by the success and unsupported-command paths. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_not_ready_with_reply_to_dual_publishes which asserts (a) client.publish_raw is awaited once with '_INBOX.notready' and a body that parses as ResultPayload(success=False) with correlation_id='corr-42', AND (b) client.publish is awaited once with subject 'agents.result.gcse-tutor' and a ResultPayload(success=False). nc.request() callers (jarvis) therefore resolve cleanly with a structured failure rather than timing out."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran 'ruff check src/study_tutor/adapters/command_router.py src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_command_router_readiness.py' \u2192 'All checks passed!'. Ran 'ruff format --check' on the same three files \u2192 '3 files already formatted' (one auto-format pass was applied to command_router.py during implementation; subsequent --check is clean). Matches the Coach validation block in the task spec verbatim.",
+        "notes": "Ran 'ruff check src/study_tutor/adapters/command_router.py src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_command_router_readiness.py' \u2192 'All checks passed!'. Ran 'ruff format --check' on the same three files \u2192 '3 files already formatted' (one auto-format pass was applied to command_router.py during implementation; subsequent --check is clean). Matches the Coach validation block in the task spec verbatim."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "consider",
+      "category": "seam_test_recommendation",
+      "description": "No seam tests detected for cross-boundary feature. Consider adding seam/contract/boundary tests to validate technology boundary interactions. This is a recommendation, not a blocking gate."
+    },
+    {
+      "severity": "should_fix",
+      "category": "bdd_pending",
+      "description": "BDD oracle: 3 scenario(s) reference step definitions that are not yet implemented. These do NOT block approval but should be implemented to make the scenarios runnable.",
+      "scenarios_pending": 3,
+      "feature_files": [
+        "features/nats-fleet-integration/nats-fleet-integration.feature"
+      ],
+      "pending_examples": [
+        "test_a_command_arriving_exactly_at_the_moment_the_adapter_becomes_ready_is_processed \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_command_arriving_before_the_adapter_is_ready_is_rejected_with_a_clear_error \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames.",
+        "test_a_second_adapter_claiming_the_same_agent_id_is_rejected_after_the_first_is_registered \u2014 implement: All traceback entries are hidden. Pass `--full-trace` to see hidden and internal frames."
+      ]
+    }
+  ],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 438 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 1739/5200 tokens\n\n### \ud83c\udfa8 Relevant Patterns\n- CHECKS_CONDITION_BEFORE_EXECUTION\n- SOURCE_PATTERN\n- ASSIGNS_TASK_TO\n- SOURCE_OF_PATTERN\n\n### \u26a0\ufe0f Warnings\n- HAS_FIX\n- USES_ENDPOINT\n- INVOLVES\n\n### \ud83c\udfad Role Constraints\n- ASKS_BEFORE_APPROVING_WITH_INSUFFICIENT_COVERAGE\n- MUST_CONSULT_BEFORE_MODIFYING\n- REQUIRES_ASK_BEFORE\n- REQUIRES_ASK_BEFORE\n\n### \ud83d\udee0\ufe0f Implementation Modes\n- WHEN_TO_USE_FOR_IMPLEMENTATION_MODE\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}

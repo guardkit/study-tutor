@@ -1,0 +1,108 @@
+{
+  "task_id": "TASK-NATS-PH2-001",
+  "turn": 1,
+  "files_modified": [
+    ".claude/task-plans/TASK-NATS-PH2-001-implementation-plan.md",
+    ".guardkit/autobuild/TASK-NATS-PH2-001/state_transitions.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-001/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-003/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-003/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-003/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-003/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-003/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-003/turn_state_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-002/checkpoints.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-004/coach_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-004/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-004/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-004/turn_context.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-004/turn_state_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/nats_adapter.py",
+    "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md",
+    "docs/runbooks/evidence/.gitkeep",
+    "docs/runbooks/known-issues.md",
+    "docs/runbooks/templates/RESULTS-template.md",
+    "tasks/design_approved/TASK-NATS-PH2-001-readiness-gating.md"
+  ],
+  "files_created": [
+    ".guardkit/autobuild/TASK-NATS-PH2-001/player_turn_1.json",
+    ".guardkit/autobuild/TASK-NATS-PH2-001/task_work_results.json",
+    ".guardkit/autobuild/TASK-NATS-PH3-004/checkpoints.json",
+    ".guardkit/bdd/TASK-NATS-PH2-001_junit.xml",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH2-001/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router_readiness.py"
+  ],
+  "tests_written": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router_readiness.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: not-ready ResultPayload + handler not invoked",
+    "AC-002: ready proceeds normally",
+    "AC-003: Bug #1 reply_to path honoured in not-ready case",
+    "AC-004: ruff check + ruff format --check clean on all 3 changed files",
+    "Implementation note: not-ready counter for observability (router.not_ready_count public attribute)",
+    "Implementation note: setter pattern (set_adapter_ready) used by NATSAdapter to avoid threading event through router ctor",
+    "Implementation note: do NOT block on _ready.wait() \u2014 fail-fast preserved"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 34,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH2-001/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/nats_adapter.py",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router_readiness.py"
+  ],
+  "tests_passed_count": 6,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Unit test: on_command invoked with _adapter_ready.is_set() == False returns ResultPayload(success=False, error=...) with a clear 'not ready' message; underlying handler is NOT invoked.",
+      "status": "complete",
+      "evidence": "Added the readiness gate at the top of CommandRouter.on_command (after event_type check + payload parse, before dispatch): when self._adapter_ready is set and not is_set(), publish a ResultPayload(success=False, command=payload.command, result={'error': 'study-tutor adapter is not ready', 'error_type': 'AdapterNotReadyError'}, correlation_id=correlation_id) via _publish_result, increment self.not_ready_count, and return without invoking _dispatch_command. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_not_ready_returns_failure_result which asserts (a) mcp_adapter.tutor_start_session/tutor_turn/tutor_session_status/tutor_session_end are NOT awaited, (b) published.success is False, (c) 'not ready' substring present in result['error'], (d) error_type == 'AdapterNotReadyError'.",
+      "test_file": "tests/unit/adapters/test_command_router_readiness.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Unit test: same on_command invocation when _adapter_ready.is_set() == True proceeds normally.",
+      "status": "complete",
+      "evidence": "The gate is a guard, not a permanent block: when adapter_ready.is_set() returns True the gate falls through to the existing _dispatch_command path. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_when_ready_dispatches_normally which sets adapter_ready, sends a tutor_start_session command, and asserts mcp_adapter.tutor_start_session.assert_awaited_once_with(student_id='lilymay'). Backwards-compat case (no event wired at all) covered by test_router_without_adapter_ready_event_skips_gate.",
+      "test_file": "tests/unit/adapters/test_command_router_readiness.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "The Bug #1 reply path is honoured even in the not-ready case (caller still gets a clean reply on the inbox, not a hung future).",
+      "status": "complete",
+      "evidence": "The not-ready branch routes its failure ResultPayload through self._publish_result(reply_to, not_ready_result, correlation_id) \u2014 the same dual-publish helper used by the success and unsupported-command paths. Pinned by tests/unit/adapters/test_command_router_readiness.py::test_on_command_not_ready_with_reply_to_dual_publishes which asserts (a) client.publish_raw is awaited once with '_INBOX.notready' and a body that parses as ResultPayload(success=False) with correlation_id='corr-42', AND (b) client.publish is awaited once with subject 'agents.result.gcse-tutor' and a ResultPayload(success=False). nc.request() callers (jarvis) therefore resolve cleanly with a structured failure rather than timing out.",
+      "test_file": "tests/unit/adapters/test_command_router_readiness.py",
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+      "status": "complete",
+      "evidence": "Ran 'ruff check src/study_tutor/adapters/command_router.py src/study_tutor/adapters/nats_adapter.py tests/unit/adapters/test_command_router_readiness.py' \u2192 'All checks passed!'. Ran 'ruff format --check' on the same three files \u2192 '3 files already formatted' (one auto-format pass was applied to command_router.py during implementation; subsequent --check is clean). Matches the Coach validation block in the task spec verbatim.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/adapters/command_router.py",
+        "src/study_tutor/adapters/nats_adapter.py",
+        "tests/unit/adapters/test_command_router_readiness.py"
+      ]
+    }
+  ]
+}
