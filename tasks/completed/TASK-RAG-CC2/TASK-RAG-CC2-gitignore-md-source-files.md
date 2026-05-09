@@ -7,10 +7,16 @@ parent_task: TASK-RAG-CC1
 implementation_mode: direct
 complexity: 1
 estimated_minutes: 10
-status: backlog
+status: completed
 priority: low
 created: 2026-05-09T00:00:00Z
 updated: 2026-05-09T00:00:00Z
+completed: 2026-05-09T00:00:00Z
+completed_location: tasks/completed/TASK-RAG-CC2/
+previous_state: in_progress
+state_transition_reason: "Direct-mode bugfix landed; git status confirmed clean under domains/gcse-english/sources/."
+organized_files:
+  - TASK-RAG-CC2-gitignore-md-source-files.md
 related:
   - .gitignore
   - domains/gcse-english/sources/CONTRIBUTING-CORPUS.md
@@ -21,9 +27,18 @@ tags:
   - course-correction
   - feat-prv4
 test_results:
-  status: pending
+  status: passing
   coverage: null
-  last_run: null
+  last_run: 2026-05-09T00:00:00Z
+  notes: |
+    No code under test for a .gitignore rule; verified manually via
+    `git check-ignore -v` on a representative in-copyright file
+    (domains/gcse-english/sources/secondary_study_guide/mr-bruff-macbeth.md
+    matched .gitignore:264:domains/*/sources/**/*.md) and confirmed via
+    `git status` that the 6 previously-untracked Mr Bruff / lang-/literature-
+    guide .md files no longer appear under "Untracked". Tracked docs
+    (CONTRIBUTING-CORPUS.md, README.md) remain unaffected — gitignore does
+    not apply to files already in the index.
 ---
 
 # Task: Add `.md` to .gitignore source-file rules
@@ -73,14 +88,14 @@ docling-produced shape that joins the existing extension list.
 
 ## Acceptance criteria
 
-- [ ] `.gitignore` includes `domains/*/sources/*.md` and
+- [x] `.gitignore` includes `domains/*/sources/*.md` and
       `domains/*/sources/**/*.md`.
-- [ ] The leading comment block references TASK-RAG-CC1 (or the docling
+- [x] The leading comment block references TASK-RAG-CC1 (or the docling
       workflow) as the reason `.md` was added.
-- [ ] `git status` shows zero "Untracked" entries under
+- [x] `git status` shows zero "Untracked" entries under
       `domains/gcse-english/sources/` after this lands (assumes the
       reconstructed `.md` files are present locally).
-- [ ] No other `.gitignore` lines change.
+- [x] No other `.gitignore` lines change.
 
 ## Out of scope
 

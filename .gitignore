@@ -245,6 +245,11 @@ Temporary Items
 # plain-text downloads (the canonical primary-text source per CONTRIBUTING-CORPUS.md)
 # also stay out of the repo. The ingestion script (scripts/ingest_corpus.py)
 # walks domains/*/sources/ but the texts themselves never get committed.
+# TASK-RAG-CC1 + TASK-RAG-CC2 (2026-05-09): extend to .md — docling emits
+# markdown for both Standard and VLM modes, so docling-produced study-guide
+# .md files (e.g. reconstructed Mr Bruff guides) join the existing extension
+# list. CONTRIBUTING-CORPUS.md §4 already documents this; this rule makes
+# the .gitignore match those docs.
 domains/*/sources/*.pdf
 domains/*/sources/**/*.pdf
 domains/*/sources/*.PDF
@@ -255,6 +260,8 @@ domains/*/sources/*.txt
 domains/*/sources/**/*.txt
 domains/*/sources/*.xhtml
 domains/*/sources/**/*.xhtml
+domains/*/sources/*.md
+domains/*/sources/**/*.md
 
 # In-copyright / unusable source material kept out of `domains/*/sources/`
 # so the loader (load_corpus) never walks into it. Files here are operator-
