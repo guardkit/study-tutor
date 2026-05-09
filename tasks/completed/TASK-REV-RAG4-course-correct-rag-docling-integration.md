@@ -3,10 +3,15 @@ id: TASK-REV-RAG4
 title: "Review: course-correct RAG ingestion to accept docling output and remove deny-list"
 task_type: review
 feature_id: FEAT-PRV4
-status: review_complete
+status: completed
 priority: high
 created: 2026-05-09T00:00:00Z
 updated: 2026-05-09T00:00:00Z
+completed_at: 2026-05-09T00:00:00Z
+emitted_subtasks:
+  - TASK-RAG-CC1  # course correction (deny-list removal + docs) — completed and smoke-verified
+incidental_findings:
+  - TASK-PRV-008  # pre-existing citation-anchor MULTILINE bug surfaced during CC1 smoke
 review_results:
   mode: course-correction
   depth: standard
@@ -14,7 +19,7 @@ review_results:
   pre_check_resolution: "load_corpus extension filter is already permissive (rglob('*') + UTF-8 read) — Change 1 collapses to docs-only"
   recommended_subtasks: 1
   report_path: .guardkit/reviews/TASK-REV-RAG4-review-report.md
-  completed_at: 2026-05-09T00:00:00Z
+  smoke_outcome: "CC1 gates PASS (3,322 chunks, 0 IN_COPYRIGHT_TITLE refusals, 574 Inspector Calls chunks ingested); pre-existing citation-anchor regex bug filed as TASK-PRV-008"
 tags:
   - rag
   - corpus
