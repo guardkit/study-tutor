@@ -1,0 +1,98 @@
+{
+  "task_id": "TASK-NATS-PH3-004",
+  "timestamp": "2026-05-09T08:11:30.010744",
+  "completed": true,
+  "success": true,
+  "implementation_mode": "direct",
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 0,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": true,
+    "quality_gates_relaxed": true,
+    "all_passed": true
+  },
+  "files_modified": [],
+  "files_created": [
+    "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md",
+    "docs/runbooks/evidence/.gitkeep",
+    "docs/runbooks/templates/RESULTS-template.md"
+  ],
+  "tests_written": [],
+  "requirements_addressed": [
+    "AC-001: RUNBOOK file created with full procedure (Phases 0-8, talk track, failure-modes table, see-also).",
+    "AC-002: Wire-tap commands use flat `agents.command.>` and `agents.result.>`. Negative-grep guard `! grep -E 'agents\\.command\\.[a-z-]+\\.>' ...` passes.",
+    "AC-003: RESULTS template created with all required sections (HEADs, Outcome, Demo blocking?, Phase \u00d7 Gate table, Bug catalogue, What's working, Next steps).",
+    "AC-004: Empty `.gitkeep` placed under `docs/runbooks/evidence/`.",
+    "AC-005: Only markdown + empty .gitkeep added; no project lint surface affected."
+  ],
+  "requirements_met": [
+    "AC-001: RUNBOOK file created with full procedure (Phases 0-8, talk track, failure-modes table, see-also).",
+    "AC-002: Wire-tap commands use flat `agents.command.>` and `agents.result.>`. Negative-grep guard `! grep -E 'agents\\.command\\.[a-z-]+\\.>' ...` passes.",
+    "AC-003: RESULTS template created with all required sections (HEADs, Outcome, Demo blocking?, Phase \u00d7 Gate table, Bug catalogue, What's working, Next steps).",
+    "AC-004: Empty `.gitkeep` placed under `docs/runbooks/evidence/`.",
+    "AC-005: Only markdown + empty .gitkeep added; no project lint surface affected."
+  ],
+  "summary": "Direct mode implementation completed successfully",
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "[ ] `docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` exists with the full procedure.",
+      "status": "complete",
+      "evidence": "Created `docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` (~33 KB / 760+ lines). Mirrors jarvis's RUNBOOK-jarvis-architect-align-dddsw-demo.md structure: header (status/purpose/topology/references/machine layout/wall-clock/outputs), 'What this runbook does NOT cover', demo narrative, Phase 0 pre-flight (6 gates), Phase 1 compose up + KV registration + manifest + heartbeat, Phase 2 jarvis chat + catalogue, Phase 3 demo turn, Phase 4 wire-level evidence, Phase \u00d7 Gate \u00d7 Outcome \u00d7 Evidence summary table, Bug catalogue (template + four worked examples), Phase 6 failure modes, \u00a76 Known issue: stale registry entries, Phase 7 capture, Phase 8 close, See-also. `test -f` passes.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "[ ] Wire-tap subject patterns in the runbook are `agents.command.>` and `agents.result.>` (Bug #4 regression \u2014 automate the negative check via `! grep -E 'agents\\.command\\.[a-z-]+\\.>'` in the runbook).",
+      "status": "complete",
+      "evidence": "All wire-tap commands in \u00a74.1 / \u00a74.2 / Phase \u00d7 Gate table / Bug #4 reference use the FLAT `agents.command.>` and `agents.result.>` patterns. Initially the Bug #4 cautionary text contained the literal broken pattern `agents.command.<id>.>` as a 'do not do this' example, which tripped the negative grep; rewrote the warning to describe the broken shape in prose without literally including it, plus did the same for the Reference Bug #4 worked example. Verified: `grep -nE 'agents\\.command\\.[a-z-]+\\.>' docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md` returns no matches (exit 1). The parallel `agents.result.<id>.>` shape is also absent. `grep -nE '`agents\\.command\\.>`|`agents\\.result\\.>`'` confirms 8 hits of the correct flat patterns.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "[ ] `docs/runbooks/templates/RESULTS-template.md` exists with all required sections.",
+      "status": "complete",
+      "evidence": "Created `docs/runbooks/templates/RESULTS-template.md` (~7.7 KB). Includes every required section per task spec: how-to header, participating-repo HEADs table (study-tutor, jarvis, specialist-agent, nats-core, fleet-gateway) plus image tags, Outcome line (\u2705/\u23f8/\u274c), Demo blocking? line, 'What's new vs prior run' delta table, Phase \u00d7 Gate \u00d7 Outcome \u00d7 Evidence summary table mirroring the runbook's gate sequence, Bug catalogue with the canonical four-field shape (symptom / cause / fix / where-it-must-live), 'What's working \u2014 narrative' bullets, 'Next steps with concrete fix-and-rerun list' numbered actions, hygiene-flags section, evidence-index. `test -f` passes.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/templates/RESULTS-template.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "[ ] `docs/runbooks/evidence/.gitkeep` exists (empty file is fine).",
+      "status": "complete",
+      "evidence": "Created empty `docs/runbooks/evidence/.gitkeep` (0 bytes). `test -f docs/runbooks/evidence/.gitkeep` passes; `ls -la` confirms 0-byte file. Establishes the per-execution evidence directory placeholder so git tracks the empty parent.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/evidence/.gitkeep"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "[ ] No project lint/format violations introduced.",
+      "status": "complete",
+      "evidence": "Documentation-only change: only markdown files (`RUNBOOK-study-tutor-nats-fleet-demo.md`, `RESULTS-template.md`) and an empty `.gitkeep` were added. No Python source / tests / config touched. Project uses `ruff` for Python lint (per `pyproject.toml [extra=dev]`); markdown is not in ruff's surface and the project has no markdownlint / prettier / mdformat configured (`find . -maxdepth 2 -name '.markdownlint*' -o -name '.prettierrc*' -o -name '.pre-commit-config.yaml'` returned nothing). No lint/format surface affected.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-nats-fleet-demo.md",
+        "docs/runbooks/templates/RESULTS-template.md",
+        "docs/runbooks/evidence/.gitkeep"
+      ]
+    }
+  ]
+}
