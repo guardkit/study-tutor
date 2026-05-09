@@ -411,9 +411,15 @@ _ROMAN_TO_INT: dict[str, int] = {
     "x": 10,
 }
 
-_ACT_PATTERN = re.compile(r"^\s*act\s+([ivxlcdm]+|\d+)\b", re.IGNORECASE)
-_SCENE_PATTERN = re.compile(r"^\s*scene\s+([ivxlcdm]+|\d+)\b", re.IGNORECASE)
-_CHAPTER_PATTERN = re.compile(r"^\s*chapter\s+([ivxlcdm]+|\d+)\b", re.IGNORECASE)
+_ACT_PATTERN = re.compile(
+    r"^\s*act\s+([ivxlcdm]+|\d+)\b", re.IGNORECASE | re.MULTILINE
+)
+_SCENE_PATTERN = re.compile(
+    r"^\s*scene\s+([ivxlcdm]+|\d+)\b", re.IGNORECASE | re.MULTILINE
+)
+_CHAPTER_PATTERN = re.compile(
+    r"^\s*chapter\s+([ivxlcdm]+|\d+)\b", re.IGNORECASE | re.MULTILINE
+)
 
 
 def _parse_roman_or_int(token: str) -> int | None:

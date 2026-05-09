@@ -80,6 +80,65 @@ Old Marley was as dead as a door-nail.
 """
 
 
+# A play fixture in Standard-Ebooks-ish shape: editorial front matter (title,
+# author, imprint paragraph) appears BEFORE the first ``Act I`` heading. This
+# mirrors the real Standard Ebooks Macbeth `.txt`, which carries 2,802 chars
+# of front matter and was the case that surfaced TASK-PRV-008 (the
+# `^`-anchored gate regex without ``re.MULTILINE`` returned None for any file
+# whose first non-blank line wasn't ``Act ...``).
+MACBETH_WITH_FRONT_MATTER_FIXTURE = """\
+The Tragedy of Macbeth
+By William Shakespeare
+
+This edition of Macbeth is published by an editorial imprint in 2026. It is
+distributed under a public-domain dedication and includes editorial notes on
+the text. None of this front matter is part of the play body.
+
+
+Act I
+Scene 1
+A desert place. Thunder and lightning.
+Enter three Witches.
+First Witch
+When shall we three meet again
+In thunder, lightning, or in rain?
+Second Witch
+When the hurlyburly's done,
+When the battle's lost and won.
+Third Witch
+That will be ere the set of sun.
+First Witch
+Where the place?
+Second Witch
+Upon the heath.
+Third Witch
+There to meet with Macbeth.
+"""
+
+# A novel fixture with editorial front matter before the first ``Chapter 1``
+# heading. Same shape problem as the play fixture above — the gate regex
+# must use ``re.MULTILINE`` to match a heading that isn't at start-of-string.
+CHRISTMAS_CAROL_WITH_FRONT_MATTER_FIXTURE = """\
+A Christmas Carol
+By Charles Dickens
+
+This edition of A Christmas Carol is published by an editorial imprint in
+2026. It is distributed under a public-domain dedication. None of this front
+matter is part of the novel body.
+
+
+Chapter 1
+
+Marley was dead, to begin with. There is no doubt whatever about that.
+
+The register of his burial was signed by the clergyman, the clerk, the undertaker, and the chief mourner.
+
+Scrooge signed it. And Scrooge's name was good upon 'Change for anything he chose to put his hand to.
+
+Old Marley was as dead as a door-nail.
+"""
+
+
 # ---------------------------------------------------------------------------
 # AC: source-type inference per folder + no-default-source-type invariant
 # ---------------------------------------------------------------------------
@@ -377,6 +436,90 @@ def test_novel_chunks_carry_novel_citation_anchor(tmp_path: Path) -> None:
     assert anchored, "at least one novel chunk must carry a citation anchor"
     for chunk in anchored:
         assert isinstance(chunk.citation_anchor, NovelCitationAnchor)
+        assert chunk.citation_anchor.chapter == 1
+        assert chunk.citation_anchor.paragraph >= 1
+
+
+# ---------------------------------------------------------------------------
+# AC: citation-anchor gate must work when files start with front matter
+# (TASK-PRV-008 regression: the ``^``-anchored gate regex without
+# ``re.MULTILINE`` returned None for any primary text whose first non-blank
+# line wasn't ``Act ...`` / ``Chapter ...``, e.g. Standard Ebooks editions).
+# ---------------------------------------------------------------------------
+
+
+def test_play_with_front_matter_still_yields_play_anchor(tmp_path: Path) -> None:
+    """AC (TASK-PRV-008): a play file starting with editorial front matter
+    must still pick the play-anchor inferer and produce PlayCitationAnchors
+    for chunks past the front matter.
+
+    Before the fix, ``_ACT_PATTERN.search(file_text)`` only matched at
+    start-of-string (no ``re.MULTILINE``), so any file with front matter
+    fell through to ``return None`` and shipped chunks with
+    ``citation_anchor=None``.
+    """
+    _make_corpus_skeleton(tmp_path)
+    (tmp_path / "primary_text" / "macbeth.txt").write_text(
+        MACBETH_WITH_FRONT_MATTER_FIXTURE
+    )
+
+    result = load_corpus(tmp_path)
+
+    primary_chunks = [
+        c for c in result.chunks if c.source_type is SourceType.PRIMARY_TEXT
+    ]
+    assert primary_chunks, "expected primary-text chunks for play with front matter"
+
+    anchored = [c for c in primary_chunks if c.citation_anchor is not None]
+    assert anchored, (
+        "at least one play chunk past the front matter must carry an anchor; "
+        "missing anchors indicate the gate regex still doesn't see ``Act I`` "
+        "when it isn't at start-of-string (TASK-PRV-008 regression)."
+    )
+    for chunk in anchored:
+        assert isinstance(chunk.citation_anchor, PlayCitationAnchor), (
+            f"front-matter play must yield PlayCitationAnchor, got "
+            f"{type(chunk.citation_anchor)}"
+        )
+        assert chunk.citation_anchor.act == 1
+        assert chunk.citation_anchor.scene == 1
+        assert chunk.citation_anchor.line >= 1
+
+
+def test_novel_with_front_matter_still_yields_novel_anchor(
+    tmp_path: Path,
+) -> None:
+    """AC (TASK-PRV-008): a novel file starting with editorial front matter
+    must still pick the novel-anchor inferer and produce NovelCitationAnchors
+    for chunks past the front matter.
+
+    Mirrors the play-with-front-matter case for ``_CHAPTER_PATTERN``.
+    """
+    _make_corpus_skeleton(tmp_path)
+    (tmp_path / "primary_text" / "christmas_carol.txt").write_text(
+        CHRISTMAS_CAROL_WITH_FRONT_MATTER_FIXTURE
+    )
+
+    result = load_corpus(tmp_path)
+
+    primary_chunks = [
+        c for c in result.chunks if c.source_type is SourceType.PRIMARY_TEXT
+    ]
+    assert primary_chunks, (
+        "expected primary-text chunks for novel with front matter"
+    )
+
+    anchored = [c for c in primary_chunks if c.citation_anchor is not None]
+    assert anchored, (
+        "at least one novel chunk past the front matter must carry an "
+        "anchor; missing anchors indicate the gate regex still doesn't see "
+        "``Chapter 1`` when it isn't at start-of-string (TASK-PRV-008)."
+    )
+    for chunk in anchored:
+        assert isinstance(chunk.citation_anchor, NovelCitationAnchor), (
+            f"front-matter novel must yield NovelCitationAnchor, got "
+            f"{type(chunk.citation_anchor)}"
+        )
         assert chunk.citation_anchor.chapter == 1
         assert chunk.citation_anchor.paragraph >= 1
 
