@@ -23,10 +23,10 @@ silent.
 Refusal vs. skip vs. error
 --------------------------
 * **Refusal** — material we *could* read but legally must not ingest in bulk
-  (AQA assessment material, in-copyright modern set texts, files outside the
-  corpus root via path-traversal symlinks). Refusals are logged with the
-  reason and reference the publisher prohibition / per-student Phase 2 path
-  so future engineers understand *why* a perfectly readable file was dropped.
+  (AQA assessment material, files outside the corpus root via
+  path-traversal symlinks). Refusals are logged with the reason and
+  reference the publisher prohibition so future engineers understand *why*
+  a perfectly readable file was dropped.
 * **Skip** — a file we tried to read but couldn't usefully consume
   (whitespace-only, binary/corrupted, unknown folder). Skips are logged so
   the corpus owner can audit what didn't make it in. The rest of the corpus
@@ -94,21 +94,6 @@ AQA_REFUSAL_PATTERN: re.Pattern[str] = re.compile(
     r"(?i)(past[_-]?paper|mark[_-]?scheme|examiner[_-]?report)"
 )
 
-# Modern in-copyright set texts the loader must not ingest in bulk. Per-
-# student access goes via the Phase 2 path (a per-student episode). Matched
-# case-insensitively as a substring of the file's stem (after normalising
-# hyphens, spaces, and dots to underscores).
-INCOPYRIGHT_TITLES: frozenset[str] = frozenset(
-    {
-        "inspector_calls",
-        "blood_brothers",
-        "dna",
-        "lord_of_the_flies",
-        "anita_and_me",
-        "animal_farm",
-    }
-)
-
 # Chunker tuning: 23-Apr empirical findings §3d.
 CHUNK_SIZE: int = 512
 CHUNK_OVERLAP: int = 100
@@ -118,7 +103,6 @@ class RefusalReason(str, Enum):
     """Why a candidate corpus file was *refused* (legal/policy gate)."""
 
     AQA_ASSESSMENT_MATERIAL = "AQA_ASSESSMENT_MATERIAL"
-    IN_COPYRIGHT_TITLE = "IN_COPYRIGHT_TITLE"
     PATH_TRAVERSAL = "PATH_TRAVERSAL"
 
 
@@ -177,8 +161,8 @@ def load_corpus(root: Path) -> IngestResult:
     Each top-level subfolder of ``root`` is matched against
     :data:`SOURCE_TYPE_FOLDERS`; unrecognised folders are skipped with a
     structured warning. Each file inside a recognised folder is run through
-    the refusal gates (path-traversal, AQA, in-copyright deny-list) before
-    being chunked into :class:`CorpusChunk` records.
+    the refusal gates (path-traversal, AQA) before being chunked into
+    :class:`CorpusChunk` records.
 
     The loader is robust to corrupted files: a per-file failure is logged
     and skipped, but the rest of the corpus still loads. The only error
@@ -274,7 +258,6 @@ def _process_file(
         return
 
     name = file_path.name
-    stem_lower = file_path.stem.lower()
 
     # AQA refusal — filename pattern-match. Applied across all source-type
     # folders because misfiled material must never leak into the index.
@@ -290,24 +273,6 @@ def _process_file(
         result.refusals.append(record)
         logger.warning(
             "corpus.refusal.aqa_assessment_material",
-            extra={"path": record.path, "detail": record.detail},
-        )
-        return
-
-    matched_title = _match_incopyright_title(stem_lower)
-    if matched_title is not None:
-        record = RefusalRecord(
-            path=str(file_path),
-            reason=RefusalReason.IN_COPYRIGHT_TITLE,
-            detail=(
-                f"In-copyright title {matched_title!r} cannot be ingested in "
-                "bulk; use the per-student Phase 2 path (per-student in-"
-                "copyright Text episode) instead."
-            ),
-        )
-        result.refusals.append(record)
-        logger.warning(
-            "corpus.refusal.in_copyright",
             extra={"path": record.path, "detail": record.detail},
         )
         return
@@ -380,20 +345,6 @@ def _process_file(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _match_incopyright_title(stem_lower: str) -> str | None:
-    """Return the in-copyright title that ``stem_lower`` matches, or ``None``.
-
-    Filename punctuation (hyphens, spaces, dots) is normalised to underscores
-    before substring matching so that ``Inspector-Calls`` and ``Inspector
-    Calls`` both match the canonical key ``inspector_calls``.
-    """
-    normalised = re.sub(r"[-\s.]+", "_", stem_lower)
-    for title in INCOPYRIGHT_TITLES:
-        if title in normalised:
-            return title
-    return None
 
 
 def _derive_text_name(path: Path) -> str:
@@ -565,7 +516,6 @@ __all__ = [
     "AQA_REFUSAL_PATTERN",
     "CHUNK_OVERLAP",
     "CHUNK_SIZE",
-    "INCOPYRIGHT_TITLES",
     "IngestResult",
     "RefusalReason",
     "RefusalRecord",

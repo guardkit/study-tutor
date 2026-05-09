@@ -208,17 +208,6 @@ Feature: Primary-Text RAG and Source-Typed Quote Verifier
     And the loader should record a structured refusal entry naming the prohibited file
     And the refusal should reference the publisher's prohibition
 
-  # Why: In-copyright modern texts are Analysis-Mode-Only — never in primary_text
-  @task:TASK-PRV-002
-  @negative @ingestion @copyright
-  Scenario: An in-copyright modern set text placed under primary text is refused at ingestion
-    # [ASSUMPTION: confidence=low] Refusal enforced by an explicit deny-list of titles (Inspector Calls, Blood Brothers, DNA, Lord of the Flies, Anita and Me, Animal Farm) (ASSUM-009)
-    Given an in-copyright modern set text is placed under the primary-text folder
-    When the corpus is loaded
-    Then the file should not be ingested
-    And the loader should record a structured refusal naming the in-copyright text
-    And the loader should advise that the only legitimate route is per-student licensed material in a future phase
-
   # Why: Without a primary-text edition, retrieval cannot help and must report so explicitly — the silent failure is the actual bug
   @task:TASK-PRV-004
   @negative @retrieval

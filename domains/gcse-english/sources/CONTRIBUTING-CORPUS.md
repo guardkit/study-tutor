@@ -132,29 +132,54 @@ treat it the same way any textbook publisher references it.
 
 ---
 
-## 3. In-copyright modern set texts — deny-list
+## 3. Personal-use posture
 
-Modern set texts where the digital edition is gated behind a publisher
-licence are matched against an in-copyright deny-list and refused at the
-loader. The current deny-list (in `src/study_tutor/knowledge/corpus.py`,
-constant `INCOPYRIGHT_TITLES`):
+This is a personal-use tool running on the operator's own machine for a
+family member's GCSE revision. Source materials (Mr Bruff guides,
+scanned play texts, etc.) are legally acquired by the operator and the
+ChromaDB collection lives on the local filesystem only — there is no
+redistribution, no shared service, and no public corpus. The only
+content gate the loader enforces is the AQA pedagogical refusal in §2.
 
-- `inspector_calls`
-- `blood_brothers`
-- `dna`
-- `lord_of_the_flies`
-- `anita_and_me`
-- `animal_farm`
+The previous in-copyright deny-list (TASK-PRV-002) was designed for a
+hypothetical open-source redistribution scenario that does not apply
+here; it was removed in TASK-RAG-CC1 alongside the introduction of the
+docling-based ingestion workflow in §3a.
 
-Filename punctuation is normalised to underscores before matching, so
-`Inspector-Calls`, `Inspector Calls`, and `inspector.calls` all match.
+---
 
-Per-student access for these texts goes via the **Phase 2** path (an
-authenticated per-student episode in the knowledge graph) rather than
-bulk ingestion into the shared corpus. This is the load-bearing reason
-`primary_text/` is canonically populated from Standard Ebooks: every
-text that's free to ingest is also free to redistribute as a typeset
-edition, and every text that isn't free to ingest is handled out-of-band.
+## 3a. Docling-based ingestion for PDFs and scanned material
+
+Standard Ebooks (§1) covers the public-domain primary texts. For
+everything else — Mr Bruff study guides, scanned paperbacks of modern
+set texts, Power & Conflict poems, etc. — the workflow runs through
+[docling](https://github.com/docling-project/docling):
+
+1. **Standard mode** for digital PDFs (Mr Bruff ebooks, exam-board PDFs
+   that aren't refused by §2).
+2. **VLM mode** for scanned paperbacks (e.g. an Inspector Calls
+   paperback scanned via the operator's HP OfficeJet).
+3. The output is a structured markdown (`.md`) file.
+4. Drop the `.md` file into the appropriate source-type subfolder
+   (§ "Folder layout" — primary text under `primary_text/`,
+   secondary commentary under `secondary_study_guide/`, etc.).
+5. Run `python scripts/ingest_corpus.py`.
+
+The loader is extension-agnostic (`_iter_files` walks `rglob('*')` and
+reads UTF-8), so a `.md` file ingests identically to a `.txt` file. No
+code change is required to accept docling output — only this
+documentation.
+
+The working docling invocation lives in the dataset-factory repo at
+[`agentic-dataset-factory/ingestion/docling_processor.py`](https://github.com/appmilla/agentic-dataset-factory).
+That script is the source of truth for CLI flags and is intentionally
+not transcribed here so this file does not drift out of sync with the
+processor's actual behaviour.
+
+> **Optional follow-up:** the current chunker is line-oriented and
+> ignores markdown structure. A header-aware chunker that respects
+> docling's heading boundaries is a worthwhile enhancement but not
+> required for v1 — see the FEAT-PRV4 backlog.
 
 ---
 
@@ -164,15 +189,15 @@ edition, and every text that isn't free to ingest is handled out-of-band.
 |---|---|---|
 | This file, `README.md` | ✅ | Structure + sourcing guidance |
 | `.keep` placeholders in each folder | ✅ | Preserves folder layout |
-| Source files you add (`.txt`, `.xhtml`, `.epub`, `.pdf`) | ❌ | Gitignored; your acquired materials stay yours |
+| Source files you add (`.txt`, `.md`, `.xhtml`, `.epub`, `.pdf`) | ❌ | Gitignored; your acquired materials stay yours |
 | ChromaDB collection (`data/chroma/`) | ❌ | Gitignored; rebuildable from sources |
 | `.primary_text_index` sidecar | ❌ | Gitignored (lives next to the chroma dir) |
 
 The `.gitignore` entry that enforces this (extended in TASK-RAG-001):
 
 ```
-domains/*/sources/*.{pdf,PDF,epub,txt,xhtml}
-domains/*/sources/**/*.{pdf,PDF,epub,txt,xhtml}
+domains/*/sources/*.{pdf,PDF,epub,txt,md,xhtml}
+domains/*/sources/**/*.{pdf,PDF,epub,txt,md,xhtml}
 chroma/
 data/chroma/
 ```

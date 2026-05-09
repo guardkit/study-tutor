@@ -16,7 +16,6 @@ import pytest
 
 from study_tutor.knowledge.corpus import (
     AQA_REFUSAL_PATTERN,
-    INCOPYRIGHT_TITLES,
     SOURCE_TYPE_FOLDERS,
     IngestResult,
     RefusalReason,
@@ -194,47 +193,35 @@ def test_aqa_named_file_is_refused_with_publisher_log(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# AC: in-copyright deny-list refusal
+# AC: docling .md output ingests as a regular source file (TASK-RAG-CC1)
 # ---------------------------------------------------------------------------
 
 
-def test_incopyright_titles_constant_lists_required_entries() -> None:
-    """AC: the in-copyright deny-list contains the six modern set texts."""
-    expected = {
-        "inspector_calls",
-        "blood_brothers",
-        "dna",
-        "lord_of_the_flies",
-        "anita_and_me",
-        "animal_farm",
-    }
-    assert expected <= INCOPYRIGHT_TITLES
+def test_markdown_file_in_source_folder_is_ingested(tmp_path: Path) -> None:
+    """AC: a .md file dropped into a source-type folder produces chunks.
 
-
-@pytest.mark.parametrize("filename", ["inspector_calls.txt", "Inspector-Calls.txt"])
-def test_incopyright_match_is_case_insensitive_with_punctuation(
-    tmp_path: Path, filename: str
-) -> None:
-    """AC: deny-list catches both ``inspector_calls.txt`` and ``Inspector-Calls.txt``."""
+    Docling emits markdown for both Standard and VLM modes; the loader is
+    extension-agnostic (rglob('*') + UTF-8 read), so a docling-produced
+    .md file in a source-type subfolder ingests like any other text file.
+    """
     _make_corpus_skeleton(tmp_path)
-    (tmp_path / "primary_text" / filename).write_text(
-        "Some primary-text content that should never be ingested."
+    (tmp_path / "secondary_study_guide" / "mr-bruff-macbeth.md").write_text(
+        "# Mr Bruff on Macbeth\n\n"
+        "Macbeth's ambition is the central engine of the play's tragedy.\n",
+        encoding="utf-8",
     )
 
     result = load_corpus(tmp_path)
 
-    refusals = [
-        r for r in result.refusals if r.reason is RefusalReason.IN_COPYRIGHT_TITLE
+    md_chunks = [
+        c
+        for c in result.chunks
+        if c.source_path.endswith("mr-bruff-macbeth.md")
     ]
-    assert refusals, f"expected refusal for {filename!r}"
-    # AC: log advises per-student Phase 2 path.
-    assert any("phase 2" in r.detail.lower() for r in refusals), (
-        "refusal detail must reference the per-student Phase 2 path"
-    )
-    # The refused file must NOT have produced any chunks.
+    assert md_chunks, "expected at least one chunk from the .md file"
     assert all(
-        Path(c.source_path).name != filename for c in result.chunks
-    ), "refused file must not appear in chunks"
+        c.source_type is SourceType.SECONDARY_STUDY_GUIDE for c in md_chunks
+    )
 
 
 # ---------------------------------------------------------------------------

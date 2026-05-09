@@ -569,19 +569,6 @@ def _given_aqa_file(corpus_context: CorpusBddContext) -> None:
     corpus_context.files["aqa"] = path
 
 
-@given(
-    "an in-copyright modern set text is placed under the primary-text folder"
-)
-def _given_in_copyright_set_text(corpus_context: CorpusBddContext) -> None:
-    """Place an in-copyright-titled file under primary_text/."""
-    path = corpus_context.root / "primary_text" / "inspector_calls.txt"
-    path.write_text(
-        "An Inspector Calls full text — this must never be ingested in bulk.",
-        encoding="utf-8",
-    )
-    corpus_context.files["in_copyright"] = path
-
-
 @given("the primary-text folder contains one valid file and one corrupted file")
 def _given_valid_and_corrupted_files(corpus_context: CorpusBddContext) -> None:
     """Place a valid Macbeth file alongside a non-UTF-8 corrupted file."""
@@ -728,13 +715,11 @@ def _then_whitespace_skip_recorded(corpus_context: CorpusBddContext) -> None:
 def _then_file_not_ingested(corpus_context: CorpusBddContext) -> None:
     """The candidate refused/rejected file is absent from chunks.
 
-    Resolves the candidate by precedence: AQA → in-copyright → traversal
-    link. Each scenario installs exactly one of these, so the lookup is
-    unambiguous.
+    Resolves the candidate by precedence: AQA → traversal link. Each
+    scenario installs exactly one of these, so the lookup is unambiguous.
     """
     candidate = (
         corpus_context.files.get("aqa")
-        or corpus_context.files.get("in_copyright")
         or corpus_context.files.get("traversal_link")
     )
     assert candidate is not None, "no refused-file candidate registered"
@@ -772,41 +757,6 @@ def _then_refusal_references_publisher_prohibition(
     assert aqa_refusals
     assert any(
         "publisher prohibition" in r.detail.lower() for r in aqa_refusals
-    )
-
-
-@then(
-    "the loader should record a structured refusal naming the "
-    "in-copyright text"
-)
-def _then_incopyright_refusal_recorded(
-    corpus_context: CorpusBddContext,
-) -> None:
-    """An IN_COPYRIGHT_TITLE refusal record exists naming the file."""
-    target = corpus_context.files["in_copyright"]
-    refusals = [
-        r for r in _result(corpus_context).refusals
-        if r.reason is RefusalReason.IN_COPYRIGHT_TITLE
-        and r.path == str(target)
-    ]
-    assert refusals, "expected in-copyright refusal naming the file"
-
-
-@then(
-    "the loader should advise that the only legitimate route is "
-    "per-student licensed material in a future phase"
-)
-def _then_incopyright_advises_phase_2(
-    corpus_context: CorpusBddContext,
-) -> None:
-    """The in-copyright refusal detail references the per-student Phase 2 path."""
-    refusals = [
-        r for r in _result(corpus_context).refusals
-        if r.reason is RefusalReason.IN_COPYRIGHT_TITLE
-    ]
-    assert refusals
-    assert any("phase 2" in r.detail.lower() for r in refusals), (
-        "in-copyright refusal must advise the per-student Phase 2 path"
     )
 
 
