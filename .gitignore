@@ -285,17 +285,22 @@ adapters/
 merged-16bit/
 merged-fp16/
 
-# Re-include the Python boundary-adapters package and its tests (FEAT-6CC5).
-# The bare ``adapters/`` rule above is for ML model artefacts (LoRA etc.)
-# but unanchored matches every ``adapters/`` directory in the tree —
-# including ``src/study_tutor/tutoring/adapters/`` and its test mirror.
-# This was the silent failure mode behind TASK-INV-AB1: a prior autobuild
-# wrote the package locally but it never reached the merged branch
-# because git was ignoring it.
+# Re-include Python boundary-adapter packages and their tests. The bare
+# ``adapters/`` rule above is for ML model artefacts (LoRA etc.) but is
+# unanchored, so it matches every ``adapters/`` directory in the tree.
+# Each Python adapters package needs an explicit re-include pair below
+# or its files are silently dropped at git-add time — the failure mode
+# behind TASK-INV-AB1 (FEAT-6CC5 ``tutoring/adapters/``) and the FEAT-39E1
+# autobuild false-completion of 2026-05-08 (NATS-fleet ``adapters/``).
+# Add a new pair here whenever a new adapters/ package lands.
 !src/study_tutor/tutoring/adapters/
 !src/study_tutor/tutoring/adapters/*.py
 !tests/unit/tutoring/adapters/
 !tests/unit/tutoring/adapters/*.py
+!src/study_tutor/adapters/
+!src/study_tutor/adapters/*.py
+!tests/unit/adapters/
+!tests/unit/adapters/*.py
 
 # Local inference scratch
 ollama_models/
