@@ -17,11 +17,13 @@
 #   that suffix.
 #
 # Usage (typical: NATS already running on the host on port 4222):
-#   RICH_NATS_PASSWORD=<password> \
+#   Populate study-tutor/.env with NATS_USER=rich and NATS_PASSWORD=<password>
+#   (the .env file is git-ignored). `docker compose` auto-loads it from the
+#   compose project directory, so no shell exports are needed:
 #     docker compose -f docker-compose.study-tutor.yml up -d
 #
 # Override NATS host (e.g. point at a remote NATS over Tailscale):
-#   NATS_HOST=promaxgb10-41b1 RICH_NATS_PASSWORD=<password> \
+#   NATS_HOST=promaxgb10-41b1 \
 #     docker compose -f docker-compose.study-tutor.yml up -d
 #
 # Validate without starting:
@@ -49,11 +51,23 @@ services:
       # NATS_HOST defaults to host.docker.internal so the container reaches
       # NATS on the Docker host; override to point at a remote NATS.
       NATS_URL: nats://${NATS_HOST:-host.docker.internal}:4222
-      NATS_USER: ${RICH_NATS_USER:-appmilla}
+      # `appmilla` is the *account* name, not a user. Valid users inside
+      # the APPMILLA account are `rich` and `james` (see
+      # nats-infrastructure/config/accounts/accounts.conf.template).
+      # Sending `appmilla` as the username triggers an Authorization
+      # Violation at connect time.
+      #
+      # The variable name (`NATS_USER`, unprefixed) intentionally matches
+      # `specialist-agent/docker-compose.dual-role.yml` so a single `.env`
+      # file in either project root carries NATS auth for both projects.
+      # The only asymmetry is the default value: study-tutor defaults to
+      # `rich` (this is the GCSE-tutor demo's primary persona); specialist-
+      # agent leaves the default empty.
+      NATS_USER: ${NATS_USER:-rich}
       # `:?must-be-set` makes `compose up` fail with a clear error if the
       # password is missing instead of starting the container with an empty
       # password and silently failing auth at first NATS connect.
-      NATS_PASSWORD: ${RICH_NATS_PASSWORD:?must-be-set}
+      NATS_PASSWORD: ${NATS_PASSWORD:?must-be-set}
 
       # Identity used by serve-nats to register heartbeat / capability records.
       AGENT_ID: gcse-tutor

@@ -341,22 +341,24 @@ def test_openai_base_url_uses_overridable_var_name(env_block: dict[str, str]) ->
 
 
 # ---------------------------------------------------------------------------
-# Required-or-fail-fast: RICH_NATS_PASSWORD
+# Required-or-fail-fast: NATS_PASSWORD
 # ---------------------------------------------------------------------------
 
 
 def test_nats_password_uses_required_interpolation(env_block: dict[str, str]) -> None:
     """``NATS_PASSWORD`` must use the ``${VAR:?msg}`` interpolation form.
 
-    AC: "RICH_NATS_PASSWORD uses ${VAR:?must-be-set} syntax so the
-    compose-up fails with a clear error if unset." This prevents the
-    container starting with an empty password and silently failing
-    NATS auth at first connect.
+    AC (TASK-NATS-PH3-008): NATS_PASSWORD uses ``${NATS_PASSWORD:?<msg>}``
+    syntax so `compose up` fails with a clear error if unset. The
+    variable name is unprefixed (was ``RICH_NATS_PASSWORD`` pre-fix) so
+    a single ``.env`` file works across study-tutor and specialist-agent.
+    This prevents the container starting with an empty password and
+    silently failing NATS auth at first connect.
     """
     raw = env_block["NATS_PASSWORD"]
-    pattern = re.compile(r"^\$\{RICH_NATS_PASSWORD:\?[^}]+\}$")
+    pattern = re.compile(r"^\$\{NATS_PASSWORD:\?[^}]+\}$")
     assert pattern.match(raw), (
-        "NATS_PASSWORD must use the `${RICH_NATS_PASSWORD:?<message>}` "
+        "NATS_PASSWORD must use the `${NATS_PASSWORD:?<message>}` "
         "interpolation form so `compose up` fails fast when the password "
         f"is unset; got {raw!r}."
     )
@@ -435,17 +437,23 @@ def test_openai_api_key_has_no_auth_sentinel_default(env_block: dict[str, str]) 
     )
 
 
-def test_nats_user_default_is_appmilla(env_block: dict[str, str]) -> None:
-    """``NATS_USER`` must default to ``appmilla``.
+def test_nats_user_default_is_rich(env_block: dict[str, str]) -> None:
+    """``NATS_USER`` must default to ``rich`` (user inside APPMILLA account).
 
-    The default user matches the credential set provisioned by the
-    nats-infrastructure repo for the home-lab stack. Drift here means
-    the container starts but cannot authenticate without an explicit
-    override.
+    AC (TASK-NATS-PH3-008 / Bug #7): ``appmilla`` is the *account* name,
+    not a user — sending it as the username triggers an Authorization
+    Violation at connect time. Valid users inside the APPMILLA account
+    are ``rich`` and ``james`` (see
+    nats-infrastructure/config/accounts/accounts.conf.template). The
+    default is the demo's primary persona ``rich``.
+
+    The variable name is unprefixed (was ``RICH_NATS_USER`` pre-fix) so
+    a single ``.env`` file works across study-tutor and specialist-agent
+    (specialist-agent/docker-compose.dual-role.yml uses the same name).
     """
     raw = env_block["NATS_USER"]
-    assert raw == "${RICH_NATS_USER:-appmilla}", (
-        f"NATS_USER must be `${{RICH_NATS_USER:-appmilla}}`; got {raw!r}."
+    assert raw == "${NATS_USER:-rich}", (
+        f"NATS_USER must be `${{NATS_USER:-rich}}`; got {raw!r}."
     )
 
 
