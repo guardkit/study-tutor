@@ -3262,7 +3262,7 @@ Delete the 8 duplicate stubs at tasks/backlog/ root.
 
 
 
-GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-6CC5 --verbose 
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-39E1 --verbose --resume
 
 
 
