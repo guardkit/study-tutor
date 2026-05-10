@@ -240,6 +240,14 @@ REQUIRED_ENV_KEYS: tuple[str, ...] = (
     "LOCAL_MODEL",
     "OPENAI_API_KEY",
     "HEARTBEAT_INTERVAL_SECONDS",
+    # Bug #6 regression guard (TASK-NATS-PH3-007). The Coach provider is
+    # required by the D3 two-provider invariant (D-COACH-05 / FEAT-6CC5);
+    # missing keys here resurface as a container crash-loop with
+    # ``LLMProviderError: AGENT_MODELS__COACH_MODEL is not set`` only
+    # after the container starts, so this regression must be caught at
+    # the file-level contract.
+    "AGENT_MODELS__COACH_MODEL",
+    "AGENT_MODELS__COACH_ENDPOINT",
 )
 
 
@@ -478,6 +486,119 @@ def test_no_healthcheck_block(tutor_service: dict[str, Any]) -> None:
         "liveness signal. Remove the `healthcheck:` block from "
         f"`{SERVICE_NAME}` or update the spec."
     )
+
+
+# ---------------------------------------------------------------------------
+# Bug #6 regression guard (TASK-NATS-PH3-007) — Coach provider env vars
+# ---------------------------------------------------------------------------
+#
+# The D3 two-provider invariant (decision D-COACH-05, feature FEAT-6CC5)
+# requires AGENT_MODELS__COACH_MODEL to be explicitly set and different
+# from AGENT_MODELS__REASONING_MODEL. There is NO fallback — see
+# study_tutor.llm.client:85 — so a missing or matching alias surfaces as
+# ``LLMProviderError: AGENT_MODELS__COACH_MODEL is not set`` (Bug #6 on
+# 2026-05-10) or a violation of the invariant at orchestrator construction
+# time. Both modes only crash AFTER the container boots, so the only fast
+# feedback for a future regression is here at the file-level contract.
+
+
+def _extract_default(raw: str) -> str:
+    """Pull the literal default out of a ``${VAR:-default}`` interpolation.
+
+    Re-implements the inline pattern from
+    ``test_openai_base_url_default_ends_with_v1`` so the Coach tests can
+    assert on the operator's no-override value rather than the raw
+    interpolation. Kept module-private (single-underscore) so the helper
+    doesn't pollute the public test surface.
+    """
+    match = re.match(r"\$\{[^:}]+:-(?P<default>[^}]+)\}$", raw)
+    assert match, (
+        f"Expected `${{VAR:-default}}` interpolation form; got {raw!r}."
+    )
+    return match.group("default")
+
+
+def test_coach_model_uses_tutor_coach_model_override(env_block: dict[str, str]) -> None:
+    """``AGENT_MODELS__COACH_MODEL`` must use ``${TUTOR_COACH_MODEL:-...}``.
+
+    AC-PH3-007-3: the operator override knob is ``TUTOR_COACH_MODEL``,
+    mirroring the ``TUTOR_LOCAL_MODEL`` idiom used for the Reasoning
+    model. A hard-coded value here defeats the override path required by
+    the runbook (``TUTOR_COACH_MODEL=some-other-alias docker compose
+    config`` must surface that alias).
+    """
+    raw = env_block["AGENT_MODELS__COACH_MODEL"]
+    assert raw.startswith("${TUTOR_COACH_MODEL:-"), (
+        "AGENT_MODELS__COACH_MODEL must use the "
+        "`${TUTOR_COACH_MODEL:-<alias>}` interpolation form so the "
+        "operator override path works; got "
+        f"{raw!r}."
+    )
+
+
+def test_coach_endpoint_uses_tutor_coach_endpoint_override(
+    env_block: dict[str, str],
+) -> None:
+    """``AGENT_MODELS__COACH_ENDPOINT`` must use ``${TUTOR_COACH_ENDPOINT:-...}``.
+
+    Same reasoning as the model override knob: the runbook documents
+    ``TUTOR_COACH_ENDPOINT`` as the way an operator points the Coach at a
+    different llama-swap host without editing the compose file. A
+    hard-coded endpoint silently ignores that override.
+    """
+    raw = env_block["AGENT_MODELS__COACH_ENDPOINT"]
+    assert raw.startswith("${TUTOR_COACH_ENDPOINT:-"), (
+        "AGENT_MODELS__COACH_ENDPOINT must use the "
+        "`${TUTOR_COACH_ENDPOINT:-<url>}` interpolation form; got "
+        f"{raw!r}."
+    )
+
+
+def test_coach_model_default_differs_from_reasoning_model_default(
+    env_block: dict[str, str],
+) -> None:
+    """The D3 two-provider invariant must hold for the default aliases.
+
+    AC-PH3-007-2: ``validate_coach_config`` rejects a configuration where
+    the Coach and Reasoning models point at the same alias. If the two
+    *defaults* match, every fresh ``docker compose up`` (no overrides
+    set) crashes at orchestrator construction — i.e. exactly the failure
+    mode the operator would assume the compose defaults prevented.
+    Asserting on the defaults is the only way to catch this at file-level
+    contract time; the runtime check fires after the container starts.
+    """
+    coach_default = _extract_default(env_block["AGENT_MODELS__COACH_MODEL"])
+    reasoning_default = _extract_default(env_block["AGENT_MODELS__REASONING_MODEL"])
+    assert coach_default != reasoning_default, (
+        "D3 two-provider invariant violated: AGENT_MODELS__COACH_MODEL "
+        f"default ({coach_default!r}) must differ from "
+        f"AGENT_MODELS__REASONING_MODEL default ({reasoning_default!r}). "
+        "See study_tutor.llm.client._default_coach_model (D-COACH-05 / "
+        "FEAT-6CC5) — no fallback is permitted."
+    )
+
+
+def test_coach_env_block_documents_design_decision(compose_text: str) -> None:
+    """The compose comment must reference D-COACH-05 / FEAT-6CC5.
+
+    AC-PH3-007-4: an inline comment must explain *why* Coach differs from
+    Reasoning and cite the design references, so a future operator
+    editing the env block cannot silently collapse Coach and Reasoning
+    onto the same alias without first reading the rationale. Asserting on
+    the raw compose text (not the parsed YAML) is intentional — YAML
+    parsers strip comments, and the comment is the artefact we care
+    about.
+    """
+    # The two design references are the canonical "why"; assert both are
+    # present so a future edit can't drop one half and leave a dangling
+    # citation.
+    for token in ("D-COACH-05", "FEAT-6CC5"):
+        assert token in compose_text, (
+            f"docker-compose.study-tutor.yml must include `{token}` in "
+            "the comment that introduces the AGENT_MODELS__COACH_* env "
+            "block, so the two-provider invariant rationale is "
+            "discoverable from the compose file itself."
+        )
 
 
 def test_no_baked_secrets_in_environment(env_block: dict[str, str]) -> None:

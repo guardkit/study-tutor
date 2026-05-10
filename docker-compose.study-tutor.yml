@@ -84,6 +84,14 @@ services:
       # convention specialist-agent's docker-compose.dual-role.yml uses.
       AGENT_MODELS__REASONING_MODEL: ${TUTOR_LOCAL_MODEL:-gemma4-tutor}
       AGENT_MODELS__REASONING_ENDPOINT: ${TUTOR_OPENAI_BASE_URL:-http://host.docker.internal:9000/v1}
+      # Coach provider — must differ from REASONING_MODEL (D3 two-provider
+      # invariant, decision D-COACH-05 / FEAT-6CC5; no fallback is
+      # permitted — enforced by validate_coach_config, see
+      # study_tutor.llm.client._default_coach_model). Default to
+      # qwen36-workhorse on the same llama-swap host; override via
+      # TUTOR_COACH_MODEL / TUTOR_COACH_ENDPOINT.
+      AGENT_MODELS__COACH_MODEL: ${TUTOR_COACH_MODEL:-qwen36-workhorse}
+      AGENT_MODELS__COACH_ENDPOINT: ${TUTOR_COACH_ENDPOINT:-http://host.docker.internal:9000/v1}
       AGENT_HEARTBEAT_INTERVAL_SECONDS: 30
     # `unless-stopped` survives Docker daemon restarts but respects an
     # explicit `docker compose down` from the operator.
