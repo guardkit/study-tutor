@@ -3,9 +3,9 @@ complexity: 6
 consumer_context:
 - consumes: tool_to_command_map
   driver: in-process Python registry
-  format_note: Map keys are MCP tool names (e.g. "tutor_start_session"); values are
-    canonical commands (e.g. "start_session"). Router MUST call self.tool_to_command.get(c,
-    c) — passthrough when not present, alias when present.
+  format_note: "Map keys are MCP tool names (e.g. \"tutor_start_session\"); values\
+    \ are canonical commands (e.g. \"start_session\"). Router MUST call self.tool_to_command.get(c,\
+    \ c) \u2014 passthrough when not present, alias when present."
   framework: study_tutor.roles.registry.get_role
   task: TASK-NATS-PH1-003
 created: 2026-05-08 00:00:00+00:00
@@ -17,7 +17,7 @@ id: TASK-NATS-PH1-004
 implementation_mode: task-work
 parent_review: TASK-REV-NATS-001
 priority: critical
-status: backlog
+status: blocked
 tags:
 - nats
 - feature
@@ -28,8 +28,51 @@ tags:
 task_type: feature
 title: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug
 updated: 2026-05-10 00:00:00+00:00
-reopened_reason: "FEAT-39E1 autobuild approved this task on 2026-05-08 but src/study_tutor/adapters/command_router.py was never created in any commit (verified via git log --all). cli/main.py:_build_nats_runtime imports it and the container crash-loops with ModuleNotFoundError. Re-opened on 2026-05-10. Root-cause investigation of the silent autobuild approval lives in TASK-INV-AB1."
+reopened_reason: FEAT-39E1 autobuild approved this task on 2026-05-08 but src/study_tutor/adapters/command_router.py
+  was never created in any commit (verified via git log --all). cli/main.py:_build_nats_runtime
+  imports it and the container crash-loops with ModuleNotFoundError. Re-opened on
+  2026-05-10. Root-cause investigation of the silent autobuild approval lives in TASK-INV-AB1.
 wave: 3
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  base_branch: main
+  started_at: '2026-05-10T16:36:16.014106'
+  last_updated: '2026-05-10T17:19:01.397560'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Checkpoint claim audit failed: Player claimed a file that 'git add\
+      \ -A' would not stage. Player claimed file /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/.guardkit/autobuild/TASK-NATS-PH1-004/player_turn_1.json.\
+      \ Path would not be staged by 'git add -A' (absent from 'git status --porcelain').\
+      \ Most common cause: an unanchored .gitignore rule silently filters the file.\
+      \ Other causes: sparse-checkout, assume-unchanged, pathspec attribute filters,\
+      \ or the file is tracked but unchanged (Player claimed modified but didn't).\
+      \ Investigate before approving the turn \u2014 most common cause is an unanchored\
+      \ .gitignore rule silently filtering the file out of the per-turn checkpoint\
+      \ commit.\n- Checkpoint claim audit failed: Player claimed a file that 'git\
+      \ add -A' would not stage. Player claimed file /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/src/study_tutor/adapters/command_router.py.\
+      \ Path would not be staged by 'git add -A' (absent from 'git status --porcelain').\
+      \ Most common cause: an unanchored .gitignore rule silently filters the file.\
+      \ Other causes: sparse-checkout, assume-unchanged, pathspec attribute filters,\
+      \ or the file is tracked but unchanged (Player claimed modified but didn't).\
+      \ Investigate before approving the turn \u2014 most common cause is an unanchored\
+      \ .gitignore rule silently filtering the file out of the per-turn checkpoint\
+      \ commit.\n- Checkpoint claim audit failed: Player claimed a file that 'git\
+      \ add -A' would not stage. Player claimed file /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1/tests/unit/adapters/test_command_router.py.\
+      \ Path would not be staged by 'git add -A' (absent from 'git status --porcelain').\
+      \ Most common cause: an unanchored .gitignore rule silently filters the file.\
+      \ Other causes: sparse-checkout, assume-unchanged, pathspec attribute filters,\
+      \ or the file is tracked but unchanged (Player claimed modified but didn't).\
+      \ Investigate before approving the turn \u2014 most common cause is an unanchored\
+      \ .gitignore rule silently filtering the file out of the per-turn checkpoint\
+      \ commit."
+    timestamp: '2026-05-10T16:36:16.014106'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Implement CommandRouter with on_command, tool_to_command alias resolution (Bug #2), and reply_to honouring (Bug #1)
