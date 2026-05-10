@@ -85,6 +85,9 @@ RUN uv sync --frozen --no-dev --no-install-project
 # in pyproject.toml resolves to the venv's bin/ directory after this
 # step.
 COPY study-tutor/src/ ./src/
+COPY study-tutor/roles/ ./roles/
+COPY study-tutor/data/ ./data/
+COPY study-tutor/.guardkit/graphiti.yaml ./.guardkit/graphiti.yaml
 RUN uv pip install --no-deps -e .
 
 # Make the venv's bin/ first on PATH so callers can invoke
