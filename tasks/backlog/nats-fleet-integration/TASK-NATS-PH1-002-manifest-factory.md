@@ -8,10 +8,11 @@ wave: 2
 implementation_mode: direct
 complexity: 3
 estimated_minutes: 60
-status: pending
+status: backlog
 priority: critical
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
+updated: 2026-05-10 00:00:00+00:00
+reopened_reason: "FEAT-39E1 autobuild approved this task on 2026-05-08 with a coach-attested player_summary claiming 'Implemented _tutor_manifest_factory in src/study_tutor/adapters/manifest.py', but git history shows that file was never created in any commit. Re-opened on 2026-05-10 because cli/main.py:_build_nats_runtime imports study_tutor.adapters.manifest which does not exist. Root-cause investigation tracked under TASK-INV-AB1."
 dependencies:
   - TASK-NATS-PH1-001
 tags:

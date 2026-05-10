@@ -23,7 +23,7 @@ id: TASK-NATS-PH1-005
 implementation_mode: task-work
 parent_review: TASK-REV-NATS-001
 priority: critical
-status: completed
+status: backlog
 tags:
 - nats
 - feature
@@ -36,7 +36,8 @@ tags:
 task_type: feature
 title: Implement NATSAdapter with full lifecycle (subscribe, register, heartbeat,
   deregister)
-updated: 2026-05-08 00:00:00+00:00
+updated: 2026-05-10 00:00:00+00:00
+reopened_reason: "FEAT-39E1 autobuild approved this task on 2026-05-08 but src/study_tutor/adapters/nats_adapter.py was never created in any commit (verified via git log --all). cli/main.py:_build_nats_runtime imports it and the container crash-loops with ModuleNotFoundError. Re-opened on 2026-05-10. Root-cause investigation of the silent autobuild approval lives in TASK-INV-AB1."
 wave: 4
 ---
 

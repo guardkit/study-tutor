@@ -8,10 +8,11 @@ wave: 1
 implementation_mode: direct
 complexity: 2
 estimated_minutes: 30
-status: pending
+status: backlog
 priority: critical
 created: 2026-05-08 00:00:00+00:00
-updated: 2026-05-08 00:00:00+00:00
+updated: 2026-05-10 00:00:00+00:00
+reopened_reason: "FEAT-39E1 autobuild approved this task on 2026-05-08 but src/study_tutor/adapters/__init__.py was never created in any commit (verified: `git log --all -- src/study_tutor/adapters/__init__.py` returns no output). The nats-core dep half of the deliverable did land in pyproject.toml. Re-opened on 2026-05-10 alongside PH1-002/004/005/008/009 for autobuild re-run; root-cause investigation tracked under TASK-INV-AB1."
 dependencies: []
 tags:
   - nats

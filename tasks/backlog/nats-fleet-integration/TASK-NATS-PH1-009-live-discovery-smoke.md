@@ -9,7 +9,7 @@ id: TASK-NATS-PH1-009
 implementation_mode: task-work
 parent_review: TASK-REV-NATS-001
 priority: critical
-status: completed
+status: backlog
 tags:
 - nats
 - testing
@@ -19,7 +19,8 @@ tags:
 - discovery
 task_type: testing
 title: Live-discovery smoke - jarvis sees gcse-tutor without any stub-yaml fallback
-updated: 2026-05-08 00:00:00+00:00
+updated: 2026-05-10 00:00:00+00:00
+reopened_reason: "Depends on PH1-005 (NATSAdapter), which itself was a false-completed autobuild task whose deliverable file does not exist. Any test result this task produced on 2026-05-08 was therefore against a missing module. Re-opened on 2026-05-10 alongside its dependency."
 wave: 5
 ---
 

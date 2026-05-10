@@ -10,7 +10,7 @@ id: TASK-NATS-PH1-008
 implementation_mode: task-work
 parent_review: TASK-REV-NATS-001
 priority: critical
-status: completed
+status: backlog
 tags:
 - nats
 - testing
@@ -20,7 +20,8 @@ tags:
 - bug-2
 task_type: testing
 title: Smoke test - all 4 commands round-trip through NATS adapter (no PubAck leakage)
-updated: 2026-05-08 00:00:00+00:00
+updated: 2026-05-10 00:00:00+00:00
+reopened_reason: "Depends on PH1-005 (NATSAdapter), which itself was a false-completed autobuild task whose deliverable file does not exist. Any test result this task produced on 2026-05-08 was therefore against missing modules. Re-opened on 2026-05-10 alongside its dependencies."
 wave: 5
 ---
 
