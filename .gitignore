@@ -245,6 +245,10 @@ Temporary Items
 # plain-text downloads (the canonical primary-text source per CONTRIBUTING-CORPUS.md)
 # also stay out of the repo. The ingestion script (scripts/ingest_corpus.py)
 # walks domains/*/sources/ but the texts themselves never get committed.
+# 2026-05-10: extend to .md / .markdown so Docling-VLM-rendered primary texts
+# (per RUNBOOK-primary-texts-docling-vlm.md) also stay out — most are in-
+# copyright (e.g. An Inspector Calls, AQA Power & Conflict anthology) and
+# CONTRIBUTING-CORPUS.md §4 already lists .md as never-commit.
 domains/*/sources/*.pdf
 domains/*/sources/**/*.pdf
 domains/*/sources/*.PDF
@@ -255,6 +259,14 @@ domains/*/sources/*.txt
 domains/*/sources/**/*.txt
 domains/*/sources/*.xhtml
 domains/*/sources/**/*.xhtml
+domains/*/sources/*.md
+domains/*/sources/**/*.md
+domains/*/sources/*.markdown
+domains/*/sources/**/*.markdown
+# Re-include the policy docs that live at the top of sources/ — these
+# describe the corpus contribution rules and ARE committed.
+!domains/*/sources/CONTRIBUTING-CORPUS.md
+!domains/*/sources/README.md
 
 # In-copyright / unusable source material kept out of `domains/*/sources/`
 # so the loader (load_corpus) never walks into it. Files here are operator-
