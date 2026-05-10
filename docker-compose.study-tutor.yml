@@ -73,6 +73,18 @@ services:
       # Cadence at which serve-nats publishes heartbeat KV entries; the
       # heartbeat is the liveness signal in lieu of an HTTP healthcheck.
       HEARTBEAT_INTERVAL_SECONDS: 30
+
+      # nats_core.AgentConfig (BaseSettings, env_prefix=AGENT_,
+      # env_nested_delimiter=__) is what serve-nats actually instantiates.
+      # The flat LOCAL_MODEL / OPENAI_BASE_URL above are still consumed by
+      # study-tutor's LLM client and graphiti client, but the AGENT_-
+      # prefixed nested vars below are what populate the required
+      # `models: ModelConfig` field on AgentConfig — without them the
+      # container crash-loops with "models Field required". Mirrors the
+      # convention specialist-agent's docker-compose.dual-role.yml uses.
+      AGENT_MODELS__REASONING_MODEL: ${TUTOR_LOCAL_MODEL:-gemma4-tutor}
+      AGENT_MODELS__REASONING_ENDPOINT: ${TUTOR_OPENAI_BASE_URL:-http://host.docker.internal:9000/v1}
+      AGENT_HEARTBEAT_INTERVAL_SECONDS: 30
     # `unless-stopped` survives Docker daemon restarts but respects an
     # explicit `docker compose down` from the operator.
     restart: unless-stopped

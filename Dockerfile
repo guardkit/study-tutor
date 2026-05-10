@@ -44,6 +44,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     UV_LINK_MODE=copy
 
+# Install git so uv can resolve the graphiti-core git+https direct
+# reference declared in pyproject.toml. python:3.11-slim does not ship
+# git, and without it the Layer 1 ``uv sync`` below fails with
+# "Git executable not found" before any project source is even copied.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/*
+
 # Install uv. The pyproject.toml uses ``[tool.uv.sources]`` for the
 # editable nats-core path source, so the dependency resolver MUST be uv —
 # plain ``pip install`` would silently resolve ``nats-core`` from PyPI
