@@ -1,7 +1,7 @@
 ---
 id: TASK-NATS-FIX-004
 title: Hand-implement CommandRouter (PH1-004) from prior-run evidence and mark task completed in feature.yaml
-status: in_review
+status: completed
 task_type: implementation
 implementation_mode: manual
 parent_review: TASK-REV-F30A
@@ -10,7 +10,10 @@ feature_slug: feat-39e1-recovery
 wave: 1
 priority: high
 created: 2026-05-10T18:00:00Z
-updated: 2026-05-10T18:30:00Z
+updated: 2026-05-10T18:50:00Z
+completed_at: 2026-05-10T18:50:00Z
+completion_commit: c0e8ab9
+previous_state: in_review
 complexity: 4
 tags: [autobuild-recovery, nats-fleet, command-router, manual-implementation]
 related_tasks:
