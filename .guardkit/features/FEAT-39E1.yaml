@@ -6,9 +6,7 @@ description: 'Three-phase build: study-tutor joins the NATS fleet alongside spec
   3 (by 2026-05-16): Docker/GB10 deployment. Includes regression guards for bugs #1-#5
   from the 2026-05-08 jarvis runbook.'
 created: '2026-05-08T20:17:32.328313'
-status: in_progress
-reopened_at: '2026-05-10T00:00:00'
-reopened_reason: '6 of 18 tasks were silently approved by autobuild on 2026-05-08 without producing the deliverable files (PH1-001 skeleton, PH1-002 manifest, PH1-004 router, PH1-005 adapter; PH1-008/009 tests depend on the missing modules). Verified via `git log --all -- src/study_tutor/adapters/`. Root cause tracked in TASK-INV-AB1.'
+status: failed
 complexity: 7
 estimated_tasks: 18
 tasks:
@@ -17,42 +15,38 @@ tasks:
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-001-add-nats-core-dep-and-adapters-skeleton.md
   complexity: 2
   dependencies: []
-  status: pending
+  status: completed
   implementation_mode: direct
   estimated_minutes: 22
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
-  current_turn: 0
-  started_at: null
-  completed_at: null
-  reopened_at: '2026-05-10T00:00:00'
-  prior_run:
-    started_at: '2026-05-08T20:30:21.913183'
-    completed_at: '2026-05-08T20:35:19.004881'
+  result:
+    total_turns: 3
     final_decision: approved
-    deliverable_landed: false
+    error: null
+    deferred_reason: null
+  turns_completed: 3
+  current_turn: 0
+  started_at: '2026-05-10T16:23:04.356267'
+  completed_at: '2026-05-10T16:31:39.276729'
 - id: TASK-NATS-PH1-002
   name: Implement tutor manifest factory
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-002-manifest-factory.md
   complexity: 3
   dependencies:
   - TASK-NATS-PH1-001
-  status: pending
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
-  current_turn: 0
-  started_at: null
-  completed_at: null
-  reopened_at: '2026-05-10T00:00:00'
-  prior_run:
-    started_at: '2026-05-08T20:35:19.880214'
-    completed_at: '2026-05-08T21:16:48.685541'
+  result:
+    total_turns: 1
     final_decision: approved
-    deliverable_landed: false
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-10T16:31:39.296330'
+  completed_at: '2026-05-10T16:36:15.971442'
 - id: TASK-NATS-PH1-003
   name: Implement roles registry and tutor role
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-003-roles-registry-and-tutor-role.md
@@ -78,21 +72,26 @@ tasks:
   complexity: 6
   dependencies:
   - TASK-NATS-PH1-003
-  status: pending
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 5
+    final_decision: hand_recovered_via_TASK-NATS-FIX-004
+    error: null
+    deferred_reason: null
+    recovery_note: |
+      Run-3 max_turns_exceeded was a tooling failure (worktree .gitignore
+      silently dropped src/study_tutor/adapters/*.py from git add -A), not
+      an implementation failure. Hand-implemented on main via
+      TASK-NATS-FIX-004 using the prior-run player_turn_1.json evidence;
+      9/9 unit tests pass and ruff check clean. See TASK-REV-F30A for the
+      full root-cause analysis.
+  turns_completed: 5
   current_turn: 0
-  started_at: null
-  completed_at: null
-  reopened_at: '2026-05-10T00:00:00'
-  prior_run:
-    started_at: '2026-05-08T23:04:50.381177'
-    completed_at: '2026-05-08T23:17:29.247408'
-    final_decision: approved
-    deliverable_landed: false
+  started_at: '2026-05-10T16:36:16.004884'
+  completed_at: '2026-05-10T17:19:01.401899'
 - id: TASK-NATS-PH1-005
   name: Implement NATSAdapter full lifecycle
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md
@@ -109,12 +108,6 @@ tasks:
   current_turn: 0
   started_at: null
   completed_at: null
-  reopened_at: '2026-05-10T00:00:00'
-  prior_run:
-    started_at: '2026-05-08T23:17:29.270863'
-    completed_at: '2026-05-08T23:42:51.270391'
-    final_decision: approved
-    deliverable_landed: false
 - id: TASK-NATS-PH1-006
   name: Add serve-nats CLI subcommand
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md
@@ -169,12 +162,6 @@ tasks:
   current_turn: 0
   started_at: null
   completed_at: null
-  reopened_at: '2026-05-10T00:00:00'
-  prior_run:
-    started_at: '2026-05-08T23:42:51.294915'
-    completed_at: '2026-05-09T00:00:23.865745'
-    final_decision: approved
-    deliverable_landed: false
 - id: TASK-NATS-PH1-009
   name: Live-discovery smoke test
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-009-live-discovery-smoke.md
@@ -190,12 +177,6 @@ tasks:
   current_turn: 0
   started_at: null
   completed_at: null
-  reopened_at: '2026-05-10T00:00:00'
-  prior_run:
-    started_at: '2026-05-08T23:42:51.302467'
-    completed_at: '2026-05-09T00:00:23.872856'
-    final_decision: approved
-    deliverable_landed: false
 - id: TASK-NATS-PH1-010
   name: E2E demo gate Open WebUI to tutor
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-010-e2e-demo-gate.md
@@ -392,13 +373,13 @@ orchestration:
   recommended_parallel: 4
 preflight_strict: false
 execution:
-  started_at: '2026-05-08T20:30:20.639512'
-  completed_at: '2026-05-09T08:17:44.345497'
-  worktree_path: /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
-  total_turns: 20
-  tasks_completed: 18
-  tasks_failed: 0
-  current_wave: 9
+  started_at: '2026-05-10T16:23:04.053278'
+  completed_at: '2026-05-10T17:19:01.408817'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  total_turns: 15
+  tasks_completed: 5
+  tasks_failed: 1
+  current_wave: 4
   completed_waves:
   - 1
   - 2
@@ -409,6 +390,6 @@ execution:
   - 7
   - 8
   - 9
-  last_updated: '2026-05-09T08:17:44.337348'
+  last_updated: '2026-05-10T17:19:01.401908'
   archived_at: null
   archived_to: null
