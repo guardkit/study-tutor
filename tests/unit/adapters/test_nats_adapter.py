@@ -474,6 +474,72 @@ class TestActiveTaskCounter:
 
 
 # ---------------------------------------------------------------------------
+# Bug #8 regression guard (TASK-NATS-PH1-011): router client share-after-connect
+# ---------------------------------------------------------------------------
+
+
+class TestRouterClientShareAfterConnect:
+    """``start()`` must hand the connected adapter client to the router.
+
+    Bug #8 (RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-1.md): the
+    router was constructed in ``_build_nats_runtime`` with its own
+    un-connected ``NATSClient``, so the first ``publish_raw`` on the reply
+    inbox raised ``RuntimeError: client is not connected`` and no result
+    envelope was ever emitted on ``agents.result.<agent_id>``. The fix
+    shares the adapter's connected client with the router immediately
+    after ``connect()`` returns. These tests pin that contract so a future
+    refactor (Option C — router stops owning a client) cannot silently
+    regress the demo wire-path again.
+    """
+
+    async def test_start_assigns_adapter_client_to_router(
+        self, adapter: NATSAdapter, mock_router: AsyncMock, mock_client_factory: Any
+    ) -> None:
+        """After start() the router's client IS the adapter's connected client."""
+        _, instance, _ = mock_client_factory
+        await adapter.start()
+        assert mock_router.client is instance
+        assert mock_router.client is adapter._client
+        await adapter.stop()
+
+    async def test_router_client_assigned_after_connect_before_register(
+        self, adapter: NATSAdapter, mock_router: AsyncMock, mock_client_factory: Any
+    ) -> None:
+        """Assignment must happen between connect() and register_agent().
+
+        If ``register_agent`` raises, the router must still hold the
+        connected client (so a retry of start() does not leave the router
+        wired to the stale un-connected instance from construction).
+        """
+        _, instance, _ = mock_client_factory
+        instance.register_agent.side_effect = RuntimeError("register boom")
+
+        with pytest.raises(RuntimeError, match="register boom"):
+            await adapter.start()
+
+        # Connect ran, assignment ran, then register_agent raised.
+        instance.connect.assert_awaited_once()
+        assert mock_router.client is adapter._client
+
+    async def test_only_one_nats_client_connection_after_start(
+        self, adapter: NATSAdapter, mock_client_factory: Any
+    ) -> None:
+        """Single live connection contract: no second client.connect() call.
+
+        AC: "No new NATS connections are introduced — the process must
+        hold exactly one live NATS connection (the adapter's) after
+        ``start()``."
+        """
+        cls, instance, _ = mock_client_factory
+        await adapter.start()
+        # Adapter constructs exactly one NATSClient.
+        assert cls.call_count == 1
+        # And connects it exactly once.
+        instance.connect.assert_awaited_once()
+        await adapter.stop()
+
+
+# ---------------------------------------------------------------------------
 # Constructor wiring
 # ---------------------------------------------------------------------------
 

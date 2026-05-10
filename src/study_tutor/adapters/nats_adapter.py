@@ -146,6 +146,16 @@ class NATSAdapter:
 
         await self._client.connect()
 
+        # Bug #8 fix (TASK-NATS-PH1-011): the router was constructed in
+        # `_build_nats_runtime` with its own un-connected NATSClient, so its
+        # first publish_raw raised "client is not connected" and no result
+        # envelope was ever emitted. Share the adapter's already-connected
+        # client with the router before any subscription can fire. Must run
+        # before `register_agent` so the assignment is atomic with connect()
+        # even if registration raises. Option (C) (router stops owning a
+        # client at all) is the follow-up post-demo.
+        self._command_router.client = self._client
+
         await self._client.register_agent(self._manifest)
         logger.info(
             "Registered agent '%s' to %s",
