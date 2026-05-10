@@ -24,8 +24,9 @@ The ``tool_to_command`` map is the **single source of truth** held in
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from typing import Any, Awaitable, Callable, Mapping
+from typing import Any, Awaitable, Callable, Mapping, Optional
 
 from nats_core.envelope import EventType, MessageEnvelope
 from nats_core.events._agent import CommandPayload, ResultPayload
@@ -68,6 +69,13 @@ class CommandRouter:
             envelopes.
         client: NATS client exposing ``publish`` (envelope-wrapped) and
             ``publish_raw`` (bytes only).
+        adapter_ready: Optional readiness gate (TASK-NATS-PH2-001). When
+            supplied and not set, ``on_command`` returns
+            ``ResultPayload(success=False, error_type="AdapterNotReady")``
+            without invoking the MCP handler — and still publishes the reply
+            so a ``client.request()`` future never hangs. The adapter passes
+            its own ``_ready`` event here. Pass ``None`` (default) to disable
+            gating in tests / pre-PH2-001 callers.
     """
 
     def __init__(
@@ -76,11 +84,13 @@ class CommandRouter:
         tool_to_command: Mapping[str, str],
         agent_id: str,
         client: Any,
+        adapter_ready: Optional[asyncio.Event] = None,
     ) -> None:
         self.mcp_adapter = mcp_adapter
         self.tool_to_command = tool_to_command
         self.agent_id = agent_id
         self.client = client
+        self._adapter_ready = adapter_ready
 
         # Dispatch table keyed by canonical internal command names.
         # Bug #2 alias resolution (``tool_to_command.get(c, c)``) runs
@@ -115,6 +125,30 @@ class CommandRouter:
         except Exception:  # noqa: BLE001 — envelope source is untrusted wire data
             logger.exception(
                 "Failed to parse CommandPayload from envelope %s", envelope.message_id
+            )
+            return
+
+        # TASK-NATS-PH2-001 readiness gating: fail fast with a clear error
+        # rather than queuing commands while the adapter is starting up. The
+        # reply path (Bug #1 dual-publish) is still honoured so the requester's
+        # ``client.request()`` future never hangs.
+        if self._adapter_ready is not None and not self._adapter_ready.is_set():
+            not_ready_payload = ResultPayload(
+                command=command.command,
+                result={
+                    "error": (
+                        f"Adapter not ready: {self.agent_id} is starting up; "
+                        "retry once readiness is signalled."
+                    ),
+                    "error_type": "AdapterNotReady",
+                },
+                correlation_id=command.correlation_id,
+                success=False,
+            )
+            await self._publish_result(
+                reply_to=reply_to,
+                result_payload=not_ready_payload,
+                correlation_id=command.correlation_id or envelope.correlation_id,
             )
             return
 

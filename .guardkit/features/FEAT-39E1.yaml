@@ -6,7 +6,7 @@ description: 'Three-phase build: study-tutor joins the NATS fleet alongside spec
   3 (by 2026-05-16): Docker/GB10 deployment. Includes regression guards for bugs #1-#5
   from the 2026-05-08 jarvis runbook.'
 created: '2026-05-08T20:17:32.328313'
-status: failed
+status: in_progress
 complexity: 7
 estimated_tasks: 18
 tasks:
@@ -81,13 +81,19 @@ tasks:
     final_decision: hand_recovered_via_TASK-NATS-FIX-004
     error: null
     deferred_reason: null
-    recovery_note: |
-      Run-3 max_turns_exceeded was a tooling failure (worktree .gitignore
+    recovery_note: 'Run-3 max_turns_exceeded was a tooling failure (worktree .gitignore
+
       silently dropped src/study_tutor/adapters/*.py from git add -A), not
+
       an implementation failure. Hand-implemented on main via
+
       TASK-NATS-FIX-004 using the prior-run player_turn_1.json evidence;
+
       9/9 unit tests pass and ruff check clean. See TASK-REV-F30A for the
+
       full root-cause analysis.
+
+      '
   turns_completed: 5
   current_turn: 0
   started_at: '2026-05-10T16:36:16.004884'
@@ -99,15 +105,21 @@ tasks:
   dependencies:
   - TASK-NATS-PH1-002
   - TASK-NATS-PH1-004
-  status: pending
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 256
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 4
+    final_decision: salvaged_from_run5_worktree
+    error: 'autobuild run-5 hit Player-claim-list-noise divergence (TASK-FIX-PCN
+      filed upstream); Player implementation in worktree was correct (27/27
+      tests passing) and salvaged to main in commit 7c21475.'
+    deferred_reason: null
+  turns_completed: 4
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-05-10T19:14:11.620882'
+  completed_at: '2026-05-10T20:30:00Z'
 - id: TASK-NATS-PH1-006
   name: Add serve-nats CLI subcommand
   file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md
@@ -373,13 +385,13 @@ orchestration:
   recommended_parallel: 4
 preflight_strict: false
 execution:
-  started_at: '2026-05-10T16:23:04.053278'
-  completed_at: '2026-05-10T17:19:01.408817'
+  started_at: '2026-05-10T19:06:29.409301'
+  completed_at: '2026-05-10T19:56:36.979235'
   worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
-  total_turns: 15
-  tasks_completed: 5
+  total_turns: 19
+  tasks_completed: 6
   tasks_failed: 1
-  current_wave: 4
+  current_wave: 5
   completed_waves:
   - 1
   - 2
@@ -390,6 +402,6 @@ execution:
   - 7
   - 8
   - 9
-  last_updated: '2026-05-10T17:19:01.401908'
+  last_updated: '2026-05-10T19:56:36.971971'
   archived_at: null
   archived_to: null
