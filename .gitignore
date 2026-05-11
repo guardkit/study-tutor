@@ -58,6 +58,11 @@ cover/
 
 # Django stuff:
 *.log
+# Runbook evidence logs are deliberately tracked — they are the per-run
+# artefact the RESULTS files reference (container.log, wire-command.log,
+# wire-result.log, chat-*.log). Mirrors jarvis's pattern of committing
+# `.log` files under docs/runbooks/evidence/.
+!docs/runbooks/evidence/**/*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -245,11 +250,10 @@ Temporary Items
 # plain-text downloads (the canonical primary-text source per CONTRIBUTING-CORPUS.md)
 # also stay out of the repo. The ingestion script (scripts/ingest_corpus.py)
 # walks domains/*/sources/ but the texts themselves never get committed.
-# TASK-RAG-CC1 + TASK-RAG-CC2 (2026-05-09): extend to .md — docling emits
-# markdown for both Standard and VLM modes, so docling-produced study-guide
-# .md files (e.g. reconstructed Mr Bruff guides) join the existing extension
-# list. CONTRIBUTING-CORPUS.md §4 already documents this; this rule makes
-# the .gitignore match those docs.
+# 2026-05-10: extend to .md / .markdown so Docling-VLM-rendered primary texts
+# (per RUNBOOK-primary-texts-docling-vlm.md) also stay out — most are in-
+# copyright (e.g. An Inspector Calls, AQA Power & Conflict anthology) and
+# CONTRIBUTING-CORPUS.md §4 already lists .md as never-commit.
 domains/*/sources/*.pdf
 domains/*/sources/**/*.pdf
 domains/*/sources/*.PDF
@@ -262,6 +266,12 @@ domains/*/sources/*.xhtml
 domains/*/sources/**/*.xhtml
 domains/*/sources/*.md
 domains/*/sources/**/*.md
+domains/*/sources/*.markdown
+domains/*/sources/**/*.markdown
+# Re-include the policy docs that live at the top of sources/ — these
+# describe the corpus contribution rules and ARE committed.
+!domains/*/sources/CONTRIBUTING-CORPUS.md
+!domains/*/sources/README.md
 
 # In-copyright / unusable source material kept out of `domains/*/sources/`
 # so the loader (load_corpus) never walks into it. Files here are operator-
@@ -292,17 +302,22 @@ adapters/
 merged-16bit/
 merged-fp16/
 
-# Re-include the Python boundary-adapters package and its tests (FEAT-6CC5).
-# The bare ``adapters/`` rule above is for ML model artefacts (LoRA etc.)
-# but unanchored matches every ``adapters/`` directory in the tree —
-# including ``src/study_tutor/tutoring/adapters/`` and its test mirror.
-# This was the silent failure mode behind TASK-INV-AB1: a prior autobuild
-# wrote the package locally but it never reached the merged branch
-# because git was ignoring it.
+# Re-include Python boundary-adapter packages and their tests. The bare
+# ``adapters/`` rule above is for ML model artefacts (LoRA etc.) but is
+# unanchored, so it matches every ``adapters/`` directory in the tree.
+# Each Python adapters package needs an explicit re-include pair below
+# or its files are silently dropped at git-add time — the failure mode
+# behind TASK-INV-AB1 (FEAT-6CC5 ``tutoring/adapters/``) and the FEAT-39E1
+# autobuild false-completion of 2026-05-08 (NATS-fleet ``adapters/``).
+# Add a new pair here whenever a new adapters/ package lands.
 !src/study_tutor/tutoring/adapters/
 !src/study_tutor/tutoring/adapters/*.py
 !tests/unit/tutoring/adapters/
 !tests/unit/tutoring/adapters/*.py
+!src/study_tutor/adapters/
+!src/study_tutor/adapters/*.py
+!tests/unit/adapters/
+!tests/unit/adapters/*.py
 
 # Local inference scratch
 ollama_models/
@@ -327,4 +342,11 @@ stderr.log
 .guardkit/autobuild/*/logs/*.pid
 .guardkit/autobuild/*/logs/*.start
 .guardkit/autobuild/*/logs/*.end
+
+# GuardKit worktrees — `git worktree list` already tracks these via
+# .git/worktrees/ metadata; the directories under .guardkit/worktrees/
+# are checked-out branches (not files in the parent worktree's tree)
+# plus the `nats-core ->` symlink used by docker-build.sh. None of this
+# belongs in the main worktree's git index.
+.guardkit/worktrees/
 

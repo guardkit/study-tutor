@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import asyncio
 
+from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.llm.client import LLMClient, _default_coach_model
 from study_tutor.roles.loader import RoleConfig
 from study_tutor.tutoring.adapters.session_state import SessionState
@@ -82,6 +83,7 @@ class LLMCoachAdapter:
         session_state: SessionState,
         learner_message: str,
         player_response: str,
+        verifier_metadata: VerifierMetadata | None = None,
     ) -> CoachVerdict:
         """Score ``player_response`` against the rubric and return a verdict.
 
@@ -89,6 +91,23 @@ class LLMCoachAdapter:
         is sync (httpx under the hood) — bridged via
         :func:`asyncio.to_thread` so the orchestrator's event loop is
         not pinned during the network call.
+
+        The ``verifier_metadata`` keyword is accepted (per
+        ``PlayerCoachOrchestrator._evaluate_with_metadata``'s guarded-
+        forwarding contract) but intentionally **not** woven into the
+        Phase-1 Coach prompt. Bug #10 (2026-05-11 run-3): rejecting the
+        kwarg here raised ``TypeError`` inside the orchestrator's
+        forward call and surfaced as ``coach_unreachable: TypeError:
+        LLMCoachAdapter.evaluate() got an unexpected keyword argument
+        'verifier_metadata'`` whenever the upstream quote-verifier
+        produced metadata. Phase-2 Coach calibration owns wiring
+        ``VerifierMetadata`` (primary/secondary/fuzzy match lists,
+        ``retrieval_skipped_reason``, ``verifier_exception``) into the
+        evaluation prompt so the Coach can suppress quote_fidelity
+        down-rank for legitimately-skipped retrievals. Touching the
+        parameter below mirrors the ``session_state`` "consume but
+        ignore" idiom on this adapter (and on the sister Player
+        adapter) so a future Phase-2 enhancement is a one-site grep.
 
         Raises:
             MalformedCoachOutputError: When the LLM returns non-JSON or
@@ -104,6 +123,9 @@ class LLMCoachAdapter:
         # subscript it — attribute access is the §4 contract. Mirrors
         # the sister Player adapter.
         _ = session_state.session_id
+        # Phase-1 Coach does not consume verifier_metadata yet — Phase-2
+        # owns the prompt-grounding integration (see docstring above).
+        _ = verifier_metadata
         prompt = self._assemble_coach_prompt(
             session_state=session_state,
             learner_message=learner_message,

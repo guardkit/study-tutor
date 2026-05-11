@@ -1,0 +1,407 @@
+id: FEAT-39E1
+name: study-tutor NATS Fleet Integration
+description: 'Three-phase build: study-tutor joins the NATS fleet alongside specialist-agent
+  and forge. Phase 1 (demo-critical 2026-05-11): minimum viable adapter with live
+  registration and heartbeat. Phase 2: readiness gating + KV-watch hardening. Phase
+  3 (by 2026-05-16): Docker/GB10 deployment. Includes regression guards for bugs #1-#5
+  from the 2026-05-08 jarvis runbook.'
+created: '2026-05-08T20:17:32.328313'
+status: in_progress
+complexity: 7
+estimated_tasks: 18
+tasks:
+- id: TASK-NATS-PH1-001
+  name: Add nats-core dependency and adapters package skeleton
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-001-add-nats-core-dep-and-adapters-skeleton.md
+  complexity: 2
+  dependencies: []
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 22
+  requires_infrastructure: []
+  result:
+    total_turns: 3
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 3
+  current_turn: 0
+  started_at: '2026-05-10T16:23:04.356267'
+  completed_at: '2026-05-10T16:31:39.276729'
+- id: TASK-NATS-PH1-002
+  name: Implement tutor manifest factory
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-002-manifest-factory.md
+  complexity: 3
+  dependencies:
+  - TASK-NATS-PH1-001
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-10T16:31:39.296330'
+  completed_at: '2026-05-10T16:36:15.971442'
+- id: TASK-NATS-PH1-003
+  name: Implement roles registry and tutor role
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-003-roles-registry-and-tutor-role.md
+  complexity: 3
+  dependencies:
+  - TASK-NATS-PH1-001
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-08T20:35:19.888547'
+  completed_at: '2026-05-08T21:16:48.691969'
+- id: TASK-NATS-PH1-004
+  name: Implement CommandRouter with bug fixes
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-004-command-router.md
+  complexity: 6
+  dependencies:
+  - TASK-NATS-PH1-003
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 5
+    final_decision: hand_recovered_via_TASK-NATS-FIX-004
+    error: null
+    deferred_reason: null
+    recovery_note: 'Run-3 max_turns_exceeded was a tooling failure (worktree .gitignore
+
+      silently dropped src/study_tutor/adapters/*.py from git add -A), not
+
+      an implementation failure. Hand-implemented on main via
+
+      TASK-NATS-FIX-004 using the prior-run player_turn_1.json evidence;
+
+      9/9 unit tests pass and ruff check clean. See TASK-REV-F30A for the
+
+      full root-cause analysis.
+
+      '
+  turns_completed: 5
+  current_turn: 0
+  started_at: '2026-05-10T16:36:16.004884'
+  completed_at: '2026-05-10T17:19:01.401899'
+- id: TASK-NATS-PH1-005
+  name: Implement NATSAdapter full lifecycle
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-005-nats-adapter-full-lifecycle.md
+  complexity: 8
+  dependencies:
+  - TASK-NATS-PH1-002
+  - TASK-NATS-PH1-004
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 256
+  requires_infrastructure: []
+  result:
+    total_turns: 4
+    final_decision: salvaged_from_run5_worktree
+    error: 'autobuild run-5 hit Player-claim-list-noise divergence (TASK-FIX-PCN
+      filed upstream); Player implementation in worktree was correct (27/27
+      tests passing) and salvaged to main in commit 7c21475.'
+    deferred_reason: null
+  turns_completed: 4
+  current_turn: 0
+  started_at: '2026-05-10T19:14:11.620882'
+  completed_at: '2026-05-10T20:30:00Z'
+- id: TASK-NATS-PH1-006
+  name: Add serve-nats CLI subcommand
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-006-serve-nats-cli-subcommand.md
+  complexity: 4
+  dependencies:
+  - TASK-NATS-PH1-001
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 4
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 4
+  current_turn: 0
+  started_at: '2026-05-08T22:24:47.473217'
+  completed_at: '2026-05-08T23:04:50.356769'
+- id: TASK-NATS-PH1-007
+  name: Update .env.example with OPENAI_BASE_URL /v1
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-007-env-example-with-openai-base-url-v1.md
+  complexity: 1
+  dependencies:
+  - TASK-NATS-PH1-001
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 15
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-08T20:35:19.904487'
+  completed_at: '2026-05-08T21:16:48.704734'
+- id: TASK-NATS-PH1-008
+  name: Smoke test all 4 round-trips
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-008-smoke-test-four-round-trips.md
+  complexity: 5
+  dependencies:
+  - TASK-NATS-PH1-005
+  - TASK-NATS-PH1-006
+  status: pending
+  implementation_mode: task-work
+  estimated_minutes: 75
+  requires_infrastructure: []
+  result: null
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: null
+- id: TASK-NATS-PH1-009
+  name: Live-discovery smoke test
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-009-live-discovery-smoke.md
+  complexity: 4
+  dependencies:
+  - TASK-NATS-PH1-005
+  status: pending
+  implementation_mode: task-work
+  estimated_minutes: 50
+  requires_infrastructure: []
+  result: null
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: null
+- id: TASK-NATS-PH1-010
+  name: E2E demo gate Open WebUI to tutor
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH1-010-e2e-demo-gate.md
+  complexity: 7
+  dependencies:
+  - TASK-NATS-PH1-008
+  - TASK-NATS-PH1-009
+  status: deferred
+  implementation_mode: task-work
+  estimated_minutes: 170
+  requires_infrastructure: []
+  result:
+    total_turns: 0
+    final_decision: deferred
+    error: null
+    deferred_reason: "operator follow-up \u2014 runtime verification required"
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: '2026-05-09T08:01:03.377213'
+- id: TASK-NATS-PH2-001
+  name: Readiness gating in command router
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-001-readiness-gating.md
+  complexity: 3
+  dependencies:
+  - TASK-NATS-PH1-005
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-09T08:01:03.405496'
+  completed_at: '2026-05-09T08:17:44.285600'
+- id: TASK-NATS-PH2-002
+  name: KV-watch lifecycle test
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-002-kv-watch-test.md
+  complexity: 5
+  dependencies:
+  - TASK-NATS-PH1-005
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-08T23:42:51.309878'
+  completed_at: '2026-05-09T00:00:23.879971'
+- id: TASK-NATS-PH2-003
+  name: Stale registry runbook documentation
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-003-stale-registry-runbook.md
+  complexity: 2
+  dependencies: []
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 22
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-09T08:01:03.414384'
+  completed_at: '2026-05-09T08:17:44.293309'
+- id: TASK-NATS-PH3-001
+  name: Build Dockerfile
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-001-dockerfile.md
+  complexity: 5
+  dependencies:
+  - TASK-NATS-PH1-005
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-08T23:42:51.317348'
+  completed_at: '2026-05-09T00:00:23.886783'
+- id: TASK-NATS-PH3-002
+  name: Build docker-compose with /v1 env
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-002-docker-compose.md
+  complexity: 5
+  dependencies:
+  - TASK-NATS-PH3-001
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-09T00:00:23.924179'
+  completed_at: '2026-05-09T00:13:29.208557'
+- id: TASK-NATS-PH3-003
+  name: Add docker-build.sh script
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-003-docker-build-script.md
+  complexity: 2
+  dependencies:
+  - TASK-NATS-PH3-001
+  status: completed
+  implementation_mode: direct
+  estimated_minutes: 22
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-09T00:00:23.932848'
+  completed_at: '2026-05-09T00:13:29.215580'
+- id: TASK-NATS-PH3-004
+  name: Write RUNBOOK and RESULTS template
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-004-runbook-and-results-template.md
+  complexity: 4
+  dependencies:
+  - TASK-NATS-PH3-002
+  status: completed
+  implementation_mode: task-work
+  estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-05-09T08:01:03.423676'
+  completed_at: '2026-05-09T08:17:44.300815'
+- id: TASK-NATS-PH3-005
+  name: GB10 E2E smoke test
+  file_path: tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-005-gb10-e2e-smoke.md
+  complexity: 8
+  dependencies:
+  - TASK-NATS-PH3-002
+  - TASK-NATS-PH3-004
+  status: deferred
+  implementation_mode: task-work
+  estimated_minutes: 256
+  requires_infrastructure: []
+  result:
+    total_turns: 0
+    final_decision: deferred
+    error: null
+    deferred_reason: "operator follow-up \u2014 runtime verification required"
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: '2026-05-09T08:17:44.329318'
+orchestration:
+  parallel_groups:
+  - - TASK-NATS-PH1-001
+  - - TASK-NATS-PH1-002
+    - TASK-NATS-PH1-003
+    - TASK-NATS-PH1-007
+  - - TASK-NATS-PH1-006
+  - - TASK-NATS-PH1-004
+  - - TASK-NATS-PH1-005
+  - - TASK-NATS-PH1-008
+    - TASK-NATS-PH1-009
+    - TASK-NATS-PH2-002
+    - TASK-NATS-PH3-001
+  - - TASK-NATS-PH1-010
+    - TASK-NATS-PH3-002
+    - TASK-NATS-PH3-003
+  - - TASK-NATS-PH2-001
+    - TASK-NATS-PH2-003
+    - TASK-NATS-PH3-004
+  - - TASK-NATS-PH3-005
+  estimated_duration_minutes: 1425
+  recommended_parallel: 4
+preflight_strict: false
+execution:
+  started_at: '2026-05-10T19:06:29.409301'
+  completed_at: '2026-05-10T19:56:36.979235'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-39E1
+  total_turns: 19
+  tasks_completed: 6
+  tasks_failed: 1
+  current_wave: 5
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  last_updated: '2026-05-10T19:56:36.971971'
+  archived_at: null
+  archived_to: null

@@ -1,0 +1,25 @@
+2026-05-10 19:31:33,510 INFO study_tutor.cli.rag_wiring: event=rag_wiring_resolved persist_dir=data/chroma collection=gcse-english-v1
+2026-05-10 19:31:33,510 WARNING study_tutor.cli.rag_wiring: event=rag_disabled reason=chromadb_missing
+2026-05-10 19:31:33,787 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-10 19:31:33,787 INFO study_tutor.knowledge.graphiti_client: graphiti client ready in 276ms
+2026-05-10 19:31:33,788 WARNING study_tutor.mcp.adapter: event=rag_disabled reason=collection_provider_unwired
+2026-05-10 19:31:33,788 INFO study_tutor.adapters.nats_adapter: Starting NATSAdapter for agent 'gcse-tutor'
+2026-05-10 19:31:33,791 INFO study_tutor.adapters.nats_adapter: Registered agent 'gcse-tutor' to fleet.register
+2026-05-10 19:31:33,791 INFO study_tutor.adapters.nats_adapter: Subscribed (with reply) to command subject 'agents.command.gcse-tutor'
+2026-05-10 19:31:33,791 INFO study_tutor.adapters.nats_adapter: NATSAdapter ready for agent 'gcse-tutor'
+[study-tutor] Serving via NATS as agent_id=gcse-tutor url=nats://host.docker.internal:4222. Press Ctrl+C to stop.
+2026-05-10 19:33:20,861 ERROR nats.aio.client: nats: encountered error
+Traceback (most recent call last):
+  File "/workspace/study-tutor/.venv/lib/python3.11/site-packages/nats/aio/subscription.py", line 309, in _wait_for_msgs
+    await self._cb(msg)
+  File "/workspace/nats-core/src/nats_core/client.py", line 218, in _internal_callback
+    await callback(envelope, reply_to)
+  File "/workspace/study-tutor/src/study_tutor/adapters/nats_adapter.py", line 284, in _on_command
+    await self._command_router.on_command(envelope, reply_to)
+  File "/workspace/study-tutor/src/study_tutor/adapters/command_router.py", line 156, in on_command
+    await self._publish_result(
+  File "/workspace/study-tutor/src/study_tutor/adapters/command_router.py", line 234, in _publish_result
+    await self.client.publish_raw(
+  File "/workspace/nats-core/src/nats_core/client.py", line 242, in publish_raw
+    raise RuntimeError(msg)
+RuntimeError: client is not connected

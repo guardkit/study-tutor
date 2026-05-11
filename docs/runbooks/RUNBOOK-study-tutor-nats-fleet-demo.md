@@ -193,21 +193,47 @@ docker ps --filter name=ships-computer-nats --format '{{.Names}}\t{{.Status}}'
 
 **Pass:** `ships-computer-nats` Up (healthy).
 
-Surgically load the APPMILLA-account creds (per
-`specialist-agent/scripts/nats-evidence-runbook.md` §1.1 — do **not**
-source the whole `.env` because it carries stale `OPENAI_API_KEY`
-baggage):
+Auth contract: `study-tutor/.env` carries the NATS auth that both this
+compose stack and the standalone `nats` CLI calls in later sections
+consume. Confirm it exists, populated, and source it into the operator
+shell:
 
 ```bash
-export RICH_NATS_PASSWORD="$(grep '^RICH_NATS_PASSWORD=' ~/Projects/appmilla_github/nats-infrastructure/.env | cut -d= -f2-)"
-export RICH_NATS_USER=appmilla
-echo "RICH_NATS_USER=$RICH_NATS_USER  RICH_NATS_PASSWORD set: $([[ -n "$RICH_NATS_PASSWORD" ]] && echo yes || echo no)"
+cd ~/Projects/appmilla_github/study-tutor
+[ -f .env ] \
+  && grep -qE '^NATS_USER='     .env \
+  && grep -qE '^NATS_PASSWORD=' .env \
+  && echo "OK: study-tutor/.env carries NATS_USER and NATS_PASSWORD" \
+  || echo "FAIL: populate study-tutor/.env with NATS_USER and NATS_PASSWORD"
+set -a && source .env && set +a   # makes NATS_USER / NATS_PASSWORD available
+                                  # to the standalone `nats` CLI in §0.6 / §1.3
+                                  # / §1.4 / §1.5 / §2.1 / §4.1 / §4.2 / §6.
+echo "NATS_USER=$NATS_USER  NATS_PASSWORD set: $([[ -n "$NATS_PASSWORD" ]] && echo yes || echo no)"
 ```
 
-**Pass:** `RICH_NATS_USER=appmilla  RICH_NATS_PASSWORD set: yes`. If
-`set: no`, `docker-compose.study-tutor.yml` will refuse to start (the
-`NATS_PASSWORD: ${RICH_NATS_PASSWORD:?must-be-set}` guard fires loudly,
-which is the intended behaviour — see Bug-catalogue Bug #2 below).
+**Pass:** `OK: study-tutor/.env carries NATS_USER and NATS_PASSWORD` and
+`NATS_USER=rich  NATS_PASSWORD set: yes`.
+
+Notes:
+
+- `NATS_USER` must be a valid user inside the APPMILLA account (`rich` or
+  `james` — see `nats-infrastructure/config/accounts/accounts.conf.template`).
+  `appmilla` is the *account* name, not a user; sending it as the username
+  triggers an `Authorization Violation` at connect time. This was Bug #7
+  in run-1 and TASK-NATS-PH3-008 fixed it by changing the compose default
+  from `appmilla` (account) to `rich` (user).
+- `docker compose -f docker-compose.study-tutor.yml up -d` auto-loads
+  `study-tutor/.env` from the compose project directory, so the values
+  flow into `gcse-tutor` without any shell exports. The `set -a && source`
+  above is only needed for the **standalone** `nats --server "nats://rich:${NATS_PASSWORD}@..."`
+  CLI calls in later sections (which run outside the compose container).
+- The variable names (`NATS_USER`, `NATS_PASSWORD`, unprefixed) intentionally
+  match `specialist-agent/docker-compose.dual-role.yml` so a single `.env`
+  file in either project root carries auth for both. If the password is
+  missing, `compose up` fails loudly via the
+  `NATS_PASSWORD: ${NATS_PASSWORD:?must-be-set}` guard.
+- `study-tutor/.env` is git-ignored — do **not** commit it. Only the
+  compose file's variable-name contract is tracked.
 
 ### 0.6 Confirm canonical NATS provisioning is in place
 
@@ -219,8 +245,8 @@ This is a strict subset of the architect demo's Phase 1. The tutor needs:
 
 ```bash
 cd ~/Projects/appmilla_github/nats-infrastructure
-set -a && source .env && set +a
-export NATS_URL="nats://rich:${RICH_NATS_PASSWORD}@localhost:4222"
+# NATS_USER / NATS_PASSWORD were sourced from study-tutor/.env in §0.5.
+export NATS_URL="nats://${NATS_USER}:${NATS_PASSWORD}@localhost:4222"
 bash scripts/verify-nats.sh
 ```
 
@@ -254,7 +280,9 @@ docker exec gcse-tutor printenv AGENT_ID
 docker exec gcse-tutor printenv LOCAL_MODEL
 docker exec gcse-tutor printenv OPENAI_BASE_URL
 docker exec gcse-tutor printenv LLM_BASE_URL
-docker exec gcse-tutor printenv NATS_URL | sed 's/:[^@]*@/:***@/'
+docker exec gcse-tutor printenv NATS_URL
+docker exec gcse-tutor printenv NATS_USER
+docker exec gcse-tutor printenv NATS_PASSWORD >/dev/null && echo "***"
 ```
 
 **Expect:**
@@ -264,8 +292,16 @@ gcse-tutor
 gemma4-tutor
 http://host.docker.internal:9000/v1
 http://host.docker.internal:9000
-nats://appmilla:***@host.docker.internal:4222
+nats://host.docker.internal:4222
+rich
+***
 ```
+
+`NATS_URL`, `NATS_USER`, and `NATS_PASSWORD` are exposed as separate env
+vars (the compose contract does not embed credentials in the URL); the
+adapter assembles them at connect time. `NATS_USER=rich` (the user inside
+the APPMILLA account) — not `appmilla` (which is the account name and would
+trigger an `Authorization Violation`).
 
 **Bug #3 trap (the `/v1` suffix):** `OPENAI_BASE_URL` MUST end with `/v1`.
 langchain-openai appends `/chat/completions`, so a base URL without `/v1`
@@ -277,7 +313,7 @@ guard asserts every override path keeps the suffix.
 ### 1.3 Verify the tutor registered to `agent-registry` KV
 
 ```bash
-nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
+nats --server "nats://rich:${NATS_PASSWORD}@localhost:4222" \
     kv ls agent-registry
 ```
 
@@ -288,7 +324,7 @@ the architect-demo stack).
 ### 1.4 Verify the manifest advertises four tools
 
 ```bash
-nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
+nats --server "nats://rich:${NATS_PASSWORD}@localhost:4222" \
     kv get agent-registry gcse-tutor --raw 2>/dev/null \
   | python3 -c "import sys, json; d=json.load(sys.stdin); print('agent_id:', d['agent_id']); print('tool count:', len(d['tools'])); [print('  -', t['name']) for t in d['tools']]"
 ```
@@ -307,7 +343,7 @@ tool count: 4
 ### 1.5 Verify the heartbeat is firing
 
 ```bash
-nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
+nats --server "nats://rich:${NATS_PASSWORD}@localhost:4222" \
     sub "fleet.heartbeat.gcse-tutor" --count 1
 ```
 
@@ -323,7 +359,7 @@ nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
 ```bash
 cd ~/Projects/appmilla_github/jarvis
 set -a && source ../nats-infrastructure/.env && set +a
-export JARVIS_NATS_URL="nats://rich:${RICH_NATS_PASSWORD}@localhost:4222"
+export JARVIS_NATS_URL="nats://rich:${NATS_PASSWORD}@localhost:4222"
 export JARVIS_LOG_LEVEL=INFO
 .venv/bin/jarvis chat 2>&1 | tee /tmp/dddsw-tutor-demo-chat.log
 ```
@@ -419,7 +455,7 @@ live as they happen.
 In a second pane:
 
 ```bash
-nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
+nats --server "nats://rich:${NATS_PASSWORD}@localhost:4222" \
     sub "agents.command.>" --raw \
   | tee /tmp/dddsw-tutor-demo-command.log
 ```
@@ -434,7 +470,7 @@ prompt fields the supervisor extracted.
 In a third pane:
 
 ```bash
-nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
+nats --server "nats://rich:${NATS_PASSWORD}@localhost:4222" \
     sub "agents.result.>" --raw \
   | tee /tmp/dddsw-tutor-demo-result.log
 ```
@@ -627,12 +663,12 @@ Internalise this; don't read it on stage.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `dispatch_by_capability` returns `ERROR: unresolved` for a tutor_* tool | The live `agent-registry` KV doesn't have `gcse-tutor`, OR the row exists but has `tool count: 0`. Most commonly registration failed at boot due to `Authorization Violation`. | Redo §0.5 (export RICH_NATS_PASSWORD, etc.) **in the same shell**, then `compose down + up -d` so compose re-substitutes env. |
+| `dispatch_by_capability` returns `ERROR: unresolved` for a tutor_* tool | The live `agent-registry` KV doesn't have `gcse-tutor`, OR the row exists but has `tool count: 0`. Most commonly registration failed at boot due to `Authorization Violation`. | Redo §0.5 (re-source `study-tutor/.env` in the same shell) and `compose down + up -d` so compose re-substitutes env. |
 | Dispatch returns `TIMEOUT` after 600s | Tutor container is up but llama-swap is overloaded or `gemma4-tutor` is cold-loading | Check llama-swap logs. The first `tutor_turn` against a cold model can exceed normal latency. Warm the model first (one prior call) or bump `timeout_seconds`. |
 | Response `payload.success: false` with `error` mentioning `404` | `OPENAI_BASE_URL` lost the `/v1` suffix (Bug #3 regression) | `docker exec gcse-tutor printenv OPENAI_BASE_URL` and confirm it ends in `/v1`. If not, check the override env vars or rebuild from a clean compose file. |
 | Response `payload.success: false` with `error` mentioning `'tutor_start_session' is not supported` | Bug #2 regression — `on_command` not consulting `tool_to_command` | This means the deployed image is pre-PH1-004 fix. Rebuild per §0.3. |
 | `agents.result.gcse-tutor` tail captures a 32-byte JetStream PubAck | `nats request` used instead of `sub` | Use `nats sub --raw` per §4.2. |
-| `agent-registry` KV is empty for `gcse-tutor` after `up -d` | `RICH_NATS_PASSWORD` not propagated into the container — `:?must-be-set` should have prevented this, but if env was set in a different shell the compose file may have started with a stale value | Container logs will show `nats: 'Authorization Violation'`. Redo §0.5 (in the same shell), then §1.1. |
+| `agent-registry` KV is empty for `gcse-tutor` after `up -d` | `NATS_PASSWORD` not propagated into the container — the `:?must-be-set` guard should have prevented this, but if `study-tutor/.env` was edited after `compose up` without a fresh `down + up -d`, compose may have started with a stale value | Container logs will show `nats: 'Authorization Violation'`. Redo §0.5 (re-source `study-tutor/.env` in the same shell), then §1.1. |
 | Jarvis chat REPL doesn't see `gcse-tutor` at all | Live KV watch hasn't propagated yet, OR jarvis is in `capabilities_mode: stub` | Wait 10s and re-ask in §2.2. Confirm jarvis boot log shows `capabilities_mode=live`. |
 | Tutor responds correctly the first time but next dispatch hangs | **See §6 below — Known issue: stale registry entries** if a prior tutor process was killed without graceful shutdown | Run the manual cleanup in §6. |
 
@@ -662,7 +698,7 @@ on `agents.result.gcse-tutor`. The dispatch hits its timeout.
 **Cleanup (manual, until jarvis-side reaper lands):**
 
 ```bash
-nats --server "nats://rich:${RICH_NATS_PASSWORD}@localhost:4222" \
+nats --server "nats://rich:${NATS_PASSWORD}@localhost:4222" \
     kv del agent-registry gcse-tutor
 ```
 

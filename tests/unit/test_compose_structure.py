@@ -238,8 +238,26 @@ REQUIRED_ENV_KEYS: tuple[str, ...] = (
     "OPENAI_BASE_URL",
     "LLM_BASE_URL",
     "LOCAL_MODEL",
+    # Bug #9 regression guard (2026-05-10 run-2): LOCAL_BASE_URL is what
+    # ``LLMClient._generate_openai_compat`` reads for the Player when
+    # provider=local. Without it the Player falls back to
+    # ``DEFAULT_LOCAL_BASE_URL = "http://localhost:11434"`` which is
+    # unreachable inside the container.
+    "LOCAL_BASE_URL",
+    # Bug #9 regression guard: LOCAL_COACH_MODEL is the actual Coach
+    # model alias sent to llama-swap. Distinct from
+    # ``AGENT_MODELS__COACH_MODEL`` (which is the provider name).
+    "LOCAL_COACH_MODEL",
     "OPENAI_API_KEY",
     "HEARTBEAT_INTERVAL_SECONDS",
+    # Bug #6 regression guard (TASK-NATS-PH3-007). The Coach provider is
+    # required by the D3 two-provider invariant (D-COACH-05 / FEAT-6CC5);
+    # missing keys here resurface as a container crash-loop with
+    # ``LLMProviderError: AGENT_MODELS__COACH_MODEL is not set`` only
+    # after the container starts, so this regression must be caught at
+    # the file-level contract.
+    "AGENT_MODELS__COACH_MODEL",
+    "AGENT_MODELS__COACH_ENDPOINT",
 )
 
 
@@ -333,22 +351,24 @@ def test_openai_base_url_uses_overridable_var_name(env_block: dict[str, str]) ->
 
 
 # ---------------------------------------------------------------------------
-# Required-or-fail-fast: RICH_NATS_PASSWORD
+# Required-or-fail-fast: NATS_PASSWORD
 # ---------------------------------------------------------------------------
 
 
 def test_nats_password_uses_required_interpolation(env_block: dict[str, str]) -> None:
     """``NATS_PASSWORD`` must use the ``${VAR:?msg}`` interpolation form.
 
-    AC: "RICH_NATS_PASSWORD uses ${VAR:?must-be-set} syntax so the
-    compose-up fails with a clear error if unset." This prevents the
-    container starting with an empty password and silently failing
-    NATS auth at first connect.
+    AC (TASK-NATS-PH3-008): NATS_PASSWORD uses ``${NATS_PASSWORD:?<msg>}``
+    syntax so `compose up` fails with a clear error if unset. The
+    variable name is unprefixed (was ``RICH_NATS_PASSWORD`` pre-fix) so
+    a single ``.env`` file works across study-tutor and specialist-agent.
+    This prevents the container starting with an empty password and
+    silently failing NATS auth at first connect.
     """
     raw = env_block["NATS_PASSWORD"]
-    pattern = re.compile(r"^\$\{RICH_NATS_PASSWORD:\?[^}]+\}$")
+    pattern = re.compile(r"^\$\{NATS_PASSWORD:\?[^}]+\}$")
     assert pattern.match(raw), (
-        "NATS_PASSWORD must use the `${RICH_NATS_PASSWORD:?<message>}` "
+        "NATS_PASSWORD must use the `${NATS_PASSWORD:?<message>}` "
         "interpolation form so `compose up` fails fast when the password "
         f"is unset; got {raw!r}."
     )
@@ -427,17 +447,23 @@ def test_openai_api_key_has_no_auth_sentinel_default(env_block: dict[str, str]) 
     )
 
 
-def test_nats_user_default_is_appmilla(env_block: dict[str, str]) -> None:
-    """``NATS_USER`` must default to ``appmilla``.
+def test_nats_user_default_is_rich(env_block: dict[str, str]) -> None:
+    """``NATS_USER`` must default to ``rich`` (user inside APPMILLA account).
 
-    The default user matches the credential set provisioned by the
-    nats-infrastructure repo for the home-lab stack. Drift here means
-    the container starts but cannot authenticate without an explicit
-    override.
+    AC (TASK-NATS-PH3-008 / Bug #7): ``appmilla`` is the *account* name,
+    not a user — sending it as the username triggers an Authorization
+    Violation at connect time. Valid users inside the APPMILLA account
+    are ``rich`` and ``james`` (see
+    nats-infrastructure/config/accounts/accounts.conf.template). The
+    default is the demo's primary persona ``rich``.
+
+    The variable name is unprefixed (was ``RICH_NATS_USER`` pre-fix) so
+    a single ``.env`` file works across study-tutor and specialist-agent
+    (specialist-agent/docker-compose.dual-role.yml uses the same name).
     """
     raw = env_block["NATS_USER"]
-    assert raw == "${RICH_NATS_USER:-appmilla}", (
-        f"NATS_USER must be `${{RICH_NATS_USER:-appmilla}}`; got {raw!r}."
+    assert raw == "${NATS_USER:-rich}", (
+        f"NATS_USER must be `${{NATS_USER:-rich}}`; got {raw!r}."
     )
 
 
@@ -477,6 +503,203 @@ def test_no_healthcheck_block(tutor_service: dict[str, Any]) -> None:
         "Spec defers healthcheck; the NATS KV heartbeat is the "
         "liveness signal. Remove the `healthcheck:` block from "
         f"`{SERVICE_NAME}` or update the spec."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Bug #6 regression guard (TASK-NATS-PH3-007) — Coach provider env vars
+# ---------------------------------------------------------------------------
+#
+# The D3 two-provider invariant (decision D-COACH-05, feature FEAT-6CC5)
+# requires AGENT_MODELS__COACH_MODEL to be explicitly set and different
+# from AGENT_MODELS__REASONING_MODEL. There is NO fallback — see
+# study_tutor.llm.client:85 — so a missing or matching alias surfaces as
+# ``LLMProviderError: AGENT_MODELS__COACH_MODEL is not set`` (Bug #6 on
+# 2026-05-10) or a violation of the invariant at orchestrator construction
+# time. Both modes only crash AFTER the container boots, so the only fast
+# feedback for a future regression is here at the file-level contract.
+
+
+def _extract_default(raw: str) -> str:
+    """Pull the literal default out of a ``${VAR:-default}`` interpolation.
+
+    Re-implements the inline pattern from
+    ``test_openai_base_url_default_ends_with_v1`` so the Coach tests can
+    assert on the operator's no-override value rather than the raw
+    interpolation. Kept module-private (single-underscore) so the helper
+    doesn't pollute the public test surface.
+    """
+    match = re.match(r"\$\{[^:}]+:-(?P<default>[^}]+)\}$", raw)
+    assert match, (
+        f"Expected `${{VAR:-default}}` interpolation form; got {raw!r}."
+    )
+    return match.group("default")
+
+
+def test_local_coach_model_uses_tutor_coach_model_override(
+    env_block: dict[str, str],
+) -> None:
+    """``LOCAL_COACH_MODEL`` must use ``${TUTOR_COACH_MODEL:-...}``.
+
+    AC-PH3-007-3 (revised after Bug #9, 2026-05-10 run-2): the operator
+    override knob ``TUTOR_COACH_MODEL`` now carries the **model alias**
+    (e.g. ``qwen36-workhorse``) and is consumed by ``LOCAL_COACH_MODEL``
+    — which is the env var ``LLMClient._generate_openai_compat`` reads
+    for the Coach payload's ``"model": ...`` field. Pre-Bug-#9 this knob
+    was incorrectly attached to ``AGENT_MODELS__COACH_MODEL`` (the
+    provider-name var), causing ``LLMProviderError: Unsupported
+    provider: 'qwen36-workhorse'`` on the first Coach turn. See
+    ``RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-2.md`` Bug #9.
+    """
+    raw = env_block["LOCAL_COACH_MODEL"]
+    assert raw.startswith("${TUTOR_COACH_MODEL:-"), (
+        "LOCAL_COACH_MODEL must use the `${TUTOR_COACH_MODEL:-<alias>}` "
+        "interpolation form so the operator override path works (the "
+        "model alias migrated here from AGENT_MODELS__COACH_MODEL after "
+        f"Bug #9); got {raw!r}."
+    )
+
+
+def test_coach_endpoint_uses_tutor_coach_endpoint_override(
+    env_block: dict[str, str],
+) -> None:
+    """``AGENT_MODELS__COACH_ENDPOINT`` must use ``${TUTOR_COACH_ENDPOINT:-...}``.
+
+    Same reasoning as the model override knob: the runbook documents
+    ``TUTOR_COACH_ENDPOINT`` as the way an operator points the Coach at a
+    different llama-swap host without editing the compose file. A
+    hard-coded endpoint silently ignores that override.
+    """
+    raw = env_block["AGENT_MODELS__COACH_ENDPOINT"]
+    assert raw.startswith("${TUTOR_COACH_ENDPOINT:-"), (
+        "AGENT_MODELS__COACH_ENDPOINT must use the "
+        "`${TUTOR_COACH_ENDPOINT:-<url>}` interpolation form; got "
+        f"{raw!r}."
+    )
+
+
+def test_coach_model_default_differs_from_reasoning_model_default(
+    env_block: dict[str, str],
+) -> None:
+    """The D3 two-provider invariant must hold for the default aliases.
+
+    AC-PH3-007-2: ``validate_coach_config`` rejects a configuration where
+    the Coach and Reasoning models point at the same alias. If the two
+    *defaults* match, every fresh ``docker compose up`` (no overrides
+    set) crashes at orchestrator construction — i.e. exactly the failure
+    mode the operator would assume the compose defaults prevented.
+    Asserting on the defaults is the only way to catch this at file-level
+    contract time; the runtime check fires after the container starts.
+    """
+    coach_default = _extract_default(env_block["AGENT_MODELS__COACH_MODEL"])
+    reasoning_default = _extract_default(env_block["AGENT_MODELS__REASONING_MODEL"])
+    assert coach_default != reasoning_default, (
+        "D3 two-provider invariant violated: AGENT_MODELS__COACH_MODEL "
+        f"default ({coach_default!r}) must differ from "
+        f"AGENT_MODELS__REASONING_MODEL default ({reasoning_default!r}). "
+        "See study_tutor.llm.client._default_coach_model (D-COACH-05 / "
+        "FEAT-6CC5) — no fallback is permitted."
+    )
+
+
+def test_coach_env_block_documents_design_decision(compose_text: str) -> None:
+    """The compose comment must reference D-COACH-05 / FEAT-6CC5.
+
+    AC-PH3-007-4: an inline comment must explain *why* Coach differs from
+    Reasoning and cite the design references, so a future operator
+    editing the env block cannot silently collapse Coach and Reasoning
+    onto the same alias without first reading the rationale. Asserting on
+    the raw compose text (not the parsed YAML) is intentional — YAML
+    parsers strip comments, and the comment is the artefact we care
+    about.
+    """
+    # The two design references are the canonical "why"; assert both are
+    # present so a future edit can't drop one half and leave a dangling
+    # citation.
+    for token in ("D-COACH-05", "FEAT-6CC5"):
+        assert token in compose_text, (
+            f"docker-compose.study-tutor.yml must include `{token}` in "
+            "the comment that introduces the AGENT_MODELS__COACH_* env "
+            "block, so the two-provider invariant rationale is "
+            "discoverable from the compose file itself."
+        )
+
+
+# ---------------------------------------------------------------------------
+# Bug #9 regression guard (2026-05-10 run-2) — AGENT_MODELS__* hold provider
+# names, not model aliases
+# ---------------------------------------------------------------------------
+#
+# ``study_tutor.llm.client.LLMClient.generate`` branches on
+# ``self.provider`` against the literals ``"local"``, ``"local-coach"``,
+# and ``"bedrock"``; ``_default_player_model`` and ``_default_coach_model``
+# return the corresponding env vars **verbatim**. A compose default like
+# ``AGENT_MODELS__REASONING_MODEL: gemma4-tutor`` (a model alias) therefore
+# raises ``LLMProviderError: Unsupported provider: 'gemma4-tutor'`` the
+# first time the Player tries to respond. This is a runtime-only failure
+# (mid-tutor_turn, not at container boot) so the only fast feedback for a
+# regression is at the file-level contract.
+
+VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"local", "local-coach", "bedrock"})
+
+
+def test_reasoning_model_default_is_a_provider_name(env_block: dict[str, str]) -> None:
+    """``AGENT_MODELS__REASONING_MODEL`` default must be a provider name.
+
+    Bug #9 regression guard. The env var name says "MODEL" but the
+    runtime contract treats it as a **provider** identifier (see
+    ``LLMClient.__init__(provider: str)``). The default must therefore
+    be a member of ``{"local", "local-coach", "bedrock"}``; anything else
+    raises ``LLMProviderError`` on the first turn.
+    """
+    raw = env_block["AGENT_MODELS__REASONING_MODEL"]
+    default = _extract_default(raw)
+    assert default in VALID_LLM_PROVIDERS, (
+        "AGENT_MODELS__REASONING_MODEL default must be a provider name "
+        f"(one of {sorted(VALID_LLM_PROVIDERS)}). Setting it to a model "
+        "alias like 'gemma4-tutor' raises LLMProviderError mid-turn — "
+        "see Bug #9 in "
+        "docs/runbooks/RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-2.md. "
+        f"Got default: {default!r}."
+    )
+
+
+def test_coach_model_default_is_a_provider_name(env_block: dict[str, str]) -> None:
+    """``AGENT_MODELS__COACH_MODEL`` default must be a provider name.
+
+    Symmetric to the Reasoning-side guard. The Coach side raises the
+    same ``LLMProviderError: Unsupported provider`` if the env var holds
+    a model alias.
+    """
+    raw = env_block["AGENT_MODELS__COACH_MODEL"]
+    default = _extract_default(raw)
+    assert default in VALID_LLM_PROVIDERS, (
+        "AGENT_MODELS__COACH_MODEL default must be a provider name "
+        f"(one of {sorted(VALID_LLM_PROVIDERS)}). Setting it to a model "
+        "alias like 'qwen36-workhorse' raises LLMProviderError mid-turn "
+        "on the first Coach call (latent until then). See Bug #9 in "
+        "docs/runbooks/RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-2.md. "
+        f"Got default: {default!r}."
+    )
+
+
+def test_local_base_url_default_has_no_v1_suffix(env_block: dict[str, str]) -> None:
+    """``LOCAL_BASE_URL`` default must NOT end with ``/v1``.
+
+    Bug #9 regression guard. ``LLMClient._generate_openai_compat``
+    appends ``/v1/chat/completions`` to whatever ``LOCAL_BASE_URL``
+    points at. A ``/v1``-suffixed default would yield
+    ``/v1/v1/chat/completions`` and llama-swap returns 404 — the same
+    failure shape as Bug #3 (``OPENAI_BASE_URL`` missing ``/v1``) but
+    in the opposite direction. Keeping the suffix off here is what
+    keeps the Player path working.
+    """
+    raw = env_block["LOCAL_BASE_URL"]
+    default = _extract_default(raw)
+    assert not default.endswith("/v1"), (
+        "LOCAL_BASE_URL default must NOT end with `/v1` — the helper "
+        "appends `/v1/chat/completions` itself, so a `/v1` here yields a "
+        f"doubled segment and 404 from llama-swap. Got default: {default!r}."
     )
 
 

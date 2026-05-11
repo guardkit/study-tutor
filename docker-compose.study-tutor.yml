@@ -17,11 +17,13 @@
 #   that suffix.
 #
 # Usage (typical: NATS already running on the host on port 4222):
-#   RICH_NATS_PASSWORD=<password> \
+#   Populate study-tutor/.env with NATS_USER=rich and NATS_PASSWORD=<password>
+#   (the .env file is git-ignored). `docker compose` auto-loads it from the
+#   compose project directory, so no shell exports are needed:
 #     docker compose -f docker-compose.study-tutor.yml up -d
 #
 # Override NATS host (e.g. point at a remote NATS over Tailscale):
-#   NATS_HOST=promaxgb10-41b1 RICH_NATS_PASSWORD=<password> \
+#   NATS_HOST=promaxgb10-41b1 \
 #     docker compose -f docker-compose.study-tutor.yml up -d
 #
 # Validate without starting:
@@ -49,11 +51,23 @@ services:
       # NATS_HOST defaults to host.docker.internal so the container reaches
       # NATS on the Docker host; override to point at a remote NATS.
       NATS_URL: nats://${NATS_HOST:-host.docker.internal}:4222
-      NATS_USER: ${RICH_NATS_USER:-appmilla}
+      # `appmilla` is the *account* name, not a user. Valid users inside
+      # the APPMILLA account are `rich` and `james` (see
+      # nats-infrastructure/config/accounts/accounts.conf.template).
+      # Sending `appmilla` as the username triggers an Authorization
+      # Violation at connect time.
+      #
+      # The variable name (`NATS_USER`, unprefixed) intentionally matches
+      # `specialist-agent/docker-compose.dual-role.yml` so a single `.env`
+      # file in either project root carries NATS auth for both projects.
+      # The only asymmetry is the default value: study-tutor defaults to
+      # `rich` (this is the GCSE-tutor demo's primary persona); specialist-
+      # agent leaves the default empty.
+      NATS_USER: ${NATS_USER:-rich}
       # `:?must-be-set` makes `compose up` fail with a clear error if the
       # password is missing instead of starting the container with an empty
       # password and silently failing auth at first NATS connect.
-      NATS_PASSWORD: ${RICH_NATS_PASSWORD:?must-be-set}
+      NATS_PASSWORD: ${NATS_PASSWORD:?must-be-set}
 
       # Identity used by serve-nats to register heartbeat / capability records.
       AGENT_ID: gcse-tutor
@@ -66,6 +80,28 @@ services:
       OPENAI_BASE_URL: ${TUTOR_OPENAI_BASE_URL:-http://host.docker.internal:9000/v1}
       LLM_BASE_URL: ${TUTOR_LLM_BASE_URL:-http://host.docker.internal:9000}
       LOCAL_MODEL: ${TUTOR_LOCAL_MODEL:-gemma4-tutor}
+      # LOCAL_BASE_URL is the bare base URL that
+      # ``study_tutor.llm.client.LLMClient._generate_openai_compat`` reads
+      # when the Player provider (provider=local) issues an OpenAI-compat
+      # POST. The helper appends `/v1/chat/completions` itself, so the
+      # value here MUST be bare (no `/v1` suffix) — same shape as
+      # LLM_BASE_URL above. Without this var the Player falls back to
+      # ``DEFAULT_LOCAL_BASE_URL = "http://localhost:11434"`` which fails
+      # inside the container (the host is unreachable as `localhost`).
+      # Surfaced as Bug #9 (2026-05-10 run-2) one layer below the
+      # provider-name vs model-alias conflation fixed below.
+      LOCAL_BASE_URL: ${TUTOR_LLM_BASE_URL:-http://host.docker.internal:9000}
+      # LOCAL_COACH_MODEL is the actual model alias passed in the
+      # OpenAI-compat payload's ``"model": ...`` field when the Coach
+      # provider (provider=local-coach) issues a turn. Resolved by
+      # ``LLMClient._generate_openai_compat`` via ``LOCAL_COACH_MODEL`` env
+      # — distinct from ``AGENT_MODELS__COACH_MODEL`` below, which is the
+      # **provider name** (one of ``local`` / ``local-coach`` / ``bedrock``).
+      # The Coach reuses ``LOCAL_BASE_URL`` (set above) as its base URL —
+      # ``LLMClient._generate_openai_compat`` falls back to it when
+      # ``LOCAL_COACH_BASE_URL`` is unset, which is the single-host case
+      # the demo runs in.
+      LOCAL_COACH_MODEL: ${TUTOR_COACH_MODEL:-qwen36-workhorse}
       # llama-swap doesn't require auth, but langchain-openai refuses to
       # construct a client with an empty api_key, so we pass a sentinel.
       OPENAI_API_KEY: ${TUTOR_OPENAI_API_KEY:-local-no-auth-required}
@@ -73,6 +109,46 @@ services:
       # Cadence at which serve-nats publishes heartbeat KV entries; the
       # heartbeat is the liveness signal in lieu of an HTTP healthcheck.
       HEARTBEAT_INTERVAL_SECONDS: 30
+
+      # nats_core.AgentConfig (BaseSettings, env_prefix=AGENT_,
+      # env_nested_delimiter=__) is what serve-nats actually instantiates.
+      # The flat LOCAL_MODEL / OPENAI_BASE_URL above are still consumed by
+      # study-tutor's LLM client and graphiti client, but the AGENT_-
+      # prefixed nested vars below are what populate the required
+      # `models: ModelConfig` field on AgentConfig — without them the
+      # container crash-loops with "models Field required". Mirrors the
+      # convention specialist-agent's docker-compose.dual-role.yml uses.
+      #
+      # IMPORTANT — provider name vs model alias distinction (Bug #9,
+      # 2026-05-10 run-2). The values below are **provider names** —
+      # exactly ``local``, ``local-coach``, or ``bedrock``, as branched on
+      # by ``study_tutor.llm.client.LLMClient.generate`` (the canonical
+      # contract is enforced by ``_default_player_model`` /
+      # ``_default_coach_model``, which return the env var verbatim). The
+      # actual model aliases (``gemma4-tutor``, ``qwen36-workhorse``) live
+      # in ``LOCAL_MODEL`` / ``LOCAL_COACH_MODEL`` above and are sent
+      # downstream in the OpenAI-compat payload's ``"model": ...`` field.
+      # Setting these AGENT_MODELS__* vars to an alias (e.g.
+      # ``gemma4-tutor``) raises ``LLMProviderError: Unsupported
+      # provider`` on the first turn — visible only mid-``tutor_turn``,
+      # not at startup. The regression-guard tests under
+      # ``tests/unit/test_compose_structure.py`` assert that the defaults
+      # are valid provider names.
+      AGENT_MODELS__REASONING_MODEL: ${TUTOR_REASONING_PROVIDER:-local}
+      AGENT_MODELS__REASONING_ENDPOINT: ${TUTOR_OPENAI_BASE_URL:-http://host.docker.internal:9000/v1}
+      # Coach provider — must differ from REASONING_MODEL (D3 two-provider
+      # invariant, decision D-COACH-05 / FEAT-6CC5; no fallback is
+      # permitted — enforced by validate_coach_config, see
+      # study_tutor.llm.client._default_coach_model). Default to
+      # ``local-coach`` (a distinct provider name from the Player's
+      # ``local``) so the invariant holds by construction; the actual
+      # Coach model alias lives in ``LOCAL_COACH_MODEL`` above and is
+      # overridable via ``TUTOR_COACH_MODEL``. Override the provider
+      # itself via ``TUTOR_COACH_PROVIDER`` (rare — only when adding a
+      # new backend).
+      AGENT_MODELS__COACH_MODEL: ${TUTOR_COACH_PROVIDER:-local-coach}
+      AGENT_MODELS__COACH_ENDPOINT: ${TUTOR_COACH_ENDPOINT:-http://host.docker.internal:9000/v1}
+      AGENT_HEARTBEAT_INTERVAL_SECONDS: 30
     # `unless-stopped` survives Docker daemon restarts but respects an
     # explicit `docker compose down` from the operator.
     restart: unless-stopped

@@ -1,0 +1,20 @@
+{
+  "command": "tutor_start_session",
+  "result": {
+    "session_id": "35f1e57d-96a5-428f-874d-995477a3e6b5",
+    "plan_summary": {
+      "topic_name": "Macbeth — Shakespeare",
+      "rule_selected": "rule-1",
+      "fallback_used": null,
+      "focus_aos": [],
+      "opening_prompt": "Today let's focus on Macbeth — Shakespeare. To start, share what you already know about it and where you feel less confident.",
+      "suggested_duration_minutes": 20,
+      "rationale": "rule-1: learner override — using 'Macbeth — Shakespeare' as the requested topic",
+      "related_misconceptions": [],
+      "ao_mapping_found": false,
+      "learner_state_available": false
+    }
+  },
+  "correlation_id": "demo-runbook-2026-05-10-run-2-start-macbeth",
+  "success": true
+}

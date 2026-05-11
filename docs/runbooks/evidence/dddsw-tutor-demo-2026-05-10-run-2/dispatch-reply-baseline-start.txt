@@ -1,0 +1,3 @@
+{"command":"tutor_start_session","result":{"session_id":"1b81c4e0-f2f4-4756-80f8-f5d1ddd93b11","plan_summary":{"topic_name":"introductory diagnostic","rule_selected":"baseline","fallback_used":"baseline","focus_aos":[],"opening_prompt":"Welcome — let's get to know how you study. Tell me a text or topic you feel comfortable with, and one you find tricky, so I can plan a useful first session.","suggested_duration_minutes":20,"rationale":"Baseline plan: no learner state available — proposing an introductory diagnostic so the tutor can gather signal.","related_misconceptions":[],"ao_mapping_found":false,"learner_state_available":false}},"correlation_id":"demo-runbook-2026-05-10-run-2-start","success":true}
+
+

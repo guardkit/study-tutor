@@ -3157,6 +3157,115 @@ FEAT-6CC5 is now fully ready to build: /feature-build FEAT-6CC5 will pick up tag
 GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-6CC5 --verbose 
 
 
+Runbook execution halted at Phase 2.3
+Verdict: Deployment is not green — blocked by an unmet cross-repo precondition.
+
+What ran clean
+Phase 0 all gates green (host promaxgb10-41b1, sibling repos, clean main at 89110da, Docker 29.2.1, llama-swap serving gemma4-tutor, NATS healthy with 7 streams + 4 KV buckets including agent-registry).
+Phase 1.1/1.2 image built (study-tutor:dev, 615 MB, sha256:ec7b1dfeb5a5...) and CLI smoke test passed (serve, serve-nats commands resolve).
+What I patched (uncommitted, please review)
+Dockerfile — added apt-get install git layer before pip install uv. The base python:3.11-slim ships no git, but pyproject.toml:35 declares graphiti-core as a git+https direct reference, so uv sync was failing with Git executable not found.
+docker-compose.study-tutor.yml — added AGENT_MODELS__REASONING_MODEL, AGENT_MODELS__REASONING_ENDPOINT, and AGENT_HEARTBEAT_INTERVAL_SECONDS. nats_core.AgentConfig is a BaseSettings with env_prefix=AGENT_ and requires models: ModelConfig — the existing flat LOCAL_MODEL / OPENAI_BASE_URL vars are read by study-tutor's LLM client + graphiti client but ignored by AgentConfig, so serve-nats was crash-looping with models Field required. Mirrors the convention in specialist-agent/docker-compose.dual-role.yml.
+Blocker (cannot patch — requires substantive implementation work)
+After both patches, the container still crash-loops:
+
+
+ModuleNotFoundError: No module named 'study_tutor.adapters'
+  File ".../study_tutor/cli/main.py", line 485, in _build_nats_runtime
+    from study_tutor.adapters.command_router import CommandRouter
+This is the exact failure mode the runbook predicts in Appendix A line 799. Verification:
+
+
+$ ls src/study_tutor/adapters/
+ls: cannot access 'src/study_tutor/adapters': No such file or directory
+
+$ git log --all -- src/study_tutor/adapters/
+  (no output — directory was never added in any branch's history)
+The runbook's first cross-repo precondition (line 64) asserts main includes PH1-005..PH1-007 + PH3-001..PH3-004. The merge commit 54d8cbb merge(FEAT-39E1): complete NATS fleet integration phases 1-3 exists and is on main, but it doesn't actually contain the three modules _build_nats_runtime requires:
+
+study_tutor/adapters/command_router.py (TASK-NATS-PH1-004)
+study_tutor/adapters/nats_adapter.py (TASK-NATS-PH1-005)
+study_tutor/adapters/manifest.py (_tutor_manifest_factory)
+These are non-trivial production modules with their own Bug #1 (PubAck inbox-reply) and Bug #2 (tool_to_command mapping) fixes baked in. Implementing them is a multi-task feature, not a runbook step.
+
+Cleanup
+Crash-looping container torn down (docker compose down).
+Image left in place (study-tutor:dev still cached for re-deploy after the modules land).
+NATS, llama-swap, sibling fleet untouched.
+No agent-registry KV writes occurred for gcse-tutor (the agent crashed before adapter start() ever ran).
+Suggested next steps
+Investigate where the study_tutor/adapters/* work actually lives — likely on an unmerged branch, in a sibling repo, or never started despite the FEAT-39E1 merge being titled "complete NATS fleet integration phases 1-3".
+Once the modules land on main, re-run from Phase 1.1 (the image needs a rebuild to copy in the new source — scripts/docker-build.sh Layer 2 COPY study-tutor/src/).
+Decide whether to commit the two artifact patches above, or wait until you also need to revisit the runbook's §2.2 env-var checklist (which currently lists the flat names rather than the AGENT_* ones).
+please review if these tasks are in the backlog or completed - this commit suggests the work was done 54d8cbbb8af36a52532c6f2871454669c5342d6c
+
+
+
+Task-tracking audit — 54d8cbb did NOT deliver the adapters
+The tasks are filed as completed in YAML frontmatter and moved into tasks/completed/nats-fleet-integration/, but the actual code never landed. The repo has a known systemic issue (TASK-INV-AB1) where the autobuild coach silently approves zero-implementation turns.
+
+Status per task
+Task	YAML status	Filed under	Deliverable on disk?
+PH1-001 (nats-core dep + adapters skeleton)	completed	tasks/completed/nats-fleet-integration/ and duplicate stub in tasks/backlog/	partial — pyproject.toml dep yes, but src/study_tutor/adapters/__init__.py skeleton missing
+PH1-002 (manifest factory)	completed	completed/ + duplicate stub in backlog/	NO — study_tutor/adapters/manifest.py does not exist in any commit
+PH1-003 (roles registry + tutor role)	completed	completed/ + duplicate stub in backlog/	yes — src/study_tutor/roles/{__init__,registry,tutor} were added by 54d8cbb (+210 LOC)
+PH1-004 (CommandRouter, Bug #1 + #2 fixes)	completed	completed/ only	NO — study_tutor/adapters/command_router.py does not exist in any commit
+PH1-005 (NATSAdapter full lifecycle)	completed	completed/ only	NO — study_tutor/adapters/nats_adapter.py does not exist in any commit
+PH1-006 (serve-nats CLI subcommand)	completed	completed/ only	yes — cli/main.py got the +320 LOC subcommand from 54d8cbb (but it imports the missing PH1-002/004/005 modules)
+PH1-007 (OPENAI_BASE_URL /v1 suffix)	completed	completed/ + duplicate stub in backlog/	partial — .env.example was updated; the regression-guard test tests/unit/test_compose_structure.py referenced by the runbook still needs verifying
+PH1-008 (smoke-test four round-trips)	completed	completed/ only	unverified — likely depends on PH1-002/004/005
+PH1-009 (live discovery smoke)	completed	completed/ only	unverified — likely depends on PH1-002/004/005
+PH1-010 (E2E demo gate, Open WebUI → tutor)	backlog	backlog/ (and backlog/nats-fleet-integration/ duplicate)	deferred-by-design — explicitly called out in 54d8cbb's message as "operator follow-up"
+PH3-001 (Dockerfile)	completed	completed/ only	yes — but missing git install layer (the bug I patched today)
+PH3-002 (docker-compose)	completed	completed/ only	yes — but missing AGENT_MODELS__* (the bug I patched today)
+PH3-003 (docker-build.sh)	completed	completed/ + duplicate stub in backlog/	yes
+PH3-004 (RUNBOOK + RESULTS template)	completed	completed/ + duplicate stub in backlog/	yes — the runbook you asked me to execute
+PH3-005 (GB10 E2E smoke)	backlog	backlog/ (and backlog/nats-fleet-integration/ duplicate)	deferred-by-design — same reason as PH1-010
+Root cause already in the backlog
+Three open tasks already document the failure pattern:
+
+TASK-INV-AB1 (priority: critical) — investigates the same defect class that bit FEAT-6CC5: autobuild coach approves turns that produced zero production-code files. The list of "expected but missing" modules in that task (tutoring/adapters/{session_state,llm_player_adapter,llm_coach_adapter}.py) matches today's pattern exactly.
+TASK-REV-CC40 — FEAT-39E1 run-1 post-mortem (BDD oracle scope bug, decision: implement).
+TASK-REV-D509 — FEAT-39E1 run-2 post-mortem (status='deferred' dependency-resolver gap, decision: pending_user_checkpoint, marked "ON TRACK for 2026-05-11").
+Why the merge looks legitimate
+54d8cbb's diff is dominated by autobuild scratch (.guardkit/autobuild/TASK-NATS-PH1-*/coach_turn_*.json, player_turn_*.json, task_work_results.json, state_transitions.json) — hundreds of files, thousands of lines. The actual src/ contribution is just 4 files / 530 LOC (cli + roles), with zero files under src/study_tutor/adapters/. The autobuild loop recorded coach approvals for PH1-002, PH1-004, PH1-005 (per the JSON artifacts in .guardkit/autobuild/) without the player ever producing the modules they were supposed to deliver.
+
+Practical next steps
+Don't trust tasks/completed/nats-fleet-integration/PH1-{002,004,005}.md as evidence of working code. Re-open them (status: completed → status: backlog) and remove from tasks/completed/.
+The duplicate backlog stubs (PH1-001, 002, 003, 007, PH3-003, 004 in tasks/backlog/ AND tasks/completed/nats-fleet-integration/) are leftover from the failed cleanup — 7fc6009 chore(FEAT-39E1): remove duplicate task files from backlog partially missed them.
+PH1-002/004/005 need genuine implementation before the runbook can be executed end-to-end. Without them, today's deployment cannot proceed past Phase 2.3 regardless of how clean Phases 0–1 ran.
+TASK-INV-AB1 (the autobuild false-approval defect) is the upstream root cause and should land before re-running any autobuild on this feature.
+please move these tasks and the feature file to a state where I can try running autobuild on them again
+Before moving anything, I need to map the current state
+
+
+
+Now I have the full picture. Let me lay out my plan and confirm choices before doing destructive moves.
+
+Findings
+
+.guardkit/features/FEAT-39E1.yaml (400 lines) was deleted by 3d7afdc; preserved only in git (3d7afdc^). The .guardkit/archive/FEAT-39E1/ directory referenced in that commit message is gitignored and absent locally.
+.guardkit/worktrees/FEAT-39E1 deleted, branch autobuild/FEAT-39E1 deleted — clean slate for re-run.
+PH1-001 is also a false-completed task — its YAML's autobuild_state.turns[0].player_summary claims "Created src/study_tutor/adapters/init.py" but git log --all -- src/study_tutor/adapters/__init__.py returns nothing. So PH1-001's adapter-package-skeleton sub-deliverable is missing too (the nats-core dep half did land in pyproject.toml).
+Each completed task carries a stale autobuild_state: block in its YAML frontmatter — that needs clearing or autobuild's resume logic will reuse the old turn history.
+The 8 duplicate stubs at tasks/backlog/ root are leftover from the failed 7fc6009 cleanup; safe to delete.
+Proposed plan (asking before executing)
+
+Restore .guardkit/features/FEAT-39E1.yaml from 3d7afdc^ (git is the only copy).
+Move the 4 false-completed implementation tasks from tasks/completed/nats-fleet-integration/ → tasks/backlog/nats-fleet-integration/:
+PH1-001 (skeleton — adapter package never created)
+PH1-002 (manifest factory — file never created)
+PH1-004 (CommandRouter — file never created)
+PH1-005 (NATSAdapter — file never created)
+Edit each of those 4 files: status: completed → status: backlog, drop the stale autobuild_state: block, refresh updated: to today.
+Delete the 8 duplicate stubs at tasks/backlog/ root.
+
+
+
+GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-39E1 --verbose --resume
+
+
+
 
 
 
