@@ -1,0 +1,14 @@
+2026-05-11 06:11:36,318 INFO study_tutor.cli.rag_wiring: event=rag_wiring_resolved persist_dir=data/chroma collection=gcse-english-v1
+2026-05-11 06:11:36,318 WARNING study_tutor.cli.rag_wiring: event=rag_disabled reason=chromadb_missing
+2026-05-11 06:11:36,596 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-11 06:11:36,596 INFO study_tutor.knowledge.graphiti_client: graphiti client ready in 277ms
+2026-05-11 06:11:36,597 WARNING study_tutor.mcp.adapter: event=rag_disabled reason=collection_provider_unwired
+2026-05-11 06:11:36,597 INFO study_tutor.adapters.nats_adapter: Starting NATSAdapter for agent 'gcse-tutor'
+2026-05-11 06:11:36,599 INFO study_tutor.adapters.nats_adapter: Registered agent 'gcse-tutor' to fleet.register
+2026-05-11 06:11:36,599 INFO study_tutor.adapters.nats_adapter: Subscribed (with reply) to command subject 'agents.command.gcse-tutor'
+2026-05-11 06:11:36,599 INFO study_tutor.adapters.nats_adapter: NATSAdapter ready for agent 'gcse-tutor'
+[study-tutor] Serving via NATS as agent_id=gcse-tutor url=nats://host.docker.internal:4222. Press Ctrl+C to stop.
+2026-05-11 06:12:00,487 INFO httpx: HTTP Request: POST http://host.docker.internal:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-11 06:12:09,239 INFO httpx: HTTP Request: POST http://host.docker.internal:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-11 06:12:09,239 INFO study_tutor.cli.main: event=orchestrator_turn_completed text_name= retrieval_mode=skipped reason=no_text_name
+2026-05-11 06:12:17,712 INFO httpx: HTTP Request: POST http://host.docker.internal:9000/v1/chat/completions "HTTP/1.1 200 OK"
