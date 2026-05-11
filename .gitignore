@@ -343,3 +343,10 @@ stderr.log
 .guardkit/autobuild/*/logs/*.start
 .guardkit/autobuild/*/logs/*.end
 
+# GuardKit worktrees — `git worktree list` already tracks these via
+# .git/worktrees/ metadata; the directories under .guardkit/worktrees/
+# are checked-out branches (not files in the parent worktree's tree)
+# plus the `nats-core ->` symlink used by docker-build.sh. None of this
+# belongs in the main worktree's git index.
+.guardkit/worktrees/
+
