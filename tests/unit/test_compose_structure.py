@@ -238,6 +238,16 @@ REQUIRED_ENV_KEYS: tuple[str, ...] = (
     "OPENAI_BASE_URL",
     "LLM_BASE_URL",
     "LOCAL_MODEL",
+    # Bug #9 regression guard (2026-05-10 run-2): LOCAL_BASE_URL is what
+    # ``LLMClient._generate_openai_compat`` reads for the Player when
+    # provider=local. Without it the Player falls back to
+    # ``DEFAULT_LOCAL_BASE_URL = "http://localhost:11434"`` which is
+    # unreachable inside the container.
+    "LOCAL_BASE_URL",
+    # Bug #9 regression guard: LOCAL_COACH_MODEL is the actual Coach
+    # model alias sent to llama-swap. Distinct from
+    # ``AGENT_MODELS__COACH_MODEL`` (which is the provider name).
+    "LOCAL_COACH_MODEL",
     "OPENAI_API_KEY",
     "HEARTBEAT_INTERVAL_SECONDS",
     # Bug #6 regression guard (TASK-NATS-PH3-007). The Coach provider is
@@ -526,21 +536,27 @@ def _extract_default(raw: str) -> str:
     return match.group("default")
 
 
-def test_coach_model_uses_tutor_coach_model_override(env_block: dict[str, str]) -> None:
-    """``AGENT_MODELS__COACH_MODEL`` must use ``${TUTOR_COACH_MODEL:-...}``.
+def test_local_coach_model_uses_tutor_coach_model_override(
+    env_block: dict[str, str],
+) -> None:
+    """``LOCAL_COACH_MODEL`` must use ``${TUTOR_COACH_MODEL:-...}``.
 
-    AC-PH3-007-3: the operator override knob is ``TUTOR_COACH_MODEL``,
-    mirroring the ``TUTOR_LOCAL_MODEL`` idiom used for the Reasoning
-    model. A hard-coded value here defeats the override path required by
-    the runbook (``TUTOR_COACH_MODEL=some-other-alias docker compose
-    config`` must surface that alias).
+    AC-PH3-007-3 (revised after Bug #9, 2026-05-10 run-2): the operator
+    override knob ``TUTOR_COACH_MODEL`` now carries the **model alias**
+    (e.g. ``qwen36-workhorse``) and is consumed by ``LOCAL_COACH_MODEL``
+    — which is the env var ``LLMClient._generate_openai_compat`` reads
+    for the Coach payload's ``"model": ...`` field. Pre-Bug-#9 this knob
+    was incorrectly attached to ``AGENT_MODELS__COACH_MODEL`` (the
+    provider-name var), causing ``LLMProviderError: Unsupported
+    provider: 'qwen36-workhorse'`` on the first Coach turn. See
+    ``RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-2.md`` Bug #9.
     """
-    raw = env_block["AGENT_MODELS__COACH_MODEL"]
+    raw = env_block["LOCAL_COACH_MODEL"]
     assert raw.startswith("${TUTOR_COACH_MODEL:-"), (
-        "AGENT_MODELS__COACH_MODEL must use the "
-        "`${TUTOR_COACH_MODEL:-<alias>}` interpolation form so the "
-        "operator override path works; got "
-        f"{raw!r}."
+        "LOCAL_COACH_MODEL must use the `${TUTOR_COACH_MODEL:-<alias>}` "
+        "interpolation form so the operator override path works (the "
+        "model alias migrated here from AGENT_MODELS__COACH_MODEL after "
+        f"Bug #9); got {raw!r}."
     )
 
 
@@ -607,6 +623,84 @@ def test_coach_env_block_documents_design_decision(compose_text: str) -> None:
             "block, so the two-provider invariant rationale is "
             "discoverable from the compose file itself."
         )
+
+
+# ---------------------------------------------------------------------------
+# Bug #9 regression guard (2026-05-10 run-2) — AGENT_MODELS__* hold provider
+# names, not model aliases
+# ---------------------------------------------------------------------------
+#
+# ``study_tutor.llm.client.LLMClient.generate`` branches on
+# ``self.provider`` against the literals ``"local"``, ``"local-coach"``,
+# and ``"bedrock"``; ``_default_player_model`` and ``_default_coach_model``
+# return the corresponding env vars **verbatim**. A compose default like
+# ``AGENT_MODELS__REASONING_MODEL: gemma4-tutor`` (a model alias) therefore
+# raises ``LLMProviderError: Unsupported provider: 'gemma4-tutor'`` the
+# first time the Player tries to respond. This is a runtime-only failure
+# (mid-tutor_turn, not at container boot) so the only fast feedback for a
+# regression is at the file-level contract.
+
+VALID_LLM_PROVIDERS: frozenset[str] = frozenset({"local", "local-coach", "bedrock"})
+
+
+def test_reasoning_model_default_is_a_provider_name(env_block: dict[str, str]) -> None:
+    """``AGENT_MODELS__REASONING_MODEL`` default must be a provider name.
+
+    Bug #9 regression guard. The env var name says "MODEL" but the
+    runtime contract treats it as a **provider** identifier (see
+    ``LLMClient.__init__(provider: str)``). The default must therefore
+    be a member of ``{"local", "local-coach", "bedrock"}``; anything else
+    raises ``LLMProviderError`` on the first turn.
+    """
+    raw = env_block["AGENT_MODELS__REASONING_MODEL"]
+    default = _extract_default(raw)
+    assert default in VALID_LLM_PROVIDERS, (
+        "AGENT_MODELS__REASONING_MODEL default must be a provider name "
+        f"(one of {sorted(VALID_LLM_PROVIDERS)}). Setting it to a model "
+        "alias like 'gemma4-tutor' raises LLMProviderError mid-turn — "
+        "see Bug #9 in "
+        "docs/runbooks/RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-2.md. "
+        f"Got default: {default!r}."
+    )
+
+
+def test_coach_model_default_is_a_provider_name(env_block: dict[str, str]) -> None:
+    """``AGENT_MODELS__COACH_MODEL`` default must be a provider name.
+
+    Symmetric to the Reasoning-side guard. The Coach side raises the
+    same ``LLMProviderError: Unsupported provider`` if the env var holds
+    a model alias.
+    """
+    raw = env_block["AGENT_MODELS__COACH_MODEL"]
+    default = _extract_default(raw)
+    assert default in VALID_LLM_PROVIDERS, (
+        "AGENT_MODELS__COACH_MODEL default must be a provider name "
+        f"(one of {sorted(VALID_LLM_PROVIDERS)}). Setting it to a model "
+        "alias like 'qwen36-workhorse' raises LLMProviderError mid-turn "
+        "on the first Coach call (latent until then). See Bug #9 in "
+        "docs/runbooks/RESULTS-study-tutor-nats-fleet-demo-2026-05-10-run-2.md. "
+        f"Got default: {default!r}."
+    )
+
+
+def test_local_base_url_default_has_no_v1_suffix(env_block: dict[str, str]) -> None:
+    """``LOCAL_BASE_URL`` default must NOT end with ``/v1``.
+
+    Bug #9 regression guard. ``LLMClient._generate_openai_compat``
+    appends ``/v1/chat/completions`` to whatever ``LOCAL_BASE_URL``
+    points at. A ``/v1``-suffixed default would yield
+    ``/v1/v1/chat/completions`` and llama-swap returns 404 — the same
+    failure shape as Bug #3 (``OPENAI_BASE_URL`` missing ``/v1``) but
+    in the opposite direction. Keeping the suffix off here is what
+    keeps the Player path working.
+    """
+    raw = env_block["LOCAL_BASE_URL"]
+    default = _extract_default(raw)
+    assert not default.endswith("/v1"), (
+        "LOCAL_BASE_URL default must NOT end with `/v1` — the helper "
+        "appends `/v1/chat/completions` itself, so a `/v1` here yields a "
+        f"doubled segment and 404 from llama-swap. Got default: {default!r}."
+    )
 
 
 def test_no_baked_secrets_in_environment(env_block: dict[str, str]) -> None:
