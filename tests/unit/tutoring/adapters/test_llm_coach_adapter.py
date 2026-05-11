@@ -39,6 +39,7 @@ from unittest.mock import patch
 
 import pytest
 
+from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.llm.client import LLMProviderError, _default_coach_model
 from study_tutor.roles.loader import RoleConfig
 from study_tutor.tutoring.adapters.llm_coach_adapter import LLMCoachAdapter
@@ -569,3 +570,129 @@ def test_default_coach_model_contract(
     with pytest.raises(LLMProviderError) as exc_info:
         _default_coach_model()
     assert "AGENT_MODELS__COACH_MODEL" in str(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# Bug #10 regression guard (2026-05-11 run-3) — verifier_metadata kwarg
+# acceptance
+# ---------------------------------------------------------------------------
+#
+# ``PlayerCoachOrchestrator._evaluate_with_metadata`` forwards a
+# ``verifier_metadata`` kwarg to the Coach when the upstream quote-
+# verifier produced one. Before the Bug #10 fix this adapter did not
+# accept that kwarg, so every turn where a handover ran surfaced as
+# ``orchestrator_turn_flagged reason=coach_unreachable: TypeError:
+# LLMCoachAdapter.evaluate() got an unexpected keyword argument
+# 'verifier_metadata'`` and the orchestrator silently down-graded to the
+# unevaluated-Player fallback. The fix lets the adapter accept the
+# kwarg and intentionally ignore it (Phase-1 plumbing only — Phase-2
+# Coach calibration owns prompt-grounding).
+
+
+class TestEvaluateAcceptsVerifierMetadata:
+    """Bug #10: ``evaluate`` must accept the ``verifier_metadata`` kwarg
+    forwarded by the orchestrator's handover seam — both when the value
+    is a real :class:`VerifierMetadata` and when it is ``None`` (the
+    orchestrator's guarded-forwarding branch only adds the kwarg if it
+    is non-None, but adapter-call sites in tests pass ``None`` directly
+    so both shapes must round-trip).
+    """
+
+    @pytest.mark.asyncio
+    async def test_evaluate_accepts_verifier_metadata_kwarg(
+        self, role_config: RoleConfig, session_state: SessionState
+    ) -> None:
+        """The kwarg is accepted without raising ``TypeError``.
+
+        Pre-fix this test failed at the call site with
+        ``TypeError: LLMCoachAdapter.evaluate() got an unexpected
+        keyword argument 'verifier_metadata'`` — the same failure mode
+        captured at ``RESULTS-study-tutor-nats-fleet-demo-2026-05-11-run-3.md``
+        Bug #10.
+        """
+        adapter = LLMCoachAdapter(role_config=role_config)
+        metadata = VerifierMetadata(retrieval_skipped_reason="no_text_name")
+
+        with patch(
+            "study_tutor.tutoring.adapters.llm_coach_adapter.LLMClient"
+        ) as MockClient:
+            MockClient.return_value.generate.return_value = json.dumps(
+                _VALID_COACH_PAYLOAD
+            )
+
+            verdict = await adapter.evaluate(
+                session_state=session_state,
+                learner_message="m",
+                player_response="r",
+                verifier_metadata=metadata,
+            )
+
+        assert isinstance(verdict, CoachVerdict)
+        assert verdict.decision == "accept"
+
+    @pytest.mark.asyncio
+    async def test_evaluate_accepts_none_verifier_metadata(
+        self, role_config: RoleConfig, session_state: SessionState
+    ) -> None:
+        """The kwarg accepts ``None`` (the orchestrator's
+        no-handover branch). Same call site shape, distinct value
+        shape — guards against a default-argument regression that
+        accepts ``VerifierMetadata`` but rejects ``None``.
+        """
+        adapter = LLMCoachAdapter(role_config=role_config)
+
+        with patch(
+            "study_tutor.tutoring.adapters.llm_coach_adapter.LLMClient"
+        ) as MockClient:
+            MockClient.return_value.generate.return_value = json.dumps(
+                _VALID_COACH_PAYLOAD
+            )
+
+            verdict = await adapter.evaluate(
+                session_state=session_state,
+                learner_message="m",
+                player_response="r",
+                verifier_metadata=None,
+            )
+
+        assert isinstance(verdict, CoachVerdict)
+
+    @pytest.mark.asyncio
+    async def test_evaluate_does_not_weave_verifier_metadata_into_prompt(
+        self, role_config: RoleConfig, session_state: SessionState
+    ) -> None:
+        """Phase-1 invariant: ``verifier_metadata`` is accepted but NOT
+        threaded into the Coach prompt.
+
+        Phase-2 calibration owns wiring metadata fields (e.g.
+        ``retrieval_skipped_reason``) into the prompt so the Coach can
+        ground its ``quote_fidelity`` criterion. Until then the prompt
+        shape must be byte-stable irrespective of metadata presence —
+        otherwise an off-by-one Phase-2 enhancement would silently
+        regress every existing Coach calibration evidence run.
+        """
+        adapter = LLMCoachAdapter(role_config=role_config)
+        metadata = VerifierMetadata(
+            retrieval_skipped_reason="UNIQUE-SENTINEL-12345",
+        )
+
+        with patch(
+            "study_tutor.tutoring.adapters.llm_coach_adapter.LLMClient"
+        ) as MockClient:
+            MockClient.return_value.generate.return_value = json.dumps(
+                _VALID_COACH_PAYLOAD
+            )
+            await adapter.evaluate(
+                session_state=session_state,
+                learner_message="m",
+                player_response="r",
+                verifier_metadata=metadata,
+            )
+
+        prompt_arg = MockClient.return_value.generate.call_args.args[0]
+        assert "UNIQUE-SENTINEL-12345" not in prompt_arg, (
+            "Phase-1 LLMCoachAdapter must accept but ignore "
+            "verifier_metadata — Phase-2 owns prompt-grounding. If this "
+            "test is failing because Phase-2 has landed, update the "
+            "assertion to match the new prompt-shape contract."
+        )
