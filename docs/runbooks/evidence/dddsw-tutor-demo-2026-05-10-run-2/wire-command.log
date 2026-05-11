@@ -1,0 +1,5 @@
+nil body
+nil body
+{"source_id":"demo-runbook-test","event_type":"command","correlation_id":"demo-runbook-2026-05-10-run-2-start","payload":{"command":"tutor_start_session","args":{"student_id":"demo-student-001"},"correlation_id":"demo-runbook-2026-05-10-run-2-start"}}
+{"source_id":"demo-runbook-test","event_type":"command","correlation_id":"demo-runbook-2026-05-10-run-2-start-macbeth","payload":{"command":"tutor_start_session","args":{"student_id":"demo-student-001","topic_override":"Macbeth — Shakespeare"},"correlation_id":"demo-runbook-2026-05-10-run-2-start-macbeth"}}
+{"source_id":"demo-runbook-test","event_type":"command","correlation_id":"demo-runbook-2026-05-10-run-2-turn-dagger","payload":{"command":"tutor_turn","args":{"session_id":"35f1e57d-96a5-428f-874d-995477a3e6b5","user_message":"Please walk me through how Shakespeare uses imagery to characterise Macbeth in his \"Is this a dagger which I see before me\" soliloquy, focusing on AO1 and AO2."},"correlation_id":"demo-runbook-2026-05-10-run-2-turn-dagger"}}

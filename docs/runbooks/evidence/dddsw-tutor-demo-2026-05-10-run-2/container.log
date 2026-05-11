@@ -1,0 +1,42 @@
+2026-05-10 21:57:28,108 INFO study_tutor.cli.rag_wiring: event=rag_wiring_resolved persist_dir=data/chroma collection=gcse-english-v1
+2026-05-10 21:57:28,108 WARNING study_tutor.cli.rag_wiring: event=rag_disabled reason=chromadb_missing
+2026-05-10 21:57:28,464 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-10 21:57:28,464 INFO study_tutor.knowledge.graphiti_client: graphiti client ready in 354ms
+2026-05-10 21:57:28,465 WARNING study_tutor.mcp.adapter: event=rag_disabled reason=collection_provider_unwired
+2026-05-10 21:57:28,466 INFO study_tutor.adapters.nats_adapter: Starting NATSAdapter for agent 'gcse-tutor'
+2026-05-10 21:57:28,471 INFO study_tutor.adapters.nats_adapter: Registered agent 'gcse-tutor' to fleet.register
+2026-05-10 21:57:28,471 INFO study_tutor.adapters.nats_adapter: Subscribed (with reply) to command subject 'agents.command.gcse-tutor'
+2026-05-10 21:57:28,471 INFO study_tutor.adapters.nats_adapter: NATSAdapter ready for agent 'gcse-tutor'
+[study-tutor] Serving via NATS as agent_id=gcse-tutor url=nats://host.docker.internal:4222. Press Ctrl+C to stop.
+2026-05-10 21:58:37,331 ERROR nats_core.client: Failed to parse NATS message as MessageEnvelope: 1 validation error for MessageEnvelope
+  Invalid JSON: EOF while parsing a value at line 1 column 0 [type=json_invalid, input_value=b'', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid
+2026-05-10 21:59:30,457 ERROR nats_core.client: Failed to parse NATS message as MessageEnvelope: 1 validation error for MessageEnvelope
+  Invalid JSON: EOF while parsing a value at line 1 column 0 [type=json_invalid, input_value=b'', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid
+2026-05-10 22:00:53,043 ERROR study_tutor.adapters.command_router: Command 'tutor_turn' raised; surfacing as failure ResultPayload
+Traceback (most recent call last):
+  File "/workspace/study-tutor/src/study_tutor/adapters/command_router.py", line 174, in _safe_invoke
+    result_dict = await self._dispatch_command(command.command, command.args)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/study-tutor/src/study_tutor/adapters/command_router.py", line 216, in _dispatch_command
+    return await handler(**args)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/study-tutor/src/study_tutor/mcp/adapter.py", line 357, in tutor_turn
+    turn_result = await orchestrator.run_turn(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/study-tutor/src/study_tutor/tutoring/orchestrator.py", line 475, in run_turn
+    first_raw_response = await self._player.respond(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/study-tutor/src/study_tutor/tutoring/adapters/llm_player_adapter.py", line 162, in respond
+    raw = await asyncio.to_thread(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/study-tutor/src/study_tutor/llm/client.py", line 141, in generate
+    raise LLMProviderError(
+study_tutor.llm.client.LLMProviderError: Unsupported provider: 'gemma4-tutor'. Expected one of: 'local', 'local-coach', 'bedrock' (Phase 0).

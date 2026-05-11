@@ -58,6 +58,11 @@ cover/
 
 # Django stuff:
 *.log
+# Runbook evidence logs are deliberately tracked — they are the per-run
+# artefact the RESULTS files reference (container.log, wire-command.log,
+# wire-result.log, chat-*.log). Mirrors jarvis's pattern of committing
+# `.log` files under docs/runbooks/evidence/.
+!docs/runbooks/evidence/**/*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal

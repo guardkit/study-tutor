@@ -1,0 +1,3 @@
+{"command":"tutor_turn","result":{"error":"Unsupported provider: 'gemma4-tutor'. Expected one of: 'local', 'local-coach', 'bedrock' (Phase 0).","error_type":"LLMProviderError"},"correlation_id":"demo-runbook-2026-05-10-run-2-turn-dagger","success":false}
+
+
