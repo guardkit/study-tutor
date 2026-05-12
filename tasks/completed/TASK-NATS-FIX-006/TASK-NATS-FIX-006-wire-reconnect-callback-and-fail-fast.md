@@ -19,6 +19,7 @@ updated: 2026-05-12T00:00:00Z
 implementation:
   plan: docs/state/TASK-NATS-FIX-006/implementation_plan.md
   audit_report: docs/state/TASK-NATS-FIX-006/plan_audit_report.md
+  gb10_probe_results: docs/state/TASK-NATS-FIX-006/RESULTS-ac06-ac07-gb10-probes.md
   files_modified:
     - src/study_tutor/adapters/nats_adapter.py
     - src/study_tutor/cli/main.py
@@ -29,6 +30,9 @@ implementation:
     touched_files_pass_rate: "45/45 (100%)"
     full_unit_suite: "999 passed, 10 pre-existing failures in unrelated modules confirmed via stash-baseline"
     coverage_nats_adapter: "94%"
+  gb10_probe_results_summary:
+    ac06_reregistration_after_15s_bounce: "PASS (tutor reappeared in agent-registry T+22s)"
+    ac07_terminal_close_after_180s_outage: "PASS (exitCode=1 at T+120s, structured ERROR emitted, Docker restart loop recovered)"
   audit_severity: medium
   audit_severity_reason: "+58% LOC vs plan; 0 extra files, 0 extra deps, 0 scope creep"
 dependencies:

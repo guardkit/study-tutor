@@ -74,6 +74,6 @@ future plan templates.
 | AC-03 | ✅ | `test_on_reconnect_re_registers_manifest` + `test_on_reconnect_restarts_heartbeat_when_dead` |
 | AC-04 | ✅ | `test_on_closed_sets_event_and_logs_terminally_closed` |
 | AC-05 | ✅ | `test_serve_adapter_exits_1_when_terminal_close_event_fires` + negative-path test |
-| AC-06 | 🟡 deferred | Manual GB10 probe — out of unit-test scope per task body |
-| AC-07 | 🟡 deferred | Manual GB10 probe — out of unit-test scope per task body |
+| AC-06 | ✅ | GB10 probe — tutor reappeared in `agent-registry` ~7 s after broker came back; see `RESULTS-ac06-ac07-gb10-probes.md` |
+| AC-07 | ✅ | GB10 probe — tutor exited `exitCode=1` at T+120 s with structured `nats_terminally_closed` ERROR + Docker `restart: unless-stopped` recovered the container; see `RESULTS-ac06-ac07-gb10-probes.md` |
 | AC-08 | ✅ | Full unit suite: 999 pass, 10 fail; baseline-stash confirmed all 10 pre-exist on `main` and are in unrelated modules (knowledge/, mcp/, planner/, Dockerfile-structure). |
