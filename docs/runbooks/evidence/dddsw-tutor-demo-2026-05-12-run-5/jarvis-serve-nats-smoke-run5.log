@@ -1,0 +1,72 @@
+{"supervisor_model": "openai:qwen36-workhorse", "event": "jarvis_startup_begin", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.463589Z"}
+/home/richardwoollcott/Projects/appmilla_github/jarvis/src/jarvis/infrastructure/lifecycle.py:531: UserWarning: web_search_provider='tavily' but TAVILY_API_KEY (JARVIS_TAVILY_API_KEY) is not set — web search will be disabled.
+  config.validate_provider_keys()
+{"event": "web_search_provider='tavily' but TAVILY_API_KEY (JARVIS_TAVILY_API_KEY) is not set \u2014 web search will be disabled."}
+{"backend": "in_memory", "event": "jarvis_store_ready", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.464248Z"}
+{"path": "src/jarvis/config/stub_capabilities.yaml", "count": 4, "event": "jarvis_capability_registry_loaded", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.471338Z"}
+{"base_url": "http://promaxgb10-41b1:9000", "event": "jarvis_llamaswap_adapter_ready", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.471401Z"}
+{"openai_base_url": "http://promaxgb10-41b1:9000/v1", "event": "jarvis_openai_base_url_set", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.471440Z"}
+{"count": 1, "event": "jarvis_async_subagents_built", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.471466Z"}
+{"nats_url": "nats://rich:REDACTED@localhost:4222", "event": "nats_connect_success", "level": "info", "logger": "jarvis.infrastructure.nats_client", "timestamp": "2026-05-12T19:18:07.473255Z"}
+{"graphiti_endpoint": null, "event": "graphiti_skipped_no_endpoint", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.473316Z"}
+{"graphiti_available": false, "event": "jarvis_routing_history_writer_ready", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.473342Z"}
+{"agent_id": "jarvis", "version": "0.4.0", "event": "fleet_register_published", "level": "info", "logger": "jarvis.infrastructure.fleet_registration", "timestamp": "2026-05-12T19:18:07.474498Z"}
+{"cap": 8, "event": "jarvis_dispatch_semaphore_ready", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.477914Z"}
+{"subjects": ["pipeline.build-started.>", "pipeline.stage-complete.>", "pipeline.build-complete.>", "pipeline.build-failed.>"], "correlation_cap": 1000, "event": "forge_notifications_subscribed", "level": "info", "logger": "jarvis.infrastructure.forge_notifications", "timestamp": "2026-05-12T19:18:07.478883Z"}
+{"queue_cap": 100, "correlation_cap": 1000, "event": "jarvis_forge_subscriber_started", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.478931Z"}
+{"count": 10, "event": "jarvis_tool_list_attended_assembled", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.478968Z"}
+{"count": 9, "event": "jarvis_tool_list_ambient_assembled", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.478992Z"}
+{"event": "Building supervisor graph with model=openai:qwen36-workhorse, tools=10, capabilities=4, async_subagents=1, ambient_tool_factory=supplied"}
+{"event": "Supervisor graph compiled successfully"}
+{"event": "jarvis_forge_subscriber_bound_session_manager", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.749297Z"}
+{"event": "jarvis_layer2_hooks_wired", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.749352Z"}
+{"nats_available": true, "graphiti_available": false, "capabilities_mode": "live", "event": "jarvis_startup_complete", "level": "info", "logger": "jarvis.infrastructure.lifecycle", "timestamp": "2026-05-12T19:18:07.749385Z"}
+{"session_id": "nats-212a381322d2409eb445dfd43c201b22", "adapter": "nats", "user_id": "nats-shared", "event": "session_started", "level": "info", "logger": "jarvis.sessions.manager", "timestamp": "2026-05-12T19:18:07.749439Z"}
+{"session_id": "nats-212a381322d2409eb445dfd43c201b22", "agent_id": "jarvis", "event": "jarvis_serve_nats_session_started", "level": "info", "logger": "jarvis.cli.main", "timestamp": "2026-05-12T19:18:07.749477Z"}
+{"subject": "agents.command.jarvis", "agent_id": "jarvis", "event": "jarvis_serve_nats_subscribed", "level": "info", "logger": "jarvis.cli.main", "timestamp": "2026-05-12T19:18:07.749543Z"}
+{"subject": "agents.command.jarvis", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "event": "jarvis_serve_nats_ready", "level": "info", "logger": "jarvis.cli.main", "timestamp": "2026-05-12T19:18:07.749671Z"}
+{"correlation_id": "run5-liveness-001", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:18:22.446843Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"correlation_id": "run5-liveness-001", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "notifications_drained": 0, "response_length": 4, "event": "chat_invoke_complete", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:18:23.708997Z"}
+{"correlation_id": "run5-liveness-002", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:18:34.443172Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"correlation_id": "run5-liveness-002", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "notifications_drained": 0, "response_length": 4, "event": "chat_invoke_complete", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:18:34.797889Z"}
+{"correlation_id": "b7bfdc1d-4b2a-4511-9551-b99a8adeaf9e", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:18:54.435946Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"correlation_id": "b7bfdc1d-4b2a-4511-9551-b99a8adeaf9e", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "notifications_drained": 0, "response_length": 799, "event": "chat_invoke_complete", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:19:01.126742Z"}
+{"correlation_id": "300be5ed-bdb7-4bcb-8e6e-f36e94fe1f02", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:19:01.143216Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"correlation_id": "300be5ed-bdb7-4bcb-8e6e-f36e94fe1f02", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "notifications_drained": 0, "response_length": 444, "event": "chat_invoke_complete", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:19:05.073521Z"}
+{"correlation_id": "67f85209-a01d-4b47-bb02-804cd915b73e", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:19:13.873137Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"correlation_id": "67f85209-a01d-4b47-bb02-804cd915b73e", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "notifications_drained": 0, "response_length": 806, "event": "chat_invoke_complete", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:20:15.834085Z"}
+{"correlation_id": "434b6649-f5a0-4d98-8efc-3726b2335034", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:20:15.868540Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"correlation_id": "434b6649-f5a0-4d98-8efc-3726b2335034", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "notifications_drained": 0, "response_length": 440, "event": "chat_invoke_complete", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:20:19.241836Z"}
+{"correlation_id": "5c57db31-3d36-4ea8-bb68-1aa7266d0021", "agent_id": "jarvis", "session_id": "nats-212a381322d2409eb445dfd43c201b22", "command": "chat", "event": "chat_invoke_start", "level": "info", "logger": "jarvis.infrastructure.chat_handler", "timestamp": "2026-05-12T19:21:52.235384Z"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"event": "HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions \"HTTP/1.1 200 OK\""}
+{"event": "routing_history_offloaded_locally"}
+{"signal": "SIGINT", "event": "jarvis_serve_nats_signal_received", "level": "info", "logger": "jarvis.cli.main", "timestamp": "2026-05-12T19:23:21.433141Z"}
+{"agent_id": "jarvis", "event": "jarvis_serve_nats_shutdown_begin", "level": "info", "logger": "jarvis.cli.main", "timestamp": "2026-05-12T19:23:21.433684Z"}
+{"agent_id": "jarvis", "event": "fleet_heartbeat_cancelled", "level": "info", "logger": "jarvis.infrastructure.fleet_registration", "timestamp": "2026-05-12T19:23:21.445870Z"}
+{"agent_id": "jarvis", "event": "fleet_deregister_published", "level": "info", "logger": "jarvis.infrastructure.fleet_registration", "timestamp": "2026-05-12T19:23:21.448743Z"}
+{"event": "nats_disconnect", "level": "warning", "logger": "jarvis.infrastructure.nats_client", "timestamp": "2026-05-12T19:23:21.449883Z"}
+{"event": "nats_closed", "level": "info", "logger": "jarvis.infrastructure.nats_client", "timestamp": "2026-05-12T19:23:21.449989Z"}
+{"timeout": 5.0, "event": "nats_drain_complete", "level": "info", "logger": "jarvis.infrastructure.nats_client", "timestamp": "2026-05-12T19:23:21.450077Z"}
+{"agent_id": "jarvis", "event": "jarvis_serve_nats_shutdown_complete", "level": "info", "logger": "jarvis.cli.main", "timestamp": "2026-05-12T19:23:21.450146Z"}
