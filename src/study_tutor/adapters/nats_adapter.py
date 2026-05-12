@@ -88,9 +88,22 @@ class NATSAdapter:
         self._config = config
         self._manifest = manifest
         self._command_router = command_router
+        # TASK-NATS-FIX-006: event the CLI's `_serve_adapter` awaits so the
+        # process exits non-zero when nats-py exhausts its reconnect budget.
+        # Constructed before the client because `_on_closed` (passed as the
+        # client's closed_cb) references it.
+        self._terminal_close_event = asyncio.Event()
+        # TASK-NATS-FIX-006 / TASK-NC10: wire reconnect/disconnect/closed
+        # callbacks so a broker bounce re-publishes the manifest to
+        # `agent-registry` KV and a terminal close drives container exit.
+        # Passing closed_cb deliberately overrides the client's default
+        # `_default_closed_cb` — the adapter owns the terminal signal.
         self._client = NATSClient(
             config=config.nats,
             source_id=manifest.agent_id,
+            reconnected_cb=self._on_reconnect,
+            disconnected_cb=self._on_disconnect,
+            closed_cb=self._on_closed,
         )
         self._heartbeat_task: asyncio.Task[None] | None = None
         self._command_sub: Any | None = None
@@ -100,6 +113,16 @@ class NATSAdapter:
         # Match the architect's adapter (specialist_agent/.../nats_adapter.py:72)
         # so both services drain in-flight work on the same 30s budget.
         self._shutdown_timeout: float = 30.0
+
+    @property
+    def terminal_close_event(self) -> asyncio.Event:
+        """Event set when nats-py has exhausted its reconnect budget.
+
+        The CLI's ``_serve_adapter`` awaits this alongside ``shutdown_event``
+        so a prolonged broker outage exits the process non-zero (rather than
+        leaving a stale ``Up`` container in the fleet).
+        """
+        return self._terminal_close_event
 
     # ------------------------------------------------------------------
     # Public read-only state
@@ -339,4 +362,73 @@ class NATSAdapter:
             active_tasks=self._active_tasks,
             queue_depth=0,
             uptime_seconds=uptime,
+        )
+
+    # ------------------------------------------------------------------
+    # nats-py lifecycle callbacks (TASK-NATS-FIX-006 / TASK-NC10)
+    # ------------------------------------------------------------------
+
+    async def _on_reconnect(self) -> None:
+        """Re-publish the manifest after nats-py reconnects.
+
+        Without this handler the agent stays absent from ``agent-registry``
+        KV after a broker bounce — the container looks ``Up`` but jarvis
+        dispatch can't reach it. Re-registration restores the entry and
+        the heartbeat task is restarted if it died during the disconnect.
+
+        Registration errors are logged but never re-raised — the callback
+        is invoked by nats-py and a raise here would crash the network
+        loop. The next reconnect (or operator restart) gets another shot.
+        """
+        logger.info(
+            "nats_reconnected — re-registering agent '%s'",
+            self._manifest.agent_id,
+        )
+        try:
+            await self._client.register_agent(self._manifest)
+        except Exception as exc:  # noqa: BLE001 — boundary: log + continue
+            logger.error(
+                "Failed to re-register agent '%s' on reconnect: %s",
+                self._manifest.agent_id,
+                exc,
+            )
+        # If the heartbeat task died during the disconnect, restart it so
+        # the fleet sees the agent come back to ``ready`` status.
+        if self._heartbeat_task is None or self._heartbeat_task.done():
+            self._heartbeat_task = asyncio.create_task(
+                self._heartbeat_loop(),
+                name=f"heartbeat-{self._manifest.agent_id}",
+            )
+
+    async def _on_closed(self) -> None:
+        """Signal terminal close — nats-py has exhausted its reconnect budget.
+
+        Setting ``terminal_close_event`` unblocks the CLI's race in
+        ``_serve_adapter`` so the process exits non-zero and Docker's
+        restart policy can recover the container.
+
+        Overrides the client's default ``_default_closed_cb`` — the
+        adapter owns the structured ERROR log so it carries agent-level
+        identity (``agent_id``) in addition to connection identity.
+        """
+        logger.error(
+            "nats_terminally_closed",
+            extra={
+                "agent_id": self._manifest.agent_id,
+                "nats_url": self._config.nats.url,
+            },
+        )
+        self._terminal_close_event.set()
+
+    async def _on_disconnect(self) -> None:
+        """Log each transient nats-py disconnect at WARNING level.
+
+        Pure observability — nats-py drives the reconnect loop itself.
+        Structured field on the log lets the operator correlate the
+        disconnect with the subsequent ``nats_reconnected`` or
+        ``nats_terminally_closed`` event in the same agent.
+        """
+        logger.warning(
+            "nats_disconnected",
+            extra={"agent_id": self._manifest.agent_id},
         )

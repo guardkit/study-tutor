@@ -582,3 +582,172 @@ class TestConstructor:
         assert adapter._heartbeat_task is None
         assert adapter._command_sub is None
         assert adapter._shutdown_timeout == 30.0
+
+
+# ---------------------------------------------------------------------------
+# TASK-NATS-FIX-006 / AC-01..AC-04 — nats-py lifecycle callbacks
+# ---------------------------------------------------------------------------
+
+
+class TestReconnectCallbacks:
+    """Reconnect / disconnect / closed callbacks added in TASK-NATS-FIX-006.
+
+    Verifies the adapter:
+
+    * defines all three handlers and binds them at ``NATSClient``
+      construction (AC-01, AC-02),
+    * re-publishes the manifest on reconnect and restores the heartbeat
+      task if it died (AC-03),
+    * sets ``terminal_close_event`` and emits the structured
+      ``nats_terminally_closed`` ERROR on terminal close (AC-04).
+    """
+
+    def test_handlers_defined_and_bound_to_client_kwargs(
+        self,
+        adapter: NATSAdapter,
+        mock_client_factory: Any,
+    ) -> None:
+        """AC-01 + AC-02: handlers exist and are passed as constructor kwargs.
+
+        Asserts each callback is a bound method of *this* adapter whose
+        underlying function is the expected handler — a future refactor
+        that drops a kwarg or rebinds the wrong handler fails fast.
+        Bound methods don't satisfy ``is`` (Python re-creates the
+        descriptor on each attribute access), so we compare ``__self__``
+        and ``__func__`` instead.
+        """
+        cls, _, _ = mock_client_factory
+        kwargs = cls.call_args.kwargs
+
+        for name, expected_func in (
+            ("reconnected_cb", NATSAdapter._on_reconnect),
+            ("disconnected_cb", NATSAdapter._on_disconnect),
+            ("closed_cb", NATSAdapter._on_closed),
+        ):
+            cb = kwargs[name]
+            assert cb.__self__ is adapter, f"{name} not bound to this adapter"
+            assert cb.__func__ is expected_func, (
+                f"{name} bound to wrong handler"
+            )
+
+    def test_terminal_close_event_initially_clear(
+        self,
+        adapter: NATSAdapter,
+    ) -> None:
+        """``terminal_close_event`` is a real ``asyncio.Event`` and starts clear."""
+        assert isinstance(adapter.terminal_close_event, asyncio.Event)
+        assert not adapter.terminal_close_event.is_set()
+
+    async def test_on_reconnect_re_registers_manifest(
+        self,
+        adapter: NATSAdapter,
+        mock_client_factory: Any,
+        manifest: AgentManifest,
+    ) -> None:
+        """AC-03: calling ``_on_reconnect`` re-publishes the manifest.
+
+        Drives the handler directly (nats-py would call it via the
+        ``reconnected_cb`` hook) and asserts ``register_agent`` is
+        re-invoked with the same manifest.
+        """
+        _, instance, _ = mock_client_factory
+        # Pretend the heartbeat task is still alive so the reconnect
+        # path does NOT try to restart it (covered by the next test).
+        adapter._heartbeat_task = MagicMock()
+        adapter._heartbeat_task.done.return_value = False
+
+        instance.register_agent.reset_mock()
+        await adapter._on_reconnect()
+
+        instance.register_agent.assert_awaited_once_with(manifest)
+
+    async def test_on_reconnect_restarts_heartbeat_when_dead(
+        self,
+        adapter: NATSAdapter,
+        mock_client_factory: Any,
+    ) -> None:
+        """AC-03: reconnect restarts the heartbeat task if it died.
+
+        A long disconnect can crash the heartbeat task; reconnect must
+        spawn a fresh one so the fleet sees the agent come back to
+        ``ready`` status.
+        """
+        # Heartbeat task is ``None`` — exactly the post-disconnect state.
+        adapter._heartbeat_task = None
+        try:
+            await adapter._on_reconnect()
+            assert adapter._heartbeat_task is not None
+            assert not adapter._heartbeat_task.done()
+        finally:
+            # Cancel the spawned task so the test loop does not leak it.
+            if adapter._heartbeat_task is not None:
+                adapter._heartbeat_task.cancel()
+                try:
+                    await adapter._heartbeat_task
+                except asyncio.CancelledError:
+                    pass
+
+    async def test_on_reconnect_swallows_register_errors(
+        self,
+        adapter: NATSAdapter,
+        mock_client_factory: Any,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """A failed re-registration is logged, not raised.
+
+        The callback runs inside nats-py's network loop — raising would
+        crash the connection. The next reconnect (or operator restart)
+        gets another shot.
+        """
+        _, instance, _ = mock_client_factory
+        # Keep the heartbeat-restart branch out of this test.
+        adapter._heartbeat_task = MagicMock()
+        adapter._heartbeat_task.done.return_value = False
+        instance.register_agent = AsyncMock(side_effect=RuntimeError("kv unreachable"))
+
+        with caplog.at_level("ERROR", logger="study_tutor.adapters.nats_adapter"):
+            await adapter._on_reconnect()  # must not raise
+
+        assert any(
+            "Failed to re-register" in record.message for record in caplog.records
+        )
+
+    async def test_on_closed_sets_event_and_logs_terminally_closed(
+        self,
+        adapter: NATSAdapter,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """AC-04: ``_on_closed`` sets the terminal-close event + ERROR log.
+
+        Asserts both ends of the contract the CLI relies on (event set
+        for the lifecycle race) and the operator relies on (structured
+        ``nats_terminally_closed`` ERROR with ``agent_id`` extra).
+        """
+        assert not adapter.terminal_close_event.is_set()
+        with caplog.at_level("ERROR", logger="study_tutor.adapters.nats_adapter"):
+            await adapter._on_closed()
+
+        assert adapter.terminal_close_event.is_set()
+        matching = [
+            r for r in caplog.records if r.message == "nats_terminally_closed"
+        ]
+        assert matching, "expected structured nats_terminally_closed ERROR"
+        record = matching[0]
+        assert record.levelname == "ERROR"
+        assert getattr(record, "agent_id", None) == adapter._manifest.agent_id
+        assert getattr(record, "nats_url", None) == adapter._config.nats.url
+
+    async def test_on_disconnect_logs_structured_warning(
+        self,
+        adapter: NATSAdapter,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """``_on_disconnect`` emits ``nats_disconnected`` WARNING with agent_id."""
+        with caplog.at_level("WARNING", logger="study_tutor.adapters.nats_adapter"):
+            await adapter._on_disconnect()
+
+        matching = [r for r in caplog.records if r.message == "nats_disconnected"]
+        assert matching
+        record = matching[0]
+        assert record.levelname == "WARNING"
+        assert getattr(record, "agent_id", None) == adapter._manifest.agent_id

@@ -137,6 +137,10 @@ async def test_serve_adapter_starts_then_stops_when_shutdown_event_is_set() -> N
     adapter = MagicMock()
     adapter.start = AsyncMock()
     adapter.stop = AsyncMock()
+    # TASK-NATS-FIX-006: ``_serve_adapter`` now races shutdown_event vs
+    # ``adapter.terminal_close_event`` so the latter must be a real
+    # ``asyncio.Event`` (MagicMock.wait() is not a coroutine).
+    adapter.terminal_close_event = asyncio.Event()
     write_helper = MagicMock()
 
     shutdown_event = asyncio.Event()
@@ -176,6 +180,8 @@ async def test_serve_adapter_registers_sigterm_and_sigint_handlers() -> None:
     adapter = MagicMock()
     adapter.start = AsyncMock()
     adapter.stop = AsyncMock()
+    # TASK-NATS-FIX-006: see comment in the lifecycle test above.
+    adapter.terminal_close_event = asyncio.Event()
 
     shutdown_event = asyncio.Event()
     captured_signals: list[int] = []
@@ -229,6 +235,10 @@ async def test_serve_adapter_exits_1_when_start_raises() -> None:
     adapter = MagicMock()
     adapter.start = AsyncMock(side_effect=ConnectionError("NATS unreachable"))
     adapter.stop = AsyncMock()
+    # `start` raises before the lifecycle race is reached, but pin a
+    # real event anyway so a future change cannot regress this test
+    # silently if the race is moved earlier.
+    adapter.terminal_close_event = asyncio.Event()
 
     with pytest.raises(SystemExit) as excinfo:
         await _serve_adapter(
@@ -242,3 +252,93 @@ async def test_serve_adapter_exits_1_when_start_raises() -> None:
     assert excinfo.value.code == 1
     adapter.start.assert_awaited_once()
     adapter.stop.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
+# TASK-NATS-FIX-006 / AC-05 — terminal_close_event drives non-zero exit
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_serve_adapter_exits_1_when_terminal_close_event_fires() -> None:
+    """AC-05: terminal-close (nats reconnect budget exhausted) → ``SystemExit(1)``.
+
+    The CLI must propagate a non-zero exit so Docker's restart policy
+    (or systemd's ``Restart=`` directive) recovers the container after
+    a prolonged broker outage — the demo-blocker scenario the task
+    targets.
+    """
+    adapter = MagicMock()
+    adapter.start = AsyncMock()
+    adapter.stop = AsyncMock()
+    adapter.terminal_close_event = asyncio.Event()
+
+    shutdown_event = asyncio.Event()
+
+    async def _trigger_terminal_close() -> None:
+        # Yield twice so ``_serve_adapter`` reaches the
+        # ``asyncio.wait({...}, FIRST_COMPLETED)`` race before we fire
+        # the terminal-close event.
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        adapter.terminal_close_event.set()
+
+    trigger = asyncio.create_task(_trigger_terminal_close())
+    try:
+        with pytest.raises(SystemExit) as excinfo:
+            await _serve_adapter(
+                adapter,
+                MagicMock(),
+                agent_id="gcse-tutor",
+                nats_url="nats://localhost:4222",
+                shutdown_event=shutdown_event,
+            )
+    finally:
+        await trigger
+
+    assert excinfo.value.code == 1
+    adapter.start.assert_awaited_once()
+    # ``stop()`` must still run on the terminal-close path so any
+    # half-connected state is released before the process exits.
+    adapter.stop.assert_awaited_once()
+    # The shutdown_event must NOT have been the trigger.
+    assert not shutdown_event.is_set()
+
+
+@pytest.mark.asyncio
+async def test_serve_adapter_exits_0_when_shutdown_event_fires_first() -> None:
+    """AC-05 negative path: a normal SIGTERM-driven shutdown still exits 0.
+
+    Regression guard for the lifecycle race — when both events are
+    pending and ``shutdown_event`` wins, ``terminal_close_event`` stays
+    clear and ``_serve_adapter`` returns normally without raising
+    ``SystemExit``.
+    """
+    adapter = MagicMock()
+    adapter.start = AsyncMock()
+    adapter.stop = AsyncMock()
+    adapter.terminal_close_event = asyncio.Event()
+
+    shutdown_event = asyncio.Event()
+
+    async def _trigger_shutdown() -> None:
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        shutdown_event.set()
+
+    trigger = asyncio.create_task(_trigger_shutdown())
+    try:
+        # Must NOT raise SystemExit — the function should return normally.
+        await _serve_adapter(
+            adapter,
+            MagicMock(),
+            agent_id="gcse-tutor",
+            nats_url="nats://localhost:4222",
+            shutdown_event=shutdown_event,
+        )
+    finally:
+        await trigger
+
+    adapter.start.assert_awaited_once()
+    adapter.stop.assert_awaited_once()
+    assert not adapter.terminal_close_event.is_set()

@@ -607,8 +607,33 @@ async def _serve_adapter(
         err=True,
     )
 
+    # TASK-NATS-FIX-006: race the shutdown signal against the adapter's
+    # terminal-close event so a prolonged broker outage (nats-py exhausts
+    # its reconnect budget) drives a non-zero exit. Without this, a
+    # broken broker leaves the container ``Up`` but absent from the
+    # ``agent-registry`` KV — fleet orchestration silently fails.
+    terminal_close_triggered = False
     try:
-        await shutdown_event.wait()
+        shutdown_task = asyncio.create_task(
+            shutdown_event.wait(), name="serve-shutdown-wait"
+        )
+        terminal_close_task = asyncio.create_task(
+            adapter.terminal_close_event.wait(), name="serve-terminal-close-wait"
+        )
+        try:
+            _done, pending = await asyncio.wait(
+                {shutdown_task, terminal_close_task},
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+        finally:
+            for pending_task in (shutdown_task, terminal_close_task):
+                if not pending_task.done():
+                    pending_task.cancel()
+                    try:
+                        await pending_task
+                    except (asyncio.CancelledError, Exception):
+                        pass
+        terminal_close_triggered = adapter.terminal_close_event.is_set()
     finally:
         try:
             await adapter.stop()
@@ -620,6 +645,13 @@ async def _serve_adapter(
                 # in production code; the outer guard is here so a
                 # MagicMock in unit tests cannot break the shutdown path.
                 logger.exception("event=nats_serve_runtime_shutdown_error")
+
+    if terminal_close_triggered:
+        # Exit non-zero so Docker's restart policy (or systemd's
+        # `Restart=` directive) recovers the container. AC-07 of
+        # TASK-NATS-FIX-006: prolonged broker outage must surface as a
+        # process exit, not a stuck-but-running container.
+        raise SystemExit(1)
 
 
 @cli.command("serve-nats")
