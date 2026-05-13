@@ -704,3 +704,268 @@ class TestMisconceptionWriteSite:
             "self._write_helper — the call must be fire-and-forget per "
             "CC-13 + DDR-002."
         )
+
+
+# ---------------------------------------------------------------------------
+# TASK-LCA-006: CoachVerdict misconception string-coercion validator
+# ---------------------------------------------------------------------------
+
+
+class TestCoachVerdictMisconceptionCoercion:
+    """Coverage for the ``@model_validator(mode="before")`` that wraps
+    bare-string ``misconceptions`` entries into
+    :class:`MisconceptionObservation` objects (TASK-LCA-006).
+
+    Acceptance criteria mapping:
+    - ``test_string_entries_are_coerced_to_observations`` ▸ AC-LCA-06-01
+    - ``test_canonical_object_shape_still_validates_unchanged`` ▸ AC-LCA-06-02
+    - ``test_malformed_dict_still_rejected`` ▸ AC-LCA-06-03
+    - ``test_regression_2026_05_12_live_payload_validates`` ▸ AC-LCA-06-05 (d)
+    - ``test_coercion_emits_structured_warning`` ▸ AC-LCA-06 telemetry
+    """
+
+    # AC-LCA-06-01 — string drift no longer poisons the verdict
+    def test_string_entries_are_coerced_to_observations(self) -> None:
+        verdict = CoachVerdict.model_validate(
+            {
+                "weighted_total": 0.5,
+                "decision": "revise",
+                "misconceptions": [
+                    "The tutor treats the top of the equation incorrectly.",
+                    "Confuses syllable counts when scanning iambic pentameter.",
+                ],
+            }
+        )
+        assert len(verdict.misconceptions) == 2
+        for obs in verdict.misconceptions:
+            assert isinstance(obs, MisconceptionObservation)
+            assert obs.topic_name == "unspecified"
+            assert obs.misconception_text  # non-empty
+        assert (
+            verdict.misconceptions[0].misconception_text
+            == "The tutor treats the top of the equation incorrectly."
+        )
+
+    # AC-LCA-06-02 — canonical happy path is untouched
+    def test_canonical_object_shape_still_validates_unchanged(self) -> None:
+        verdict = CoachVerdict.model_validate(
+            {
+                "weighted_total": 0.7,
+                "decision": "accept",
+                "misconceptions": [
+                    {
+                        "topic_name": "ozymandias_irony",
+                        "misconception_text": "thinks the king is heroic",
+                    }
+                ],
+            }
+        )
+        assert len(verdict.misconceptions) == 1
+        obs = verdict.misconceptions[0]
+        assert obs.topic_name == "ozymandias_irony"
+        assert obs.misconception_text == "thinks the king is heroic"
+        # confidence_band defaults preserved — coercion path did not run
+        # for this canonical entry.
+        assert obs.confidence_band_at_observation == "unknown"
+
+    def test_mixed_string_and_object_entries_both_validate(self) -> None:
+        # A defensive case: the LLM might emit a mix during prompt drift.
+        verdict = CoachVerdict.model_validate(
+            {
+                "weighted_total": 0.6,
+                "decision": "revise",
+                "misconceptions": [
+                    "Treats Macbeth's hesitation as cowardice.",
+                    {
+                        "topic_name": "macbeth_act_one",
+                        "misconception_text": "Misreads Banquo's role.",
+                    },
+                ],
+            }
+        )
+        assert len(verdict.misconceptions) == 2
+        assert verdict.misconceptions[0].topic_name == "unspecified"
+        assert verdict.misconceptions[1].topic_name == "macbeth_act_one"
+
+    # AC-LCA-06-03 — genuinely malformed entries STILL fail
+    def test_malformed_dict_still_rejected(self) -> None:
+        # A dict-shaped entry that lacks the required fields must still
+        # raise — coercion only handles bare strings, not arbitrary
+        # invalid dicts.
+        with pytest.raises(ValidationError):
+            CoachVerdict.model_validate(
+                {
+                    "weighted_total": 0.5,
+                    "decision": "revise",
+                    "misconceptions": [{"foo": "bar"}],
+                }
+            )
+
+    def test_malformed_non_string_non_dict_still_rejected(self) -> None:
+        # Integers, lists, etc. inside the misconceptions list must
+        # still be rejected — coercion only handles strings.
+        with pytest.raises(ValidationError):
+            CoachVerdict.model_validate(
+                {
+                    "weighted_total": 0.5,
+                    "decision": "revise",
+                    "misconceptions": [42],
+                }
+            )
+
+    def test_extra_forbid_still_enforced_after_coercion(self) -> None:
+        # The mode="before" coercion must NOT loosen extra="forbid".
+        # A stray top-level key still has to be rejected.
+        with pytest.raises(ValidationError):
+            CoachVerdict.model_validate(
+                {
+                    "weighted_total": 0.5,
+                    "decision": "revise",
+                    "misconceptions": ["bare string drift"],
+                    "summary": "smuggled prose",
+                }
+            )
+
+    # AC-LCA-06-05 (d) — regression test from 2026-05-12 captured logs
+    def test_regression_2026_05_12_live_payload_validates(self) -> None:
+        """Re-uses the exact failure surface from
+        ``study-tutor-gcse-tutor-1`` logs at 19:22:47 on 2026-05-12.
+
+        The pydantic error reported ``input_value='The tutor treats the
+        top...or quadratic equations.'`` at index ``misconceptions.0``.
+        With the coercion validator in place, the verdict must build
+        successfully and the original string must be preserved verbatim
+        as ``misconception_text``.
+        """
+        captured_string = (
+            "The tutor treats the top and bottom of a fraction "
+            "symmetrically when solving for quadratic equations."
+        )
+        verdict = CoachVerdict.model_validate(
+            {
+                "weighted_total": 0.4,
+                "decision": "revise",
+                "criterion_scores": [],
+                "rubric_feedback": [],
+                "misconceptions": [captured_string],
+                "reasoning": "Tutor mis-handled the algebraic step.",
+            }
+        )
+        assert len(verdict.misconceptions) == 1
+        assert verdict.misconceptions[0].topic_name == "unspecified"
+        assert (
+            verdict.misconceptions[0].misconception_text == captured_string
+        )
+
+    def test_empty_misconceptions_list_passes_through_unchanged(self) -> None:
+        verdict = CoachVerdict.model_validate(
+            {
+                "weighted_total": 0.9,
+                "decision": "accept",
+                "misconceptions": [],
+            }
+        )
+        assert verdict.misconceptions == []
+
+    def test_missing_misconceptions_field_uses_default(self) -> None:
+        # When the field is absent the coercion validator must not
+        # synthesise it — the default_factory provides ``[]``.
+        verdict = CoachVerdict.model_validate(
+            {"weighted_total": 0.9, "decision": "accept"}
+        )
+        assert verdict.misconceptions == []
+
+    def test_coercion_emits_structured_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Telemetry surface: each coerced string must emit a structured
+        # warning so prompt drift surfaces in observability rather than
+        # degrading silently.
+        from study_tutor.tutoring.coach import factory as factory_module
+
+        with caplog.at_level("WARNING", logger=factory_module.__name__):
+            CoachVerdict.model_validate(
+                {
+                    "weighted_total": 0.5,
+                    "decision": "revise",
+                    "misconceptions": ["drift string"],
+                }
+            )
+        warnings = [
+            r for r in caplog.records if "coach_misconception_coerced" in r.getMessage()
+        ]
+        assert len(warnings) == 1
+        assert "drift string" in warnings[0].getMessage()
+
+    def test_canonical_objects_do_not_emit_coercion_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from study_tutor.tutoring.coach import factory as factory_module
+
+        with caplog.at_level("WARNING", logger=factory_module.__name__):
+            CoachVerdict.model_validate(
+                {
+                    "weighted_total": 0.5,
+                    "decision": "accept",
+                    "misconceptions": [
+                        {
+                            "topic_name": "ozymandias_irony",
+                            "misconception_text": "thinks the king is heroic",
+                        }
+                    ],
+                }
+            )
+        assert not any(
+            "coach_misconception_coerced" in r.getMessage() for r in caplog.records
+        )
+
+    def test_long_strings_are_truncated_in_log(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # The log line should not blow up structured-log sinks with a
+        # pathologically long observation — the implementation truncates
+        # the logged payload.
+        from study_tutor.tutoring.coach import factory as factory_module
+
+        long_text = "A" * 500
+        with caplog.at_level("WARNING", logger=factory_module.__name__):
+            verdict = CoachVerdict.model_validate(
+                {
+                    "weighted_total": 0.5,
+                    "decision": "revise",
+                    "misconceptions": [long_text],
+                }
+            )
+        # The MisconceptionObservation MUST carry the full text — only
+        # the log record is truncated.
+        assert verdict.misconceptions[0].misconception_text == long_text
+        warning = next(
+            r for r in caplog.records if "coach_misconception_coerced" in r.getMessage()
+        )
+        # The log line itself carries at most 120 chars of payload.
+        assert "A" * 200 not in warning.getMessage()
+
+    def test_passthrough_for_misconception_observation_instances(self) -> None:
+        # When a caller hands the constructor an already-built
+        # MisconceptionObservation, coercion is a no-op.
+        obs = MisconceptionObservation(
+            topic_name="iambic_pentameter",
+            misconception_text="confuses syllable counts",
+        )
+        verdict = CoachVerdict.model_validate(
+            {
+                "weighted_total": 0.5,
+                "decision": "revise",
+                "misconceptions": [obs],
+            }
+        )
+        assert verdict.misconceptions[0] is not obs or (
+            verdict.misconceptions[0].topic_name == "iambic_pentameter"
+        )
+        # Whether pydantic copies or reuses the instance, the fields
+        # must survive intact.
+        assert (
+            verdict.misconceptions[0].misconception_text
+            == "confuses syllable counts"
+        )
+        assert verdict.misconceptions[0].topic_name == "iambic_pentameter"

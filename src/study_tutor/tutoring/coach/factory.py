@@ -52,10 +52,13 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +284,78 @@ class CoachVerdict(BaseModel):
             "Computed in post-validation; do not set this directly."
         ),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_misconception_strings(cls, data: Any) -> Any:
+        """Coerce bare-string ``misconceptions`` entries to objects (TASK-LCA-006).
+
+        Belt-and-braces guard against coach LLM prompt drift: if the LLM
+        emits ``misconceptions: ["The tutor treats the top..."]`` instead
+        of the canonical ``[{"topic_name": ..., "misconception_text": ...}]``
+        shape, each string is wrapped into a
+        :class:`MisconceptionObservation` with
+        ``topic_name="unspecified"`` and ``misconception_text=<string>``.
+
+        Why ``mode="before"``: a ``field_validator`` cannot rewrite a
+        bare ``str`` into a nested-model dict — by the time per-field
+        validation runs, pydantic has already classified the input as
+        ``type=model_type`` mismatch and raised. We must rewrite the
+        ``data`` dict before per-field validation begins.
+
+        Why this does NOT loosen ``extra="forbid"`` (AC-LCA-06-03):
+        we only rewrite items that are *bare strings*. Items that are
+        dicts but malformed (e.g. ``{"foo": "bar"}``) pass through
+        untouched and still hit the canonical per-field validator,
+        which rejects them — the safety semantics for genuinely
+        malformed coach output remain intact.
+
+        A structured ``coach_misconception_coerced`` warning is emitted
+        per coercion so prompt drift surfaces in telemetry rather than
+        silently turning every turn into a ``coach_unreachable``
+        fallback (the regression captured in the 2026-05-12 logs).
+        """
+        if not isinstance(data, dict):
+            # Already-built model instances, opaque mapping types, etc.
+            # pass through; the canonical per-field validation path
+            # handles them unchanged.
+            return data
+
+        misconceptions = data.get("misconceptions")
+        if not isinstance(misconceptions, list):
+            return data
+
+        coerced: list[Any] = []
+        any_coerced = False
+        for item in misconceptions:
+            if isinstance(item, str):
+                # Truncate the logged value so a pathologically long
+                # observation can't blow up structured-log sinks.
+                logger.warning(
+                    "event=coach_misconception_coerced "
+                    "reason=string_to_observation "
+                    "text=%r",
+                    item[:120],
+                )
+                coerced.append(
+                    {
+                        "topic_name": "unspecified",
+                        "misconception_text": item,
+                    }
+                )
+                any_coerced = True
+            else:
+                coerced.append(item)
+
+        if not any_coerced:
+            return data
+
+        # Shallow-copy the input so callers' dicts are not mutated under
+        # them; pydantic ``mode="before"`` validators may receive a
+        # caller-owned dict and an in-place mutation would surprise.
+        rewritten = dict(data)
+        rewritten["misconceptions"] = coerced
+        return rewritten
 
     @model_validator(mode="after")
     def _set_reasoning_long(self) -> "CoachVerdict":

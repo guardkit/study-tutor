@@ -24,7 +24,9 @@ Return ONE JSON object — no prose, no markdown fences, no commentary outside t
     {"criterion_id": "curriculum_accuracy", "score": 0.9, "evidence": "..."}
   ],
   "rubric_feedback": [],
-  "misconceptions": []
+  "misconceptions": [
+    {"topic_name": "<topic_slug_or_unspecified>", "misconception_text": "<one-sentence description>"}
+  ]
 }
 ```
 
@@ -32,6 +34,7 @@ Rules:
 - `decision` MUST be `"accept"` or `"revise"`.
 - `criterion_scores` items MUST use only the six `criterion_id` strings above; unknown IDs are dropped.
 - `rubric_feedback` items are STRUCTURED ONLY: `{"criterion_id": "...", "suggested_focus": "...", "target_score": 0.0}`. Do NOT add free-text fields such as `notes`, `raw`, or `coach_text`.
+- `misconceptions` items MUST be OBJECTS with exactly `topic_name` (string) and `misconception_text` (string). Do NOT emit bare strings like `"The tutor treats X as Y"` — wrap them in the object shape above, using `topic_name: "unspecified"` only if no clearer topic is available. Bare-string entries are silently coerced by the validator but the canonical shape is the contract.
 - Do NOT add additional top-level keys beyond those shown.
 
 Ground every score in the supplied session metadata (text under study and topic).

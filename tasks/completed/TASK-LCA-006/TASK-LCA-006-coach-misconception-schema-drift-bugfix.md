@@ -7,10 +7,14 @@ feature_slug: mcp-llm-player-coach-adapters
 implementation_mode: task-work
 complexity: 4
 estimated_minutes: 120
-status: backlog
+status: completed
 priority: medium
 created: 2026-05-13T00:00:00Z
 updated: 2026-05-13T00:00:00Z
+completed: 2026-05-13T00:00:00Z
+completed_location: tasks/completed/TASK-LCA-006/
+previous_state: in_review
+state_transition_reason: "All acceptance criteria satisfied; 13 new tests pass with 98% coverage on factory.py"
 related:
   - TASK-LCA-002
   - TASK-LCA-004
@@ -26,9 +30,12 @@ tags:
   - feat-lca
   - phase-1
 test_results:
-  status: pending
-  coverage: null
-  last_run: null
+  status: passed
+  coverage: 98
+  last_run: 2026-05-13T00:00:00Z
+  new_tests: 13
+  test_file: tests/unit/tutoring/coach/test_factory.py::TestCoachVerdictMisconceptionCoercion
+  full_factory_suite: 61 passed
 ---
 
 # Task: Coach misconception schema drift — degraded coach verdict path
