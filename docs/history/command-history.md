@@ -3267,8 +3267,173 @@ GUARDKIT_LOG_LEVEL=DEBUG guardkit autobuild feature FEAT-39E1 --verbose --resume
 
 
 
+/task-work TASK-NATS-FIX-006
 
 
+Final report
+
+✅ Task Work Complete — TASK-NATS-FIX-006
+
+🔍 Stack: Python (study-tutor sibling of nats-core, FEAT-NATS subtask)
+🧠 Intensity: MINIMAL (auto: feature subtask, complexity 3)
+⚙️  Workflow: STANDARD with deferred sub-agent ceremony
+⏱️  Duration: ~50 min
+
+📊 Test Results (touched files):
+   Compilation: ✅
+   Tests: 45/45 PASSED (100%)
+   Coverage on src/study_tutor/adapters/nats_adapter.py: 94% (>80% line, exceeds gate)
+   Fix-loop attempts used: 0 (1 minor bound-method identity assertion fixed in-line)
+
+📊 Full unit suite (AC-08):
+   999 passed · 10 pre-existing failures · 2 skipped
+   All 10 failures confirmed via stash-baseline as pre-existing on `main` in unrelated
+   modules (knowledge/, mcp/, planner/, Dockerfile-structure). Zero failures attributable
+   to this task.
+
+📋 Files touched (4):
+   src/study_tutor/adapters/nats_adapter.py        +92  (3 handlers + property + wiring)
+   src/study_tutor/cli/main.py                     +34  (asyncio.wait race + SystemExit(1))
+   tests/unit/adapters/test_nats_adapter.py       +169  (TestReconnectCallbacks × 7 tests)
+   tests/unit/cli/test_serve_nats.py              +100  (AC-05 + AC-05-negative + AC-08 patches)
+   Total: +395 LOC across 4 files (plan estimated ~250 → +58% variance, MEDIUM severity;
+   overshoot is all defensive test density + production docstrings, no scope creep).
+
+📋 Plan & audit artefacts:
+   docs/state/TASK-NATS-FIX-006/implementation_plan.md
+   docs/state/TASK-NATS-FIX-006/plan_audit_report.md
+
+🎯 Acceptance criteria:
+   AC-01..AC-05  ✅ green via unit tests
+   AC-06, AC-07  🟡 manual GB10 probes (per task body — out of unit-test scope; need
+                    `ships-computer-nats` container + agent-registry KV bucket)
+   AC-08         ✅ stash-baseline confirms no new failures introduced
+
+📦 Notable design decisions (deviations / additions to task body):
+   • Callbacks wired inside `NATSAdapter.__init__` (not at cli/main.py:518) — `cli/main.py:518`
+     constructs the router's *pre-Bug-#8* client that gets discarded at `start()`. Task body
+     itself flagged this as the preferred shape. `cli/main.py:518` is unchanged.
+   • `closed_cb=self._on_closed` deliberately overrides nats-core's `_default_closed_cb` so
+     the adapter owns the structured ERROR log + event-set (AC-04 mandates both on adapter side).
+   • No `error_cb` (YAGNI — ACs don't require one).
+   • Two existing serve-nats lifecycle tests patched to attach `adapter.terminal_close_event =
+     asyncio.Event()` to their MagicMock adapters — MagicMock.wait() isn't a coroutine.
+
+🔄 State transition:
+   BACKLOG → IN_PROGRESS → IN_REVIEW
+   File: tasks/in_review/TASK-NATS-FIX-006-wire-reconnect-callback-and-fail-fast.md
+
+📋 Next steps (for the reviewer/operator):
+   1. Run the AC-06 GB10 probe in a worktree with live `ships-computer-nats`:
+        docker stop ships-computer-nats && sleep 15 && docker start ships-computer-nats
+        nats kv ls agent-registry   # tutor should reappear within ~5s
+   2. Run the AC-07 prolonged-outage probe:
+        docker stop ships-computer-nats && sleep 180 && docker start ships-computer-nats
+        # tutor container exits non-zero within ~125s with `nats_terminally_closed` ERROR
+   3. Capture both probe outputs as an addendum RESULTS note alongside
+      jarvis FEAT-JARVIS-006 RESULTS file.
+   4. Approve + `/task-complete TASK-NATS-FIX-006`.
+Step 8 (commit state files to git) skipped — repo doesn't track tasks/ under version control by default (the original task file was untracked when I started), so there's nothing to commit yet. The reviewer can git add tasks/in_review/TASK-NATS-FIX-006-*.md docs/state/TASK-NATS-FIX-006/ src/study_tutor/adapters/nats_adapter.py src/study_tutor/cli/main.py tests/unit/adapters/test_nats_adapter.py tests/unit/cli/test_serve_nats.py && git commit at their convenience.
+
+/task-complete TASK-NATS-FIX-006 then commit
+
+
+
+
+Completion summary
+
+🎉 Task Completion Summary — TASK-NATS-FIX-006
+
+🔄 State Transition
+   IN_REVIEW → COMPLETED
+   Location: tasks/completed/TASK-NATS-FIX-006/
+
+📦 Commit
+   34d4a16 fix(FEAT-NATS): wire reconnect/closed callbacks + fail-fast lifecycle (TASK-NATS-FIX-006)
+   7 files changed, 802 insertions(+), 1 deletion(-)
+   Local-only — not pushed.
+
+🧠 Graphiti Knowledge Capture
+   ✅ Outcome OUT-906A619F → group: task_outcomes
+   Episode profile: nodes=8, edges=5, invalidated=0
+   LLM extraction completed in 111s (timeout 300s).
+
+🎯 Acceptance Criteria
+   AC-01..AC-05   ✅ unit tests
+   AC-06, AC-07   🟡 deferred — manual GB10 probes (need live ships-computer-nats);
+                       capture as RESULTS addendum after running the two probes
+   AC-08          ✅ pre-existing failures confirmed unrelated via stash-baseline
+
+📊 Quality Gates (final)
+   ✅ Compilation
+   ✅ Tests: 45/45 in touched files (100%)
+   ✅ Full unit suite: 999 pass, 10 pre-existing failures in unrelated modules
+   ✅ Coverage on nats_adapter.py: 94% (>80% line threshold)
+   ✅ Plan audit: medium severity (+58% LOC, no scope creep)
+
+📋 Next Steps for the Operator
+   1. Run AC-06 GB10 probe:
+        docker stop ships-computer-nats && sleep 15 && docker start ships-computer-nats
+        nats kv ls agent-registry   # tutor should reappear within ~5s
+   2. Run AC-07 prolonged-outage probe:
+        docker stop ships-computer-nats && sleep 180 && docker start ships-computer-nats
+        # tutor exits non-zero within ~125s with `nats_terminally_closed` ERROR
+   3. Capture both probe outputs as RESULTS addendum alongside
+      jarvis FEAT-JARVIS-006 RESULTS file (referenced in task frontmatter).
+   4. `git push origin main` (when ready).
+command-history.md
+please run through these steps:
+Next steps (for the reviewer/operator):
+
+
+All operator next-steps done
+
+✅ Operator next-steps complete — TASK-NATS-FIX-006
+
+🔨 Image rebuild
+   study-tutor:dev → sha256:315a1bda4408 (was: 75ac7119fe50, 37h stale pre-fix)
+   gcse-tutor container recreated and verified registered.
+
+🟢 AC-06 — broker bounce (15s outage)
+   T+0   nats_disconnected WARNING
+   T+15  broker restarted
+   T+16  nats_reconnected INFO → re-registering 'gcse-tutor'
+   T+22  agent-registry shows gcse-tutor ✅
+   No operator intervention required.
+
+🟢 AC-07 — prolonged outage (180s) + fail-fast
+   T+0    nats_disconnected WARNING (broker stopped)
+   T+120  nats_terminally_closed ERROR fires
+   T+120  container exited exitCode=1 (docker events evidence)
+   T+120  Docker `restart: unless-stopped` recovered (RestartCount: 0→1)
+   T+185  broker restarted
+   T+195  agent-registry shows all 4 fleet members back ✅
+   exitCode=1 captured from docker events stream — definitive proof of
+   _serve_adapter's SystemExit(1) path.
+
+📝 RESULTS addendum
+   docs/state/TASK-NATS-FIX-006/RESULTS-ac06-ac07-gb10-probes.md
+   Cross-referenced to jarvis FEAT-JARVIS-006 RESULTS file.
+
+📦 Commits pushed to origin/main
+   34d4a16  fix(FEAT-NATS): wire reconnect/closed callbacks + fail-fast lifecycle
+   1bbdde4  docs(FEAT-NATS): capture AC-06+AC-07 GB10 probe results
+   313c463..1bbdde4  main → main
+
+🎯 Acceptance criteria — final status
+   AC-01..AC-05  ✅ unit-test green
+   AC-06         ✅ GB10 probe green (this run)
+   AC-07         ✅ GB10 probe green (this run)
+   AC-08         ✅ regression confirmed clean
+
+🌐 Fleet state — recovered
+   ships-computer-nats       Up 57 seconds (healthy)
+   study-tutor-gcse-tutor-1  Up 2 minutes (on the new image)
+   specialist-agent product-owner-agent  Up 2 minutes
+   specialist-agent architect-agent      Up 2 minutes
+   agent-registry: jarvis, architect-agent, product-owner-agent, gcse-tutor
+
+Demo-blocker for 2026-05-16 DDD Southwest: cleared.
 
 
 
