@@ -29,8 +29,13 @@ _TUTOR_TOOLS: list[ToolCapability] = [
     ToolCapability(
         name="tutor_start_session",
         description=(
-            "Start a new tutoring session for the given student. Sync; "
-            "returns session_id immediately; LLM model is warmed up in the "
+            "Start an interactive GCSE-level tutoring session. Covers "
+            "English Literature, English Language, Maths, Sciences, "
+            "History, and other GCSE subjects using Socratic dialogue "
+            "scaffolded against AO1/AO2/AO3/AO4 assessment objectives. "
+            "Use whenever a learner asks for tutoring, revision, or "
+            "subject-specific coaching at GCSE level. Sync; returns "
+            "session_id immediately; LLM model is warmed up in the "
             "background as fire-and-forget. Topic and player_model are "
             "optional overrides."
         ),
@@ -67,8 +72,16 @@ _TUTOR_TOOLS: list[ToolCapability] = [
     ToolCapability(
         name="tutor_turn",
         description=(
-            "Submit a user message for the given session_id and receive a "
-            "tutor response. Sync, typically returns within 15s."
+            "Take one teaching turn in an active GCSE tutoring session. "
+            "Submits the learner's response and returns a Socratic "
+            "coaching reply that scaffolds the learner toward "
+            "grade-level analysis using AO1 (text knowledge), AO2 "
+            "(language and structure), and where appropriate AO3 "
+            "(context) and AO4 (comparison). Use after "
+            "tutor_start_session whenever the learner sends a new "
+            "response in an ongoing English Literature, English "
+            "Language, Maths, Sciences, or History tutoring exchange. "
+            "Sync, typically returns within 15s."
         ),
         parameters={
             "type": "object",
@@ -94,7 +107,13 @@ _TUTOR_TOOLS: list[ToolCapability] = [
     ),
     ToolCapability(
         name="tutor_session_status",
-        description="Sync; returns current session state for the given session_id.",
+        description=(
+            "Check the current state of an active GCSE tutoring session — "
+            "turn count, current plan step, coaching progress, and AO "
+            "coverage so far. Use to verify a session is healthy before "
+            "submitting more learner responses. Sync; read-only; "
+            "returns current session state for the given session_id."
+        ),
         parameters={
             "type": "object",
             "properties": {
@@ -111,7 +130,15 @@ _TUTOR_TOOLS: list[ToolCapability] = [
     ),
     ToolCapability(
         name="tutor_session_end",
-        description="Sync; marks the session ended and releases resources.",
+        description=(
+            "End an active GCSE tutoring session — captures a final "
+            "session summary covering AO1/AO2/AO3/AO4 progress and "
+            "releases planner/LLM resources. Use when a learner "
+            "indicates they are finished revising or want to wrap up "
+            "the English Literature, Maths, or other GCSE subject "
+            "tutoring exchange. Sync; mutating; marks the session "
+            "ended and releases resources."
+        ),
         parameters={
             "type": "object",
             "properties": {

@@ -7,10 +7,11 @@ feature_slug: mcp-llm-player-coach-adapters
 implementation_mode: task-work
 complexity: 2
 estimated_minutes: 30
-status: backlog
+status: completed
 priority: high
 created: 2026-05-13T10:30:00Z
 updated: 2026-05-13T10:30:00Z
+completed: 2026-05-13T11:10:00Z
 related:
   - TASK-LCA-006
   - src/study_tutor/adapters/manifest.py
@@ -198,3 +199,18 @@ After implementation:
    path through the gateway leg (not just the CLI smoke leg).
 3. **Recap turn (Turn 4)** must attribute the tutor as "gcse-tutor"
    or equivalent, not as "general-purpose subagent".
+
+---
+
+## Outcome (2026-05-13 — closure note)
+
+**Implementation:** descriptions rewritten as proposed (see `src/study_tutor/adapters/manifest.py`); container rebuilt + KV manifest re-published with the new descriptions; 22 manifest tests pass; descriptions are richer + more semantically loaded than before.
+
+**Misdiagnosis acknowledged:** these description changes did **NOT** resolve the routing regression on their own. After implementation, 6 consecutive CLI smoke trials (`lca-007-verify-*` + `lca-007-fresh-*`) still produced 0 tutor dispatches. Further investigation traced the actual root cause to jarvis's `stub_capabilities.yaml`, which lacked a `gcse-tutor` block entirely — fixed in [`jarvis@TASK-DSR-005`](https://github.com/guardkit/jarvis/blob/main/tasks/completed/feat-dsr-dispatch-stub-resolver-fix/TASK-DSR-005-stub-yaml-patch-gcse-tutor.md). After TASK-DSR-005 landed, the same Turn 2 prompt dispatches reliably (3/3 trials, 5 cumulative envelopes).
+
+**Why keep TASK-LCA-007 changes anyway:**
+- Richer tool descriptions live in the KV manifest; they reach any downstream consumer that reads from live KV (e.g. the dispatch resolver post TASK-DSR-003 W2, future tools that surface live capabilities)
+- They mirror the language used in the jarvis stub block per TASK-DSR-005, so the live and stub paths stay descriptively consistent
+- AC-LCA-07-01, AC-LCA-07-03, AC-LCA-07-04, AC-LCA-07-05 all pass on the implementation as-written; only AC-LCA-07-02 (dispatch verification) required TASK-DSR-005 to satisfy
+
+**Status:** completed (closed with misdiagnosis note for the historical record).
