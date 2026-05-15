@@ -103,6 +103,18 @@ class CommandRouter:
             "end_session": self.mcp_adapter.tutor_session_end,
         }
 
+        # Argument-name aliasing — companion to Bug #2's command-name
+        # aliasing. Small local supervisor models (e.g. qwen36-workhorse)
+        # occasionally emit a shortened parameter name despite the
+        # advertised tool schema: ``topic`` for ``topic_override``. Without
+        # this fold, a single dropped suffix raises ``TypeError: got an
+        # unexpected keyword argument`` and collapses the whole dispatch.
+        # Keyed by canonical (post-Bug-#2-resolution) command name;
+        # ``{alias: canonical_kwarg}``.
+        self._arg_aliases: dict[str, dict[str, str]] = {
+            "start_session": {"topic": "topic_override"},
+        }
+
     async def on_command(
         self,
         envelope: MessageEnvelope,
@@ -213,7 +225,27 @@ class CommandRouter:
                 supported=sorted(self._command_map),
             )
 
-        return await handler(**args)
+        return await handler(**self._normalise_args(resolved_command, args))
+
+    def _normalise_args(
+        self, resolved_command: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Fold known argument-name aliases onto canonical handler kwargs.
+
+        See :attr:`_arg_aliases`. When both the alias and the canonical
+        key are present (a model that emits both), the canonical key
+        wins — the alias value is discarded rather than clobbering it.
+        Commands with no alias table pass through untouched.
+        """
+        aliases = self._arg_aliases.get(resolved_command)
+        if not aliases:
+            return args
+        normalised = dict(args)
+        for alias, canonical in aliases.items():
+            if alias in normalised:
+                alias_value = normalised.pop(alias)
+                normalised.setdefault(canonical, alias_value)
+        return normalised
 
     async def _publish_result(
         self,

@@ -112,6 +112,64 @@ async def test_on_command_canonical_command_passes_through() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Argument-name aliasing — small supervisor models emit ``topic`` for the
+# advertised ``topic_override`` schema key. The router folds the alias onto
+# the canonical kwarg so dispatch does not collapse with a TypeError.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_on_command_folds_topic_alias_onto_topic_override() -> None:
+    """``topic`` arg is folded onto the ``topic_override`` handler kwarg."""
+    router, adapter, _client = _make_router()
+
+    envelope = _make_envelope(
+        "tutor_start_session", {"student_id": "lilymay", "topic": "Macbeth"}
+    )
+    await router.on_command(envelope)
+
+    adapter.tutor_start_session.assert_awaited_once_with(
+        student_id="lilymay", topic_override="Macbeth"
+    )
+
+
+@pytest.mark.asyncio
+async def test_on_command_canonical_topic_override_unaffected() -> None:
+    """The canonical ``topic_override`` kwarg passes through untouched."""
+    router, adapter, _client = _make_router()
+
+    envelope = _make_envelope(
+        "tutor_start_session",
+        {"student_id": "lilymay", "topic_override": "Macbeth"},
+    )
+    await router.on_command(envelope)
+
+    adapter.tutor_start_session.assert_awaited_once_with(
+        student_id="lilymay", topic_override="Macbeth"
+    )
+
+
+@pytest.mark.asyncio
+async def test_on_command_canonical_wins_when_both_topic_keys_present() -> None:
+    """When a model emits both keys, ``topic_override`` wins; ``topic`` is dropped."""
+    router, adapter, _client = _make_router()
+
+    envelope = _make_envelope(
+        "tutor_start_session",
+        {
+            "student_id": "lilymay",
+            "topic": "alias-value",
+            "topic_override": "canonical-value",
+        },
+    )
+    await router.on_command(envelope)
+
+    adapter.tutor_start_session.assert_awaited_once_with(
+        student_id="lilymay", topic_override="canonical-value"
+    )
+
+
+# ---------------------------------------------------------------------------
 # AC-003 — Bug #1 dual-publish regression guard
 # ---------------------------------------------------------------------------
 
