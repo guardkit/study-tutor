@@ -20,7 +20,7 @@ Alternatives:
 
 ## 2. The Pitch
 
-A fine-tuned Gemma 4 31B Dense model that acts as a personalised GCSE tutor, running entirely on-device on a Dell DGX Spark (GB10). The system combines:
+A fine-tuned Gemma 4 26B-A4B (MoE) model — base `unsloth/gemma-4-26B-A4B-it` — that acts as a personalised GCSE tutor, running entirely on-device on a Dell DGX Spark (GB10). The system combines:
 
 - **Fine-tuned behaviour** (via Unsloth) — the model knows *how* to tutor: Socratic questioning, AQA assessment objective alignment, grade-appropriate scaffolding, `<think>` reasoning blocks
 - **RAG knowledge** (via ChromaDB) — the model draws from *what* it needs: AQA specifications, past papers, mark schemes, examiner reports, and curated study guides
@@ -39,8 +39,8 @@ The tutor is being built for a real student (Year 10, Robert Blake School, Bridg
 | Criterion | How We Score |
 |-----------|-------------|
 | **Real-world impact** | Built for a real student, real exams, real curriculum. Not hypothetical. Lilymay uses it for actual GCSE revision. |
-| **Technical execution** | Fine-tuned Gemma 4 31B Dense (not prompted). Unsloth + TRL SFTTrainer. Player-Coach adversarial data generation. Two-layer architecture (behaviour + knowledge). Graphiti-backed adaptive student model. |
-| **Gemma 4 usage** | The model IS Gemma 4. Fine-tuned, not wrapped. Demonstrates what the 31B Dense can do when properly specialised. |
+| **Technical execution** | Fine-tuned Gemma 4 26B-A4B MoE (not prompted). Unsloth + TRL SFTTrainer. Player-Coach adversarial data generation. Two-layer architecture (behaviour + knowledge). Graphiti-backed adaptive student model. |
+| **Gemma 4 usage** | The model IS Gemma 4. Fine-tuned, not wrapped. Demonstrates what the 26B-A4B MoE can do when properly specialised. |
 | **Working prototype** | Running on GB10 today via Ollama + Open WebUI. Lilymay can use it over Tailscale. |
 | **Offline / privacy** | Entirely on-device. No cloud. No data exfiltration. Family home network only. |
 | **Student engagement** | Full gamification engine: XP, 15 named levels, 6 achievement categories, daily challenges, Boss Battle exam mode, Reachy Mini as AI companion. Designed for a single user — personal growth, not competition. |
@@ -60,7 +60,7 @@ GOAL.md ──► Player-Coach ──► train.jsonl (behaviour layer)
                               │
                         Unsloth fine-tune
                               │
-                        Gemma 4 31B Dense LoRA
+                     Gemma 4 26B-A4B MoE LoRA
                               │
                         GGUF export (Q4_K_M)
                               │
@@ -80,7 +80,7 @@ GOAL.md ──► Player-Coach ──► train.jsonl (behaviour layer)
                               │
                         Unsloth fine-tune
                               │
-                        Gemma 4 31B Dense LoRA
+                     Gemma 4 26B-A4B MoE LoRA
                               │
                         vLLM (on GB10)
                               │
@@ -180,7 +180,7 @@ The combination of fine-tuned tutoring behaviour + adaptive Graphiti student mod
 ### 6.1 Working Demo ✅ (Required)
 
 **What exists today:**
-- Fine-tuned Gemma 4 31B Dense running via Ollama on GB10
+- Fine-tuned Gemma 4 26B-A4B MoE running via Ollama on GB10
 - ~1,736 training examples from first production run
 - GGUF Q4_K_M export ready
 - Accessible over Tailscale
