@@ -14,7 +14,7 @@
 
 ## 2. Solution Overview
 
-> *Three-layer architecture at a glance: fine-tuned Gemma 4 31B on-device (behaviour), RAG over licensed sources (knowledge), gamification layer (engagement).*
+> *Three-layer architecture at a glance: fine-tuned Gemma 4 26B-A4B (MoE) on-device (behaviour), RAG over licensed sources (knowledge), gamification layer (engagement).*
 
 ## 3. Pipeline Methodology
 
@@ -22,7 +22,7 @@
 
 ## 4. Fine-Tuning Specifics
 
-> *Gemma 4 31B Dense base, LoRA adapter, ShareGPT format, 75/25 `<think>` ratio, ~1,736 examples, ~2h 5min on GB10, final loss 0.7015. Training data provenance and filtering.*
+> *Base model `unsloth/gemma-4-26B-A4B-it` — Gemma 4 26B-A4B (MoE, 27B params). LoRA rank 16, Unsloth + TRL SFT, 1 epoch, effective batch 4, max-seq 2048, bf16, single GB10. ShareGPT format, 75/25 `<think>` ratio. Published: HF `RichWoollcott/studytutor-gcse-26b-moe` (merged 16-bit) + `RichWoollcott/gcse-tutor-gemma4-26b-moe-GGUF` (Q4_K_M). Confirm example count and final loss from train.log. Training data provenance and filtering.*
 
 ## 5. Architecture
 
@@ -50,7 +50,74 @@
 
 ## 11. Evaluation
 
-> *What we measured (quote fidelity, AO coverage, coach-criteria pass rate, session completion) and what we deliberately did not (leaderboard-style benchmarks — wrong frame for a single-student tutor).*
+We evaluated the fine-tuned tutor honestly — including against the model it
+was built from. The full method and evidence are in
+[`docs/runbooks/RUNBOOK-base-vs-finetune-tutor-eval.md`](../runbooks/RUNBOOK-base-vs-finetune-tutor-eval.md)
+and [`RESULTS-base-vs-finetune-tutor-eval-2026-05-18.md`](../runbooks/RESULTS-base-vs-finetune-tutor-eval-2026-05-18.md);
+this section reports it straight, including where the fine-tune falls short.
+
+### 11.1 Method
+
+A fixed 16-prompt golden set of GCSE-English tutoring situations (8 behaviour
+categories, each with pre-declared `expected_behaviours` and `red_flags`) plus
+3 scripted multi-turn sessions. The fine-tuned tutor (`gemma4-tutor`) was
+compared head-to-head against its **own base model**, `unsloth/gemma-4-26B-A4B-it`,
+under strict parity: identical system prompt, identical greedy decoding, the
+same `llama-server` runtime and chat template — the only variable is the
+fine-tuned weights. Three instruments were used: blind pairwise judging
+(single- and multi-turn), and a length-neutral criterion-referenced re-score.
+
+### 11.2 What the fine-tune does well
+
+- **Socratic stance is confirmed, not assumed.** On the length-neutral
+  criterion score the fine-tune equals or beats the base on every pure-Socratic
+  item (quotation analysis, paragraph feedback). Multi-turn, it out-scores the
+  base on Socratic stance (5.0 vs 4.0). It reliably guides rather than
+  hands over answers.
+- **It surfaces its pedagogical reasoning.** The fine-tune emits a structured
+  `<think>` block (AO mapping, grade-appropriate strategy) on ~63% of prompts;
+  the base never does. In Open WebUI this renders as a collapsible panel.
+- **Zero template-token leaks**, and it runs **fully on-device**.
+
+### 11.3 Where it falls short (honest findings)
+
+Against a strong instruction-tuned base given the *same* tutoring system
+prompt, the current fine-tune checkpoint does **not** score higher overall —
+criterion-referenced, the base met 88.5% of expected behaviours vs the
+fine-tune's 62.5%. The gap is **not** a verbosity artefact (the length-neutral
+instrument confirms it); it concentrates in three specific, fixable areas:
+
+1. **Factual reliability** — isolated slips on set-text metadata (the
+   1945 writing date of *An Inspector Calls*; a poem title; a character name).
+2. **Deflection** — when a student asks a direct question ("what does AO2
+   *mean*?"), it sometimes returns questions instead of first explaining.
+3. **Role discipline / closure** — one out-of-role drift; some answers end
+   without a concrete next step.
+
+These are logged in [`known-issues.md`](../runbooks/known-issues.md) as inputs
+to a future re-train.
+
+### 11.4 Limitations
+
+The judge was a single model-driven evaluator over a 16+3 item set — a
+*directional* result, not a statistically powered one. Blind pairwise judging
+also has a documented bias toward longer answers; the criterion-referenced
+re-score was added specifically to control for it. Most importantly, **no
+synthetic eval here measures sustained engagement** — whether a real teenager
+keeps opening the tutor week after week. That is the metric this project most
+cares about, and the evidence for it is the real revision sessions run with a
+Year-10 student through Open WebUI and the Reachy Mini companion (§5, §12) —
+not a benchmark score. We deliberately did not run leaderboard-style
+benchmarks: they are the wrong frame for a single-student tutor.
+
+### 11.5 Honest conclusion
+
+Fine-tuning gave us a tutor with a reliable Socratic style and visible
+pedagogical reasoning, running entirely on-device. It has not yet been shown
+to out-perform a well-prompted base model on a quality rubric, and it carries
+specific accuracy weaknesses we are transparent about. The contribution we
+stand behind is the **reproducible pipeline and the honest evaluation harness**
+itself — both shipped in this repo — as much as any single checkpoint.
 
 ## 12. Roadmap
 
