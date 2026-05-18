@@ -1,61 +1,130 @@
-# Study Tutor — Technical Write-Up
+# StudyTutor — A Privacy-First GCSE Tutor on Local Hardware
 
-**Submission:** Gemma 4 Good Hackathon (Kaggle × Google DeepMind)
+**Submission:** The Gemma 4 Good Hackathon (Kaggle × Google DeepMind)
+**Category:** Future of Education
+**Author:** Rich Woollcott, Bristol, UK
 **Deadline:** 18 May 2026, 23:59 UTC
-**Status:** 🔲 Stub — populated incrementally through Phases 0–2. Target feature-complete: 10 May 2026. Final polish: 17–18 May.
-
-> This is a living document. Each section is a titled stub with a one-line note. Content is added as each phase lands so the final write-up is a synthesis, not a sprint.
 
 ---
 
-## 1. Problem Statement
+## Summary
 
-> *Lilymay, AI tutors, teenage engagement, privacy — why a 15-year-old won't open a revision tool on a Tuesday evening, and why a cloud-hosted AI tutor isn't an acceptable answer.*
+StudyTutor is a fine-tuned Gemma 4 26B MoE model that tutors a Year 10 student for her GCSE exams. It runs entirely on an NVIDIA DGX Spark (GB10) in the family home — no cloud, no subscription, no data leaving the house. The training data was generated autonomously by a Player-Coach adversarial pipeline, and the model is served through Open WebUI so the student accesses it like any chat interface. This isn't a prototype — it's in daily use by a real student preparing for real exams.
 
-## 2. Solution Overview
+---
 
-> *Three-layer architecture at a glance: fine-tuned Gemma 4 31B on-device (behaviour), RAG over licensed sources (knowledge), gamification layer (engagement).*
+## 1. The Problem
 
-## 3. Pipeline Methodology
+GCSE English is high-stakes — it's a gateway qualification in the UK that affects college and career options. Private tutoring costs £25–50/hour and is inaccessible to many families. Existing AI tutoring tools are cloud-based, raising privacy concerns for minors, and use generic models that don't understand the specific exam board's assessment objectives, mark scheme language, or the particular texts a student is studying.
 
-> *How the training data was produced — agentic dataset factory, Player–Coach adversarial generation, Unsloth fine-tuning harness. Why this yields better training data than hand-curation.*
+What's needed is a tutor that understands the AQA specification (not just "English literature"), uses Socratic questioning rather than giving answers, runs locally so a child's educational data never leaves the home, costs nothing per session after setup, and is available 24/7 during revision periods.
 
-## 4. Fine-Tuning Specifics
+---
 
-> *Gemma 4 31B Dense base, LoRA adapter, ShareGPT format, 75/25 `<think>` ratio, ~1,736 examples, ~2h 5min on GB10, final loss 0.7015. Training data provenance and filtering.*
+## 2. Our Solution
 
-## 5. Architecture
+StudyTutor is built on a four-layer architecture where each layer is independently upgradeable.
 
-> *Phase 1 Ollama-on-GB10 runtime + Phase 2 Graphiti student model + DeepAgents Player–Coach loop + gamification state engine. Where each layer lives and how they compose.*
+**Layer 1 — Fine-tuned model (behaviour).** The Gemma 4 26B A4B MoE model is fine-tuned using LoRA via Unsloth to learn how a good GCSE tutor responds — Socratic questioning, scaffolded explanations, assessment-objective-aligned feedback, encouragement calibrated to student level. Critically, it refuses to simply give answers when asked. The fine-tuning teaches behaviour, not facts.
 
-## 6. Gamification Design
+**Layer 2 — RAG knowledge store.** Curriculum content lives in a ChromaDB vector store — 581 embedded chunks across three GCSE set texts (Macbeth, An Inspector Calls, and the AQA Power & Conflict poetry anthology), plus Mr Bruff study guides, AQA mark schemes, and examiner reports. A per-turn decision selectively retrieves primary-text passages to ground the tutor's answer, and a post-hoc verifier checks every quotation against the source text, correcting or stripping anything not verbatim. When the student moves to a new text or topic, the knowledge layer updates without retraining the model.
 
-> *Single-user engagement mechanics — personal growth over competition. XP economy, level progression, achievements, streaks, daily challenges, Boss Battle exam mode. See `docs/gamification/design.md` for the full spec.*
+**Layer 3 — Player-Coach orchestration.** Each tutoring turn runs through a Player-Coach loop at inference time. The Player (fine-tuned Gemma 4) generates a response; the Coach validates it against quality criteria before it reaches the student. This provides a runtime quality gate beyond what fine-tuning alone achieves.
 
-## 7. On-Device Deployment
+**Layer 4 — Graphiti memory.** A temporal knowledge graph in FalkorDB persists the student's profile and per-topic confidence scores. At session start, a deterministic planner reads the student model and selects the session's focus — the weakest topic outside a 48-hour cooldown window. At session end, outcomes write back and shift confidence scores. Topic selection measurably adapts across sessions — verified live across four sessions with topic confidence progressing 55% → 56% → 57% → 58%.
 
-> *GB10 under the desk → Ollama → GGUF Q4_K_M. Zero cloud calls in the default path. Privacy story: no student data leaves the home network.*
+---
 
-## 8. Bedrock Migration Path
+## 3. How We Used Gemma 4
 
-> *AWS Bedrock Custom Model Import as the scale-to-zero fallback for demo week and multi-user scenarios. Cost profile (~$1.50–$3.00 per 5-min session), cold-start behaviour, when to route traffic where.*
+- **Model:** Gemma 4 26B A4B MoE (Apache 2.0), base: `unsloth/gemma-4-26b-a4b-it`
+- **Fine-tuning:** Unsloth + TRL SFTTrainer, LoRA, on DGX Spark GB10 (128GB unified memory)
+- **Training data format:** ShareGPT JSONL with `<think>` reasoning blocks (75% reasoning / 25% direct ratio enforced — fewer reasoning examples degrades post-fine-tune reasoning capability)
+- **Inference:** llama-swap on GB10 port 9000, with nomic-embed-text-v1.5 (768-dim) for embeddings
+- **Access layer:** Open WebUI (single Docker container, `--network host`), accessed over Tailscale
+- **Why Gemma 4:** The MoE architecture (26B total, 4B active) gives strong reasoning within the GB10's memory budget. Apache 2.0 licensing enables unrestricted local deployment.
 
-## 9. Multi-Subject Expansion
+---
 
-> *Domain-agnostic pipeline — adding a subject is a `domains/{subject}/GOAL.md` plus a `sources/` directory, not a code change. Architecture demonstration, not Phase 0 implementation.*
+## 4. Training Data Generation
 
-## 10. Copyright and Provenance
+The Agentic Dataset Factory is a standalone, domain-agnostic pipeline. Adding a new subject requires only a new `domains/` directory containing a GOAL.md (behavioural specification) and source documents — no code changes.
 
-> *Bring-your-own-sources public repo pattern. What the repo ships vs. what users acquire themselves. Training-data provenance chain. See `copyright-training-data-analysis.md`.*
+**Stage 0 — Ingest:** Docling processes source PDFs into chunks, indexed into ChromaDB. Both standard mode (digital PDFs) and VLM mode (scanned paperbacks via a home office scanner) are validated and working on the GB10.
 
-## 11. Evaluation
+**Stage 1 — Generate:** A Player-Coach adversarial loop runs overnight on the GB10. The Player agent retrieves curriculum chunks and generates tutoring dialogue examples. The Coach agent evaluates each example against GOAL.md criteria (AO coverage, Socratic quality, grade calibration, factual accuracy). Rejected examples are revised and resubmitted, up to 5 cycles. Accepted examples are routed to either the behaviour layer (train.jsonl for fine-tuning) or the knowledge layer (rag_index/ for ChromaDB seeding).
 
-> *What we measured (quote fidelity, AO coverage, coach-criteria pass rate, session completion) and what we deliberately did not (leaderboard-style benchmarks — wrong frame for a single-student tutor).*
+The pipeline produced validated training data without human intervention.
 
-## 12. Roadmap
+---
 
-> *Reachy Mini embodied interface, mobile surface, multi-subject expansion, Graphiti-backed long-term student model, Boss Battle exam mode.*
+## 5. Multi-Subject Support
 
-## 13. Acknowledgements
+The fine-tuned model demonstrates tutoring capability across multiple subjects. Sessions have been run for GCSE English Literature (Macbeth, An Inspector Calls, Power & Conflict poetry), GCSE History (post-war Britain), and exploratory sessions in GCSE Maths (linear equations). The same architecture and fine-tuning approach extends to any subject — the domain-agnostic pipeline means adding a subject is a configuration change, not an engineering change.
 
-> *Pollen Robotics (Reachy), Unsloth (fine-tuning framework), Ollama (runtime), Anthropic (Claude — build harness), Google DeepMind (Gemma 4 base model), and the GCSE English teachers whose open pedagogy informed the Assessment Objective framing.*
+---
+
+## 6. Embodied Interface — Reachy Mini
+
+A Pollen Robotics Reachy Mini ("Scholar") provides an embodied physical tutor interface. The student can interact with the same underlying model through voice conversation with the robot, which sits on the desk during study sessions. Physical presence increases engagement — particularly important for a teenager who might not voluntarily open a chat interface.
+
+---
+
+## 7. Hardware & Deployment
+
+| Component | Hardware | Role |
+|-----------|----------|------|
+| DGX Spark GB10 | 128GB unified memory, Blackwell GPU | Inference, fine-tuning, agent execution |
+| MacBook Pro M2 Max | 64GB | Planning, orchestration |
+| Synology DS918+ NAS | 32TB | FalkorDB/Graphiti backend |
+
+The system runs entirely on home hardware connected via Tailscale mesh networking. No cloud services on the critical path. Cost per tutoring session: £0.00.
+
+---
+
+## 8. What We Learned (Honest Failures)
+
+**Always-on RAG degrades fine-tuned models.** When the model retrieves on every turn, it second-guesses its fine-tuned behaviour. Selective retrieval — only when the harness determines curriculum grounding is needed — produces better results. Documented in ADR-FLEET-002.
+
+**The generation pipeline model matters.** A Coach model that's too capable produces over-generous scores. One that's too weak produces false rejections. Calibrating the Coach to the domain is non-trivial.
+
+**75% reasoning examples are required.** Training with fewer `<think>` blocks degraded the model's ability to reason through complex literary analysis.
+
+**Memory selects the topic but doesn't yet shape the lesson.** The Graphiti student model drives adaptive topic selection (verified, working). However, the per-topic confidence and misconception data computed by the planner does not yet flow into the fine-tuned model's prompt — a contained improvement that would upgrade "memory selects the topic" to "memory shapes the lesson."
+
+---
+
+## 9. Impact & Vision
+
+**Immediate:** A real Year 10 student in Bristol using this daily for GCSE revision. The tutor understands AQA assessment objectives, knows the set texts, and guides discovery rather than giving answers.
+
+**Scalable:** The same pipeline can produce tutors for any subject. Any family with local hardware can replicate the setup. The Agentic Dataset Factory is open-source.
+
+**Privacy:** No student data leaves the home network. No subscription. No usage tracking. No data monetisation. A child's learning journey — including mistakes, misconceptions, and weak areas — stays private.
+
+---
+
+## 10. Reproducibility
+
+1. Clone the study-tutor and agentic-dataset-factory repos
+2. Acquire GCSE source materials (Mr Bruff guides ~£25, AQA past papers free)
+3. Run Docling ingestion pipeline
+4. Run Player-Coach generation loop (overnight, ~8 hours)
+5. Fine-tune Gemma 4 26B using provided training script
+6. Deploy via Open WebUI
+
+Total material cost: ~£25 for study guides. Hardware: DGX Spark GB10.
+
+---
+
+## 11. Links
+
+- **Model:** [huggingface.co/RichWoollcott/gcse-tutor-gemma4-26b-moe](https://huggingface.co/RichWoollcott/gcse-tutor-gemma4-26b-moe)
+- **Code:** [GitHub — study-tutor](#) *(link TBC)*
+- **Code:** [GitHub — agentic-dataset-factory](#) *(link TBC)*
+
+---
+
+## 12. Acknowledgements
+
+Google DeepMind (Gemma 4 base model), Unsloth (fine-tuning framework), Pollen Robotics (Reachy Mini), Anthropic (Claude — build harness and planning), NVIDIA (DGX Spark platform), and the GCSE English teachers whose open pedagogy informed the Assessment Objective framing.

@@ -1,0 +1,41 @@
+<svg width="100%" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Cloud AI tutor vs StudyTutor comparison</title>
+<desc>Side-by-side comparison across cost, privacy, specificity, and control.</desc>
+<style>
+  text { font-family: system-ui, -apple-system, sans-serif; }
+  .th { font-size: 14px; font-weight: 500; fill: #2C2C2A; }
+  .ts { font-size: 12px; fill: #5F5E5A; }
+</style>
+
+<text class="th" x="340" y="32" text-anchor="middle">Why local matters for education</text>
+
+<rect x="40" y="60" width="280" height="44" rx="8" stroke-width="0.5" fill="#FCEBEB" stroke="#A32D2D"/>
+<text x="180" y="86" text-anchor="middle" dominant-baseline="central" fill="#791F1F" font-size="14" font-weight="500" font-family="system-ui">Cloud AI tutor</text>
+
+<rect x="360" y="60" width="280" height="44" rx="8" stroke-width="0.5" fill="#E1F5EE" stroke="#0F6E56"/>
+<text x="500" y="86" text-anchor="middle" dominant-baseline="central" fill="#085041" font-size="14" font-weight="500" font-family="system-ui">StudyTutor (local)</text>
+
+<text class="th" x="40" y="136">Cost per session</text>
+<rect x="40" y="148" width="280" height="40" rx="6" stroke-width="0.5" fill="#FCEBEB" stroke="#A32D2D"/>
+<text x="180" y="172" text-anchor="middle" dominant-baseline="central" fill="#791F1F" font-size="12" font-family="system-ui">£15–50/month subscription</text>
+<rect x="360" y="148" width="280" height="40" rx="6" stroke-width="0.5" fill="#E1F5EE" stroke="#0F6E56"/>
+<text x="500" y="172" text-anchor="middle" dominant-baseline="central" fill="#085041" font-size="12" font-family="system-ui">£0.00 — zero marginal cost</text>
+
+<text class="th" x="40" y="216">Student data privacy</text>
+<rect x="40" y="228" width="280" height="40" rx="6" stroke-width="0.5" fill="#FCEBEB" stroke="#A32D2D"/>
+<text x="180" y="252" text-anchor="middle" dominant-baseline="central" fill="#791F1F" font-size="12" font-family="system-ui">Data sent to cloud servers</text>
+<rect x="360" y="228" width="280" height="40" rx="6" stroke-width="0.5" fill="#E1F5EE" stroke="#0F6E56"/>
+<text x="500" y="252" text-anchor="middle" dominant-baseline="central" fill="#085041" font-size="12" font-family="system-ui">Never leaves the home network</text>
+
+<text class="th" x="40" y="296">Exam board knowledge</text>
+<rect x="40" y="308" width="280" height="40" rx="6" stroke-width="0.5" fill="#FCEBEB" stroke="#A32D2D"/>
+<text x="180" y="332" text-anchor="middle" dominant-baseline="central" fill="#791F1F" font-size="12" font-family="system-ui">Generic — no AQA AO awareness</text>
+<rect x="360" y="308" width="280" height="40" rx="6" stroke-width="0.5" fill="#E1F5EE" stroke="#0F6E56"/>
+<text x="500" y="332" text-anchor="middle" dominant-baseline="central" fill="#085041" font-size="12" font-family="system-ui">Fine-tuned on AQA AO1–AO6</text>
+
+<text class="th" x="40" y="376">Availability and control</text>
+<rect x="40" y="388" width="280" height="40" rx="6" stroke-width="0.5" fill="#FCEBEB" stroke="#A32D2D"/>
+<text x="180" y="412" text-anchor="middle" dominant-baseline="central" fill="#791F1F" font-size="12" font-family="system-ui">Vendor controls pricing and access</text>
+<rect x="360" y="388" width="280" height="40" rx="6" stroke-width="0.5" fill="#E1F5EE" stroke="#0F6E56"/>
+<text x="500" y="412" text-anchor="middle" dominant-baseline="central" fill="#085041" font-size="12" font-family="system-ui">You own it. 24/7. No vendor lock-in.</text>
+</svg>
