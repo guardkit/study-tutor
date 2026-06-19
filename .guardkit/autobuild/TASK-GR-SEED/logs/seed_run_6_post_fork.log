@@ -1,0 +1,383 @@
+2026-05-04 14:16:14,208 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,208 INFO study_tutor.knowledge.graphiti_client: graphiti client ready in 203ms
+2026-05-04 14:16:14,213 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,217 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,221 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,226 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,226 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:16:14,231 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,232 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,547 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,552 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,553 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,558 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,559 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,568 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,568 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,572 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,572 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:16:14,577 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:14,577 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,581 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:14,581 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,586 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:14,586 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:14,590 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:16:14,595 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:14,604 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:14,609 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:27,093 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:16:27,140 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:16:31,534 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,094 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,096 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: HAS_TARGET_GRADE
+2026-05-04 14:16:51,136 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,207 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,271 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,329 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,353 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:16:51,393 INFO graphiti_core.graphiti: Completed add_episode in 37166.25499725342 ms
+2026-05-04 14:16:51,393 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:16:51,393 INFO study_tutor.seed: seeding batch drained
+2026-05-04 14:16:51,394 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:16:51,394 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:16:51,398 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,400 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,404 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,404 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,411 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,411 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,415 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,416 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,419 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,421 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,423 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,425 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,427 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,430 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,431 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,434 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,436 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,438 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:16:51,439 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:16:51,442 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:16:51,444 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:51,446 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:51,448 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:51,450 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:51,452 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:51,454 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:16:55,524 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:16:55,553 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:02,309 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:02,329 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,772 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,794 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,810 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,833 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,854 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,872 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:12,911 INFO graphiti_core.graphiti: Completed add_episode in 21517.389059066772 ms
+2026-05-04 14:17:12,912 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:17:17,272 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,129 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,165 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,209 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,259 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,333 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,374 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:27,407 INFO graphiti_core.graphiti: Completed add_episode in 36013.01717758179 ms
+2026-05-04 14:17:27,407 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:17:27,408 INFO study_tutor.seed: seeding batch drained
+2026-05-04 14:17:27,408 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:17:27,408 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:17:27,408 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:17:27,408 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:17:27,413 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,422 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,429 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,434 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,439 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,444 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:17:27,444 INFO openai._base_client: Retrying request to /chat/completions in 0.389223 seconds
+2026-05-04 14:17:27,444 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,448 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,454 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,461 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:17:27,466 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:17:27,472 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:17:27,479 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:17:27,483 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:17:27,840 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:17:27,841 INFO openai._base_client: Retrying request to /chat/completions in 0.767355 seconds
+2026-05-04 14:17:28,615 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:17:28,616 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:17:36,167 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:36,204 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:41,607 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:41,645 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:49,824 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:17:49,850 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:17:56,501 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:06,549 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:06,552 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: IS_UNDER_SUBJECT
+2026-05-04 14:18:06,579 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:06,603 INFO graphiti_core.graphiti: Completed add_episode in 39194.880962371826 ms
+2026-05-04 14:18:06,603 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:18:13,245 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,249 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,276 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,300 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,316 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,335 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,348 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:24,391 INFO graphiti_core.graphiti: Completed add_episode in 56983.23726654053 ms
+2026-05-04 14:18:24,392 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:18:33,629 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:33,665 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:33,698 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:33,733 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:36,541 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:36,565 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:36,590 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:36,629 INFO graphiti_core.graphiti: Completed add_episode in 69220.59798240662 ms
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:18:36,629 INFO study_tutor.seed: seeding batch drained
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:18:36,629 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:18:36,634 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,642 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,650 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,655 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,657 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:36,658 INFO openai._base_client: Retrying request to /chat/completions in 0.395551 seconds
+2026-05-04 14:18:36,659 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,664 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:36,664 INFO openai._base_client: Retrying request to /chat/completions in 0.377329 seconds
+2026-05-04 14:18:36,665 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,669 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,674 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:36,675 INFO openai._base_client: Retrying request to /chat/completions in 0.493101 seconds
+2026-05-04 14:18:36,675 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,679 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:18:36,683 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:18:36,688 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:18:36,694 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:18:36,698 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:18:37,049 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:37,049 INFO openai._base_client: Retrying request to /chat/completions in 0.828255 seconds
+2026-05-04 14:18:37,059 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:37,059 INFO openai._base_client: Retrying request to /chat/completions in 0.876335 seconds
+2026-05-04 14:18:37,176 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:37,177 INFO openai._base_client: Retrying request to /chat/completions in 0.784367 seconds
+2026-05-04 14:18:37,886 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:37,887 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:18:37,945 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:37,946 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:18:37,969 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:18:37,970 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:18:44,991 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:45,027 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:50,198 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:50,233 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:18:55,280 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:18:55,300 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:02,727 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:19:06,941 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:19:18,878 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:19:18,879 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: ANALYSE_THE_LANGUAGE_FORM_AND_STRUCTURE
+2026-05-04 14:19:18,898 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:18,931 INFO graphiti_core.graphiti: Completed add_episode in 42301.599979400635 ms
+2026-05-04 14:19:18,931 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:19:30,540 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:19:30,561 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:30,586 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:30,603 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:30,627 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:30,640 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:30,683 INFO graphiti_core.graphiti: Completed add_episode in 54053.247928619385 ms
+2026-05-04 14:19:30,683 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:19:41,907 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:19:41,909 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: IS_PART_OF
+2026-05-04 14:19:41,937 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:19:42,010 INFO graphiti_core.graphiti: Completed add_episode in 65380.46097755432 ms
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:19:42,010 INFO study_tutor.seed: seeding batch drained
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:19:42,010 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:19:42,015 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,021 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,024 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,024 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,029 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,029 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,029 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,035 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,035 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,035 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,040 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,040 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,042 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,045 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,045 INFO openai._base_client: Retrying request to /chat/completions in 0.474728 seconds
+2026-05-04 14:19:42,046 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,046 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,046 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,047 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,047 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,047 INFO openai._base_client: Retrying request to /chat/completions in 0.431980 seconds
+2026-05-04 14:19:42,047 INFO openai._base_client: Retrying request to /chat/completions in 0.471831 seconds
+2026-05-04 14:19:42,051 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,052 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,052 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,057 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,057 INFO openai._base_client: Retrying request to /chat/completions in 0.376099 seconds
+2026-05-04 14:19:42,058 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,058 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,058 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,059 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,059 INFO openai._base_client: Retrying request to /chat/completions in 0.375270 seconds
+2026-05-04 14:19:42,063 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,063 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,063 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,068 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,068 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:19:42,068 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:19:42,073 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:19:42,073 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,073 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:19:42,078 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,078 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,079 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,083 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,083 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,083 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,088 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,088 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:19:42,441 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,442 INFO openai._base_client: Retrying request to /chat/completions in 0.866482 seconds
+2026-05-04 14:19:42,442 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,443 INFO openai._base_client: Retrying request to /chat/completions in 0.985346 seconds
+2026-05-04 14:19:42,487 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,489 INFO openai._base_client: Retrying request to /chat/completions in 0.756658 seconds
+2026-05-04 14:19:42,526 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,526 INFO openai._base_client: Retrying request to /chat/completions in 0.754015 seconds
+2026-05-04 14:19:42,526 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:42,526 INFO openai._base_client: Retrying request to /chat/completions in 0.796600 seconds
+2026-05-04 14:19:43,258 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:43,259 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:19:43,301 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:43,302 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:19:43,316 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:43,317 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:19:43,331 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:43,332 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:19:43,437 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:19:43,438 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:19:54,682 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:19:54,705 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:00,767 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:13,197 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:13,214 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:13,232 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:13,242 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:13,262 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:13,264 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:16,033 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:16,484 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:20,495 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:20,651 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:20,670 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:20,673 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:20,684 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:20,727 INFO graphiti_core.graphiti: Completed add_episode in 38716.47310256958 ms
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:20:20,727 INFO study_tutor.seed: seeding batch drained
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:20:20,727 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-04 14:20:20,731 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,743 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,747 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,752 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,760 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,762 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:20:20,763 INFO openai._base_client: Retrying request to /chat/completions in 0.389208 seconds
+2026-05-04 14:20:20,763 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:20:20,763 INFO openai._base_client: Retrying request to /chat/completions in 0.402855 seconds
+2026-05-04 14:20:20,764 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,770 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,774 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,781 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 14:20:20,786 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-04 14:20:20,791 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:20:20,796 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:20:20,800 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-04 14:20:21,159 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:20:21,159 INFO openai._base_client: Retrying request to /chat/completions in 0.783555 seconds
+2026-05-04 14:20:21,173 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:20:21,173 INFO openai._base_client: Retrying request to /chat/completions in 0.938455 seconds
+2026-05-04 14:20:21,948 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:20:21,949 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:20:22,120 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-04 14:20:22,120 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-04 14:20:28,532 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:28,550 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:29,047 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:29,058 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:34,934 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:34,953 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:36,766 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:36,783 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:39,663 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:41,351 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:44,184 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:46,515 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:58,056 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:58,075 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:58,095 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:58,112 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:59,116 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:20:59,126 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:59,151 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:20:59,186 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:10,744 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:21:10,769 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:10,797 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:10,824 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:12,368 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:21:12,382 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:12,413 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:12,431 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:14,017 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:21:14,028 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:14,048 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:14,094 INFO graphiti_core.graphiti: Completed add_episode in 53366.344928741455 ms
+2026-05-04 14:21:14,094 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:21:15,368 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:21:15,380 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:15,401 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:15,448 INFO graphiti_core.graphiti: Completed add_episode in 54720.555782318115 ms
+2026-05-04 14:21:15,448 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:21:16,790 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:21:16,816 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:16,868 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:16,925 INFO graphiti_core.graphiti: Completed add_episode in 56197.59106636047 ms
+2026-05-04 14:21:16,925 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:21:17,784 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-04 14:21:17,796 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:17,807 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-04 14:21:17,845 INFO graphiti_core.graphiti: Completed add_episode in 57117.52009391785 ms
+2026-05-04 14:21:17,846 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-04 14:21:17,883 INFO study_tutor.seed: seeded Lilymay baseline (subjects=0, confidences=0, succeeded_writes=6)

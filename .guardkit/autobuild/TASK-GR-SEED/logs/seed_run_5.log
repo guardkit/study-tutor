@@ -1,0 +1,899 @@
+2026-05-03 18:23:41,027 INFO study_tutor.knowledge.graphiti_client: graphiti client ready in 261ms
+2026-05-03 18:23:41,028 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,032 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,037 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,041 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,043 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:23:41,045 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,195 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,199 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,201 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,204 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,205 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,208 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,217 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,218 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,221 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,222 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:23:41,227 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,227 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:23:41,232 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:23:41,232 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,247 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:23:41,247 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,252 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:23:41,256 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:23:41,260 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:23:41,265 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:23:41,269 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:23:46,577 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:23:46,599 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:23,278 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:24:23,280 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: BASELINE_CREATED_AT
+2026-05-03 18:24:23,280 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: STUDENT_YEAR_AT
+2026-05-03 18:24:23,280 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: STUDENT_TARGET_GRADE_AT
+2026-05-03 18:24:23,304 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:23,343 INFO graphiti_core.graphiti: Completed add_episode in 42299.28112030029 ms
+2026-05-03 18:24:23,343 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-03 18:24:23,343 INFO study_tutor.seed: seeding batch drained
+2026-05-03 18:24:23,343 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:24:23,343 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:24:23,352 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,355 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,360 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,362 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,365 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,367 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,369 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,371 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,373 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,375 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,377 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,380 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,383 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,385 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,387 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,389 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,391 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:24:23,393 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,396 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:23,397 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:23,400 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:23,402 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:24:23,405 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:23,407 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:23,425 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:23,432 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:32,128 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:24:32,163 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:36,318 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:24:36,363 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:41,198 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:24:41,227 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:41,288 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:41,294 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (English | Literature | specified | AQA | spec | 8702)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:24:41,294 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:24:42,675 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:24:55,910 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:24:55,935 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:55,986 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:55,992 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:24:55,994 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-language") (English | Language | AQA | spec | 8700 | specified | AQA)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-language']}
+2026-05-03 18:24:55,995 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:24:55,995 INFO study_tutor.seed: seeding batch drained
+2026-05-03 18:24:55,995 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:24:55,995 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:24:55,995 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:24:55,996 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:24:56,012 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-language") (English | Language | AQA | spec | 8700 | has | specification | code | 8700)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-language']}
+2026-05-03 18:24:56,023 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,028 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,032 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,036 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,039 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,044 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,050 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,054 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,058 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:24:56,062 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:24:56,066 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:56,070 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:24:56,074 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:25:03,831 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:03,871 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:09,480 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:09,500 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:11,182 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:11,201 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:17,279 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:17,355 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:18,189 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:24,397 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:25,576 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:29,671 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:36,569 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:36,594 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:36,614 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:36,624 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Text | Macbeth | primary | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:25:36,624 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:25:40,585 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:40,601 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:40,618 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:40,625 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Text | Christmas | Carol | primary | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:25:40,626 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:25:51,182 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:51,267 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:51,327 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:51,334 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Text | York | Notes | Macbeth | study | guide | secondary | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:25:51,334 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:25:58,805 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:25:58,834 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:58,853 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:58,863 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:25:58,870 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Power | Conflict | poetry | cluster | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:25:58,871 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:25:58,871 INFO study_tutor.seed: seeding batch drained
+2026-05-03 18:25:58,871 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:25:58,871 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:25:58,871 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:25:58,871 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:25:58,871 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:25:58,871 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:25:58,876 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Power | Conflict | poetry | cluster | has | source | path | domains | english | literature | sources | primary | power | conflict | txt)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:25:58,902 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,906 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,910 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,914 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:25:58,914 INFO openai._base_client: Retrying request to /chat/completions in 0.446992 seconds
+2026-05-03 18:25:58,914 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:25:58,914 INFO openai._base_client: Retrying request to /chat/completions in 0.376147 seconds
+2026-05-03 18:25:58,915 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,919 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,923 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,927 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,932 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,936 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:25:58,941 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:25:58,945 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:25:58,950 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:25:58,954 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:25:59,300 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:25:59,301 INFO openai._base_client: Retrying request to /chat/completions in 0.807347 seconds
+2026-05-03 18:25:59,369 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:25:59,370 INFO openai._base_client: Retrying request to /chat/completions in 0.814939 seconds
+2026-05-03 18:26:00,119 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:26:00,120 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:26:00,196 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:26:00,197 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:26:04,371 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:04,415 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:04,756 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:04,767 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:12,043 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:12,067 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:13,247 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:13,260 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:16,633 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:17,558 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:23,042 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:24,418 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:34,718 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:34,750 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:34,769 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:34,774 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 17 near fleet
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"fleet-appmilla") (AO1 | AQA | objective | reading | understanding | responding | texts | critical | style | personal | response | textual | references | including | quotations)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['fleet-appmilla']}
+2026-05-03 18:26:34,774 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:26:45,902 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:45,931 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:45,950 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:45,958 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 17 near fleet
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"fleet-appmilla") (AO3 | AQA | Show | understanding | relationships | between | texts | contexts | which | were | written)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['fleet-appmilla']}
+2026-05-03 18:26:45,958 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:26:54,163 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:26:54,206 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:54,247 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:26:54,276 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 17 near fleet
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"fleet-appmilla") (AO6 | AQA | defines | requirement | candidates | use | range | vocabulary | sentence | structures | clarity | purpose | effect | accurate | spelling | punctuation)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['fleet-appmilla']}
+2026-05-03 18:26:54,277 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:27:02,408 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:02,410 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: ANALYSE_THE_LANGUAGE_FORM_AND_STRUCTURE
+2026-05-03 18:27:02,410 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: ANALYSE_THE_LANGUAGE_FORM_AND_STRUCTURE
+2026-05-03 18:27:02,410 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: ANALYSE_THE_LANGUAGE_FORM_AND_STRUCTURE
+2026-05-03 18:27:02,410 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: ANALYSE_THE_LANGUAGE_FORM_AND_STRUCTURE
+2026-05-03 18:27:06,998 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:07,020 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:07,053 INFO graphiti_core.graphiti: Completed add_episode in 68182.2509765625 ms
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-03 18:27:07,054 INFO study_tutor.seed: seeding batch drained
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:27:07,054 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:27:07,068 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,074 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,074 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,074 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,078 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,078 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,081 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,085 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,085 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,087 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,089 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,089 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,092 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:27:07,092 INFO openai._base_client: Retrying request to /chat/completions in 0.403392 seconds
+2026-05-03 18:27:07,092 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:27:07,092 INFO openai._base_client: Retrying request to /chat/completions in 0.481117 seconds
+2026-05-03 18:27:07,096 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,096 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,096 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,102 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,102 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,103 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,107 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,107 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,107 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,116 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,116 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,116 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,124 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,125 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,125 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:27:07,130 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:27:07,131 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:27:07,131 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:27:07,139 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,139 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,140 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,143 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,144 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,145 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,147 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,149 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,149 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:27:07,502 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:27:07,503 INFO openai._base_client: Retrying request to /chat/completions in 0.993710 seconds
+2026-05-03 18:27:07,582 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:27:07,583 INFO openai._base_client: Retrying request to /chat/completions in 0.785100 seconds
+2026-05-03 18:27:08,376 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:27:08,378 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:27:08,507 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:27:08,508 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:27:16,037 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:16,058 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:16,765 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:16,785 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:23,780 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:23,829 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:27,342 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:27,362 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:30,757 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:39,227 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:39,230 WARNING graphiti_core.utils.maintenance.node_operations: LLM did not return resolutions for IDs: [3]
+2026-05-03 18:27:39,230 WARNING graphiti_core.utils.maintenance.node_operations: LLM returned invalid IDs outside valid range 0-3: [-1] (all returned IDs: [-1, 0, 1, 2])
+2026-05-03 18:27:39,230 WARNING graphiti_core.utils.maintenance.node_operations: Skipping invalid LLM dedupe id -1 (valid range: 0-3, received 4 resolutions)
+2026-05-03 18:27:47,363 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:47,366 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: REFER_TO
+2026-05-03 18:27:47,432 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:47,449 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:47,459 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-language") (Metaphor | identification | topic | under | subject | english | language)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-language']}
+2026-05-03 18:27:47,461 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:27:53,415 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:59,123 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:27:59,151 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:59,167 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:27:59,172 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Topic | Macbeth | ambition | guilt | under | subject | English | Literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:27:59,173 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:28:11,887 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:11,926 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:11,963 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:11,970 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Macbeth | s | witches | topic | under | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:11,970 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:28:11,972 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:11,973 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:11,978 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Macbeth | s | witches | has | AO | ref | AO2)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:12,005 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Macbeth | s | witches | has | AO | ref | AO1)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:33,583 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:33,612 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:33,638 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:33,645 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:33,647 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:33,650 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:33,652 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (AO2 | referenced | topic | Lady | Macbeth | s | ambition | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:33,652 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:28:33,652 INFO study_tutor.seed: seeding batch drained
+2026-05-03 18:28:33,652 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:28:33,652 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:28:33,652 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:28:33,652 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:28:33,652 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:28:33,652 INFO study_tutor.knowledge.async_write: graphiti write scheduled
+2026-05-03 18:28:33,655 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (AO3 | referenced | topic | Lady | Macbeth | s | ambition | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:33,662 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (Lady | Macbeth | s | ambition | topic | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:33,674 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near subject
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"subject-english-literature") (AO1 | referenced | topic | Lady | Macbeth | s | ambition | under | subject | english | literature)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['subject-english-literature']}
+2026-05-03 18:28:33,684 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:28:33,684 INFO openai._base_client: Retrying request to /chat/completions in 0.394032 seconds
+2026-05-03 18:28:33,684 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,689 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,690 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:28:33,690 INFO openai._base_client: Retrying request to /chat/completions in 0.420581 seconds
+2026-05-03 18:28:33,693 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,697 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,701 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,705 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,709 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,713 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,717 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-03 18:28:33,722 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'content' is already indexed
+2026-05-03 18:28:33,727 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:28:33,732 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:28:33,736 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'name' is already indexed
+2026-05-03 18:28:34,088 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:28:34,089 INFO openai._base_client: Retrying request to /chat/completions in 0.924267 seconds
+2026-05-03 18:28:34,120 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:28:34,120 INFO openai._base_client: Retrying request to /chat/completions in 0.860618 seconds
+2026-05-03 18:28:34,990 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:28:34,991 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:28:35,023 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-05-03 18:28:35,024 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:28:41,565 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:41,587 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:42,075 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:42,089 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:45,360 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:45,373 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:49,726 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:51,569 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:28:51,654 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:28:54,651 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:29:01,240 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:29:01,241 WARNING graphiti_core.utils.maintenance.edge_operations: Target entity not found in nodes for edge relation: CONFIDENCE_UPDATED
+2026-05-03 18:29:01,265 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:01,311 INFO graphiti_core.graphiti: Completed add_episode in 27659.054040908813 ms
+2026-05-03 18:29:01,312 INFO study_tutor.knowledge.async_write: graphiti write succeeded
+2026-05-03 18:29:05,700 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:29:08,472 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:29:08,498 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:08,518 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:08,525 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near student
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"student-lilymay") (Student | lilymay | s | confidence | topic | Scrooge | s | redemption | arc | updated | from | band | secure | 0 | band | secure | 75)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['student-lilymay']}
+2026-05-03 18:29:08,525 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:29:18,002 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:29:18,046 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:18,082 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:18,088 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near student
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"student-lilymay") (Student | lilymay | s | confidence | topic | Macbeth | s | witches | updated | from | band | struggling | 0 | band | struggling | 25)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['student-lilymay']}
+2026-05-03 18:29:18,088 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:29:21,712 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-03 18:29:21,723 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:21,738 INFO httpx: HTTP Request: POST http://promaxgb10-41b1:9000/v1/embeddings "HTTP/1.1 200 OK"
+2026-05-03 18:29:21,744 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: RediSearch: Syntax error at offset 19 near student
+CALL db.idx.fulltext.queryRelationships('RELATES_TO', $query)
+    YIELD relationship AS rel, score
+    MATCH (n:Entity)-[e:RELATES_TO {uuid: rel.uuid}]->(m:Entity)
+     WHERE e.uuid in $edge_uuids AND e.group_id IN $group_ids
+            WITH e, score, n, m
+            RETURN
+            
+        e.uuid AS uuid,
+        n.uuid AS source_node_uuid,
+        m.uuid AS target_node_uuid,
+        e.group_id AS group_id,
+        e.created_at AS created_at,
+        e.name AS name,
+        e.fact AS fact,
+        e.episodes AS episodes,
+        e.expired_at AS expired_at,
+        e.valid_at AS valid_at,
+        e.invalid_at AS invalid_at,
+    properties(e) AS attributes
+            ORDER BY score DESC
+            LIMIT $limit
+            
+{'query': '(@group_id:"student-lilymay") (Student | lilymay | s | confidence | topic | Power | Conflict | Ozymandias | themes | increased | from | band | struggling | 0 | band | struggling | 35)', 'limit': 20, 'routing_': 'r', 'edge_uuids': [], 'group_ids': ['student-lilymay']}
+2026-05-03 18:29:21,744 WARNING study_tutor.knowledge.async_write: graphiti write failed
+2026-05-03 18:29:21,763 INFO study_tutor.seed: seeded Lilymay baseline (subjects=0, confidences=0, succeeded_writes=6)

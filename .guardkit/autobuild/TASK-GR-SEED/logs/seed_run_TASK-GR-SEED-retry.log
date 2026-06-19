@@ -1,0 +1,111 @@
+2026-05-04 22:24:45,112 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,115 INFO study_tutor.knowledge.graphiti_client: graphiti client ready in 201ms
+2026-05-04 22:24:45,118 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,120 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,123 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,126 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,128 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,133 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,138 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,138 INFO graphiti_core.driver.falkordb_driver: Index already exists: Attribute 'uuid' is already indexed
+2026-05-04 22:24:45,139 INFO study_tutor.seed: seeding skipped: Lilymay baseline already present
+2026-05-04 22:24:45,139 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: Connection closed by server.
+CREATE INDEX FOR ()-[e:MENTIONS]-() ON (e.uuid, e.group_id)
+{}
+2026-05-04 22:24:45,139 ERROR asyncio: Task exception was never retrieved
+future: <Task finished name='Task-2' coro=<FalkorDriver.build_indices_and_constraints() done, defined at /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/graphiti_core/driver/falkordb_driver.py:300> exception=network:ConnectionError>
+Traceback (most recent call last):
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/graphiti_core/driver/falkordb_driver.py", line 305, in build_indices_and_constraints
+    await self.execute_query(query)
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/graphiti_core/driver/falkordb_driver.py", line 230, in execute_query
+    result = await graph.query(cypher_query_, params)  # type: ignore[reportUnknownArgumentType]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/falkordb/asyncio/graph.py", line 114, in query
+    return await self._query(q, params=params, timeout=timeout, read_only=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/falkordb/asyncio/graph.py", line 84, in _query
+    response = await self.execute_command(*command)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/client.py", line 781, in execute_command
+    result = await conn.retry.call_with_retry(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/retry.py", line 81, in call_with_retry
+    raise error
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/retry.py", line 69, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/client.py", line 722, in _send_command_parse_response
+    return await self.parse_response(conn, command_name, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/client.py", line 823, in parse_response
+    response = await connection.read_response()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/connection.py", line 734, in read_response
+    response = await self._parser.read_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        disable_decoding=disable_decoding
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/_parsers/resp2.py", line 82, in read_response
+    response = await self._read_response(disable_decoding=disable_decoding)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/_parsers/resp2.py", line 90, in _read_response
+    raw = await self._readline()
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/_parsers/base.py", line 561, in _readline
+    raise ConnectionError(SERVER_CLOSED_CONNECTION_ERROR)
+redis.exceptions.ConnectionError: Connection closed by server.
+2026-05-04 22:24:45,142 ERROR graphiti_core.driver.falkordb_driver: Error executing FalkorDB query: Connection closed by server.
+CREATE INDEX FOR ()-[e:RELATES_TO]-() ON (e.uuid, e.group_id, e.name, e.created_at, e.expired_at, e.valid_at, e.invalid_at)
+{}
+2026-05-04 22:24:45,142 ERROR asyncio: Task exception was never retrieved
+future: <Task finished name='Task-4' coro=<FalkorDriver.build_indices_and_constraints() done, defined at /Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/graphiti_core/driver/falkordb_driver.py:300> exception=network:ConnectionError>
+Traceback (most recent call last):
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/graphiti_core/driver/falkordb_driver.py", line 305, in build_indices_and_constraints
+    await self.execute_query(query)
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/graphiti_core/driver/falkordb_driver.py", line 230, in execute_query
+    result = await graph.query(cypher_query_, params)  # type: ignore[reportUnknownArgumentType]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/falkordb/asyncio/graph.py", line 114, in query
+    return await self._query(q, params=params, timeout=timeout, read_only=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/falkordb/asyncio/graph.py", line 84, in _query
+    response = await self.execute_command(*command)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/client.py", line 781, in execute_command
+    result = await conn.retry.call_with_retry(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/retry.py", line 81, in call_with_retry
+    raise error
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/retry.py", line 69, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/client.py", line 722, in _send_command_parse_response
+    return await self.parse_response(conn, command_name, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/client.py", line 823, in parse_response
+    response = await connection.read_response()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/asyncio/connection.py", line 734, in read_response
+    response = await self._parser.read_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        disable_decoding=disable_decoding
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/_parsers/resp2.py", line 82, in read_response
+    response = await self._read_response(disable_decoding=disable_decoding)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/_parsers/resp2.py", line 90, in _read_response
+    raw = await self._readline()
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.venv/lib/python3.14/site-packages/redis/_parsers/base.py", line 561, in _readline
+    raise ConnectionError(SERVER_CLOSED_CONNECTION_ERROR)
+redis.exceptions.ConnectionError: Connection closed by server.

@@ -1,0 +1,48 @@
+[2026-05-03T10:32:10] START TASK-GR-DEMO: task-work implementation
+[2026-05-03T10:33:10] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=task-work implementation, files_changed=0, last_tool=Read
+[2026-05-03T10:34:10] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=task-work implementation, files_changed=0, last_tool=Read
+[2026-05-03T10:35:10] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=task-work implementation, files_changed=1, last_tool=Bash
+[2026-05-03T10:35:53] START TASK-GR-DEMO: specialist:test-orchestrator invocation
+[2026-05-03T10:36:53] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:test-orchestrator invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:37:07] START TASK-GR-DEMO: specialist:code-reviewer invocation
+[2026-05-03T10:38:07] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Read
+[2026-05-03T10:39:07] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:40:07] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:40:43] START TASK-GR-DEMO: task-work implementation
+[2026-05-03T10:41:43] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=task-work implementation, files_changed=1, last_tool=Edit
+[2026-05-03T10:42:43] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=task-work implementation, files_changed=3, last_tool=Bash
+[2026-05-03T10:43:43] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=task-work implementation, files_changed=3, last_tool=Bash
+[2026-05-03T10:44:43] SNAPSHOT TASK-GR-DEMO: elapsed=240s, phase=task-work implementation, files_changed=4, last_tool=Bash
+[2026-05-03T10:44:48] START TASK-GR-DEMO: specialist:test-orchestrator invocation
+[2026-05-03T10:45:48] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:test-orchestrator invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:45:56] START TASK-GR-DEMO: specialist:code-reviewer invocation
+[2026-05-03T10:46:56] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:47:56] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:48:56] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:49:56] SNAPSHOT TASK-GR-DEMO: elapsed=240s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:50:29] START TASK-GR-DEMO: task-work implementation
+[2026-05-03T10:51:29] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=task-work implementation, files_changed=0, last_tool=Bash
+[2026-05-03T10:52:21] START TASK-GR-DEMO: specialist:test-orchestrator invocation
+[2026-05-03T10:53:21] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:test-orchestrator invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:53:38] START TASK-GR-DEMO: specialist:code-reviewer invocation
+[2026-05-03T10:54:38] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:55:38] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:56:38] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T10:57:38] SNAPSHOT TASK-GR-DEMO: elapsed=240s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Read
+[2026-05-03T10:58:12] START TASK-GR-DEMO: task-work implementation
+[2026-05-03T10:59:12] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=task-work implementation, files_changed=0
+[2026-05-03T10:59:42] START TASK-GR-DEMO: specialist:test-orchestrator invocation
+[2026-05-03T11:00:42] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:test-orchestrator invocation, files_changed=0, last_tool=Bash
+[2026-05-03T11:01:01] START TASK-GR-DEMO: specialist:code-reviewer invocation
+[2026-05-03T11:02:01] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T11:03:01] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T11:04:01] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T11:04:16] START TASK-GR-DEMO: task-work implementation
+[2026-05-03T11:05:16] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=task-work implementation, files_changed=0, last_tool=Read
+[2026-05-03T11:06:06] START TASK-GR-DEMO: specialist:test-orchestrator invocation
+[2026-05-03T11:07:06] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:test-orchestrator invocation, files_changed=0, last_tool=Bash
+[2026-05-03T11:07:24] START TASK-GR-DEMO: specialist:code-reviewer invocation
+[2026-05-03T11:08:24] SNAPSHOT TASK-GR-DEMO: elapsed=60s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Bash
+[2026-05-03T11:09:24] SNAPSHOT TASK-GR-DEMO: elapsed=120s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Read
+[2026-05-03T11:10:24] SNAPSHOT TASK-GR-DEMO: elapsed=180s, phase=specialist:code-reviewer invocation, files_changed=0, last_tool=Read
+[2026-05-03T11:10:30] COMPLETE TASK-GR-DEMO: elapsed=2301s, decision=max_turns_exceeded, snapshots=3
