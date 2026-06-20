@@ -303,39 +303,68 @@ Files and queries used to support the findings — for fast re-verification late
 - Live demo evidence: [phase-1-validation.md §"Phase 2 Wave 5 — Operator handoff"](../research/ideas/phase-1-validation.md#L236).
 - Demo task: [TASK-GR-DEMO](../../tasks/completed/TASK-GR-DEMO/TASK-GR-DEMO.md).
 
-### RAG corpus
-- On-disk corpus: [domains/gcse-english/sources/primary_text/](../../domains/gcse-english/sources/primary_text/) —
-  `macbeth.md`, `an_inspector_calls.md`, `power_and_conflict_poems.md`.
-- ChromaDB persist dir: `data/chroma/` — `chroma.sqlite3` + index
-  folder `ad796eac-37cf-4c4d-a7a2-b2e0e3fc2ac5/`.
-- Primary-text sidecar: `data/chroma/.primary_text_index` — three lines,
-  one per `text_name`.
-- Chunk count check:
-  `sqlite3 data/chroma/chroma.sqlite3 "SELECT string_value, COUNT(*) FROM embedding_metadata WHERE key='text_name' GROUP BY string_value;"`
-  → 274 / 253 / 54.
-- Anchor coverage check (query above) → 0 / 0 / 0.
-- Sample raw chunk (Macbeth chunk 0):
-  `sqlite3 data/chroma/chroma.sqlite3 "SELECT cj.string_value FROM embedding_metadata tn JOIN embedding_metadata cj ON tn.id=cj.id WHERE tn.key='text_name' AND tn.string_value='macbeth' AND cj.key='chunk_json' LIMIT 1;"`
-  — confirms docling-flattened heading structure.
-- Runbook (last verified 2026-05-08): [RUNBOOK-rag-ingest-and-smoke.md](../runbooks/RUNBOOK-rag-ingest-and-smoke.md).
-- Unticked live smoke spec: [TASK-RAG-003](../../tasks/backlog/TASK-RAG-003-end-to-end-rag-smoke-session.md).
-
-### Submission write-up
-- Stub doc: [technical-writeup.md](./technical-writeup.md) — every
-  section a one-line placeholder under `>` blockquote.
-
 ---
 
-## Open questions for next session
+## Player–Coach harness — how it actually runs
 
-- Does Claude Desktop's calling Claude reliably consume `plan_summary`
-  in practice, or does it ignore the response shape? (Determines how
-  much of the "personalisation" experience survives without the
-  Finding-1 fix.)
-- Can docling be re-invoked with a flag that preserves Act/Scene
-  heading structure as proper `#`/`##` headings? (Determines whether
-  Finding 2 is "patch the inferrer" or "re-ingest with better
-  upstream output".)
-- Is the Coach adapter also memory-blind, or does it receive
-  `focus_aos` for AO-coverage enforcement? (Worth a five-minute
-  read of `llm_coach_adapter.py` before drafting §11 Evaluation.)
+> **Where to look:** [src/study_tutor/tutoring/orchestrator.py](../../src/study_tutor/tutoring/orchestrator.py), the two adapters in [src/study_tutor/tutoring/adapters/](../../src/study_tutor/tutoring/adapters/), and the prompts under [roles/tutor/prompts/](../../roles/tutor/prompts/). Diagram: [diagrams/player-coach-loop.svg](diagrams/player-coach-loop.svg).
+
+### The two roles
+
+- **Player** — the tutor that actually talks to the learner. Production wiring is [LLMPlayerAdapter](../../src/study_tutor/tutoring/adapters/llm_player_adapter.py), backed by the fine-tuned Gemma 4 26B MoE model via `LLMClient`. System prompt: [roles/tutor/prompts/player.md](../../roles/tutor/prompts/player.md).
+- **Coach** — an evaluator the learner *never sees*. Scores the Player's draft against a 6-criterion rubric. Production wiring is [LLMCoachAdapter](../../src/study_tutor/tutoring/adapters/llm_coach_adapter.py), backed by a separate Coach model resolved via `AGENT_MODELS__COACH_MODEL`. Prompt: [roles/tutor/prompts/coach.md](../../roles/tutor/prompts/coach.md). Rubric: [roles/tutor/criteria/definitions.yaml](../../roles/tutor/criteria/definitions.yaml).
+
+Both adapters are defined as structural `Protocol`s (`PlayerLike`, `CoachLike` in `orchestrator.py`) so production wiring and the test suite plug in the same way.
+
+### The per-turn loop
+
+[`PlayerCoachOrchestrator.run_turn`](../../src/study_tutor/tutoring/orchestrator.py) executes one learner turn end-to-end:
+
+1. **Quote-verifier** runs first (FEAT-PH1-004 RAG check against the primary text).
+2. **Player.respond** → draft tutoring reply.
+3. **Coach-handover** (TASK-PRV-006): the quote-verifier rewrites any unverified quotations in the Player draft before it reaches the Coach. Verifier metadata (`verifier_exception`, retrieval skip reasons) rides alongside.
+4. **Coach.evaluate** → returns a `CoachVerdict` with `decision = accept | revise`, a `weighted_total` score, and structured `RubricFeedback` (one entry per criterion).
+5. If **`decision == "accept"`** → return immediately. This is the **stable-turn guarantee**: once a draft is accepted, no further revision can replace it.
+6. If **`decision == "revise"`** → call **`Player.revise`** with the verdict's `RubricFeedback`, re-run handover + Coach, repeat.
+7. Hard cap: **`MAX_REVISION_ATTEMPTS = 3`**. On exhaustion, the orchestrator releases the **lowest-scoring** attempt seen, not the latest — that preserves the diagnostic signal "the system genuinely tried and these were the outputs" rather than masking a regression where revisions get progressively worse.
+8. **Fallbacks:**
+   - Coach unreachable → return the Player's unevaluated reply with the turn flagged for session-end review; no revision attempts made.
+   - Player unavailable mid-revision → release the last successful attempt with a provider-unavailable flag.
+   - Player unavailable on the first attempt → return an empty `TurnResult` with `decision=fallback, attempts=0` so the MCP boundary can render a graceful retry.
+
+### The load-bearing security invariant
+
+The Coach can and does produce free-text reasoning, but **none of it ever reaches the learner or even the Player on revision**. The only thing the Player sees on revision is a list of structured pointers:
+
+```
+- criterion_id: ao1_evidence; target_score: 0.70
+- criterion_id: socratic_quality; target_score: 0.80
+```
+
+That assembly is `_assemble_revise_prompt` in [llm_player_adapter.py](../../src/study_tutor/tutoring/adapters/llm_player_adapter.py). `RubricFeedback.suggested_focus` deliberately exists in the schema but is *not* fed into the prompt — adding it would re-open the prose-injection channel that TASK-DTL-001 specifically closed.
+
+`validate_loop_configuration` enforces the invariant at session start: if anything would route Coach prose into the learner path, or if the revision input channel is anything other than `rubric_feedback`, the session **refuses to start**. That refusal is a deployment error, not a runtime fallback — it propagates as `OrchestratorConfigurationError`.
+
+### Concurrency model
+
+The orchestrator is **constructed fresh per turn** and holds **no session-scoped mutable state**. Two concurrent sessions get two independent `PlayerCoachOrchestrator` instances on the shared event loop; there is no class-level container into which one session's Coach observations could leak into another's. The adapters follow the same rule — system prompts are cached at construction, but `LLMClient` is built per-call so an env-var rotation between turns is observed without restarting the server.
+
+### Observability — what every turn emits
+
+Each turn returns a frozen `TurnResult` carrying:
+
+- `response` — the learner-facing reply (never includes Coach text)
+- `decision` — `accept` | `exhausted` | `fallback`
+- `verdict` — the Coach verdict for the released response (or `None` on Coach-unreachable fallback)
+- `attempts` — how many Player invocations were made (1–3)
+- `flagged_for_review` + `flag_reason` — set on exhaustion, fallback, or over-budget latency
+- `duration_seconds` — wall-clock latency; turns over `LATENCY_BUDGET_SECONDS = 30.0` are flagged but still returned
+- `verifier_metadata` — the quote-verifier signal for the released response (introduced TASK-PRV-006)
+
+An optional `on_flag` callback fires whenever a turn is flagged so the session-end summary ([tutoring/session_end.py](../../src/study_tutor/tutoring/session_end.py)) can roll up review markers.
+
+### One-sentence pitch for the video
+
+> "There are two LLMs behind every reply: a Player that drafts the tutor's response, and a Coach that silently grades it against a six-criterion rubric. If the Coach isn't satisfied, the Player gets up to three structured revision attempts — but the Coach's own words never reach the learner, only its scores."
+
+
