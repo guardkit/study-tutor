@@ -109,13 +109,16 @@ Each is followed by `/feature-plan "<title>" --context features/<slug>/<slug>_su
   --context docs/design/events-schema.yaml
 
 # ── W2 ─────────────────────────────────────────────────────────────────────
-/feature-spec "Student Model Postgres Reads — SQL read helpers behind the existing _read_student_partition seam (get_student_state, per-topic confidence distribution); preserve read-timeout, stale-fact flag, and client=None graceful degradation; wire the session planner's confidence-distribution read" \
+/feature-spec "Student Model Postgres Reads — implement the store-backed read helpers (reads.get_student_state, load_planner_inputs) + the recommend_topics ranking lifted from queries.py; repoint queries.py callers at store.reads and delete the graphiti _read_student_partition seam; preserve graceful degradation (no store / read failure -> empty, never raises)" \
+  --context src/study_tutor/knowledge/store/reads.py \
+  --context src/study_tutor/knowledge/store/provider.py \
+  --context src/study_tutor/knowledge/store/port.py \
   --context docs/research/ideas/student-model-postgres-migration-scope-and-build-plan.md \
   --context docs/architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md \
   --context src/study_tutor/knowledge/queries.py \
   --context src/study_tutor/knowledge/student_model.py \
-  --context src/study_tutor/planner/pipeline.py \
-  --context src/study_tutor/planner/rules.py
+  --context src/study_tutor/planner/protocols.py \
+  --context src/study_tutor/planner/pipeline.py
 
 /feature-spec "Student-keyed Session Persistence + Cross-Device Resume — durable session records keyed to student, resumable across devices (phone<->robot), session contract (start/list/resume/turn/status/end) behind the MCP + HTTP/WS adapter; satisfies the FEAT-1773 gate the mobile client depends on" \
   --context docs/design/contracts/API-session-cross-device.md \
