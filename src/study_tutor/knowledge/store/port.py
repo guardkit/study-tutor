@@ -134,9 +134,15 @@ class StudentStore(Protocol):
         subject: str,
         topic: str | None = None,
         resume_if_active: bool = False,
-    ) -> SessionRecord:
-        """Create a session (or, when ``resume_if_active`` and an ``active``
-        session for ``(student_id, subject)`` exists, return that one)."""
+    ) -> tuple[SessionRecord, bool]:
+        """Create a session, or resume the active one.
+
+        Returns ``(record, created)`` — ``created=True`` for a brand-new
+        session, ``False`` when ``resume_if_active`` matched an existing
+        ``active`` session for ``(student_id, subject)`` and that one is
+        returned instead. The boolean is a transient signal (not a column on
+        ``SessionRecord``) so the service populates the contract's ``resumed``
+        field without a race-prone list-then-create pre-check."""
         ...
 
     async def get_session(self, session_id: str) -> SessionRecord | None:

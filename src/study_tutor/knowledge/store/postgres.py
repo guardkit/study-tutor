@@ -114,7 +114,7 @@ class PostgresStudentStore:
         subject: str,
         topic: str | None = None,
         resume_if_active: bool = False,
-    ) -> SessionRecord:
+    ) -> tuple[SessionRecord, bool]:
         raise NotImplementedError(_NOT_IMPLEMENTED)
 
     async def get_session(self, session_id: str) -> SessionRecord | None:

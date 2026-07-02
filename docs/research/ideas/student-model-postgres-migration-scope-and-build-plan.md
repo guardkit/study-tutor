@@ -122,11 +122,15 @@ Each is followed by `/feature-plan "<title>" --context features/<slug>/<slug>_su
 
 /feature-spec "Student-keyed Session Persistence + Cross-Device Resume — durable session records keyed to student, resumable across devices (phone<->robot), session contract (start/list/resume/turn/status/end) behind the MCP + HTTP/WS adapter; satisfies the FEAT-1773 gate the mobile client depends on" \
   --context docs/design/contracts/API-session-cross-device.md \
+  --context src/study_tutor/session/service.py \
+  --context src/study_tutor/session/errors.py \
+  --context src/study_tutor/session/provider.py \
   --context docs/research/ideas/student-model-postgres-migration-scope-and-build-plan.md \
   --context docs/architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md \
   --context docs/handoffs/study-tutor-mobile-voice-conversation-starter.md \
   --context docs/design/contracts/API-tutoring.md \
   --context docs/design/models/DM-tutoring.md \
+  --context src/study_tutor/mcp/adapter.py \
   --context src/study_tutor/session/tutor_session.py \
   --context .guardkit/features/FEAT-1773.yaml
 
