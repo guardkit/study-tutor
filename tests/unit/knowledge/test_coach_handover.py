@@ -232,7 +232,9 @@ async def test_orchestrator_passes_rewritten_response_to_coach() -> None:
 
     corpus = _macbeth_corpus()
 
-    def handover(response: str, session_state: Any) -> tuple[str, VerifierMetadata]:
+    def handover(
+        response: str, learner_message: str, session_state: Any
+    ) -> tuple[str, VerifierMetadata]:
         return apply_quote_verification(
             response, corpus, session_text_name="Macbeth"
         )
@@ -285,7 +287,9 @@ async def test_orchestrator_forwards_retrieval_skipped_reason_in_analysis_mode()
     """
     raw_response = "An Inspector Calls explores collective responsibility."
 
-    def handover(response: str, session_state: Any) -> tuple[str, VerifierMetadata]:
+    def handover(
+        response: str, learner_message: str, session_state: Any
+    ) -> tuple[str, VerifierMetadata]:
         return apply_quote_verification(
             response,
             corpus_chunks=[],  # AnalysisMode: no primary corpus
@@ -334,7 +338,7 @@ async def test_orchestrator_continues_when_verifier_raises(monkeypatch) -> None:
     raw_response = 'A reply with "some quoted span here please"'
 
     def handover_using_real_apply(
-        response: str, session_state: Any
+        response: str, learner_message: str, session_state: Any
     ) -> tuple[str, VerifierMetadata]:
         return apply_quote_verification(
             response, _macbeth_corpus(), session_text_name="Macbeth"
@@ -417,7 +421,7 @@ async def test_orchestrator_runs_handover_on_each_revision() -> None:
     revisions_made: list[str] = []
 
     def handover(
-        response: str, session_state: Any
+        response: str, learner_message: str, session_state: Any
     ) -> tuple[str, VerifierMetadata]:
         # Tag each metadata with the revision count so the test can
         # tell which attempt's metadata was preserved.

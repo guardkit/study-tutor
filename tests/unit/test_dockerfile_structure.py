@@ -66,6 +66,21 @@ def dockerfile_lines(dockerfile_text: str) -> list[str]:
     return dockerfile_text.splitlines()
 
 
+@pytest.fixture(scope="module")
+def dockerfile_directives(dockerfile_lines: list[str]) -> str:
+    """Dockerfile text with comment-only lines removed.
+
+    Structural checks that scan for directive substrings (``uv sync``,
+    ``pip install``) must not match prose in *comments* — e.g. the line
+    that mentions ``uv sync`` while explaining why git is installed. Only
+    full-line comments are stripped; directives with trailing inline
+    comments are preserved.
+    """
+    return "\n".join(
+        line for line in dockerfile_lines if not line.lstrip().startswith("#")
+    )
+
+
 # ---------------------------------------------------------------------------
 # Existence and base-image
 # ---------------------------------------------------------------------------
@@ -163,15 +178,15 @@ def test_nats_core_lands_at_sibling_path(dockerfile_text: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_uv_is_installed_before_sync(dockerfile_text: str) -> None:
+def test_uv_is_installed_before_sync(dockerfile_directives: str) -> None:
     """uv must be installed before any `uv sync` invocation.
 
     pip install is the bootstrap path; once uv is present, all dependency
     resolution flows through it because pyproject.toml's path source for
     nats-core is a uv-only feature.
     """
-    pip_install_uv = dockerfile_text.find("pip install --no-cache-dir uv")
-    first_uv_sync = dockerfile_text.find("uv sync")
+    pip_install_uv = dockerfile_directives.find("pip install --no-cache-dir uv")
+    first_uv_sync = dockerfile_directives.find("uv sync")
     assert pip_install_uv != -1, (
         "Expected `pip install --no-cache-dir uv` to bootstrap uv before "
         "the first `uv sync` invocation."
@@ -219,14 +234,14 @@ def test_dependency_layer_precedes_source_layer(dockerfile_lines: list[str]) -> 
     )
 
 
-def test_uv_sync_uses_frozen_no_dev(dockerfile_text: str) -> None:
+def test_uv_sync_uses_frozen_no_dev(dockerfile_directives: str) -> None:
     """`uv sync` invocations must use --frozen --no-dev.
 
     --frozen forbids resolving against PyPI (use the locked versions
     only); --no-dev keeps test-only deps out of the runtime image. The
     task body explicitly mandates these flags.
     """
-    sync_lines = re.findall(r"uv sync[^\n]*", dockerfile_text)
+    sync_lines = re.findall(r"uv sync[^\n]*", dockerfile_directives)
     assert sync_lines, "Expected at least one `uv sync` directive."
     for line in sync_lines:
         assert "--frozen" in line, (
@@ -237,14 +252,14 @@ def test_uv_sync_uses_frozen_no_dev(dockerfile_text: str) -> None:
         )
 
 
-def test_first_uv_sync_skips_project_install(dockerfile_text: str) -> None:
+def test_first_uv_sync_skips_project_install(dockerfile_directives: str) -> None:
     """The first uv sync (deps-only layer) must use --no-install-project.
 
     Without --no-install-project, uv tries to install the study-tutor
     package itself, but src/ isn't in the image yet at that point and
     the build fails. This is the standard uv-in-Docker layering pattern.
     """
-    sync_lines = re.findall(r"uv sync[^\n]*", dockerfile_text)
+    sync_lines = re.findall(r"uv sync[^\n]*", dockerfile_directives)
     assert sync_lines, "Expected at least one `uv sync` directive."
     first = sync_lines[0]
     assert "--no-install-project" in first, (

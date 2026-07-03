@@ -282,8 +282,12 @@ def test_cross_encoder_sentinel_raises_on_arbitrary_method_name():
     from study_tutor.knowledge.graphiti_client import _build_cross_encoder_sentinel
 
     sentinel = _build_cross_encoder_sentinel()
+    # ``rank`` is a concrete override (required so the sentinel is instantiable
+    # against graphiti-core's CrossEncoderClient ABC); it raises on *invocation*,
+    # not on bare attribute access. The opaque contract under test here is that
+    # any *undefined* method/attribute name raises on access via ``__getattr__``.
     with pytest.raises(RuntimeError, match="DECISION-DF-001"):
-        sentinel.rank
+        sentinel.score
     with pytest.raises(RuntimeError, match="DECISION-DF-001"):
         sentinel.some_attribute_that_does_not_exist
 

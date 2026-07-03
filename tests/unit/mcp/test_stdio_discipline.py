@@ -28,6 +28,11 @@ def _spawn_serve() -> subprocess.Popen[bytes]:
     env = os.environ.copy()
     # Keep Phase-0 default; don't let operator-shell env leak a surprise provider.
     env.setdefault("AGENT_MODELS__REASONING_MODEL", "local")
+    # FEAT-6CC5 / D-COACH-05: COACH_MODEL is a mandatory, no-fallback provider
+    # that must DIFFER from the reasoning model (D3 two-provider invariant,
+    # enforced at boot by validate_coach_config). Without it, `serve` fail-fasts
+    # (rc=1) before ever reaching the idle stdio loop this test observes.
+    env.setdefault("AGENT_MODELS__COACH_MODEL", "local-coach")
     env["PYTHONUNBUFFERED"] = "1"
 
     return subprocess.Popen(

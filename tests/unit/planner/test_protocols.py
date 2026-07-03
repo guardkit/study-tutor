@@ -11,6 +11,7 @@ import dataclasses
 import random
 import shutil
 import subprocess
+import sys
 import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
@@ -156,7 +157,18 @@ def test_mypy_strict_accepts_structurally_conforming_rule(
     )
 
     completed = subprocess.run(
-        ["mypy", "--strict", "--no-incremental", str(sample)],
+        [
+            "mypy",
+            "--strict",
+            "--no-incremental",
+            # Resolve imports against the interpreter running the tests (the
+            # project .venv, which carries the editable study_tutor install +
+            # py.typed). The `mypy` on PATH may be a global install whose own
+            # interpreter cannot see the src-layout editable package.
+            "--python-executable",
+            sys.executable,
+            str(sample),
+        ],
         capture_output=True,
         text=True,
         check=False,
