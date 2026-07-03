@@ -1,0 +1,101 @@
+id: FEAT-SMP-001
+name: Student Model Postgres Store
+description: 'FEAT-SMP-001 / W1: write path + first Alembic migration for the study-tutor-owned
+  Postgres StudentStore (ADR-ARCH-023). Fills PostgresStudentStore ping + record_session_completion/record_misconception/apply_confidence_update
+  and encodes schema_reference.sql. SQLAlchemy 2.0 async + asyncpg + Alembic. Reads
+  (SMP-002) and session CRUD (SMP-003) out of scope.'
+created: '2026-07-03T16:24:17.898832'
+status: planned
+complexity: 6
+estimated_tasks: 7
+tasks:
+- id: TASK-SMP-01
+  name: Add deps + async Alembic scaffolding
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-01-deps-and-alembic-scaffold.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-SMP-02
+  name: First Alembic migration (StudentStore schema, G7)
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-02-first-migration-schema.md
+  complexity: 5
+  dependencies:
+  - TASK-SMP-01
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-SMP-03
+  name: Async engine/pool provider + DI seam + ping
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-03-engine-provider-ping.md
+  complexity: 4
+  dependencies:
+  - TASK-SMP-01
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMP-04
+  name: apply_confidence_update F2 (upsert + derived band)
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-04-apply-confidence-update.md
+  complexity: 4
+  dependencies:
+  - TASK-SMP-02
+  - TASK-SMP-03
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMP-05
+  name: record_misconception F1 (insert + text hygiene)
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-05-record-misconception.md
+  complexity: 4
+  dependencies:
+  - TASK-SMP-02
+  - TASK-SMP-03
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMP-06
+  name: record_session_completion (transactional idempotent write)
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-06-record-session-completion.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP-04
+  - TASK-SMP-05
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-SMP-07
+  name: BDD step defs + fake store + ephemeral-PG integration tests
+  file_path: tasks/backlog/student-model-postgres-store/TASK-SMP-07-bdd-steps-fake-store-integration.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP-06
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+orchestration:
+  parallel_groups:
+  - - TASK-SMP-01
+  - - TASK-SMP-02
+    - TASK-SMP-03
+  - - TASK-SMP-04
+    - TASK-SMP-05
+  - - TASK-SMP-06
+  - - TASK-SMP-07
+  estimated_duration_minutes: 484
+  recommended_parallel: 2
+smoke_gates:
+  after_wave: [2, 3, 4]
+  command: |
+    set -e
+    pytest tests/unit -q
+  expected_exit: 0
+  timeout: 300

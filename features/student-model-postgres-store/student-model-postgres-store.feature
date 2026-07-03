@@ -25,6 +25,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
   # ==========================================================================
 
   # Why: G7 gate — the first Alembic migration must stand up the whole student-model schema on an empty database
+  @task:TASK-SMP-02
   @key-example @smoke @migration
   Scenario: Applying the student-model migration to an empty database creates the learner-state schema
     Given the instance has no student-model schema yet
@@ -35,6 +36,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [RESOLVED ASSUM-002] xp_awarded is persisted on the session row — session.xp_awarded added to schema_reference.sql; cumulative total_xp/level/streak deferred to the Phase 2 engine.
   # Why: The headline behaviour — session-end is now one synchronous transactional write (ADR-ARCH-023 D2), replacing fire-and-forget F1/F2/F3
+  @task:TASK-SMP-06
   @key-example @smoke @write-path @session-end
   Scenario: Recording a completed session persists its XP, confidence updates, and misconceptions together
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -47,6 +49,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And the write should complete synchronously within the caller's flow
 
   # Why: F1 — a single Coach-observed misconception, now written synchronously (ms-scale) rather than dispatched fire-and-forget
+  @task:TASK-SMP-05
   @key-example @write-path
   Scenario: Recording an observed misconception attaches it to the learner and topic synchronously
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -56,6 +59,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [RESOLVED ASSUM-001] Bands reconciled to 40/60/80 (gamification §6.1 + hackathon §5.2); confidence_band_for updated. 70 percent is "secure" under the new bands.
   # Why: F2 — persist one resolved topic-confidence value; the band is derived at write time via confidence_band_for
+  @task:TASK-SMP-04
   @key-example @write-path
   Scenario: Applying a confidence update stores the resolved percentage and derives its band
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -65,6 +69,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And its last-revised time should be stamped at the update
 
   # Why: A retried session-end must not double-award — record_session_completion is idempotent on session_id (port contract)
+  @task:TASK-SMP-06
   @key-example @smoke @write-path @idempotency
   Scenario: Re-delivering the same completed session records it only once
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -74,6 +79,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And the learner's persisted state should be unchanged by the repeat
 
   # Why: Boot smoke — the orchestrator checks store reachability at startup (mirrors the ChromaDB collection check)
+  @task:TASK-SMP-03
   @key-example @smoke @health
   Scenario: The store reports healthy when the database is reachable
     Given the FEAT-SMP-001 migration has been applied
@@ -86,6 +92,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [RESOLVED ASSUM-001] Band thresholds reconciled to 40/60/80 (gamification §6.1; hackathon §5.2 awards Mastery at 80%). confidence_band_for updated from 40/70/90; the 80 boundary gates mastery achievements.
   # Why: Band derivation is persisted and gates mastery achievements — the four bands must separate at the exact boundaries
+  @task:TASK-SMP-04
   @boundary @confidence
   Scenario Outline: A resolved confidence percentage is stored with the expected band
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -105,6 +112,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=high] percentage is an integer in [0,100] (schema CHECK + Pydantic ge=0 le=100 + confidence_band_for raises outside range).
   # Why: Just-outside boundary — a percentage outside [0, 100] is invalid input and must be rejected, not stored
+  @task:TASK-SMP-04
   @boundary @negative @confidence
   Scenario Outline: A confidence update outside the valid percentage range is rejected
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -119,6 +127,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=high] year_group constrained to 7–13 inclusive (schema CHECK BETWEEN 7 AND 13 + Pydantic ge=7 le=13).
   # Why: Boundary on the learner's year group — the schema constrains it to UK secondary years 7–13
+  @task:TASK-SMP-02
   @boundary @negative
   Scenario Outline: A learner year group is accepted only within the secondary-school range
     Given the FEAT-SMP-001 migration has been applied
@@ -134,6 +143,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=medium] The 500-character misconception cap carries over from the retired Graphiti write helper as row-size hygiene (there is no longer an extraction LLM to defend). See ASSUM-004.
   # Why: Boundary on stored misconception text — content at and beyond the cap
+  @task:TASK-SMP-05
   @boundary
   Scenario Outline: Misconception text is stored up to the length cap and truncated beyond it
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -146,6 +156,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
       | 501    |
 
   # Why: Just-inside boundary — a completed session with no confidence changes and no misconceptions is still a valid recorded completion
+  @task:TASK-SMP-06
   @boundary
   Scenario: Recording a completed session with no confidence updates and no misconceptions still records the session
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -159,6 +170,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=low] A write for a non-existent learner is rejected (child rows are FK-keyed to student). Whether W1 auto-creates the learner instead is an open question — see ASSUM-003.
   # Why: Referential integrity — learner-state writes must not create orphaned rows for an unknown learner
+  @task:TASK-SMP-04
   @negative
   Scenario: Recording learner state for an unknown learner is rejected
     Given the FEAT-SMP-001 migration has been applied and no learner "ghost" exists
@@ -167,6 +179,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And no confidence record should be created for "ghost"
 
   # Why: Payload validation — a misconception with no topic or no text is meaningless and must not be persisted
+  @task:TASK-SMP-05
   @negative
   Scenario Outline: Recording a misconception missing its topic or its text is rejected
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -181,6 +194,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=medium] Unlike the retired fire-and-forget writer, a synchronous write failure surfaces to the caller (the session-end transaction fails); reads (FEAT-SMP-002) keep degrading gracefully. See ASSUM-008.
   # Why: Synchronous writes replace log-only failure — a failed session-end write must be observable, not silently dropped
+  @task:TASK-SMP-06
   @negative
   Scenario: A session-completion write that cannot commit surfaces the failure instead of silently dropping it
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -194,6 +208,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
   # ==========================================================================
 
   # Why: Atomicity — the session-end write is one transaction, so a mid-write failure must leave nothing behind
+  @task:TASK-SMP-06
   @edge-case @atomicity
   Scenario: A partial failure while recording a completed session rolls back every change
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -203,6 +218,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And the learner's prior state should remain intact
 
   # Why: Concurrency — the same session completion delivered twice at once must still be recorded exactly once
+  @task:TASK-SMP-06
   @edge-case @concurrency @idempotency
   Scenario: Two concurrent deliveries of the same session completion are recorded once
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -211,6 +227,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And only one set of the session's records should exist
 
   # Why: Concurrency — confidence is an upsert keyed by (learner, topic); concurrent updates must resolve deterministically
+  @task:TASK-SMP-04
   @edge-case @concurrency
   Scenario: Concurrent confidence updates for the same topic resolve to a single stored value
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -219,6 +236,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And its band should match the stored percentage
 
   # Why: Migration hygiene — applying the migration when already at head is a no-op, so restarts are safe
+  @task:TASK-SMP-02
   @edge-case @migration
   Scenario: Re-applying the migration when already at the latest revision changes nothing
     Given the FEAT-SMP-001 migration has already been applied to its latest revision
@@ -228,6 +246,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=medium] The first Alembic migration is reversible (down path returns to base). See ASSUM-010.
   # Why: A reversible migration lets the store roll back cleanly — the down path must return to an empty schema
+  @task:TASK-SMP-02
   @edge-case @migration
   Scenario: Reversing the migration returns the database to an empty student-model schema
     Given the FEAT-SMP-001 migration has been applied to its latest revision
@@ -236,6 +255,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=low] With no extraction LLM in the write path, injection-pattern rejection is dropped; the text is stored as opaque data. See ASSUM-005.
   # Why: Misconception text is attacker-influenced Coach output; in a plain store it is inert data, never a directive
+  @task:TASK-SMP-05
   @edge-case @security
   Scenario: A misconception containing instruction-like text is stored as opaque content
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -244,6 +264,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And no confidence band for the learner should change as a result
 
   # Why: A baseline confidence carries the never-revised sentinel; the first real update must replace it with the actual revision time
+  @task:TASK-SMP-04
   @edge-case
   Scenario: The first real confidence update overwrites the never-revised baseline timestamp
     Given the FEAT-SMP-001 migration has been applied and Lilymay has a baseline confidence on "Macbeth Act 1" that has never been revised
@@ -255,6 +276,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
   # ==========================================================================
 
   # Why: A store holding a minor's data must treat all learner-supplied identifiers as literal data — parameterised writes, never interpolation
+  @task:TASK-SMP-04
   @edge-case @security
   Scenario: A topic name containing database-control characters is stored as literal text
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -264,6 +286,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=medium] Control/null characters in misconception text are neutralised on write (carried over from the retired sanitiser). See ASSUM-007.
   # Why: Coach output can contain control characters; they must not corrupt the stored row or the text field
+  @task:TASK-SMP-05
   @edge-case @security
   Scenario: Misconception text containing null and control characters is stored without corrupting the record
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -273,6 +296,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=low] record_misconception (F1) is append-only in W1 — the misconception table has no natural key, so identical standalone observations are stored as separate rows; only record_session_completion is idempotent. Deduplication is deferred. See ASSUM-006.
   # Why: Only record_session_completion is contractually idempotent; the append-only behaviour of standalone F1 must be explicit so callers do not assume dedup
+  @task:TASK-SMP-05
   @edge-case @idempotency @known-gap
   Scenario: A replayed standalone misconception is appended, not deduplicated, in W1
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -282,6 +306,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And callers must not rely on standalone misconception recording being idempotent
 
   # Why: Atomicity under bad input — one invalid value anywhere in the session batch must fail the whole write, not persist a partial session
+  @task:TASK-SMP-06
   @edge-case @atomicity @data-integrity
   Scenario: A session completion whose confidence batch contains an invalid percentage records nothing
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -292,6 +317,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
 
   # [ASSUMPTION: confidence=high] All learner-state timestamps are timezone-aware UTC (schema TIMESTAMPTZ; student_model uses timezone.utc).
   # Why: All learner-state timestamps are timezone-aware UTC so cross-device reads and staleness checks are unambiguous
+  @task:TASK-SMP-04
   @edge-case @data-integrity
   Scenario: Learner-state timestamps are stored and returned in UTC regardless of the caller's timezone
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -300,6 +326,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And reading it back should yield a timezone-aware UTC value
 
   # Why: A synchronous write must fail fast when the store is unreachable, without hanging the caller or leaving partial state
+  @task:TASK-SMP-06
   @edge-case @integration-boundary
   Scenario: A write attempted while the database is unreachable fails fast and leaves prior state intact
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
@@ -309,6 +336,7 @@ Feature: Student Model Postgres Store — synchronous transactional learner-stat
     And the learner's previously persisted state should be unchanged
 
   # Why: A dropped connection mid-transaction must abort the transaction, never leave a half-written session
+  @task:TASK-SMP-06
   @edge-case @integration-boundary @atomicity
   Scenario: A connection dropped mid-transaction leaves no partial session recorded
     Given the FEAT-SMP-001 migration has been applied and Lilymay exists in the store
