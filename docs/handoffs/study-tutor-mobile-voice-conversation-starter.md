@@ -29,7 +29,7 @@ A voice-first mobile client for the study-tutor, sharing the Reachy robot's voic
 | D2 | Why Flutter | (a) **audio-I/O maturity** — real-time mic streaming, low-latency playback, echo cancellation, VAD are the riskiest surface in a voice-first app and Flutter's plugin ecosystem is more mature; (b) **lower-hallucination substrate** for AI-assisted build — KMP/CMP is still a higher-risk domain for confident-but-wrong model output (thin, fast-moving corpus around exactly the target/library boundaries); (c) **web is a bonus** and Flutter's web target is further along than CMP's beta |
 | D3 | Accepted costs of D1 | Gives up Kotlin-domain reuse and the *cleanest* on-device-Gemma path (still doable via the younger LiteRT-LM Flutter binding — phase 2) |
 | D4 | Client role | **Thin real-time client.** Voice + tutor LLM live on the GB10; the phone streams audio, it does **not** run the model on-device (MVP) |
-| D5 | Voice backend | The **same GB10 endpoints as the Reachy bridge** — Parakeet STT (:9100) + Kokoro TTS (:9200). Single source of truth for both clients |
+| D5 | Voice backend | The **same GB10 endpoints as the Reachy bridge** — STT (:9100) + Kokoro TTS (:9200). Single source of truth for both clients. STT model pinned to `nemotron-speech-streaming-en-0.6b` (cache-aware streaming) by [ADR-ARCH-024](../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) — multilingual/French deferred there |
 | D6 | Voice path | phone → WebSocket → STT → study-tutor `turn` → TTS → stream back. **No MCP in the loop** |
 | D7 | Interface to study-tutor | The app hits study-tutor's **HTTP/WS adapter directly** (per ADR-FLEET-003) — not MCP, not via jarvis |
 | D8 | Session model | Sessions keyed to the **student**, resumable across devices; both clients authenticate as the same student. This is what enables phone ↔ robot pickup |
@@ -42,7 +42,7 @@ A voice-first mobile client for the study-tutor, sharing the Reachy robot's voic
 | Gate | What | Why it blocks |
 |---|---|---|
 | **FEAT-1773** | study-tutor student persistence layer (Pydantic entities, async write-back, query helpers) | **Cross-device pickup is impossible without it** — nothing to resume. This is the feature the real user actually asked for. Already gates the session planner (FEAT-PH1-002) and Player-Coach loop (FEAT-PH1-003) |
-| **GB10 voice endpoints** | Parakeet :9100 / Kokoro :9200 | Don't exist yet — ADR-POC-015 + `RUNBOOK-gb10-voice-endpoints.md` written, not provisioned. Gate FEAT-POC-006. Build **once** as single source of truth, ideally behind a streaming/Realtime-shaped interface so the Reachy/Pollen patterns and the phone share transport. Building them **also unblocks the robot's local-voice migration** |
+| **GB10 voice endpoints** | STT :9100 (`nemotron-speech-streaming-en-0.6b`, ADR-ARCH-024) / Kokoro :9200 | Don't exist yet — ADR-POC-015 + `RUNBOOK-gb10-voice-endpoints.md` written, not provisioned. Gate FEAT-POC-006. Build **once** as single source of truth, ideally behind a streaming/Realtime-shaped interface so the Reachy/Pollen patterns and the phone share transport. Building them **also unblocks the robot's local-voice migration** |
 
 ## Sequencing
 
@@ -71,7 +71,7 @@ This slice earns its keep as **evidence of the serving spine**, not as a compone
 ## Open questions for planning to resolve
 
 1. **Web app scope** — authenticated student tool only, or also a public-facing site? Changes little for Flutter (web is a bonus), but decides whether any public/SEO surface is needed — which would be plain HTML, done separately.
-2. **Voice transport shape** — a single Realtime-style conversation WebSocket vs separate STT/TTS endpoints. Decide when building the GB10 endpoints.
+2. **Voice transport shape** — a single Realtime-style conversation WebSocket vs separate STT/TTS endpoints. Decide when building the GB10 endpoints. *(The STT-model half of this question is resolved by [ADR-ARCH-024](../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md); only the transport shape remains open.)*
 3. **Interaction mode** — tap-to-talk vs open-mic / barge-in. Tap-to-talk is simpler, acceptable for a student app, and substantially narrows the acoustic-echo problem. **Recommended MVP default: tap-to-talk.**
 4. **Session-contract detail** — the exact HTTP/WS shape mirroring `start/turn/status/end`, streaming semantics for `turn`, and how session identity binds to the Keycloak subject.
 
@@ -80,7 +80,8 @@ This slice earns its keep as **evidence of the serving spine**, not as a compone
 ## Related documents
 
 - **ADR-FLEET-003** — agent capability exposure: MCP for agent-hosts, HTTP/WS for app clients (the interface boundary this build sits on)
-- **ADR-POC-015** + `RUNBOOK-gb10-voice-endpoints.md` — GB10 voice endpoint provisioning
+- **[ADR-ARCH-024](../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md)** — STT model selection (cache-aware streaming; multilingual deferred) for the shared voice endpoints
+- **ADR-POC-015** + `RUNBOOK-gb10-voice-endpoints.md` — GB10 voice endpoint provisioning (shared cascade + endpoint contract)
 - study-tutor `.guardkit/features/` — FEAT-1773, FEAT-PH1-002, FEAT-PH1-003, FEAT-POC-006
 - Transition strategy §4 (differentiation) / mission arc Act 2 & Act 4 — the strategic frame for instrumenting this slice
 
