@@ -1,0 +1,106 @@
+id: FEAT-SMP-002
+name: Student Model Postgres Store — Reads
+description: 'FEAT-SMP-002 / W2: read path over the merged W1 schema (get_topic_confidences,
+  get_recent_misconceptions, get_student_state on PostgresStudentStore), conditional
+  serve-boot wiring, planner repoint onto store.reads, and surgical removal of the
+  Graphiti read copies from queries.py. Graceful degradation preserved. Reads only
+  — write-path removal (SMP-004) and session CRUD (SMP-003) out of scope.'
+created: '2026-07-03T22:28:32.805748'
+status: planned
+complexity: 6
+estimated_tasks: 7
+tasks:
+- id: TASK-SMP2-01
+  name: get_topic_confidences
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-01-get-topic-confidences.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMP2-02
+  name: get_recent_misconceptions
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-02-get-recent-misconceptions.md
+  complexity: 5
+  dependencies:
+  - TASK-SMP2-01
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-SMP2-03
+  name: get_student_state
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-03-get-student-state.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP2-02
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-SMP2-04
+  name: conditional store wiring in serve boot
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-04-conditional-startup-wiring.md
+  complexity: 3
+  dependencies:
+  - TASK-SMP2-03
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-SMP2-05
+  name: planner repoint to store reads
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-05-planner-repoint.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP2-04
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-SMP2-06
+  name: remove Graphiti read surface
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-06-remove-graphiti-read-surface.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP2-05
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-SMP2-07
+  name: BDD steps and read tests
+  file_path: tasks/backlog/student-model-postgres-store-reads/TASK-SMP2-07-bdd-steps-and-read-tests.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP2-06
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+orchestration:
+  parallel_groups:
+  - - TASK-SMP2-01
+  - - TASK-SMP2-02
+  - - TASK-SMP2-03
+  - - TASK-SMP2-04
+  - - TASK-SMP2-05
+  - - TASK-SMP2-06
+  - - TASK-SMP2-07
+  estimated_duration_minutes: 610
+  recommended_parallel: 1
+smoke_gates:
+  # Fires between waves 3→4, 4→5, 5→6, 6→7 — the composition-risk boundaries
+  # (get_student_state lands, store wired, planner repointed, graphiti read
+  # surface removed). tests/unit is service-free + deterministic and includes
+  # the removal's blast radius (test_queries, test_pipeline, test_seed_student_model,
+  # test_seam_seeding_script all live under tests/unit). Full-suite verification
+  # is TASK-SMP2-06/07 Coach + the independent post-build check (per the
+  # self-defeating-boundary-tests retro). Mirrors FEAT-SMP-001's gate.
+  after_wave: [3, 4, 5, 6]
+  command: |
+    set -e
+    pytest tests/unit -q
+  expected_exit: 0
+  timeout: 300
