@@ -1,0 +1,26 @@
+# PROGRESS — overnight Flutter build (study_tutor_app)
+
+**Build plan:** `docs/research/ideas/flutter-app-build-plan.md` (CONTRACT_SHA pinned in its header — re-read plan + this file at every wave start).
+**Rules:** `docs/runbooks/RUNBOOK-overnight-fable-flutter.md` §2.
+**Green =** `cd app && flutter analyze` clean + `flutter test` green + `flutter build apk --debug` succeeds.
+
+## Waves
+
+- [x] wave-0: flutter scaffold [green] — attended, 2026-07-04
+- [ ] wave-1: domain model + SessionApi port + typed errors
+- [ ] wave-2: IdentityProvider port + FakeIdentityProvider
+- [ ] wave-3: FakeSessionApi core + contract tests I (lifecycle)
+- [ ] wave-4: ownership + auth + errors + listSessions — contract tests II
+- [ ] wave-5: walking skeleton UI
+- [ ] wave-6: slice I — sign in, start, exchange turns
+- [ ] wave-7: slice II — resume + end + happy-path test
+- [ ] wave-8: error handling (scope §3)
+- [ ] wave-9: hardening + app README
+
+## Log
+
+- 2026-07-04 — wave-0 [green], attended. Scaffold created (`flutter create`, org com.appmilla, android/ios/web); analyze clean, test green, apk-debug built (first Gradle run installed NDK 28.2 + Build-Tools 36). Landmine fixed: root `.gitignore`'s unanchored `lib/` rule was silently dropping `app/lib/**` — re-include pair added (see wave-0 commit body).
+
+## HANDOFF
+
+(run not started)

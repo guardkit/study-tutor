@@ -17,7 +17,8 @@ coupling at build time. Its only hard dependency on this repo is the
 against `API-session-cross-device.md` at a pinned SHA. A separate repo
 would turn every contract iteration into a cross-repo version dance
 (publish, pin, bump) for a single developer and a document that lives
-here. The overnight build pattern (runbook) also wants one worktree,
+here. (Repo-wide policy ADRs — e.g. ADR-ARCH-015's no-telemetry rule —
+also bind the app, but they'd bind it from any repo.) The overnight build pattern (runbook) also wants one worktree,
 one blast radius, one diff to review in the morning.
 
 ## Decision
@@ -30,7 +31,7 @@ one blast radius, one diff to review in the morning.
 - Repo tooling stays split-brain by path: guardkit/Python quality gates
   do not apply under `app/**`; the app's gates are
   `flutter analyze` / `flutter test` / `flutter build apk --debug`
-  (runbook §2 rule 2).
+  (runbook §1 G-F0 choice + §2 rule 2).
 - Overnight-run blast radius (`app/**` + `docs/research/ideas/flutter-*`,
   runbook §2 rule 3) maps 1:1 onto this placement.
 
