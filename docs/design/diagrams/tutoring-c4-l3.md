@@ -6,6 +6,8 @@
 **Trigger:** Tutoring container crosses the >3-internal-component threshold once Phase 1 lands the Coach AsyncSubAgent + Session Planner + Graphiti Write Helper + RAG Retriever wrapper. Phase 0 deferred this diagram per [`docs/design/README.md §4`](../README.md).
 **Related ADRs / DDRs:** [ARCH-012](../../architecture/decisions/ADR-ARCH-012-deepagents-0-5-3-asyncsubagent-coach.md), [ARCH-019](../../architecture/decisions/ADR-ARCH-019-async-graphiti-writeback-every-write-point.md), [DDR-002](../decisions/DDR-002-coach-async-subagent-owns-graphiti-writes.md), [DDR-003](../decisions/DDR-003-session-completed-emits-on-state-transition.md).
 
+> ⚠️ **Stale — regeneration deferred to FEAT-SMP-003 `/system-design` (recorded 2026-07-03 via `/design-refine`).** Two accepted decisions have outrun this diagram: (a) [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) retired the Graphiti write path — the Graphiti Write Helper (component 7), the F1–F3 fire-and-forget edges, and the Graphiti external system no longer reflect the architecture (Postgres StudentStore, synchronous writes); (b) the ratified [API-session-cross-device](../contracts/API-session-cross-device.md) contract adds an HTTP/WS App Access adapter and a Postgres-backed, student-keyed `SessionService` at this container's seam. Regenerate when FEAT-SMP-003's `/system-design` decomposes the `SessionService`. The component rationale below remains a valid historical record of the P1 Graphiti-era design.
+
 ---
 
 ## Component diagram

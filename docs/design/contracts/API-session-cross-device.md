@@ -2,7 +2,7 @@
 
 **Bounded context:** Tutoring + App Access (HTTP/WS adapter)
 **Phase:** FEAT-SMP-003 (this cluster) → mobile+voice slice
-**Status:** **Proposed** — feeds the [FEAT-SMP-003 `/feature-spec`](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md) and the mobile [`/goal`](../../handoffs/study-tutor-mobile-voice-conversation-starter.md); ratify via `/design-refine` before build (it changes accepted contracts — see §10).
+**Status:** **Accepted** — ratified 2026-07-03 via `/design-refine` (G-CON gate — [migration build plan §5a](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md)). Feeds the [FEAT-SMP-003 `/feature-spec`](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md) and the mobile [`/goal`](../../handoffs/study-tutor-mobile-voice-conversation-starter.md). §10's three accepted-contract changes are recorded: [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) partially superseded for app clients (ADR-FLEET-003); [API-tutoring.md §8](API-tutoring.md) "end-once/append-only" relaxed; API-tutoring §4 closed error set extended (`SessionForbidden` / `Unauthenticated`).
 **Generated:** 2026-07-02.
 **Related:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) (Postgres StudentStore — sessions persist here), ADR-FLEET-003 (MCP for agent-hosts, HTTP/WS for app clients), [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) (**partially superseded** for app clients — §10), [API-tutoring.md](API-tutoring.md) (the MCP verbs this mirrors), [mobile+voice handoff](../../handoffs/study-tutor-mobile-voice-conversation-starter.md) (D6–D9), [events-schema.yaml](../events-schema.yaml).
 
@@ -96,10 +96,10 @@ Flat dict per [API-tutoring.md §4](API-tutoring.md). Closed set extended by:
 
 ## 10. Contract changes requiring `/design-refine`
 
-This doc is **Proposed** precisely because it touches accepted contracts:
+This doc was **Proposed** precisely because it touches accepted contracts; all three changes below were recorded on ratification (2026-07-03, `/design-refine` G-CON):
 
 1. **Relaxes "end-once, append-only, no resume"** ([API-tutoring.md §8](API-tutoring.md)) — adds `resume_session` / `list_sessions` and re-attachment while `active`. (§8 explicitly said `tutor_pause/resume` were "not requested" — they are now.)
-2. **Adds an HTTP/WS surface** — [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) is MCP-only; **ADR-FLEET-003 supersedes it for app clients**. Record the partial supersession in `/design-refine`.
+2. **Adds an HTTP/WS surface** — [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) is MCP-only; **ADR-FLEET-003 supersedes it for app clients**. Partial supersession recorded in ADR-ARCH-008 §Status (2026-07-03).
 3. **Adds `student_id`, auth (`Unauthenticated`/`SessionForbidden`), and per-turn durability** — schema + error-set growth.
 
 None of these change the MCP surface's existing behaviour; they *extend* it. Agent-hosts keep the four MCP tools exactly as-is.
@@ -113,4 +113,4 @@ None of these change the MCP surface's existing behaviour; they *extend* it. Age
 
 ---
 
-*Proposed 2026-07-02. Consumed by FEAT-SMP-003 (`/feature-spec`) and the mobile `/goal` opener. Ratify via `/design-refine` (§10) before build.*
+*Proposed 2026-07-02; **Accepted 2026-07-03** via `/design-refine` (§10 changes recorded). Consumed by FEAT-SMP-003 (`/feature-spec`) and the mobile `/goal` opener.*

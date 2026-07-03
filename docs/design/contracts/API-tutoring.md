@@ -5,6 +5,7 @@
 **Status:** Accepted — design captures live behaviour in `src/study_tutor/mcp/adapter.py` and `src/study_tutor/session/tutor_session.py`; Phase 1 evolution rows align to ADR-ARCH-019 + DDR-002 / DDR-003.
 **Generated:** 2026-04-26 by `/system-design` (bias-to-defaults, Phase 0 scope)
 **Refreshed:** 2026-04-27 by `/system-design --focus="Tutoring" --context ADR-ARCH-018 / ADR-ARCH-019 / graphiti-latency-spike-results.md` (sweep stale ADR-ARCH-003 references; align to every-write-point fire-and-forget; cross-reference DDR-001).
+**Refreshed:** 2026-07-03 by `/design-refine` (G-CON — [API-session-cross-device](API-session-cross-device.md) ratified: HTTP/WS app-client surface per ADR-FLEET-003; §8 "end-once/append-only" relaxed; §4 closed error set extended).
 
 ---
 
@@ -15,14 +16,16 @@
 | AI agents (Claude Desktop, future Jarvis) | MCP JSON-RPC over stdio | P0 |
 | Developers / judges | CLI wrapping the MCP surface | P0 |
 | Internal contexts (Student Model P1, Gamification P2) | In-process Events (Shared Kernel B) | P1+ |
+| App clients (Flutter phone / web, Reachy robot) | HTTP/WS App Access adapter — contract in [API-session-cross-device.md](API-session-cross-device.md) | P1+ (FEAT-SMP-003) |
 
-REST / GraphQL / A2A / ACP are **out of scope** by ADR-ARCH-008 (single-user MCP-only posture). Open WebUI's interface for Lilymay points at Ollama directly (and at Bedrock via LiteLLM proxy P0+); it does not consume this contract.
+REST / GraphQL / A2A / ACP remain **out of scope for agent access**. **HTTP/WS for app clients is in scope as of 2026-07-03** — ADR-FLEET-003 partially supersedes [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) (MCP for agent-hosts, HTTP/WS for app clients); the app-client verbs mirror this surface 1:1 and are specified in [API-session-cross-device.md](API-session-cross-device.md), a thin adapter over the same `SessionService`. Open WebUI's interface for Lilymay points at Ollama directly (and at Bedrock via LiteLLM proxy P0+); it does not consume this contract.
 
 ## 2. Auth & posture
 
-- **Authentication:** none. Single-user single-host (ADR-ARCH-014); MCP stdio transport is local + Tailscale only (ADR-ARCH-008/ADR-ARCH-015).
+- **Authentication:** none on the MCP surface. Single-user single-host (ADR-ARCH-014); MCP stdio transport is local + Tailscale only (ADR-ARCH-008/ADR-ARCH-015).
 - **Authorisation:** N/A — Phase 0.
 - **Rate limiting / quotas:** none (ADR-ARCH-011).
+- **HTTP/WS surface (P1+, [API-session-cross-device §3](API-session-cross-device.md)):** Keycloak-derived `student_id` (handoff D9), with interim single-user mode as the degenerate case. The MCP stdio posture above is unchanged.
 
 ## 3. MCP tool surface
 
@@ -153,11 +156,18 @@ All four tools return errors as a flat dict (not a JSON-RPC error wrapper) so MC
 ```json
 {
   "error": "<human-readable message>",
-  "error_type": "SessionNotFoundError" | "SessionEnded"
+  "error_type": "SessionNotFoundError" | "SessionEnded" | "SessionForbidden" | "Unauthenticated"
 }
 ```
 
 The closed set of `error_type` values is the contract. Adding a new `error_type` is a contract change requiring `/design-refine`.
+
+**Closed set extended 2026-07-03** via `/design-refine` per [API-session-cross-device §9](API-session-cross-device.md):
+
+| `error_type` | Trigger | Surface |
+|---|---|---|
+| `SessionForbidden` | session's `student_id` ≠ caller's — any verb taking a `session_id`, once sessions are student-keyed (FEAT-SMP-003) | MCP + HTTP/WS |
+| `Unauthenticated` | missing/invalid Keycloak token | HTTP/WS only — never returned on MCP stdio (process-trust posture, ADR-ARCH-014, unchanged) |
 
 ## 5. Events emitted (Shared Kernel B)
 
@@ -217,10 +227,10 @@ The canonical schemas live in `docs/design/events-schema.yaml`. Consumers valida
 
 ## 8. Out-of-scope explicitly
 
-- **REST / GraphQL / HTTP transport** — deferred indefinitely; ADR-ARCH-008 stands.
-- **Multi-tenant authentication** — ADR-ARCH-014 (single-user posture).
+- **REST / GraphQL for agent access** — still out of scope. ~~HTTP transport deferred indefinitely~~ — **relaxed 2026-07-03**: an HTTP/WS App Access adapter for app clients is in scope per ADR-FLEET-003 ([API-session-cross-device.md](API-session-cross-device.md)); ADR-ARCH-008 partially superseded. Agent-hosts stay on MCP stdio.
+- **Multi-tenant authentication** — ADR-ARCH-014 (single-user posture). Keycloak on the HTTP/WS surface authenticates one student across devices; it is not multi-tenancy.
 - **Caching, rate limiting, feature flags** — ADR-ARCH-011.
-- **`tutor_pause_session`, `tutor_resume_session`** — not requested; sessions are append-only and end-once.
+- **`tutor_pause_session`, `tutor_resume_session`** — ~~not requested; sessions are append-only and end-once~~ — **relaxed 2026-07-03** ([API-session-cross-device §10.1](API-session-cross-device.md)): sessions are durable, student-keyed, and resumable while `active` (`resume_session` / `list_sessions` on the HTTP/WS surface). No pause/resume MCP tools are added — the four-tool MCP surface is unchanged; turns remain append-only *within* a session.
 
 ## 9. Open questions for downstream phases
 

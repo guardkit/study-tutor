@@ -2,20 +2,35 @@
 
 ## Status
 
-Partially superseded by **ADR-ARCH-017** (2026-04-27).
+Partially superseded — twice:
 
-The SR-07 classification table at lines 35–46 below — specifically the
-`tutor_start_session` row and the "stable across phases for forward compatibility"
-rationale block — is **superseded**. ADR-ARCH-017 reclassifies `tutor_start_session`
-as sync in Phase 0, with a measurement-conditional Phase 1 reversion rule.
+1. By **ADR-ARCH-017** (2026-04-27). The SR-07 classification table at lines 35–46
+   below — specifically the `tutor_start_session` row and the "stable across phases
+   for forward compatibility" rationale block — is **superseded**. ADR-ARCH-017
+   reclassifies `tutor_start_session` as sync in Phase 0, with a
+   measurement-conditional Phase 1 reversion rule.
 
-The remainder of this ADR — the single-transport choice (MCP stdio only), the
-HTTP MCP deferral, the single-user auth posture, the Phase 0 session-scope
-limitation (in-memory dict per child process) — **remains accepted and in force**.
+2. By **ADR-FLEET-003 / [API-session-cross-device](../../design/contracts/API-session-cross-device.md)**
+   (2026-07-03, ratified via `/design-refine`, G-CON gate). The **single-transport
+   choice (MCP stdio only) and the HTTP transport deferral are superseded for app
+   clients**: ADR-FLEET-003 sets the fleet boundary — MCP for agent-hosts, HTTP/WS
+   for app clients — and the accepted cross-device session contract adds a
+   Keycloak-fronted HTTP/WS App Access adapter (handoff D9) as a thin adapter over
+   the same `SessionService` as the MCP surface. The single-user **auth posture is
+   amended on the HTTP/WS surface only** (`student_id` derived from the Keycloak
+   subject; interim single-user mode remains the degenerate case).
 
-**Date:** 2026-04-18 (original); 2026-04-27 (partial supersession)
+What **remains accepted and in force**: MCP stdio as the sole agent-host transport
+(no NATS, no HTTP MCP for agents), the four-tool surface, process-level trust on
+the MCP surface, and the single-student posture (ADR-ARCH-014). The Phase 0
+session-scope limitation (in-memory dict per child process) remains the live P0
+implementation; its removal path is now the Postgres StudentStore sessions
+([ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) /
+API-session-cross-device §6), not "Phase 1 Graphiti-backed sessions".
+
+**Date:** 2026-04-18 (original); 2026-04-27 (partial supersession); 2026-07-03 (second partial supersession)
 **Phase:** Phase 0
-**Related:** ADR-ARCH-014, ADR-ARCH-017, LES1 §1 (transport), CC-01, CC-02, CC-07
+**Related:** ADR-ARCH-014, ADR-ARCH-017, [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md), ADR-FLEET-003, [API-session-cross-device](../../design/contracts/API-session-cross-device.md), LES1 §1 (transport), CC-01, CC-02, CC-07
 
 ## Context
 
