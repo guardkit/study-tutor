@@ -4,7 +4,7 @@
 **Date:** 2026-07-03.
 **For:** a Claude Code session **on the GB10** (`promaxgb10`).
 **Objective:** Provision a **study-tutor-dedicated Postgres 16** as the durable StudentStore — an **empty DB + role on port 5433** — to unblock the W1 build. **This does not create any tables** (Alembic owns the schema in W1).
-**Authoritative procedure:** [RUNBOOK-study-tutor-postgres-deploy.md](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) — follow it for the exact blocks and gates. This doc is orientation + the one decision to make.
+**Authoritative procedure:** [RUNBOOK-study-tutor-postgres-deploy.md](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) — follow it for the exact blocks and gates. This doc is orientation + the condensed steps.
 
 ---
 
@@ -93,8 +93,7 @@ $SSH "cat ${NAS_DOCKER_ROOT}/pgdata/PG_VERSION"    # G5: prints 16 (data on the 
 
 **Then wire the app:** put the DSN in the study-tutor `.env`:
 ```
-STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@<host>:5433/study_tutor
-#   host = localhost (Target B) or whitestocks.tailebf801.ts.net (Target A)
+STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@whitestocks.tailebf801.ts.net:5433/study_tutor
 ```
 (The `.env.example` swap — replacing the old Graphiti/FalkorDB config with `STUDY_TUTOR_PG_DSN` — is part of the W3 config swap; not required to finish W0.)
 
