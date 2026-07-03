@@ -321,6 +321,15 @@ merged-fp16/
 !tests/unit/adapters/
 !tests/unit/adapters/*.py
 
+# Flutter app source (ADR-ARCH-025). The unanchored Python-template
+# ``lib/`` rule at the top of this file matches app/lib/ and silently
+# drops every Dart source file at git-add time — the same failure mode
+# as the adapters/ pairs above (TASK-INV-AB1, FEAT-39E1). Re-include
+# the app's source tree explicitly. Discovered 2026-07-04 when the
+# wave-0 scaffold commit landed without lib/main.dart.
+!app/lib/
+!app/lib/**
+
 # Local inference scratch
 ollama_models/
 .ollama/
