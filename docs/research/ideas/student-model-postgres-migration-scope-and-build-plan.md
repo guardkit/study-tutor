@@ -56,8 +56,10 @@ _Look for: the `_read_student_partition` single-seam and the `group_id → stude
 ## 5. Sequencing (waves)
 
 ```
+G-ADR  /arch-refine   ADR-ARCH-023 Proposed→Accepted    ── before W1 (§5a)
 W0  Postgres infra                               ── stand up per RUNBOOK; dev-local first, durable NAS before W1 tests
 W1  FEAT-SMP-001  (schema + sync write)          ── foundation, blocks all
+G-CON  /design-refine session contract §10             ── before FEAT-SMP-003 (§5a)
 W2  FEAT-SMP-002  (reads + planner)   ‖  FEAT-SMP-003  (session persistence + resume)
 W3  FEAT-SMP-004  (teardown + dep drop)           ── only after W1+W2 are green
 ```
@@ -87,6 +89,32 @@ graph TD
     classDef gate fill:#eee,stroke:#666,color:#000
     classDef down fill:#eee,stroke:#999,color:#000
 ```
+
+## 5a. Ratification gates (Proposed → Accepted, before the dependent build)
+
+Two artefacts in this cluster are **`Proposed`** and must be ratified with the project's refine commands *before* the `/feature-spec` that builds against them — otherwise the build proceeds against an un-accepted decision/contract.
+
+| Gate | Command | Ratifies | Blocks |
+|---|---|---|---|
+| **G-ADR** | `/arch-refine` | [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) `Proposed → Accepted`; flip ADR-003/007/019 to `superseded` and note ADR-021's CC-13 retirement | W1 (FEAT-SMP-001) |
+| **G-CON** | `/design-refine` | [API-session-cross-device.md §10](../../design/contracts/API-session-cross-device.md) — the [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) partial supersession (HTTP/WS for app clients per ADR-FLEET-003), relaxing API-tutoring's "end-once/append-only", and the §9 closed-set extension (`SessionForbidden` / `Unauthenticated`) | FEAT-SMP-003 |
+
+```bash
+# G-ADR — flip ADR-ARCH-023 to Accepted before W1 builds against it
+/arch-refine \
+  --target docs/architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md \
+  --context docs/research/ideas/student-model-postgres-migration-scope-and-build-plan.md \
+  --context docs/gamification/design.md
+
+# G-CON — ratify the cross-device session contract before FEAT-SMP-003
+/design-refine \
+  --target docs/design/contracts/API-session-cross-device.md \
+  --context docs/design/contracts/API-tutoring.md \
+  --context docs/architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md \
+  --context docs/handoffs/study-tutor-mobile-voice-conversation-starter.md
+```
+
+(ADR-ARCH-022, also `Proposed`, is the *retrieval* decision — out of this cluster; ratify it via `/arch-refine` on its own track, it does not gate the SMP build.)
 
 ## 6. `/feature-spec` invocations (run in wave order)
 
@@ -119,6 +147,13 @@ Each is followed by `/feature-plan "<title>" --context features/<slug>/<slug>_su
   --context src/study_tutor/knowledge/student_model.py \
   --context src/study_tutor/planner/protocols.py \
   --context src/study_tutor/planner/pipeline.py
+
+# G-CON (gate) — ratify the session contract BEFORE building FEAT-SMP-003 (see §5a)
+/design-refine \
+  --target docs/design/contracts/API-session-cross-device.md \
+  --context docs/design/contracts/API-tutoring.md \
+  --context docs/architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md \
+  --context docs/handoffs/study-tutor-mobile-voice-conversation-starter.md
 
 /feature-spec "Student-keyed Session Persistence + Cross-Device Resume — durable session records keyed to student, resumable across devices (phone<->robot), session contract (start/list/resume/turn/status/end) behind the MCP + HTTP/WS adapter; satisfies the FEAT-1773 gate the mobile client depends on" \
   --context docs/design/contracts/API-session-cross-device.md \
