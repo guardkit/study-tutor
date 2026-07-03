@@ -1,6 +1,6 @@
 # Student Model → Postgres Migration — Scope + Build Plan
 
-**Status:** Scaffolding + planning **complete and committed to `main`** (2026-07-03); ratification gates (§5a) and builds pending — see §0. Decision canonical ([ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md)).
+**Status:** Scaffolding + planning **complete and committed to `main`** (2026-07-03); **G-ADR ratified 2026-07-03** (ADR-ARCH-023 → Accepted, downstream reconciled); G-CON + builds pending — see §0. Decision canonical ([ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md)).
 **Generated:** 2026-07-02 · **status refreshed:** 2026-07-03.
 **Decision:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) — drop Graphiti/FalkorDB; adopt a study-tutor-owned Postgres (JSONB) student store; writes revert to synchronous; **start fresh** (no data migration).
 **Inputs:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md), [gamification/design.md §11](../../gamification/design.md), [phase-1-scope.md §FEAT-PH1-001](./phase-1-scope.md), the existing FEAT-1773 code (`knowledge/student_model.py`, `queries.py`, `async_write.py`), [mobile+voice handoff](../../handoffs/study-tutor-mobile-voice-conversation-starter.md).
@@ -14,7 +14,7 @@
 
 | Item | State | Commit |
 |---|---|---|
-| ADR-ARCH-023 (decision) | **Proposed — G-ADR pending** | `529e1c1` |
+| ADR-ARCH-023 (decision) | **Accepted** (G-ADR ratified 2026-07-03) | `529e1c1` |
 | Scope + build plan (this doc) | committed | `529e1c1`→`2ad49f6` |
 | Postgres runbook + `deploy/postgres/` (compose, env, gitignore) | committed | `529e1c1` |
 | Cross-device session contract | **Proposed — G-CON pending** | `529e1c1` |
@@ -22,7 +22,8 @@
 | FEAT-SMP-002 scaffolding — `store/provider` + `store/reads` | committed | `e26a3bd` |
 | FEAT-SMP-003 scaffolding — `session/service` + `errors` + `provider` (+ port `(record, created)` fix) | committed | `d45121a` |
 | Ratification gates §5a | committed | `2ad49f6` |
-| **G-ADR / G-CON ratification** | **pending** | — |
+| **G-ADR ratification** | **done** (2026-07-03; `/arch-refine`) | — |
+| **G-CON ratification** | **pending** | — |
 | **W0 Postgres stood up** | **pending** | — |
 | **W1 · W2 · W3 builds** (`/feature-spec` → implement) | **pending** | — |
 
@@ -258,5 +259,5 @@ With the session contract frozen+accepted and FEAT-SMP-003 built, run the mobile
 
 ---
 
-*Generated 2026-07-02; status refreshed 2026-07-03. Next action: **Step 1 (G-ADR)** in §9.*
+*Generated 2026-07-02; status refreshed 2026-07-03. G-ADR ratified 2026-07-03. Next action: **Step 2 (W0 — stand up Postgres)** in §9.*
 </content>

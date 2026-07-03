@@ -2,11 +2,12 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) on 2026-07-03.
 
 **Date:** 2026-04-27
 **Phase:** Phase 1
 **Supersedes:** [ADR-ARCH-003](ADR-ARCH-003-async-graphiti-writeback.md) — Async Graphiti write-back at session-end boundary
+**Superseded by:** [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) (D2) — with Graphiti removed, the student-model write is a single-digit-millisecond Postgres transaction, so write-back reverts to **synchronous at the session-end boundary**. The async fire-and-forget commitment at every write point, and the CC-13 single-call-site invariant it generalised, are retired. The read-path evidence (`search_nodes` ~0.07s) and fail-soft posture remain historically valid. No content rewrite below.
 **Related:** [ADR-ARCH-018](ADR-ARCH-018-extend-cross-cutting-concerns-sr08-sr09.md) (CC-13), [ADR-ARCH-012](ADR-ARCH-012-deepagents-0-5-3-asyncsubagent-coach.md) (`AsyncSubAgent`), [ADR-ARCH-017](ADR-ARCH-017-tutor-start-session-sync-classification.md) (sync read path), [ADR-ARCH-002](ADR-ARCH-002-three-layer-architecture.md), CC-08, SR-08, [phase-1-scope.md §SR-08](../../research/ideas/phase-1-scope.md), [graphiti-latency-spike-results.md](../../research/ideas/graphiti-latency-spike-results.md), DEC-02, DEC-08.
 
 ## Context

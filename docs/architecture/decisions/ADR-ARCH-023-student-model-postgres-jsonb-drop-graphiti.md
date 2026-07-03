@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted
+
+**Ratified:** 2026-07-03 via `/arch-refine` (G-ADR gate — [migration build plan §5a/§9](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md)). Made effective on ratification: **ADR-ARCH-007** and **ADR-ARCH-019** → `superseded`; **ADR-ARCH-021**'s CC-13 single-call-site invariant annotated as retired; C4 **L1/L2** diagrams regenerated (FalkorDB + Gemini-extractor → study-tutor Postgres). ADR-ARCH-003 was already superseded by ADR-ARCH-019, so the 003→019→023 chain is left intact.
 
 **Date:** 2026-07-02
 **Phase:** Phase 1 (Student Model) — decided during the fleet-wide Graphiti decommission
@@ -73,6 +75,12 @@ Delete/replace the Graphiti knowledge layer — `knowledge/async_write.py` (→ 
 - [pyproject.toml:35](../../../pyproject.toml#L35) — drop `graphiti-core[falkordb]`; add `psycopg`/`asyncpg` + a migration tool.
 - `.env` / `.env.example` — replace Graphiti/FalkorDB config with `STUDY_TUTOR_PG_DSN` (or equivalent).
 - ADR-ARCH-003 / ADR-ARCH-007 / ADR-ARCH-019 — set `Status: superseded` (queryable as history; no content rewrite). ADR-ARCH-021 — annotate that its CC-13 single-call-site invariant is retired here.
+
+**Reconciliation status (ratified 2026-07-03).** ADR-ARCH-007 → `superseded`; ADR-ARCH-019 → `superseded`; ADR-ARCH-021 CC-13 note added; ADR-ARCH-003 already superseded by ADR-ARCH-019 (chain intact — no change). C4 L1/L2, `ARCHITECTURE.md`, `domain-model.md`, `gamification/design.md` (§2/§6/§9/§11), and `feature-roadmap.md` (FEAT-PH1-001, SR-08) were reconciled in the same pass. Source/deps/config (`pyproject.toml`, `.env`, `knowledge/*`) remain the FEAT-SMP W1/W3 build targets (D5), untouched here.
+
+## C4 diagram re-review status
+
+System topology **changed** (unlike the sibling [ADR-ARCH-022](ADR-ARCH-022-corpus-retrieval-lexical-path-defer-agentic-tool.md), whose corpus decision left topology intact). Ratification therefore **triggered the mandatory C4 re-review gate**: FalkorDB and the Gemini entity-extraction LLM leave the topology, `student_model` moves from `graphiti-core` to a Postgres (asyncpg / JSONB) client, and the GB10 embedder narrows to ChromaDB-only. Revised C4 **Level 1** ([system-context.md](../system-context.md)) and **Level 2** ([container.md](../container.md)) were regenerated and approved on 2026-07-03. Dropping the Gemini extractor also **closes the [ADR-ARCH-015](ADR-ARCH-015-uk-on-device-data-residency.md) on-device-residency exception** — learner data no longer leaves the household for entity extraction.
 
 ## References
 

@@ -2,10 +2,11 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) on 2026-07-03.
 
 **Date:** 2026-04-18
 **Phase:** Phase 0 (architectural commitment; runtime arrives in P1)
+**Superseded by:** ADR-ARCH-023 — the Graphiti/FalkorDB student-model store is dropped for a study-tutor-owned Postgres (JSONB) store, so this three-host split topology (FalkorDB on Synology + Gemini entity-extraction + GB10 embedder) is retired. The GB10 embedder survives for ChromaDB corpus retrieval ([ADR-ARCH-022](ADR-ARCH-022-corpus-retrieval-lexical-path-defer-agentic-tool.md)); FalkorDB and the Gemini extractor are gone. No content rewrite below — historical record.
 **Related:** ADR-ARCH-006 (GB10 freed for training), DEC-02, DEC-08
 
 ## Context

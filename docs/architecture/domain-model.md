@@ -2,6 +2,7 @@
 
 **Status:** Phase 0 canonical.
 **Generated:** 2026-04-18 by `/system-arch`.
+**Revised:** 2026-07-03 by `/arch-refine` (ADR-ARCH-023) — Student Model persistence Graphiti → study-tutor-owned Postgres; write-back reverts to synchronous.
 **Authoritative sources:** `domains/gcse-english/GOAL.md`, `docs/gamification/design.md`, `decisions-log-2026-04-17.md`.
 
 ---
@@ -172,8 +173,9 @@ wiring + Docling ingestion are Phase 1 (FEAT-PO-001-roadmap onwards).
 what they've misunderstood, how they've progressed. Layer 3 of the
 three-layer architecture.
 
-**Location:** `src/study_tutor/student/` (P1), Graphiti group IDs
-`student:{id}` and `subject:gcse-english`.
+**Location:** `src/study_tutor/knowledge/store/` (P1), study-tutor-owned
+Postgres (JSONB); per-student rows keyed by `student_id` (formerly Graphiti
+group IDs `student:{id}` / `subject:gcse-english` — ADR-ARCH-023).
 
 ### 4.1 Aggregate root: `Student`
 
@@ -181,7 +183,7 @@ three-layer architecture.
 |---|---|---|
 | `student_id` | str | Immutable |
 | `name` | str (optional) | Mutable |
-| `scoped_group_id` | `student:{student_id}` | Derived, immutable |
+| ~~`scoped_group_id`~~ | — | Retired with Graphiti; Postgres keys on `student_id` + composite `(student_id, …)` natural keys (ADR-ARCH-023) |
 | `subjects_studied` | set[Subject] | Append-only |
 | `current_level` | int (1–15) | Monotonic increase |
 | `total_xp` | int ≥ 0 | Monotonic increase |
@@ -219,8 +221,9 @@ three-layer architecture.
 ### 4.4 Phase 0 status
 
 Schema declared here and in `GOAL.md §11`. No runtime code in Phase 0.
-Phase 1: Graphiti wiring + entity extraction via Gemini + embeddings via
-GB10 nomic-embed.
+Phase 1: **Postgres `StudentStore` wiring** — a synchronous session-end
+transactional write; **no entity extraction, no embeddings** (ADR-ARCH-023).
+Originally planned as Graphiti + Gemini extraction + GB10 nomic-embed.
 
 ---
 
@@ -297,7 +300,7 @@ SR-03). No handler hard-codes a provider.
 | `bedrock` | AWS Bedrock Custom Model Import | P0 validation; P1+ primary for demo week |
 | `openai` | OpenAI API | Declared, reserved for Coach / fallback |
 | `anthropic` | Anthropic API | Declared, reserved |
-| `gemini` | Google Gemini API | Declared; also used by Graphiti (outside `LLMClient`) |
+| `gemini` | Google Gemini API | Declared, reserved (Graphiti entity-extraction use retired — ADR-ARCH-023) |
 
 ### 6.2 Invariants
 
@@ -335,9 +338,9 @@ Registers the following tools at startup:
 | `tutor_start_session` | sync — returns `session_id` synchronously; LLM warm-up is fire-and-forget (¹) | < 1s |
 | `tutor_turn` | sync (< 30s) | p95 < 10s |
 | `tutor_session_status` | sync | < 2s |
-| `tutor_session_end` | sync — triggers async Graphiti write-back (P1, fire-and-forget per CC-13 / ADR-ARCH-019) | < 2s |
+| `tutor_session_end` | sync — session-end write is one **synchronous** Postgres transaction (P1, ADR-ARCH-023 D2) | < 2s |
 
-(¹) Per **ADR-ARCH-017** (2026-04-27, supersedes ADR-ARCH-008 SR-07 classification): Phase 0 classification settled by live behaviour in `src/study_tutor/mcp/adapter.py:49–68` — there is no still-running task to poll via `tutor_session_status`. Phase 1 may revert to **long-running** if the Graphiti latency spike (`phase-1-scope.md` §"Graphiti latency spike") shows `search_nodes` median > ~3s for the student-model read at session start.
+(¹) Per **ADR-ARCH-017** (2026-04-27, supersedes ADR-ARCH-008 SR-07 classification): Phase 0 classification settled by live behaviour in `src/study_tutor/mcp/adapter.py:49–68` — there is no still-running task to poll via `tutor_session_status`. Phase 1 may revert to **long-running** if the Graphiti latency spike (`phase-1-scope.md` §"Graphiti latency spike") shows `search_nodes` median > ~3s for the student-model read at session start. _(Moot under ADR-ARCH-023: the student-model read is now a fast SQL query, not a Graphiti `search_nodes` call.)_
 
 ### 7.2 Invariants
 
@@ -440,8 +443,8 @@ Reachy (P2 stretch).
  (LLMClient)     (evaluates quality)
  returns text    writes TurnFeedback
                  │
-                 ▼ async fire-and-forget at every observation point
-                   (CC-13 / ADR-ARCH-019); not deferred to session-end
+                 ▼ batched in-session; flushed in the synchronous
+                   session-end Postgres transaction (ADR-ARCH-023 D2)
                  Student Model (P1)
                  (appends Misconception if any)
 
@@ -461,12 +464,12 @@ Reachy (P2 stretch).
   delta, ≤±0.1)
 ```
 
-**Consistency model:** every Graphiti write — `session.started`,
-mid-session misconception logs, planner topic-confidence updates, and the
-`session.completed` fan-out — is async fire-and-forget. The tutor returns
-control to the student without awaiting Graphiti acknowledgement at any
-write point. This is deliberate (ADR-ARCH-019, broadens ADR-ARCH-003;
-load-bearing under CC-13).
+**Consistency model:** the student-model write is a single **synchronous**
+Postgres transaction at the session-end boundary — a single-digit-millisecond
+JSONB upsert (XP + streak + per-topic confidence deltas + achievement
+checks). With Graphiti removed there is no 79s `add_episode` to hide from
+the caller, so the async fire-and-forget posture (ADR-ARCH-003/019, CC-13)
+is retired (ADR-ARCH-023 D2). `tutor_session_end` still returns within budget.
 
 ---
 
@@ -486,13 +489,13 @@ scaffolding. See `ADR-ARCH-001`.
 ### Why the student model is its own context
 
 `TopicConfidence`, `Misconception`, and `SessionEpisode` have their own
-lifecycle, their own persistence (Graphiti, not the session-scoped
-in-memory dict), and their own consumers (Gamification, Reachy, future
-Session Planner). Collapsing them into Tutoring would muddle read vs
-write responsibilities — and under ADR-ARCH-019 / CC-13 the writes are
-async fire-and-forget at every point, not concentrated at a session-end
-boundary, which makes the read/write split structurally clearer when the
-Student Model is its own context.
+lifecycle, their own persistence (the study-tutor-owned Postgres store, not
+the session-scoped in-memory dict), and their own consumers (Gamification,
+Reachy, future Session Planner). Collapsing them into Tutoring would muddle
+read vs write responsibilities — and under ADR-ARCH-023 the writes are a
+synchronous transaction at the session-end boundary, which keeps the
+read/write split structurally clear when the Student Model is its own
+context.
 
 ### Why Gamification is a context, not a feature
 
@@ -507,4 +510,5 @@ making the boundary naturally visible.
 *Generated 2026-04-18. Changes to sections §2–§7 are breaking changes
 and require re-running downstream commands (`/system-design`,
 `/feature-spec`). Changes to §8 shared-kernel definitions require
-migration planning for any entities already seeded in Graphiti.*
+migration planning for any entities already seeded in the student store
+(Postgres per ADR-ARCH-023; formerly Graphiti).*

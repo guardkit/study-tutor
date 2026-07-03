@@ -4,6 +4,8 @@
 
 Accepted
 
+**⚠️ CC-13 retirement note (2026-07-03).** These resolutions reference the **CC-13 single-`add_episode`-call-site invariant** (see the G-scope discussion and the Positive-consequences "the CC-13 invariant … remains intact"). [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) removes study-tutor's Graphiti / LLM-extraction path entirely — **no `add_episode` remains** — so CC-13 no longer applies. The typed-entity FalkorDB seed these decisions govern is re-platformed to Postgres (or dropped under ADR-ARCH-023 D3 "start fresh"), which moots G1/G2/G3 for the live system. This ADR stays `Accepted` as the historical design record — the G2 cross-group-edge probe remains a useful graphiti-core finding. No content rewrite below.
+
 **Date:** 2026-05-04
 **Phase:** Phase 1 (Lilymay seed prerequisite for FEAT-PH1-001)
 **Related:**

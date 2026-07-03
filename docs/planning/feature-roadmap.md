@@ -8,6 +8,8 @@
 
 ---
 
+> **Reconciled 2026-07-03 (ADR-ARCH-023, accepted).** The **Student Model layer is re-platformed off Graphiti/FalkorDB to a study-tutor-owned Postgres (JSONB) store** with **synchronous** session-end writes. **FEAT-PH1-001 ("Graphiti Student Model") below is superseded** by the **FEAT-SMP-001…004** cluster in [student-model-postgres-migration-scope-and-build-plan.md](../research/ideas/student-model-postgres-migration-scope-and-build-plan.md). Historical Graphiti references in §2/§4 (ADR-ARCH-003/007/019, SR-08, the latency spike, the old `/feature-spec` invocation) are retained as record but are **superseded** — see ADR-ARCH-023. The RAG/ChromaDB layer (FEAT-PH1-004) is unaffected.
+
 ## 1. Why this document exists
 
 `/system-plan` was invoked after `/system-design` shipped Phase 0 contracts. The architecture (16 ADRs, 6 bounded contexts, 12 cross-cutting concerns) and the Phase 0 design (Tutoring + Inference Runtime + MCP Transport contracts/data-models + Shared Kernel B events) are both canonical. **No architecture refinement is needed today.**
@@ -71,14 +73,14 @@ Three features that turn the MCP-accessible tutor into a genuinely three-layer a
 
 | Feature | Bounded context(s) | Architecture refs | Live phase for events |
 |---|---|---|---|
-| **FEAT-PH1-001** Graphiti Student Model | Student Model | ADR-ARCH-003 (async write-back), ADR-ARCH-007 (split topology), CC-11 (events bus) | `session.started`, `session.turn_completed`, `session.completed` |
+| **FEAT-PH1-001** Postgres Student Model _(re-platformed — see FEAT-SMP-001…004)_ | Student Model | ADR-ARCH-023 (Postgres/JSONB, sync write; supersedes ADR-ARCH-003/007), CC-11 (events bus) | `session.started`, `session.turn_completed`, `session.completed` |
 | **FEAT-PH1-002** Session Planner | Tutoring (reads Student Model) | ADR-ARCH-002 (three-layer), ADR-ARCH-012 (deepagents 0.5.3) | None (planner is sync side of `tutor_start_session`) |
 | **FEAT-PH1-003** DeepAgents Tutoring Loop with Coach | Tutoring + Inference Runtime | ADR-ARCH-012 (AsyncSubAgent Coach), CC-08 (fire-and-forget), CC-12 (async subagent boundary) | Coach evaluates `session.turn_completed`; produces `quality_score` for `session.completed` |
 | **FEAT-PH1-004** Primary-Text RAG + Source-Typed Quote Verification | Knowledge & Curriculum + Tutoring | ADR-ARCH-002 (Layer 2), CC-09 (safeguarding), CC-10 (copyright/provenance) | None directly; verifier feeds Coach output |
 
 **New cross-cutting requirements introduced in Phase 1** (per [phase-1-scope.md](../research/ideas/phase-1-scope.md)):
 
-- **SR-08** Graphiti write-back asynchrony — session-end write must not block `tutor_session_end` reply.
+- **SR-08** ~~Graphiti write-back asynchrony~~ — **retired by ADR-ARCH-023**: the Postgres session-end write is synchronous (ms-scale), so there is no async-write requirement to enforce.
 - **SR-09** Runtime LLM parameters are explicit and asserted — no implicit defaults at the boundary.
 
 These need to be added to [docs/architecture/ARCHITECTURE.md §6](../architecture/ARCHITECTURE.md#6-cross-cutting-concerns-12) (rename to "Cross-cutting concerns (14)") in a Phase 1 `/arch-refine` pass — bundle with D1/D2 if landing before the Phase 1 weekend.
@@ -146,7 +148,7 @@ graph TD
     D2["D2: tutor_start_session sync<br/>(arch-refine)"]:::archref
 
     %% Phase 1
-    PH1_001["FEAT-PH1-001<br/>Graphiti Student Model"]:::p1
+    PH1_001["FEAT-PH1-001<br/>Postgres Student Model"]:::p1
     PH1_002["FEAT-PH1-002<br/>Session Planner"]:::p1
     PH1_003["FEAT-PH1-003<br/>DeepAgents loop + Coach"]:::p1
     PH1_004["FEAT-PH1-004<br/>Primary-Text RAG + verifier"]:::p1
@@ -186,7 +188,7 @@ graph TD
     classDef gate fill:#eee,stroke:#666,color:#000
 ```
 
-_Look for: D1/D2 are dashed because they are `/arch-refine` follow-ups, not features. PH1-001 is the single biggest fan-out — every Phase 1 and Phase 2 feature depends on the Graphiti student model landing first. PH1-003 is the integration sink for everything in Phase 1._
+_Look for: D1/D2 are dashed because they are `/arch-refine` follow-ups, not features. PH1-001 is the single biggest fan-out — every Phase 1 and Phase 2 feature depends on the Postgres student model (ADR-ARCH-023; re-platformed as FEAT-SMP-001…004) landing first. PH1-003 is the integration sink for everything in Phase 1._
 
 ## 7. Phase timeline
 

@@ -47,7 +47,7 @@ against others to matter.
 ## 2. XP economy
 
 XP (experience points) is the single scalar currency. Every engagement
-event awards XP. XP is persistent across sessions via Graphiti (Phase 1).
+event awards XP. XP is persistent across sessions in the Postgres student store (Phase 1; ADR-ARCH-023 — formerly Graphiti).
 
 ### 2.1 Session XP
 
@@ -301,8 +301,8 @@ above are pre-curated for the most common United Learning choices.
 
 ## 6. Topic mastery — confidence taxonomy
 
-Per-topic confidence is a number in [0, 1] maintained in Graphiti
-(Phase 1). It drives adaptive session recommendations and the mastery
+Per-topic confidence is a number in [0, 1] maintained in the Postgres
+student store (Phase 1; ADR-ARCH-023). It drives adaptive session recommendations and the mastery
 achievements. Confidence is displayed as a coloured bar on the
 dashboard.
 
@@ -395,7 +395,7 @@ per DEC-06 in the decisions log.
 
 ### 9.1 What Reachy does
 
-Reachy reads Graphiti state and the gamification economy to produce
+Reachy reads the Postgres student-store state and the gamification economy to produce
 conversational progress updates. Scripts are derived from this design
 doc, not hand-written per interaction.
 
@@ -451,10 +451,11 @@ Boss Battle) happen in the MCP interface, not the dashboard.
 
 ---
 
-## 11. Persistence model (for Phase 1 Graphiti design)
+## 11. Persistence model (for Phase 1 Postgres student store)
 
 This is a forward reference — the state engine is Phase 2, but
-the Graphiti schema decisions need to land in Phase 1.
+the Postgres student-store schema decisions need to land in Phase 1
+(ADR-ARCH-023 — the store was originally Graphiti).
 
 ### 11.1 Entities (proposed)
 
@@ -479,7 +480,10 @@ the Graphiti schema decisions need to land in Phase 1.
 - `boss_battle.completed` → XP delta, trophy, confidence delta, possible
   Exam Ready achievement.
 
-All state changes are atomic at the session-end boundary. Within-session
+All state changes are atomic at the session-end boundary — under
+ADR-ARCH-023 this is literally a single synchronous Postgres transaction
+(XP + streak + per-topic confidence deltas + achievement checks), not a
+fire-and-forget per-write. Within-session
 state (partial progress toward a challenge) lives in session-scoped
 memory only.
 
@@ -494,13 +498,13 @@ memory only.
 
 ### Phase 1 (next weekend, 26–27 April + week)
 
-- Graphiti entity/episode schema per §11.
+- Postgres student-store schema per §11 (ADR-ARCH-023).
 - Session-end hook in the Coach that emits the events in §11.2.
 - Persistence-only, no UI.
 
 ### Phase 2
 
-- Gamification state engine reading/writing Graphiti.
+- Gamification state engine reading/writing the Postgres student store.
 - Dashboard per §10.
 - Reachy scripts per §9 (hardware-gated to 4 May).
 
