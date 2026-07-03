@@ -76,7 +76,7 @@ See `domain-model.md` for full entity relationships.
 | Transport | `mcp` Python SDK over stdio | P0 | SR-01 stream-split discipline |
 | CLI | `click` | P0 | `err=True` for stderr banner |
 | Validation | `pydantic` | P0 | Boundary-validation strategy |
-| Student store | Postgres 16 (JSONB), study-tutor-owned | P1 | Own instance/volume, port 5433; no graph, no embeddings, no LLM (ADR-ARCH-023) |
+| Student store | Postgres 16 (JSONB), study-tutor-owned | P1 | Own instance/volume, port 5434; no graph, no embeddings, no LLM (ADR-ARCH-023) |
 | RAG | ChromaDB | P1 | Reused from `agentic-dataset-factory` |
 | Embeddings | nomic-embed-text-v1.5 on GB10 | P1 | ChromaDB corpus retrieval only; student model has none (ADR-ARCH-023) |
 | Entity-extraction LLM | None — retired | P1 | Graphiti/Gemini extraction removed; student store is Postgres JSONB (ADR-ARCH-023) |

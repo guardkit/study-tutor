@@ -51,7 +51,7 @@ C4Container
 
     System_Ext(ollama, "Ollama (GB10)", "Local inference")
     System_Ext(bedrock, "AWS Bedrock", "Custom Model Import")
-    System_Ext(postgres, "Postgres (study-tutor-owned)", "JSONB student store — own instance, port 5433, nightly pg_dump")
+    System_Ext(postgres, "Postgres (study-tutor-owned)", "JSONB student store — own instance, port 5434, nightly pg_dump")
     System_Ext(embedder, "GB10 Embedder", "nomic-embed-text-v1.5")
     System_Ext(claude_desktop, "Claude Desktop", "MCP client")
 

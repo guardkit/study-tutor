@@ -33,7 +33,7 @@ C4Context
     System_Ext(ollama, "Ollama on GB10", "Local inference — fine-tuned Gemma 4 31B Q4_K_M. Tailscale-reachable. [P0 primary]")
     System_Ext(bedrock, "AWS Bedrock", "Custom Model Import — scale-to-zero Gemma 4 31B. Frees GB10 for training. [P0 validation, P1+ primary for demo week]")
     System_Ext(s3, "AWS S3", "Model artefact storage — appmilla-study-tutor-bedrock-models.")
-    System_Ext(postgres, "Postgres (study-tutor-owned NAS)", "Student-model store — JSONB; per-student topic confidence, XP, streaks, achievements, sessions. Own instance, port 5433, nightly pg_dump. [P1+]")
+    System_Ext(postgres, "Postgres (study-tutor-owned NAS)", "Student-model store — JSONB; per-student topic confidence, XP, streaks, achievements, sessions. Own instance, port 5434, nightly pg_dump. [P1+]")
     System_Ext(embedder, "GB10 Embedder", "nomic-embed-text-v1.5 on :8001 — ChromaDB corpus embeddings. [P1+]")
     System_Ext(openwebui, "Open WebUI (GB10)", "Lilymay's primary chat interface. OpenAI-compatible. Unchanged from today.")
     System_Ext(litellm, "LiteLLM Proxy (GB10)", "OpenAI-compatible proxy routing Open WebUI → Bedrock when GB10 is training. [P0 validation]")
@@ -68,7 +68,7 @@ C4Context
   This is the DEC-07 dual-path architecture that removes the
   GB10-training/inference conflict during demo week.
 - **Postgres student store** is a single external store (study-tutor-owned,
-  port 5433). The former **Graphiti split topology** (Gemini + FalkorDB +
+  port 5434). The former **Graphiti split topology** (Gemini + FalkorDB +
   Embedder) is retired (ADR-ARCH-023); the GB10 embedder survives only for
   ChromaDB corpus retrieval, not the student model. Dropping the Gemini
   extractor closes the ADR-ARCH-015 on-device-residency exception.

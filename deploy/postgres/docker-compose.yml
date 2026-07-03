@@ -1,5 +1,5 @@
 # study-tutor StudentStore — durable Postgres (FEAT-SMP-001 / ADR-ARCH-023).
-# Dedicated instance: JSONB, NO pgvector, own volume, port 5433 (5432 is fleet-memory's).
+# Dedicated instance: JSONB, NO pgvector, own volume, port 5434 (5432=DSM internal PG, 5433=fleet-memory).
 # Stand-up + gates: docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md
 # Schema/DDL is owned by Alembic (FEAT-SMP-001), NOT this file.
 services:
@@ -12,7 +12,7 @@ services:
       POSTGRES_DB: study_tutor
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     ports:
-      - "${PG_PORT:-5433}:5432"
+      - "${PG_PORT:-5434}:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data   # bind mount → lands on /volume1 (backed up)
     healthcheck:

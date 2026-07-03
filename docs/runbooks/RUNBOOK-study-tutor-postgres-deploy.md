@@ -16,7 +16,7 @@
 | Extensions | **pgvector** (embeddings) | **none** — JSONB only; embeddings/corpus stay on **ChromaDB** ([ADR-ARCH-022](../architecture/decisions/ADR-ARCH-022-corpus-retrieval-lexical-path-defer-agentic-tool.md)) |
 | Data | reindexable-from-markdown | **real learner state — NOT reindexable** |
 | Backup | *deferrable* (snapshot enough) | **nightly `pg_dump` REQUIRED from day one** (see Phase 4) |
-| Host port | 5432 | **5433** (5432 is taken by fleet-memory on the NAS) |
+| Host port | 5433 | **5434** (5432 = DSM's own internal Postgres, localhost-only; fleet-memory holds 5433) |
 | Schema/DDL | — | created by **Alembic** (FEAT-SMP-001), not this runbook — this stands up an **empty DB + role** |
 
 **Two supported targets** (pick one; the app only ever sees a DSN):
@@ -33,10 +33,10 @@ The blocks below are **Target A**. Target-B deltas are called out inline.
 | Item | Lives where | Notes |
 |---|---|---|
 | SSH **key** (`~/.ssh/fleet_memory_nas_ed25519`) | deploy host (GB10/Mac), agent | **Reuse** the existing NAS key — it authenticates the host to the NAS regardless of which container it deploys. (Target B: no SSH — deploy runs locally on the GB10.) |
-| `deploy/postgres/.env.deploy` | deploy host only, `chmod 600`, gitignored | `NAS_HOST`, `NAS_USER`, `NAS_SSH_PORT`, `NAS_DOCKER_ROOT=/volume1/docker/study_tutor`, `PG_PORT=5433`, `STUDY_TUTOR_PG_PASSWORD` |
+| `deploy/postgres/.env.deploy` | deploy host only, `chmod 600`, gitignored | `NAS_HOST`, `NAS_USER`, `NAS_SSH_PORT`, `NAS_DOCKER_ROOT=/volume1/docker/study_tutor`, `PG_PORT=5434`, `STUDY_TUTOR_PG_PASSWORD` |
 | `.env` next to compose on the NAS | NAS, `chmod 600`, rendered by deploy | `POSTGRES_PASSWORD` only (compose auto-loads) |
 | sudoers entry | NAS `/etc/sudoers.d/fleet_memory_docker` | **Already in place** — NOPASSWD for the docker binary only. No new sudoers needed. |
-| App DSN | study-tutor `.env` → `STUDY_TUTOR_PG_DSN` | `postgresql://study_tutor:<pw>@<host>:5433/study_tutor` |
+| App DSN | study-tutor `.env` → `STUDY_TUTOR_PG_DSN` | `postgresql://study_tutor:<pw>@<host>:5434/study_tutor` |
 
 `deploy/postgres/.env.deploy.example` (committed):
 
@@ -45,8 +45,8 @@ NAS_HOST=whitestocks.tailebf801.ts.net     # Tailscale MagicDNS (same NAS as fle
 NAS_USER=RichardWoollcott                  # DSM account NAME, administrators group
 NAS_SSH_PORT=22
 NAS_DOCKER_ROOT=/volume1/docker/study_tutor
-PG_PORT=5433                               # NOT 5432 (fleet-memory owns that)
-STUDY_TUTOR_PG_PASSWORD=                   # generate: openssl rand -base64 24
+PG_PORT=5434                               # 5432=DSM internal PG (localhost), 5433=fleet-memory; study-tutor owns 5434
+STUDY_TUTOR_PG_PASSWORD=                   # generate: openssl rand -hex 24  (hex → URL-safe in the DSN)
 ```
 
 ---
@@ -64,7 +64,7 @@ services:
       POSTGRES_DB: study_tutor
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
     ports:
-      - "${PG_PORT:-5433}:5432"
+      - "${PG_PORT:-5434}:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data        # bind mount → lands on /volume1 (backed up)
     healthcheck:
@@ -87,7 +87,7 @@ Already provisioned by the fleet-memory NAS runbook and **not repeated**: SSH ke
 ssh -i ~/.ssh/fleet_memory_nas_ed25519 -p 22 "$NAS_USER@$NAS_HOST" \
   'mkdir -p /volume1/docker/study_tutor/pgdata'
 ```
-DSM firewall (Control Panel → Security → Firewall): allow **TCP 5433** from the LAN subnet and `100.64.0.0/10` (tailnet); deny otherwise.
+DSM firewall (Control Panel → Security → Firewall): allow **TCP 5434** from the LAN subnet and `100.64.0.0/10` (tailnet); deny otherwise.
 
 **GATE G0 (from the deploy host) — reuse the existing proof:**
 ```bash
@@ -102,7 +102,7 @@ _Target B: skip Phase 0 entirely — you deploy locally on the GB10 (`docker com
 ```bash
 cd ~/Projects/appmilla_github/study-tutor/deploy/postgres
 cp .env.deploy.example .env.deploy && chmod 600 .env.deploy
-openssl rand -base64 24                              # → STUDY_TUTOR_PG_PASSWORD
+openssl rand -hex 24                                 # → STUDY_TUTOR_PG_PASSWORD (hex = URL-safe; base64 may emit / or + that break URL-form DSNs)
 git check-ignore deploy/postgres/.env.deploy         # GATE G1a PASS: echoes the path
 grep -c '=$' .env.deploy                             # GATE G1 PASS: prints 0 (no empty values)
 ```
@@ -140,11 +140,13 @@ $SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres psql -U study_tuto
 
 # GATE G4 — the network path the tutor backend will actually use
 psql "postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HOST}:${PG_PORT}/study_tutor" -c 'SELECT 1;'
-# PASS: returns 1. FAIL: DSM firewall (5433) or port mapping.
+# PASS: returns 1. FAIL: DSM firewall (5434) or port mapping.
 
 # GATE G5 — data on the backed-up volume, not container-internal
-$SSH "cat ${NAS_DOCKER_ROOT}/pgdata/PG_VERSION"
-# PASS: prints 16. FAIL: bind mount wrong — STOP, do not run migrations.
+$SSH "sudo -n /usr/local/bin/docker inspect -f 'MOUNT: {{range .Mounts}}{{.Type}} {{.Source}} -> {{.Destination}}{{end}}' study_tutor_postgres"
+$SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres cat /var/lib/postgresql/data/PG_VERSION"
+# PASS: MOUNT is a `bind` from /volume1/docker/study_tutor/pgdata AND PG_VERSION prints 16. FAIL: bind mount wrong — STOP, do not run migrations.
+# NOTE: read PG_VERSION *via the container* — the host pgdata is mode 0700 owned by the container's postgres uid, so a plain `cat` as the SSH user returns "Permission denied" (that error alone still confirms the bind is populated).
 
 # GATE G7 — schema-init: Alembic head applies (run from the study-tutor app env, FEAT-SMP-001)
 STUDY_TUTOR_PG_DSN="postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HOST}:${PG_PORT}/study_tutor" \
@@ -178,17 +180,17 @@ STUDY_TUTOR_PG_DSN="postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HO
 | G1 | `.env.deploy` complete + gitignored + 600 | Phase 2 | fill/ignore/chmod |
 | G2 | Container Up (healthy) | G3 | read logs, fix, re-run |
 | G3 | pg_isready + JSONB select | G4 | image/init issue |
-| G4 | psql over the DSN on 5433 | G5 | firewall/port |
+| G4 | psql over the DSN on 5434 | G5 | firewall/port |
 | G5 | `pgdata/PG_VERSION` = 16 on /volume1 | G7 (G6 when convenient) | **STOP** — bind mount wrong |
 | G7 | `alembic upgrade head` applies | Done | migration bug (FEAT-SMP-001) |
 
 ## What NOT to do
 
-- Do **NOT** share fleet-memory's DB, volume, or port — study-tutor is an independent deploy (ADR-ARCH-023 D4). Own container, own `/volume1/docker/study_tutor`, own **5433**.
+- Do **NOT** share fleet-memory's DB, volume, or port — study-tutor is an independent deploy (ADR-ARCH-023 D4). Own container, own `/volume1/docker/study_tutor`, own **5434**.
 - Do **NOT** skip the nightly `pg_dump` — this store holds **non-reindexable** learner state (the exact opposite of fleet-memory's posture).
 - Do **NOT** install pgvector or any extension — keep the surface minimal; semantic recall reuses ChromaDB, not this DB.
 - Do **NOT** put table DDL in this runbook — **Alembic** (FEAT-SMP-001) owns the schema; this runbook stands up an empty DB + role only.
-- Do **NOT** expose 5433 beyond LAN + tailnet, and do **NOT** point any CI/hermetic test at this instance.
+- Do **NOT** expose 5434 beyond LAN + tailnet, and do **NOT** point any CI/hermetic test at this instance.
 - Do **NOT** run `docker compose down -v` (nukes the data bind); rollback is snapshot/dump restore.
 - Do **NOT** edit compose on the NAS directly — the repo copy is canonical; change there, re-run Phase 2.
 - Do **NOT** put an SSH password in any file or reuse `sshpass` — key auth + the existing scoped NOPASSWD only.

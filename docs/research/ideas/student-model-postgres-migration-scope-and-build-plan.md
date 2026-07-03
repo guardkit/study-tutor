@@ -87,7 +87,7 @@ W2  FEAT-SMP-002  (reads + planner)   ‖  FEAT-SMP-003  (session persistence + 
 W3  FEAT-SMP-004  (teardown + dep drop)           ── only after W1+W2 are green
 ```
 
-**W0 — infra prerequisite:** stand up the dedicated study-tutor Postgres per [RUNBOOK-study-tutor-postgres-deploy.md](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) (JSONB, no pgvector, own instance/volume/port 5433, nightly `pg_dump` required). A throwaway local container is enough to develop/test FEAT-SMP-001; the durable NAS instance must exist before W1's write path is validated against real persistence. FEAT-SMP-001 productizes the runbook's Phase 2–3 blocks into `deploy/postgres/deploy.sh` + `smoke.sh`.
+**W0 — infra prerequisite:** stand up the dedicated study-tutor Postgres per [RUNBOOK-study-tutor-postgres-deploy.md](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) (JSONB, no pgvector, own instance/volume/port 5434, nightly `pg_dump` required). A throwaway local container is enough to develop/test FEAT-SMP-001; the durable NAS instance must exist before W1's write path is validated against real persistence. FEAT-SMP-001 productizes the runbook's Phase 2–3 blocks into `deploy/postgres/deploy.sh` + `smoke.sh`.
 
 Mirrors the guardkit cutover that worked: **adapter/schema → writes → reads → delete the old last**, a working system at every wave. Because study-tutor is a *soft* dependency, W3 can land on its own schedule, decoupled from the fleet-wide Graphiti decommission.
 
@@ -230,10 +230,10 @@ Run order: **G-ADR → W0 → W1 → G-CON → W2 → W3 → mobile**. Steps 1�
 - **Why first:** W1 builds against this decision; don't implement against a `Proposed` ADR.
 
 ### Step 2 — W0: stand up Postgres ([runbook](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md))
-- **Dev-local (unblocks W1 now):** `cp deploy/postgres/.env.deploy.example deploy/postgres/.env.deploy`, set `STUDY_TUTOR_PG_PASSWORD` (`openssl rand -base64 24`), then `cd deploy/postgres && POSTGRES_PASSWORD=… PG_PORT=5433 docker compose up -d`; confirm `psql "postgresql://study_tutor:…@localhost:5433/study_tutor" -c 'select 1'`.
+- **Dev-local (unblocks W1 now):** `cp deploy/postgres/.env.deploy.example deploy/postgres/.env.deploy`, set `STUDY_TUTOR_PG_PASSWORD` (`openssl rand -hex 24`), then `cd deploy/postgres && POSTGRES_PASSWORD=… PG_PORT=5434 docker compose up -d`; confirm `psql "postgresql://study_tutor:…@localhost:5434/study_tutor" -c 'select 1'`.
 - **Durable NAS (before W1's write path is validated against real persistence):** runbook Phases 0–3, gates G0–G7 (Phase 0 mostly reused from fleet-memory).
 - **Then:** set `STUDY_TUTOR_PG_DSN` in study-tutor `.env`.
-- **Produces:** an empty `study_tutor` DB + role, reachable on 5433. Schema is applied by Alembic in W1 (not here).
+- **Produces:** an empty `study_tutor` DB + role, reachable on 5434. Schema is applied by Alembic in W1 (not here).
 
 ### Step 3 — W1: build FEAT-SMP-001 (schema + sync write) — the foundation
 - **Do:** the §6 **W1** `/feature-spec` → review the generated `features/…_summary.md` → `/feature-plan "Student Model Postgres Store" --context features/…/…_summary.md` → `/feature-build` (or `/task-work` per task).

@@ -3,7 +3,7 @@
 **Status:** Ready to execute. **G-ADR is done** (ADR-ARCH-023 ratified → Accepted, 2026-07-03); W0 is the next action.
 **Date:** 2026-07-03.
 **For:** a Claude Code session **on the GB10** (`promaxgb10`).
-**Objective:** Provision a **study-tutor-dedicated Postgres 16** as the durable StudentStore — an **empty DB + role on port 5433** — to unblock the W1 build. **This does not create any tables** (Alembic owns the schema in W1).
+**Objective:** Provision a **study-tutor-dedicated Postgres 16** as the durable StudentStore — an **empty DB + role on port 5434** — to unblock the W1 build. **This does not create any tables** (Alembic owns the schema in W1).
 **Authoritative procedure:** [RUNBOOK-study-tutor-postgres-deploy.md](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) — follow it for the exact blocks and gates. This doc is orientation + the condensed steps.
 
 ---
@@ -25,12 +25,12 @@ git log --oneline -3          # confirm you see the G-ADR ratification commit
 
 [ADR-ARCH-023](../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) replaced the Graphiti/FalkorDB student model with a **study-tutor-owned Postgres (JSONB)** store, **independently deployable** from the agent fleet (D4). W0 stands that store up. Everything for W0 already exists in the repo:
 
-- [deploy/postgres/docker-compose.yml](../../deploy/postgres/docker-compose.yml) — Postgres 16, port 5433, JSONB, **no pgvector**, `pgdata` bind mount, healthcheck.
+- [deploy/postgres/docker-compose.yml](../../deploy/postgres/docker-compose.yml) — Postgres 16, port 5434, JSONB, **no pgvector**, `pgdata` bind mount, healthcheck.
 - [deploy/postgres/.env.deploy.example](../../deploy/postgres/.env.deploy.example) — the deploy-host secrets template.
 - [RUNBOOK-study-tutor-postgres-deploy.md](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) — phases 0–4, gates G0–G7, "what NOT to do".
 - [src/study_tutor/knowledge/store/schema_reference.sql](../../src/study_tutor/knowledge/store/schema_reference.sql) — **reference-only** DDL (the shape W1's Alembic migration encodes; do **not** apply by hand).
 
-**W0 produces:** an empty `study_tutor` database + role, reachable on `5433`, on a backed-up volume. **W0 does NOT:** create tables, install extensions, or touch application code.
+**W0 produces:** an empty `study_tutor` database + role, reachable on `5434`, on a backed-up volume. **W0 does NOT:** create tables, install extensions, or touch application code.
 
 ---
 
@@ -51,7 +51,7 @@ The [runbook](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) Phases 0–3 a
 ```bash
 cd deploy/postgres
 cp .env.deploy.example .env.deploy && chmod 600 .env.deploy
-openssl rand -base64 24                        # → paste into STUDY_TUTOR_PG_PASSWORD in .env.deploy
+openssl rand -hex 24                           # → paste into STUDY_TUTOR_PG_PASSWORD in .env.deploy (hex = URL-safe in the DSN)
 git check-ignore deploy/postgres/.env.deploy   # GATE G1a: must echo the path (gitignored)
 grep -c '=$' .env.deploy                        # GATE G1: prints 0 (no empty values)
 source .env.deploy
@@ -60,7 +60,7 @@ SSH="ssh -i $HOME/.ssh/fleet_memory_nas_ed25519 -o BatchMode=yes -p ${NAS_SSH_PO
 # GATE G0 — reuse the fleet-memory NAS proof (SSH + passwordless docker), then the one new prep step:
 $SSH 'echo SSH_OK && sudo -n /usr/local/bin/docker version --format "DOCKER_OK {{.Server.Version}}"'
 $SSH "mkdir -p ${NAS_DOCKER_ROOT}/pgdata"
-# DSM firewall (Control Panel → Security → Firewall): allow TCP 5433 from LAN + 100.64.0.0/10 (tailnet), deny else.
+# DSM firewall (Control Panel → Security → Firewall): allow TCP 5434 from LAN + 100.64.0.0/10 (tailnet), deny else.
 
 # Phase 2 — deploy: sync compose, render the NAS-side .env, bring it up
 rsync -avz -e "ssh -i $HOME/.ssh/fleet_memory_nas_ed25519 -p ${NAS_SSH_PORT}" \
@@ -72,7 +72,7 @@ $SSH "cd ${NAS_DOCKER_ROOT} && sudo -n /usr/local/bin/docker compose up -d"
 $SSH "sudo -n /usr/local/bin/docker ps --filter name=study_tutor_postgres --format '{{.Status}}'"   # G2: Up (healthy)
 $SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres psql -U study_tutor -d study_tutor -tAc \"SELECT '{\\\"ok\\\":true}'::jsonb;\""  # G3
 psql "postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HOST}:${PG_PORT}/study_tutor" -c 'SELECT 1;'   # G4: DSN reachable
-$SSH "cat ${NAS_DOCKER_ROOT}/pgdata/PG_VERSION"    # G5: prints 16 (data on the backed-up /volume1)
+$SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres cat /var/lib/postgresql/data/PG_VERSION"   # G5: prints 16 (read via the container — host pgdata is 0700/postgres-uid, a plain cat gets Permission denied; docker inspect confirms the MOUNT is a bind from /volume1)
 ```
 
 ---
@@ -85,7 +85,7 @@ $SSH "cat ${NAS_DOCKER_ROOT}/pgdata/PG_VERSION"    # G5: prints 16 (data on the 
 | G1 | `.env.deploy` complete, gitignored, `chmod 600` |
 | G2 | container `Up (healthy)` on the NAS |
 | G3 | `pg_isready` + a JSONB `SELECT` (proves **no pgvector needed**) |
-| G4 | `psql` over the **DSN on 5433** (the path the tutor backend uses) |
+| G4 | `psql` over the **DSN on 5434** (the path the tutor backend uses) |
 | G5 | `pgdata/PG_VERSION` = 16 on the backed-up `/volume1` (**STOP** if the bind mount is wrong) |
 | G6 | reboot persistence — reboot the NAS from DSM, container auto-restarts, data intact (when convenient) |
 
@@ -93,7 +93,7 @@ $SSH "cat ${NAS_DOCKER_ROOT}/pgdata/PG_VERSION"    # G5: prints 16 (data on the 
 
 **Then wire the app:** put the DSN in the study-tutor `.env`:
 ```
-STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@whitestocks.tailebf801.ts.net:5433/study_tutor
+STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@whitestocks.tailebf801.ts.net:5434/study_tutor
 ```
 (The `.env.example` swap — replacing the old Graphiti/FalkorDB config with `STUDY_TUTOR_PG_DSN` — is part of the W3 config swap; not required to finish W0.)
 
@@ -103,16 +103,16 @@ STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@whitestocks.tailebf801.ts
 
 - **No pgvector, no extensions.** JSONB only; semantic recall reuses ChromaDB ([ADR-ARCH-022](../architecture/decisions/ADR-ARCH-022-corpus-retrieval-lexical-path-defer-agentic-tool.md)), not this DB.
 - **Nightly `pg_dump` is REQUIRED** (Phase 4). Learner state is **not** reindexable — a volume snapshot alone is insufficient. Schedule it via DSM Task Scheduler into the backed-up `backups/` dir (runbook Phase 4).
-- **Own everything** — own container, own volume (`/volume1/docker/study_tutor` on the NAS), own port **5433**. Never share fleet-memory's DB/volume/port (5432).
+- **Own everything** — own container, own volume (`/volume1/docker/study_tutor` on the NAS), own port **5434**. Never share fleet-memory's DB/volume/port. *(Actual NAS port layout: 5432 = DSM's own internal Postgres (localhost-only); 5433 = fleet-memory; 5434 = study-tutor.)*
 - **No table DDL by hand** — Alembic (W1) owns the schema; `schema_reference.sql` is reference-only.
 - **Never `docker compose down -v`** (nukes the data bind). Rollback is snapshot / `pg_restore`.
-- **Don't expose 5433 beyond LAN + tailnet**, and never point CI/hermetic tests at this instance.
+- **Don't expose 5434 beyond LAN + tailnet**, and never point CI/hermetic tests at this instance.
 
 ---
 
 ## 6. After W0 → W1 (FEAT-SMP-001)
 
-With the empty DB reachable on 5433, W1 is the first build. From the build plan [§6](../research/ideas/student-model-postgres-migration-scope-and-build-plan.md):
+With the empty DB reachable on 5434, W1 is the first build. From the build plan [§6](../research/ideas/student-model-postgres-migration-scope-and-build-plan.md):
 
 ```bash
 /feature-spec "Student Model Postgres Store — JSONB schema + Alembic migrations, StudentStore port + Postgres adapter, synchronous transactional session-end write (replaces GraphitiWriteHelper F1/F2/F3), reusing the persistence-agnostic Pydantic entities" \
@@ -137,7 +137,7 @@ W1 fills the `PostgresStudentStore` bodies (today `NotImplementedError`), writes
 
 ## 7. Suggested opener for the GB10 session
 
-> Stand up the study-tutor StudentStore Postgres per `docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md` (W0 of the migration build plan) — a **dedicated container on the NAS `whitestocks`**, deployed from this GB10 over SSH. Objective: an empty `study_tutor` DB + role on port 5433, gates **G0–G6** green; **do not** run Alembic (that's W1). Then set `STUDY_TUTOR_PG_DSN` in the study-tutor `.env`. Constraints: JSONB only, no pgvector, nightly `pg_dump` via DSM, never `down -v`.
+> Stand up the study-tutor StudentStore Postgres per `docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md` (W0 of the migration build plan) — a **dedicated container on the NAS `whitestocks`**, deployed from this GB10 over SSH. Objective: an empty `study_tutor` DB + role on port 5434, gates **G0–G6** green; **do not** run Alembic (that's W1). Then set `STUDY_TUTOR_PG_DSN` in the study-tutor `.env`. Constraints: JSONB only, no pgvector, nightly `pg_dump` via DSM, never `down -v`.
 
 ---
 
