@@ -14,7 +14,7 @@
 | **G-P1** | Scope exists | `docs/research/ideas/flutter-app-scope.md` — brutal MVP cut, mock-backend strategy, ADR-ARCH-015 constraints, approved-dependency list |
 | **G-P2** | Structure decided | Monorepo ADR filed (`app/` in study-tutor, extraction triggers named) |
 | **G-P3** | Build plan exists | Wave structure; per-wave gates (§3); contract pinned to `CONTRACT_SHA`; morning gate (§6) written in as pre-registered |
-| **G-F0** | Toolchain ready | `flutter doctor` clean **for the chosen build target**; `flutter create app` scaffold committed; `cd app && flutter test` green; the per-wave build gate succeeds once while attended. **Build-gate selection:** `flutter build apk --debug` if the Android SDK + licenses are ready; else `flutter build web` (Chrome only) or `flutter build macos --debug` (Xcode only) — record the choice in the build plan. **CHOSEN 2026-07-03: `flutter build apk --debug`** — doctor verified: Flutter 3.44.4 stable, Android SDK 36.1.0 ✓; sole warning is CocoaPods 1.12.0 (iOS/macOS plugin builds only — irrelevant to this gate; `brew upgrade cocoapods` before the first iOS wave) |
+| **G-F0** | Toolchain ready | `flutter doctor` clean **for the chosen build target**; `flutter create app` scaffold committed; `cd app && flutter test` green; the per-wave build gate succeeds once while attended. **Build-gate selection:** `flutter build apk --debug` if the Android SDK + licenses are ready; else `flutter build web` (Chrome only) or `flutter build macos --debug` (Xcode only) — record the choice in the build plan. **CHOSEN 2026-07-03: `flutter build apk --debug`** — doctor verified: Flutter 3.44.4 stable, Android SDK 36.1.0 ✓; sole warning was CocoaPods 1.12.0 — **resolved 2026-07-03** (orphaned gem binstubs removed; pod 1.16.2; doctor fully clean, all ✓) |
 | **G-R0** | Run environment | Worktree + branch `overnight/fable-flutter-<date>`; tmux session; `caffeinate` armed; mains power; Claude Code model pinned to Fable; house permissions mode |
 | **G-R1** | Instruments ready | `app/PROGRESS.md` initialised with wave list; empty `app/QUESTIONS.md` |
 
@@ -32,7 +32,7 @@
 
 ```bash
 cd ~/Projects/appmilla_github/study-tutor
-git worktree add ../study-tutor-overnight overnight/fable-flutter-$(date +%F)
+git worktree add -b overnight/fable-flutter-$(date +%F) ../study-tutor-overnight
 cd ../study-tutor-overnight
 tmux new -s fable-night
 caffeinate -dims &
