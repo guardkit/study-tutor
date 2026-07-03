@@ -1,10 +1,32 @@
 # Student Model → Postgres Migration — Scope + Build Plan
 
-**Status:** Ready for `/feature-spec`. Decision canonical ([ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md)).
-**Generated:** 2026-07-02.
+**Status:** Scaffolding + planning **complete and committed to `main`** (2026-07-03); ratification gates (§5a) and builds pending — see §0. Decision canonical ([ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md)).
+**Generated:** 2026-07-02 · **status refreshed:** 2026-07-03.
 **Decision:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) — drop Graphiti/FalkorDB; adopt a study-tutor-owned Postgres (JSONB) student store; writes revert to synchronous; **start fresh** (no data migration).
 **Inputs:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md), [gamification/design.md §11](../../gamification/design.md), [phase-1-scope.md §FEAT-PH1-001](./phase-1-scope.md), the existing FEAT-1773 code (`knowledge/student_model.py`, `queries.py`, `async_write.py`), [mobile+voice handoff](../../handoffs/study-tutor-mobile-voice-conversation-starter.md).
 **Consumed by:** `/feature-spec` → `/feature-plan` → `/feature-build`/`/task-work`.
+
+---
+
+## 0. Status (2026-07-03)
+
+**Planning + scaffolding are complete and on `main`; nothing is functional persistence yet.** The scaffolding is importable and verified (guards fire, graphiti-free) with `NotImplementedError` bodies for the builds to fill. What remains is the ratification gates (§5a), the Postgres stand-up (W0), and the four `/feature-spec` builds (§6).
+
+| Item | State | Commit |
+|---|---|---|
+| ADR-ARCH-023 (decision) | **Proposed — G-ADR pending** | `529e1c1` |
+| Scope + build plan (this doc) | committed | `529e1c1`→`2ad49f6` |
+| Postgres runbook + `deploy/postgres/` (compose, env, gitignore) | committed | `529e1c1` |
+| Cross-device session contract | **Proposed — G-CON pending** | `529e1c1` |
+| FEAT-SMP-001 scaffolding — `knowledge/store/` port + entities + PG adapter skeleton + DDL | committed | `529e1c1` |
+| FEAT-SMP-002 scaffolding — `store/provider` + `store/reads` | committed | `e26a3bd` |
+| FEAT-SMP-003 scaffolding — `session/service` + `errors` + `provider` (+ port `(record, created)` fix) | committed | `d45121a` |
+| Ratification gates §5a | committed | `2ad49f6` |
+| **G-ADR / G-CON ratification** | **pending** | — |
+| **W0 Postgres stood up** | **pending** | — |
+| **W1 · W2 · W3 builds** (`/feature-spec` → implement) | **pending** | — |
+
+Detailed, ordered actions in **§9**.
 
 ---
 
@@ -196,7 +218,45 @@ This cluster **is** the FEAT-1773 persistence gate the [mobile+voice slice](../.
 
 _Look for: persistence-first removes the largest rework risk for the mobile build — the client is designed against a real, stable API rather than a moving one._
 
+## 9. Next steps (detailed, in order)
+
+Run order: **G-ADR → W0 → W1 → G-CON → W2 → W3 → mobile**. Steps 1–2 can overlap; W1 is the hard prerequisite for everything after it.
+
+### Step 1 — G-ADR: accept ADR-ARCH-023 (`/arch-refine`)
+- **Do:** run the **G-ADR** command in §5a.
+- **Produces:** ADR-ARCH-023 `Proposed → Accepted`; ADR-003/007/019 flagged `superseded`; ADR-021's CC-13 retirement noted.
+- **Gate:** the conformance check surfaces no contradiction against the live ADRs. (~15 min.)
+- **Why first:** W1 builds against this decision; don't implement against a `Proposed` ADR.
+
+### Step 2 — W0: stand up Postgres ([runbook](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md))
+- **Dev-local (unblocks W1 now):** `cp deploy/postgres/.env.deploy.example deploy/postgres/.env.deploy`, set `STUDY_TUTOR_PG_PASSWORD` (`openssl rand -base64 24`), then `cd deploy/postgres && POSTGRES_PASSWORD=… PG_PORT=5433 docker compose up -d`; confirm `psql "postgresql://study_tutor:…@localhost:5433/study_tutor" -c 'select 1'`.
+- **Durable NAS (before W1's write path is validated against real persistence):** runbook Phases 0–3, gates G0–G7 (Phase 0 mostly reused from fleet-memory).
+- **Then:** set `STUDY_TUTOR_PG_DSN` in study-tutor `.env`.
+- **Produces:** an empty `study_tutor` DB + role, reachable on 5433. Schema is applied by Alembic in W1 (not here).
+
+### Step 3 — W1: build FEAT-SMP-001 (schema + sync write) — the foundation
+- **Do:** the §6 **W1** `/feature-spec` → review the generated `features/…_summary.md` → `/feature-plan "Student Model Postgres Store" --context features/…/…_summary.md` → `/feature-build` (or `/task-work` per task).
+- **Fills in:** the `PostgresStudentStore` adapter bodies (today `NotImplementedError`), the **first Alembic migration** encoding [schema_reference.sql](../../src/study_tutor/knowledge/store/schema_reference.sql), the synchronous session-end write, `ping`; adds `sqlalchemy[asyncio]`/`asyncpg`/`alembic` to `pyproject.toml`; wires `set_student_store` at startup.
+- **Gate:** runbook **G7** (`alembic upgrade head` applies; tables present) + write-path tests green; `record_session_completion` idempotent on `session_id`.
+
+### Step 4 — G-CON: ratify the session contract (`/design-refine`)
+- **Do:** the **G-CON** command in §5a (also inlined in §6). **Before FEAT-SMP-003.**
+- **Produces:** API-session-cross-device `Proposed → Accepted`; the ADR-ARCH-008 partial-supersession (HTTP/WS for app clients per ADR-FLEET-003), the relaxed "end-once/append-only", and the `SessionForbidden`/`Unauthenticated` closed-set extension recorded.
+
+### Step 5 — W2: build FEAT-SMP-002 (reads) ‖ FEAT-SMP-003 (sessions) — parallel
+Both depend only on W1.
+- **FEAT-SMP-002:** implement `store/reads` delegation + lift `recommend_topics` from `queries.py`; repoint `queries.py` callers at `store.reads`; delete the graphiti `_read_student_partition` seam. **Gate:** planner still gets its inputs; graceful degradation preserved.
+- **FEAT-SMP-003:** implement the PG session methods (`create_session` returns `(record, created)`); wire `SessionService` into **both** `MCPAdapter` sites (`serve` + `_build_nats_runtime`) via a shared helper; resolve the **5 build open-decisions** in [service.py](../../src/study_tutor/session/service.py)'s docstring (uniform *server-resolved* `student_id`; internal `subject`; port the confidence/XP delta off Graphiti; pin the `session.completed` payload). **Gate:** MCP tool surface byte-for-byte unchanged (regression test); ownership guard covered by a two-student fake-store test; `session.completed` payload regression test.
+
+### Step 6 — W3: build FEAT-SMP-004 (teardown) — last, after W1+W2 green
+- **Do:** the §6 **W3** `/feature-spec` → build. Delete `graphiti_client`/`episodes`/`seed_uuids`/`async_write` graph path; drop `graphiti-core[falkordb]` from `pyproject.toml`; retire the CC-13 machinery; swap `.env`.
+- **Then §7:** flip ADR-003/007/019 to `superseded`; update [feature-roadmap.md](../../planning/feature-roadmap.md) FEAT-PH1-001 row (Graphiti → Postgres).
+- **Gate:** `rg graphiti src/study_tutor` empty bar history; suite green; `import graphiti_core` fails; the app serves on Postgres end-to-end.
+
+### Step 7 — Downstream: mobile `/goal` on Fable (§8)
+With the session contract frozen+accepted and FEAT-SMP-003 built, run the mobile `/goal` (opener = mobile handoff + the accepted session contract + ADR-FLEET-003) on **Fable** for `/goal → /system-arch → /system-design`, then hand to the build pipeline on the workhorse model.
+
 ---
 
-*Generated 2026-07-02. Next: run the W1 `/feature-spec` + `/feature-plan`, then W2 in parallel, then W3.*
+*Generated 2026-07-02; status refreshed 2026-07-03. Next action: **Step 1 (G-ADR)** in §9.*
 </content>
