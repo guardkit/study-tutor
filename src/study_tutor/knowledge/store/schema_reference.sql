@@ -8,6 +8,11 @@
 -- scaffolded-AO lists). Scalar learner state stays typed. No pgvector.
 
 -- One learner. (Phase 1 ships Lilymay only; multi-student is a partition key.)
+-- Cumulative gamification state (level, total_xp, current_streak, longest_streak
+-- per gamification/design.md §11.1) is added by the Phase 2 gamification engine,
+-- not W1 — W1 persists per-session XP on session.xp_awarded and derives totals by
+-- summation if needed (ASSUM-002; avoids a running-total increment that would
+-- complicate record_session_completion's idempotency-on-session_id).
 CREATE TABLE student (
     student_id    TEXT PRIMARY KEY,               -- stable slug, e.g. 'lilymay'
     name          TEXT NOT NULL,
@@ -46,6 +51,7 @@ CREATE TABLE session (
     started_at      TIMESTAMPTZ NOT NULL,
     last_activity   TIMESTAMPTZ NOT NULL,
     turn_count      INTEGER NOT NULL DEFAULT 0 CHECK (turn_count >= 0),
+    xp_awarded      INTEGER NOT NULL DEFAULT 0 CHECK (xp_awarded >= 0),  -- per-session XP (gamification §11.1); record_session_completion persists it, idempotent on session_id
     aos_scaffolded  JSONB NOT NULL DEFAULT '[]'::jsonb,
     summary         TEXT
 );

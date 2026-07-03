@@ -338,13 +338,13 @@ def test_group_id_prefixes_compose_to_expected_format() -> None:
     # developing band
     (40, "developing"),
     (50, "developing"),
-    (69, "developing"),
+    (59, "developing"),
     # secure band
+    (60, "secure"),
     (70, "secure"),
-    (80, "secure"),
-    (89, "secure"),
+    (79, "secure"),
     # mastered band + upper bound
-    (90, "mastered"),
+    (80, "mastered"),
     (95, "mastered"),
     (100, "mastered"),
 ])

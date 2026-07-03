@@ -43,8 +43,10 @@ Cross-repo divergence (per ASSUM-008):
     identifiers know they must reconcile the convention. Do not
     "harmonise" silently.
 
-Confidence bands (per ASSUM-001, confirmed):
-    0–39 struggling · 40–69 developing · 70–89 secure · 90–100 mastered.
+Confidence bands (per gamification/design.md §6.1 + hackathon plan §5.2):
+    0–39 struggling · 40–59 developing · 60–79 secure · 80–100 mastered.
+    Mastery achievements (e.g. "Macbeth Master") unlock at 80% — the entry to
+    the Mastered band — so the boundary at 80 is load-bearing, not cosmetic.
     See :func:`confidence_band_for` for the boundary-correct mapping.
 """
 from __future__ import annotations
@@ -129,11 +131,12 @@ EPOCH_NEVER_REVISED: Final[datetime] = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 ConfidenceBand = Literal["struggling", "developing", "secure", "mastered"]
 
-# Band thresholds inclusive of the lower bound, per ASSUM-001:
-#   0–39 struggling, 40–69 developing, 70–89 secure, 90–100 mastered.
+# Band thresholds inclusive of the lower bound (gamification/design.md §6.1;
+# hackathon plan §5.2 awards Mastery at 80%):
+#   0–39 struggling, 40–59 developing, 60–79 secure, 80–100 mastered.
 _BAND_THRESHOLDS: tuple[tuple[int, ConfidenceBand], ...] = (
-    (90, "mastered"),
-    (70, "secure"),
+    (80, "mastered"),
+    (60, "secure"),
     (40, "developing"),
     (0, "struggling"),
 )
@@ -142,12 +145,12 @@ _BAND_THRESHOLDS: tuple[tuple[int, ConfidenceBand], ...] = (
 def confidence_band_for(percentage: int) -> ConfidenceBand:
     """Map an integer percentage (0–100) to its confidence band.
 
-    Boundaries (per ASSUM-001):
+    Boundaries (gamification/design.md §6.1; hackathon plan §5.2 = Mastery at 80%):
 
     - ``0..39``  → ``"struggling"``
-    - ``40..69`` → ``"developing"``
-    - ``70..89`` → ``"secure"``
-    - ``90..100`` → ``"mastered"``
+    - ``40..59`` → ``"developing"``
+    - ``60..79`` → ``"secure"``
+    - ``80..100`` → ``"mastered"``
 
     Args:
         percentage: An integer percentage in the inclusive range ``[0, 100]``.
