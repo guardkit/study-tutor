@@ -23,9 +23,25 @@ Design intent the build should honour:
 - Schema is owned by Alembic; see ``schema_reference.sql`` for the shape the
   first migration encodes.
 """
+
 from __future__ import annotations
 
+import re
+from datetime import datetime, timezone
 from typing import Any
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    text as sql_text,
+)
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
@@ -39,37 +55,205 @@ from study_tutor.knowledge.store.port import (
     DEFAULT_MISCONCEPTION_WINDOW_DAYS,
     DEFAULT_SESSION_LIST_LIMIT,
 )
-from study_tutor.knowledge.student_model import Misconception, TopicConfidence
+from study_tutor.knowledge.student_model import (
+    Misconception,
+    TopicConfidence,
+    confidence_band_for,
+)
 
 _NOT_IMPLEMENTED = "PostgresStudentStore is a FEAT-SMP-001 skeleton"
+
+# ASCII control characters to strip (preserves TAB, LF, CR per ASSUM-007)
+# Strips: \x00-\x08, \x0B-\x0C, \x0E-\x1F, \x7F (DEL)
+# Preserves: \x09 (TAB), \x0A (LF), \x0D (CR)
+_CONTROL_CHARS_PATTERN = re.compile(r"[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]")
+
+# Maximum length for misconception text (ASSUM-004)
+_MAX_MISCONCEPTION_TEXT_LENGTH = 500
+
+
+def _sanitise_misconception_text(text: str) -> str:
+    """Sanitise misconception text: strip control chars, cap at 500 chars.
+
+    Text hygiene for F1 misconception writes (TASK-SMP-05). Reduced from the
+    retired sanitiser — ONLY control-char stripping + length cap. Does NOT
+    apply NFKC normalisation, zero-width stripping, or injection rejection
+    (ASSUM-005: opaque data storage, no extraction LLM on Postgres path).
+
+    Args:
+        text: Raw misconception text from observation.
+
+    Returns:
+        Sanitised text: control chars removed, capped at 500 chars.
+    """
+    # Strip ASCII control chars (preserving tab/newline/CR)
+    cleaned = _CONTROL_CHARS_PATTERN.sub("", text)
+
+    # Cap at 500 characters
+    if len(cleaned) > _MAX_MISCONCEPTION_TEXT_LENGTH:
+        cleaned = cleaned[:_MAX_MISCONCEPTION_TEXT_LENGTH]
+
+    return cleaned
+
+
+async def _upsert_confidence(
+    conn: AsyncConnection, student_id: str, update: ConfidenceUpdate
+) -> None:
+    """Upsert topic_confidence at connection level (reused by record_session_completion).
+
+    Derives band via confidence_band_for at write time and stamps last_revised_at in UTC.
+    Enlists in the caller's open transaction.
+
+    Args:
+        conn: Open AsyncConnection (already in a transaction).
+        student_id: The student identifier (FK to student table).
+        update: ConfidenceUpdate with topic_name and percentage [0, 100].
+
+    Raises:
+        ValueError: If percentage is outside [0, 100].
+    """
+    # Derive band (also validates percentage is in [0, 100])
+    band = confidence_band_for(update.percentage)
+
+    # Compute timestamp app-side for deterministic/testable UTC
+    now_utc = datetime.now(timezone.utc)
+
+    # Build table metadata
+    metadata = MetaData()
+    topic_confidence = Table(
+        "topic_confidence",
+        metadata,
+        Column("student_id", String),
+        Column("topic_name", String),
+        Column("percentage", Integer),
+        Column("band", String),
+        Column("last_revised_at", DateTime(timezone=True)),
+    )
+
+    # Build INSERT ... ON CONFLICT DO UPDATE
+    stmt = postgresql.insert(topic_confidence).values(
+        student_id=student_id,
+        topic_name=update.topic_name,
+        percentage=update.percentage,
+        band=band,
+        last_revised_at=now_utc,
+    )
+
+    upsert_stmt = stmt.on_conflict_do_update(
+        index_elements=["student_id", "topic_name"],
+        set_={
+            "percentage": stmt.excluded.percentage,
+            "band": stmt.excluded.band,
+            "last_revised_at": stmt.excluded.last_revised_at,
+        },
+    )
+
+    await conn.execute(upsert_stmt)
+
+
+async def _insert_misconception(
+    conn: AsyncConnection, student_id: str, topic_name: str, text: str
+) -> None:
+    """Insert misconception at connection level (reused by record_session_completion).
+
+    Applies text hygiene (control-char strip + 500-char cap) before insert.
+    Enlists in the caller's open transaction.
+
+    Args:
+        conn: Open AsyncConnection (already in a transaction).
+        student_id: Student identifier (FK to student table).
+        topic_name: Topic the misconception relates to.
+        text: Raw misconception text from observation.
+
+    Raises:
+        ValueError: If topic_name or text (after sanitisation) is blank.
+    """
+    # Validate topic_name is not blank
+    if not topic_name or not topic_name.strip():
+        raise ValueError("topic_name cannot be blank")
+
+    # Apply text hygiene: strip control chars, cap at 500
+    sanitised_text = _sanitise_misconception_text(text)
+
+    # Validate sanitised text is not blank (catches control-char-only input)
+    if not sanitised_text.strip():
+        raise ValueError("text cannot be blank after sanitisation")
+
+    # Compute timestamp app-side for deterministic/testable UTC
+    observed_at = datetime.now(timezone.utc)
+
+    # Build parameterised INSERT statement
+    insert_stmt = sql_text(
+        "INSERT INTO misconception (student_id, topic_name, text, observed_at) "
+        "VALUES (:student_id, :topic_name, :text, :observed_at)"
+    )
+
+    await conn.execute(
+        insert_stmt,
+        {
+            "student_id": student_id,
+            "topic_name": topic_name,
+            "text": sanitised_text,
+            "observed_at": observed_at,
+        },
+    )
 
 
 class PostgresStudentStore:
     """Postgres-backed :class:`StudentStore`. Skeleton — bodies land in FEAT-SMP-001."""
 
     def __init__(self, dsn: str, *, pool: Any | None = None) -> None:
-        """Hold the DSN (and optionally a pre-built pool).
+        """Build async engine from DSN or use injected pool.
 
-        TODO(FEAT-SMP-001): if ``pool`` is None, lazily create an async engine
-        from ``dsn`` (``sqlalchemy.ext.asyncio.create_async_engine`` or an
-        ``asyncpg`` pool). Keep it a single shared instance per process.
+        When ``pool`` is None, creates exactly one shared ``AsyncEngine`` from
+        ``dsn`` (coerced to ``postgresql+asyncpg://`` dialect). When a
+        pool/engine is injected via ``pool=``, no engine is built and the
+        injected object is used as-is (test seam).
         """
         self._dsn = dsn
         self._pool = pool
+        self._engine: AsyncEngine | None = None
+
+        if pool is None:
+            # Coerce DSN to asyncpg dialect for async engine
+            url = make_url(dsn)
+            if url.drivername == "postgresql":
+                url = url.set(drivername="postgresql+asyncpg")
+            elif url.drivername != "postgresql+asyncpg":
+                # Accept postgresql+asyncpg as-is, others coerce
+                if not url.drivername.startswith("postgresql"):
+                    url = url.set(drivername="postgresql+asyncpg")
+
+            # Build single shared engine (reused for every connection)
+            self._engine = create_async_engine(url)
 
     # -- Health -------------------------------------------------------------
 
-    async def ping(self) -> bool:  # TODO(FEAT-SMP-001): SELECT 1
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+    async def ping(self) -> bool:
+        """Health check: SELECT 1 against the database.
+
+        Returns True when the database is reachable. The engine/pool must be
+        configured before calling this method.
+        """
+        if self._pool is not None:
+            # Use injected pool/engine
+            engine = self._pool
+        elif self._engine is not None:
+            # Use our built engine
+            engine = self._engine
+        else:
+            raise RuntimeError("No engine or pool configured")
+
+        async with engine.connect() as conn:
+            await conn.execute(sql_text("SELECT 1"))
+            return True
 
     # -- Reads --------------------------------------------------------------
 
     async def get_student_state(self, student_id: str) -> StudentState:
         raise NotImplementedError(_NOT_IMPLEMENTED)
 
-    async def get_topic_confidences(
-        self, student_id: str
-    ) -> list[TopicConfidence]:
+    async def get_topic_confidences(self, student_id: str) -> list[TopicConfidence]:
         raise NotImplementedError(_NOT_IMPLEMENTED)
 
     async def get_recent_misconceptions(
@@ -93,17 +277,159 @@ class PostgresStudentStore:
         confidence_updates: list[ConfidenceUpdate],
         misconceptions: list[Misconception],
     ) -> None:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """F3 — atomic, idempotent session-end write (TASK-SMP-06).
+
+        Persists per-session XP, batch of per-topic confidence updates, and
+        observed misconceptions as ONE synchronous transaction. Idempotent on
+        session_id: replay/concurrent delivery records exactly once.
+
+        Args:
+            student_id: Student identifier (FK to student table).
+            session_id: Session identifier (PK, upsert key).
+            topic: Optional topic for the session.
+            aos_scaffolded: List of AO identifiers scaffolded in session.
+            xp_awarded: XP to award (SET, not incremented).
+            confidence_updates: Batch of per-topic confidence updates.
+            misconceptions: Batch of observed misconceptions.
+
+        Raises:
+            ValueError: If any confidence percentage is out of range or misconception validation fails.
+            IntegrityError: If student_id has no matching student row (FK violation).
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Single transaction for entire write
+        async with engine.begin() as conn:
+            # Compute timestamps app-side for deterministic/testable UTC
+            now_utc = datetime.now(timezone.utc)
+
+            # Build session table metadata
+            metadata = MetaData()
+            session_table = Table(
+                "session",
+                metadata,
+                Column("session_id", String, primary_key=True),
+                Column("student_id", String),
+                Column("subject", String),
+                Column("topic", String),
+                Column("status", String),
+                Column("started_at", DateTime(timezone=True)),
+                Column("last_activity", DateTime(timezone=True)),
+                Column("turn_count", Integer),
+                Column("xp_awarded", Integer),
+                Column("aos_scaffolded", postgresql.JSONB),
+                Column("summary", String),
+            )
+
+            # Session upsert with idempotency gate: only write children when
+            # transitioning to 'ended' (first delivery wins, replays are no-ops)
+            stmt = postgresql.insert(session_table).values(
+                session_id=session_id,
+                student_id=student_id,
+                subject="",  # Required field, empty for now (cross-device contract)
+                topic=topic,
+                status="ended",
+                started_at=now_utc,
+                last_activity=now_utc,
+                turn_count=0,
+                xp_awarded=xp_awarded,
+                aos_scaffolded=aos_scaffolded,
+                summary=None,
+            )
+
+            # ON CONFLICT: update only if not already ended (idempotency gate)
+            # RETURNING session_id tells us if this call performed the transition
+            upsert_stmt = stmt.on_conflict_do_update(
+                index_elements=["session_id"],
+                set_={
+                    "status": "ended",
+                    "topic": stmt.excluded.topic,
+                    "xp_awarded": stmt.excluded.xp_awarded,
+                    "aos_scaffolded": stmt.excluded.aos_scaffolded,
+                    "last_activity": stmt.excluded.last_activity,
+                },
+                # Only update if not already ended (idempotency gate)
+                where=session_table.c.status != "ended",
+            ).returning(session_table.c.session_id)
+
+            result = await conn.execute(upsert_stmt)
+            transition_happened = result.fetchone() is not None
+
+            # Only write children if this call performed the active→ended transition
+            # (or inserted a new row). Replays see status='ended' already and skip.
+            if transition_happened:
+                # Upsert confidence updates
+                for update in confidence_updates:
+                    await _upsert_confidence(conn, student_id, update)
+
+                # Insert misconceptions
+                for misc in misconceptions:
+                    await _insert_misconception(
+                        conn, student_id, misc.topic_ref, misc.text
+                    )
 
     async def record_misconception(
         self, *, student_id: str, topic_name: str, text: str
     ) -> None:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """F1 — synchronous misconception INSERT with text hygiene (TASK-SMP-05).
+
+        Records a single Coach-observed misconception, writing one row to the
+        misconception table with observed_at = now(UTC). Text is sanitised
+        (control-char strip + 500-char cap) before persistence, but prompt-
+        injection rejection is NOT applied (ASSUM-005: opaque storage).
+
+        Args:
+            student_id: Student identifier (FK to student table).
+            topic_name: Topic the misconception relates to.
+            text: Raw misconception text from observation.
+
+        Raises:
+            ValueError: If topic_name or text (after sanitisation) is blank.
+            IntegrityError: If student_id has no matching student row (FK violation).
+        """
+        # Execute in a transaction (awaited inline, no fire-and-forget)
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        async with engine.begin() as conn:
+            await _insert_misconception(conn, student_id, topic_name, text)
 
     async def apply_confidence_update(
         self, *, student_id: str, update: ConfidenceUpdate
     ) -> None:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Upsert topic_confidence with derived band (F2 write path).
+
+        Persists the resolved confidence percentage, derives the band at write
+        time via confidence_band_for, and stamps last_revised_at in UTC.
+
+        Args:
+            student_id: The student identifier (FK to student table).
+            update: ConfidenceUpdate with topic_name and percentage [0, 100].
+
+        Raises:
+            ValueError: If percentage is outside [0, 100].
+            IntegrityError: If student_id has no matching student row (FK violation).
+        """
+        # Execute in a transaction
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        async with engine.begin() as conn:
+            await _upsert_confidence(conn, student_id, update)
 
     # -- Session persistence -----------------------------------------------
 
