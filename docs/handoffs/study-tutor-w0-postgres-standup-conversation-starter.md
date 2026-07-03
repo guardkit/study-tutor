@@ -34,61 +34,60 @@ git log --oneline -3          # confirm you see the G-ADR ratification commit
 
 ---
 
-## 2. The one decision — where does the durable instance live?
+## 2. Where it runs — the NAS (`whitestocks`)
 
-The app only ever sees a **DSN**; the host is an operator choice. The runbook supports two targets:
+The store lives in a **dedicated Postgres container on the Synology NAS** `whitestocks` (`whitestocks.tailebf801.ts.net`), reached by the GB10 tutor backend over Tailscale. This is the right home for real learner data: the NAS is always-on, already has Hyper Backup, and satisfies the on-device-residency posture for a minor's non-reindexable state ([ADR-ARCH-015](../architecture/decisions/ADR-ARCH-015-uk-on-device-data-residency.md)).
 
-| | **Target A — dedicated container on the NAS** (runbook default) | **Target B — docker-on-GB10** |
-|---|---|---|
-| Host | Synology NAS `whitestocks` (`whitestocks.tailebf801.ts.net`) | this GB10 |
-| Network | GB10 tutor → NAS over Tailscale | localhost DSN (simplest path) |
-| Backup | inherits NAS Hyper Backup + nightly `pg_dump` | **`pg_dump` must ship off-box** (→ NAS/Tailscale); GB10 is not a backup target |
-| Deploy | SSH + `rsync` compose to NAS (reuses fleet-memory NAS prep; Phase 0 mostly done) | `docker compose up -d` locally on the GB10 |
-| Best for | **real learner data** — a minor's non-reindexable state ([ADR-ARCH-015](../architecture/decisions/ADR-ARCH-015-uk-on-device-data-residency.md)) | fast dev unblock; the natural shape for the eventual **cloud** deploy (mobile handoff) |
+The **GB10 is the deploy host** — you run the deploy from the GB10, which `rsync`s the compose to the NAS and brings the container up over SSH. This reuses the existing fleet-memory NAS prep (SSH key, administrators group, docker-sudoers), so Phase 0 is mostly done. The app itself only ever reads one env var: `STUDY_TUTOR_PG_DSN` — the host is invisible to the code.
 
-**Recommendation:**
-- If you want the durable instance in one shot → **Target A (NAS)**. It is the runbook default and the right posture for Lilymay's real state.
-- If you want to unblock W1 development **right now** on the GB10 → **Target B** is fine as the dev instance, **but** the durable NAS instance (Target A) must exist **before W1's write-path is validated against real persistence** (build plan §5 W0). Don't ship real learner state to a GB10-only DB with no off-box backup.
-
-Either way the app reads one env var: `STUDY_TUTOR_PG_DSN`.
+> The [runbook](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) also documents a *Target B* (docker-on-GB10) for a future portable/cloud deploy — **ignore it for W0**; we're standing up the durable NAS instance directly.
 
 ---
 
-## 3. Quickstart
+## 3. Quickstart (run from the GB10; deploys to the NAS)
 
-### Target B (docker-on-GB10) — fastest unblock
+The [runbook](../runbooks/RUNBOOK-study-tutor-postgres-deploy.md) Phases 0–3 are authoritative — this is the condensed path. Run from the study-tutor repo root on the GB10.
+
 ```bash
 cd deploy/postgres
 cp .env.deploy.example .env.deploy && chmod 600 .env.deploy
-openssl rand -base64 24                      # → paste into STUDY_TUTOR_PG_PASSWORD in .env.deploy
-git check-ignore deploy/postgres/.env.deploy # GATE G1a: must echo the path (gitignored)
+openssl rand -base64 24                        # → paste into STUDY_TUTOR_PG_PASSWORD in .env.deploy
+git check-ignore deploy/postgres/.env.deploy   # GATE G1a: must echo the path (gitignored)
+grep -c '=$' .env.deploy                        # GATE G1: prints 0 (no empty values)
+source .env.deploy
+SSH="ssh -i $HOME/.ssh/fleet_memory_nas_ed25519 -o BatchMode=yes -p ${NAS_SSH_PORT} ${NAS_USER}@${NAS_HOST}"
 
-# runtime .env for compose (password + port), then up:
-printf 'POSTGRES_PASSWORD=%s\nPG_PORT=5433\n' "$STUDY_TUTOR_PG_PASSWORD" > .env && chmod 600 .env
-docker compose up -d
+# GATE G0 — reuse the fleet-memory NAS proof (SSH + passwordless docker), then the one new prep step:
+$SSH 'echo SSH_OK && sudo -n /usr/local/bin/docker version --format "DOCKER_OK {{.Server.Version}}"'
+$SSH "mkdir -p ${NAS_DOCKER_ROOT}/pgdata"
+# DSM firewall (Control Panel → Security → Firewall): allow TCP 5433 from LAN + 100.64.0.0/10 (tailnet), deny else.
 
-# GATE G2/G3/G4 — healthy, JSONB sane, DSN reachable:
-docker ps --filter name=study_tutor_postgres --format '{{.Status}}'         # "Up ... (healthy)"
-docker exec study_tutor_postgres psql -U study_tutor -d study_tutor -tAc "SELECT '{\"ok\":true}'::jsonb;"
-psql "postgresql://study_tutor:$STUDY_TUTOR_PG_PASSWORD@localhost:5433/study_tutor" -c 'SELECT 1;'
+# Phase 2 — deploy: sync compose, render the NAS-side .env, bring it up
+rsync -avz -e "ssh -i $HOME/.ssh/fleet_memory_nas_ed25519 -p ${NAS_SSH_PORT}" \
+  --exclude '.env.deploy*' docker-compose.yml ${NAS_USER}@${NAS_HOST}:${NAS_DOCKER_ROOT}/
+$SSH "printf 'POSTGRES_PASSWORD=%s\nPG_PORT=%s\n' '${STUDY_TUTOR_PG_PASSWORD}' '${PG_PORT}' > ${NAS_DOCKER_ROOT}/.env && chmod 600 ${NAS_DOCKER_ROOT}/.env"
+$SSH "cd ${NAS_DOCKER_ROOT} && sudo -n /usr/local/bin/docker compose up -d"
+
+# Phase 3 — gates G2–G5:
+$SSH "sudo -n /usr/local/bin/docker ps --filter name=study_tutor_postgres --format '{{.Status}}'"   # G2: Up (healthy)
+$SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres psql -U study_tutor -d study_tutor -tAc \"SELECT '{\\\"ok\\\":true}'::jsonb;\""  # G3
+psql "postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HOST}:${PG_PORT}/study_tutor" -c 'SELECT 1;'   # G4: DSN reachable
+$SSH "cat ${NAS_DOCKER_ROOT}/pgdata/PG_VERSION"    # G5: prints 16 (data on the backed-up /volume1)
 ```
-
-### Target A (NAS) — durable, recommended
-Follow the runbook **Phases 0 → 3** verbatim (SSH prep is mostly inherited from fleet-memory; gate **G0** proves it). The GB10 is the deploy host: `source .env.deploy`, `rsync` the compose to `${NAS_DOCKER_ROOT}`, render the NAS-side `.env`, `docker compose up -d` over SSH, then gates **G2–G6**.
 
 ---
 
 ## 4. Definition of Done (W0 = gates G0–G6)
 
-| Gate | Proves | Scope |
-|---|---|---|
-| G0 | Batch SSH + `sudo -n docker` on the NAS | Target A only |
-| G1 | `.env.deploy` complete, gitignored, `chmod 600` | both |
-| G2 | container `Up (healthy)` | both |
-| G3 | `pg_isready` + a JSONB `SELECT` (proves **no pgvector needed**) | both |
-| G4 | `psql` over the **DSN on 5433** (the path the tutor backend uses) | both |
-| G5 | `pgdata/PG_VERSION` = 16 on the backed-up volume | Target A (**STOP** if the bind mount is wrong) |
-| G6 | reboot persistence (container auto-restarts, data intact) | when convenient |
+| Gate | Proves |
+|---|---|
+| G0 | Batch SSH + `sudo -n docker` on the NAS (reuses fleet-memory prep) |
+| G1 | `.env.deploy` complete, gitignored, `chmod 600` |
+| G2 | container `Up (healthy)` on the NAS |
+| G3 | `pg_isready` + a JSONB `SELECT` (proves **no pgvector needed**) |
+| G4 | `psql` over the **DSN on 5433** (the path the tutor backend uses) |
+| G5 | `pgdata/PG_VERSION` = 16 on the backed-up `/volume1` (**STOP** if the bind mount is wrong) |
+| G6 | reboot persistence — reboot the NAS from DSM, container auto-restarts, data intact (when convenient) |
 
 ⚠️ **G7 (`alembic upgrade head`) is NOT part of W0.** It is the schema-init gate and it belongs to **W1 / FEAT-SMP-001** — the Alembic migrations do not exist yet. W0 stops at an empty DB + role.
 
@@ -104,7 +103,7 @@ STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@<host>:5433/study_tutor
 ## 5. Hard constraints (from the runbook's "what NOT to do")
 
 - **No pgvector, no extensions.** JSONB only; semantic recall reuses ChromaDB ([ADR-ARCH-022](../architecture/decisions/ADR-ARCH-022-corpus-retrieval-lexical-path-defer-agentic-tool.md)), not this DB.
-- **Nightly `pg_dump` is REQUIRED** (Phase 4). Learner state is **not** reindexable — a volume snapshot alone is insufficient. On GB10 (Target B) the dump **must** ship off-box.
+- **Nightly `pg_dump` is REQUIRED** (Phase 4). Learner state is **not** reindexable — a volume snapshot alone is insufficient. Schedule it via DSM Task Scheduler into the backed-up `backups/` dir (runbook Phase 4).
 - **Own everything** — own container, own volume (`/volume1/docker/study_tutor` on the NAS), own port **5433**. Never share fleet-memory's DB/volume/port (5432).
 - **No table DDL by hand** — Alembic (W1) owns the schema; `schema_reference.sql` is reference-only.
 - **Never `docker compose down -v`** (nukes the data bind). Rollback is snapshot / `pg_restore`.
@@ -139,7 +138,7 @@ W1 fills the `PostgresStudentStore` bodies (today `NotImplementedError`), writes
 
 ## 7. Suggested opener for the GB10 session
 
-> Stand up the study-tutor StudentStore Postgres per `docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md` (W0 of the migration build plan). Target **[A: NAS `whitestocks` | B: docker-on-GB10]**. Objective: an empty `study_tutor` DB + role on port 5433, gates **G0–G6** green; **do not** run Alembic (that's W1). Then set `STUDY_TUTOR_PG_DSN` in the study-tutor `.env`. Constraints: JSONB only, no pgvector, nightly `pg_dump` off-box, never `down -v`.
+> Stand up the study-tutor StudentStore Postgres per `docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md` (W0 of the migration build plan) — a **dedicated container on the NAS `whitestocks`**, deployed from this GB10 over SSH. Objective: an empty `study_tutor` DB + role on port 5433, gates **G0–G6** green; **do not** run Alembic (that's W1). Then set `STUDY_TUTOR_PG_DSN` in the study-tutor `.env`. Constraints: JSONB only, no pgvector, nightly `pg_dump` via DSM, never `down -v`.
 
 ---
 
