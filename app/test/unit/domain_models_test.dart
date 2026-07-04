@@ -35,14 +35,9 @@ void main() {
       expect(base, isNot(TurnEntry(role: TurnRole.user, content: 'hi', ts: t1)));
     });
 
-    test('transcript lists preserve insertion order (append-only, §6)', () {
-      final transcript = [
-        TurnEntry(role: TurnRole.user, content: 'first', ts: t0),
-        TurnEntry(role: TurnRole.tutor, content: 'second', ts: t0),
-        TurnEntry(role: TurnRole.user, content: 'third', ts: t1),
-      ];
-      expect(transcript.map((t) => t.content), ['first', 'second', 'third']);
-    });
+    // NOTE: the append-only/ordering property (§6) is asserted against
+    // production code by test/contract/s4_s6_append_only_transcript_test.dart;
+    // a list-literal ordering test here was a tautology and was removed.
   });
 
   group('Session', () {
@@ -122,10 +117,10 @@ void main() {
       expect(a, isNot(const Principal(token: 'tok-2', displayName: 'Lilymay')));
     });
 
-    test('carries no studentId — derivation is the backend port\'s job (§3)',
-        () {
-      // Compile-time shape check by construction: Principal exposes only
-      // token + displayName.
+    test('token and displayName round-trip', () {
+      // §3 note: Principal deliberately has no studentId — derivation is the
+      // backend port's job. A runtime test cannot pin the *absence* of a
+      // field in Dart; that property is guarded by review, not this test.
       const p = Principal(token: 'tok-1', displayName: 'Lilymay');
       expect(p.token, 'tok-1');
       expect(p.displayName, 'Lilymay');

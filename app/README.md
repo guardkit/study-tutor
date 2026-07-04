@@ -86,8 +86,9 @@ against it behind the same port and proves fake and backend agree.
 ## Definition of done (scope §8)
 
 - [x] Walking skeleton + slice behaviours demonstrable on the Android debug
-      build (Android only — no iOS/web claim); on-device boot is the
-      attended morning check (runbook §6)
+      build (Android only — no iOS/web claim); verified at the 2026-07-04
+      morning gate — Pixel 9a emulator walk through all slice checkpoints
+      (see docs/runbooks/RESULTS-overnight-fable-flutter-2026-07-04.md)
 - [x] Contract test suite (scope §4, tests 1–9) green
 - [x] Happy-path slice widget test green
 - [x] Widget tests for all four error handlings green

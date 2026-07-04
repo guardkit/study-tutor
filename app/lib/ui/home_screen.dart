@@ -28,6 +28,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<SessionSummary> _active = const [];
 
+  /// In-flight guard for Start/Resume (same reason as the session screen's
+  /// `_sending`): a double-tap must not start two sessions or push two
+  /// screens. Held for the whole open-session lifetime — `_open` only
+  /// returns when the pushed route pops.
+  bool _busy = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startNewSession() async {
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
       final started =
           await widget.sessionApi.startSession(subject: defaultSubject);
@@ -69,10 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
     } on Unauthenticated {
       if (!mounted) return;
       routeToSignIn(context, widget.identity, widget.sessionApi);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _resume(SessionSummary summary) async {
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
       final resumed =
           await widget.sessionApi.resumeSession(summary.sessionId);
@@ -93,6 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       await showCantOpenSession(context);
       if (mounted) await _refresh();
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -109,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: Text(summary.subject ?? 'Session'),
                 subtitle: Text('${summary.turnCount} turns'),
                 trailing: FilledButton.tonal(
-                  onPressed: () => _resume(summary),
+                  onPressed: _busy ? null : () => _resume(summary),
                   child: const Text('Resume'),
                 ),
               ),
@@ -121,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           const SizedBox(height: 8),
           FilledButton(
-            onPressed: _startNewSession,
+            onPressed: _busy ? null : _startNewSession,
             child: const Text('Start new session'),
           ),
         ],

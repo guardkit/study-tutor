@@ -93,13 +93,18 @@ class FakeSessionApi implements SessionApi {
 
     if (resumeIfActive) {
       // §5: keyed on (student, subject) — an active session for a different
-      // subject does not match.
-      final existing = _store.sessions.values
+      // subject does not match. The contract's singular wording leaves the
+      // pick undefined when duplicate actives exist (logged in QUESTIONS.md);
+      // align with listSessions' "resume where you left off" ordering: the
+      // most recently active match wins.
+      final matches = _store.sessions.values
           .where((s) =>
               s.studentId == studentId &&
               s.subject == subject &&
               s.status == SessionStatus.active)
-          .firstOrNull;
+          .toList()
+        ..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
+      final existing = matches.firstOrNull;
       if (existing != null) {
         return StartSessionResult(
           sessionId: existing.id,

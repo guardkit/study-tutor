@@ -30,7 +30,9 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Start new session'),
         findsOneWidget);
-    expect(find.text('Sign in'), findsNothing,
+    // skipOffstage: false so this fails if sign-in is merely covered (plain
+    // push) rather than replaced — offstage routes are skipped by default.
+    expect(find.text('Sign in', skipOffstage: false), findsNothing,
         reason: 'sign-in is replaced, not stacked');
 
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));

@@ -26,8 +26,21 @@ void main() {
 
     expect(find.text('Study Tutor'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
-    expect(find.text('Home'), findsNothing,
+    // skipOffstage: false so this fails if Home is merely covered by a
+    // pushed sign-in route instead of removed from the stack (a plain push
+    // keeps it offstage in the tree, which the default finder skips).
+    expect(find.text('Home', skipOffstage: false), findsNothing,
         reason: 'the stack is cleared — no back route into the app');
+
+    // Recovery: re-signing in yields a valid credential again — the
+    // Unauthenticated → sign-in → retry loop must not dead-end.
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Home'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
+    await tester.pumpAndSettle();
+    expect(find.text('Session'), findsOneWidget,
+        reason: 'after re-auth the app is usable, not looping to sign-in');
   });
 
   testWidgets('invalidated token on a turn → routed back to sign-in',
@@ -49,6 +62,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
-    expect(find.text('Session'), findsNothing);
+    expect(find.text('Session', skipOffstage: false), findsNothing,
+        reason: 'stack cleared — the session route is gone, not covered');
   });
 }
