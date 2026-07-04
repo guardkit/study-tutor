@@ -1,0 +1,106 @@
+id: FEAT-SMP-003
+name: Durable Cross-Device Sessions
+description: 'FEAT-SMP-003 / W3: the 6 PostgresStudentStore session methods over the
+  merged W1 schema, wiring the SessionService into both MCP adapter sites with a config
+  single-user identity, swapping the 4 MCP tools onto SessionService (surface byte-for-byte
+  unchanged), and moving session-end learner-state persistence off Graphiti onto Postgres
+  (Phase1MinimalDeltaPolicy over W2 reads -> durable record_session_completion, session.completed
+  preserved). Durable + resumable cross-device sessions. Out of scope: HTTP/WS transport,
+  real XP engine, Coach-verdict misconceptions, graph teardown (SMP-004).'
+created: '2026-07-04T13:05:00.603251'
+status: planned
+complexity: 6
+estimated_tasks: 7
+tasks:
+- id: TASK-SMP3-01
+  name: create_session and get_session
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-01-create-and-get-session.md
+  complexity: 5
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-SMP3-02
+  name: list_sessions and get_turns
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-02-list-sessions-and-get-turns.md
+  complexity: 4
+  dependencies:
+  - TASK-SMP3-01
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMP3-03
+  name: append_turn and end_session
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-03-append-turn-and-end-session.md
+  complexity: 5
+  dependencies:
+  - TASK-SMP3-02
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-SMP3-04
+  name: identity config and session-service wiring
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-04-identity-config-and-session-service-wiring.md
+  complexity: 4
+  dependencies:
+  - TASK-SMP3-03
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMP3-05
+  name: session-end completion producer
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-05-session-end-completion-producer.md
+  complexity: 5
+  dependencies:
+  - TASK-SMP3-04
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-SMP3-06
+  name: MCP adapter cutover
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-06-mcp-adapter-cutover.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP3-05
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-SMP3-07
+  name: BDD steps and session tests
+  file_path: tasks/backlog/durable-cross-device-sessions/TASK-SMP3-07-bdd-steps-and-session-tests.md
+  complexity: 6
+  dependencies:
+  - TASK-SMP3-06
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+orchestration:
+  parallel_groups:
+  - - TASK-SMP3-01
+  - - TASK-SMP3-02
+  - - TASK-SMP3-03
+  - - TASK-SMP3-04
+  - - TASK-SMP3-05
+  - - TASK-SMP3-06
+  - - TASK-SMP3-07
+  estimated_duration_minutes: 551
+  recommended_parallel: 1
+smoke_gates:
+  # Fires between waves 3→4 … 6→7 — the composition-risk boundaries (service wiring,
+  # the moved delta policy, and the MCP adapter cutover). tests/unit is service-free +
+  # deterministic and holds the surface-regression gate (test_adapter, test_command_router)
+  # and test_queries (the policy-move blast radius). Full-suite + `pytest features/`
+  # verification is TASK-SMP3-06/07 Coach + the independent post-build check. Mirrors W1/W2.
+  after_wave: [3, 4, 5, 6]
+  command: |
+    set -e
+    pytest tests/unit -q
+  expected_exit: 0
+  timeout: 300
