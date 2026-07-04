@@ -40,6 +40,10 @@ Should-fix:
 
 Nit: fake's `resumeIfActive` picks oldest-created on duplicate `(student,subject)` actives (contract §5 wording ambiguity — belongs in QUESTIONS.md); turn-order unit test is a tautology on a list literal; Principal §3 test can't fail if `studentId` is added; TextField `enabled:!_sending` will drop keyboard focus per send once latency is real (latent); README DoD item 1 was pre-ticked before the emulator boot that verifies it (boot has now happened — this run — so the item is retroactively true).
 
+## Follow-up outcome (same day)
+
+All 10 findings **fixed** in `wave-10: morning-review fix-wave [green]` (attended, 2026-07-04): 80 tests at HEAD (+6 regression tests covering the fixes, −1 removed tautology), analyze clean, apk-debug built. Both previously-vacuous assertions were re-verified by mutation after the fix — the mutations that used to pass now fail the suite. The `resume_if_active` duplicate-pick ambiguity is logged in `app/QUESTIONS.md` for the FEAT-SMP-003 contract work.
+
 ## Verdict
 
 Gate **passed**; branch **merged**. The 10 review findings are follow-up work (a small attended fix-wave), not rollback grounds. Notable for the ledger: the two vacuous test assertions are exactly the failure class an unattended run can't catch about itself — the pre-registered morning review earned its place in the loop.
