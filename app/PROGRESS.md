@@ -9,7 +9,7 @@
 - [x] wave-0: flutter scaffold [green] — attended, 2026-07-04
 - [x] wave-1: domain model + SessionApi port + typed errors [green] — unattended, 2026-07-04
 - [x] wave-2: IdentityProvider port + FakeIdentityProvider [green] — unattended, 2026-07-04
-- [ ] wave-3: FakeSessionApi core + contract tests I (lifecycle)
+- [x] wave-3: FakeSessionApi core + contract tests I (lifecycle) [green] — unattended, 2026-07-04
 - [ ] wave-4: ownership + auth + errors + listSessions — contract tests II
 - [ ] wave-5: walking skeleton UI
 - [ ] wave-6: slice I — sign in, start, exchange turns
@@ -22,6 +22,7 @@
 - 2026-07-04 — wave-0 [green], attended. Scaffold created (`flutter create`, org com.appmilla, android/ios/web); analyze clean, test green, apk-debug built (first Gradle run installed NDK 28.2 + Build-Tools 36). Landmine fixed: root `.gitignore`'s unanchored `lib/` rule was silently dropping `app/lib/**` — re-include pair added (see wave-0 commit body).
 - 2026-07-04 — wave-1 [green], unattended. `domain/` (Session, TurnEntry, SessionSummary, Principal; SessionStatus/TurnRole enums; sealed SessionApiException with the §9 closed set, errorType strings verbatim) + `ports/session_api.dart` (six §5 verbs, full return shapes incl. resumed/resumable/turnCount). 20 tests green (unit/errors + unit/domain_models + scaffold widget test); analyze clean; apk-debug built. No contract doubts.
 - 2026-07-04 — wave-2 [green], unattended. `ports/identity_provider.dart` (signIn/signOut/currentPrincipal) + `fakes/fake_identity_provider.dart`: two principals (Lilymay default, Alex second for ownership tests), `signInAs` test hook, invalidate-token switch that leaves the client-side principal set (stale-token shape), and `studentIdForToken` — the fake auth-server introspection FakeSessionApi will trust for §3 token→student_id derivation (wave-3 seam decided here). 31 tests green; analyze clean; apk-debug built.
+- 2026-07-04 — wave-3 [green], unattended. `fakes/fake_session_api.dart`: InMemorySessionStore split out as a shareable object (wave-4's second-client durability test needs it); five verbs implemented (startSession with (student,subject)-keyed resumeIfActive, turn with deterministic canned replies keyed off turn index, resumeSession, endSession, sessionStatus full §5 shape); listSessions stubbed (UnimplementedError — wave-4 owns test 9); identity resolved per call via studentIdForToken, null → Unauthenticated. `test/contract/`: harness (deterministic ticking clock, secondClient()) + s4_lifecycle, s4_s6_append_only_transcript, s4_turn_count_monotonic, s5_resume_if_active (scope §4 tests 1, 2, 4, 5). One analyze fix (prefer_initializing_formals → `this._identity`). 46 tests green; analyze clean; apk-debug built.
 
 ## HANDOFF
 
