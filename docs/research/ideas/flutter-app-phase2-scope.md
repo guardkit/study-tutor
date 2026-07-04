@@ -53,15 +53,15 @@ One item that looks demand-side but is **a decision for Rich, not the adapter pl
 
 WS streaming `turn` / voice / STT-TTS (contract §7); Keycloak & real multi-student auth (D9 — the static token table is config, not an auth system); token refresh; offline queue / on-device persistence; `session_version` concurrent-resume UX (contract §11 OQ2) — the §3.6 proof observes remote turns via explicit re-resume, not live refresh; session TTL (§11 OQ4); iOS/web claims; Reachy; any MCP-surface change.
 
-## 6. Decisions Rich owns (blocking, in rough order)
+## 6. Decisions — ALL DECIDED by Rich, 2026-07-04
 
-*(Updated after FEAT-SMP-003 landed at `ea7c135`: the old ownership question is resolved — GB10 built it — and the `resume_if_active` ambiguity resolved itself: the backend's `ORDER BY last_activity DESC LIMIT 1` matches the app fake + pinned contract test. A one-line contract clarification via `/design-refine` can happen at leisure; it no longer blocks anything.)*
+*(The original fifth decision — `resume_if_active` duplicate-pick — resolved itself: the backend's `ORDER BY last_activity DESC LIMIT 1` matches the app fake + pinned contract test. A one-line contract clarification via `/design-refine` can happen at leisure.)*
 
-1. **HTTP-adapter build ownership + vehicle** — SMP-003 deliberately deferred the HTTP/WS transport to the mobile build; it's now a small standalone feature with no owner. GB10 autobuild vs this Mac; guardkit `/feature-spec` either way.
-2. **GB10 port + Tailscale ACL for the HTTP surface** — nothing reserved; 8080 (Open WebUI), 9000 (llama-swap), 9100/9200 (voice) are taken/earmarked. Also fixes http-vs-https for the dev flavour (§3.5).
-3. **Approve `package:http`** — the single proposed addition to v1's closed dependency list.
-4. **Sequencing deviation sign-off** — the handoff ordered voice endpoints first (step 1, rationale: also unblocks Reachy); with step 2 (persistence) now shipped, this phase does steps 3–4 and defers voice. The reorder should be deliberate, not implicit.
+1. **HTTP-adapter build: GB10**, via guardkit `/feature-spec` → `/feature-plan` → autobuild. Kickoff handoff: [study-tutor-http-adapter-conversation-starter.md](../../handoffs/study-tutor-http-adapter-conversation-starter.md).
+2. **Port: 8100**, plain HTTP over Tailscale for the dev flavour. Chosen clear of everything claimed or earmarked on the GB10 — 8080 (Open WebUI, and habitually conflict-prone), 9000 (llama-swap), 4222/8222 (NATS), 9100/9200 (voice STT/TTS paper earmarks, deliberately left intact so voice provisioning stays zero-friction). Verified unclaimed repo-wide 2026-07-04. Tailscale ACL entry for the phone/emulator host accompanies deployment.
+3. **`package:http` approved** — v1's closed dependency list grows by exactly this one entry (the Dart team's standard HTTP client).
+4. **Voice deferral signed off** — this phase does handoff steps 3–4; voice endpoints are phase 3.
 
 ---
 
-*Next artifacts once §6.1–§6.3 are decided: (a) HTTP App Access adapter `/feature-spec` (backend — owns the binding table §2.2 and its own plan), (b) `flutter-app-phase2-build-plan.md` (app waves, v1 discipline).*
+*Next artifacts (both exist as of these decisions): (a) the GB10 kickoff handoff above — the adapter `/feature-spec` owns the binding table §2.2; (b) [flutter-app-phase2-build-plan.md](flutter-app-phase2-build-plan.md) (app waves, v1 discipline).*

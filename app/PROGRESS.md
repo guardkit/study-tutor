@@ -1,6 +1,6 @@
 # PROGRESS — overnight Flutter build (study_tutor_app)
 
-**Build plan:** `docs/research/ideas/flutter-app-build-plan.md` (CONTRACT_SHA pinned in its header — re-read plan + this file at every wave start).
+**Build plans:** v1 waves (0–10): `docs/research/ideas/flutter-app-build-plan.md`; **phase-2 waves (p2-wave-N): `docs/research/ideas/flutter-app-phase2-build-plan.md`** — re-read the governing plan + this file at every wave start; CONTRACT_SHA pinned in both headers, BINDING_SHA in the phase-2 header.
 **Rules:** `docs/runbooks/RUNBOOK-overnight-fable-flutter.md` §2.
 **Green =** `cd app && flutter analyze` clean + `flutter test` green + `flutter build apk --debug` succeeds.
 
@@ -17,6 +17,16 @@
 - [x] wave-8: error handling (scope §3) [green] — unattended, 2026-07-04
 - [x] wave-9: hardening + app README [green] — unattended, 2026-07-04
 - [x] wave-10: morning-review fix-wave (10 findings) [green] — attended, 2026-07-04
+
+## Phase 2 — real transport slice (`docs/research/ideas/flutter-app-phase2-build-plan.md`)
+
+- [ ] p2-wave-1: TransportError + fourth UI treatment
+- [ ] p2-wave-2: ContractBackend harness refactor
+- [ ] p2-wave-3: HttpSessionApi — six verbs + JSON mapping (blocked on binding doc from GB10)
+- [ ] p2-wave-4: wire errors + timeouts
+- [ ] p2-wave-5: composition switch + Android dev networking
+- [ ] p2-wave-6: live ContractBackend (test_live/)
+- [ ] p2-wave-7: attended integration — live suite + cross-device proof (blocked on GB10 :8100 deploy)
 
 ## Log
 
