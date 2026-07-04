@@ -87,7 +87,7 @@ Already provisioned by the fleet-memory NAS runbook and **not repeated**: SSH ke
 ssh -i ~/.ssh/fleet_memory_nas_ed25519 -p 22 "$NAS_USER@$NAS_HOST" \
   'mkdir -p /volume1/docker/study_tutor/pgdata'
 ```
-DSM firewall (Control Panel → Security → Firewall): allow **TCP 5434** from the LAN subnet and `100.64.0.0/10` (tailnet); deny otherwise.
+Network exposure / access scoping is deployment-specific — see **Phase 5**. For this deployment the primary controls are the **Aruba Instant On** edge gateway (no WAN port-forward for 5434) and **Tailscale ACLs**; the DSM firewall is optional defence-in-depth and is **currently off** (do not treat it as the enforcement point here).
 
 **GATE G0 (from the deploy host) — reuse the existing proof:**
 ```bash
@@ -160,7 +160,7 @@ STUDY_TUTOR_PG_DSN="postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HO
 
 - **Backup (REQUIRED — this is the key divergence from fleet-memory).** The learner state is **not** reindexable, so a crash-consistent snapshot alone is insufficient:
   1. Confirm `/volume1/docker/study_tutor` is in the Hyper Backup / Snapshot schedule (volume-level).
-  2. **Add a nightly logical dump** into the backup share:
+  2. **Add a nightly logical dump** into the backup share. Productized as [`deploy/postgres/backup.sh`](../../deploy/postgres/backup.sh) (atomic temp-then-rename, `PGDMP`-magic validity check, 14-day retention, logs to `backups/backup.log`, non-zero exit on failure); installed at `/volume1/docker/study_tutor/backup.sh` and scheduled nightly via **DSM Task Scheduler** (user `root`, e.g. daily 03:15 → `bash /volume1/docker/study_tutor/backup.sh`). The raw command it wraps:
      ```bash
      # NAS cron (Control Panel → Task Scheduler), nightly:
      sudo -n /usr/local/bin/docker exec study_tutor_postgres \
@@ -171,6 +171,16 @@ STUDY_TUTOR_PG_DSN="postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HO
   Target B (GB10): the dump must ship **off-box** — write it to a Tailscale/NAS path, never only to GB10-local disk.
 - **Upgrade:** bump the image tag in the repo compose → re-run Phase 2 (idempotent). Postgres **major** upgrades need dump/restore — a separate, deliberate task.
 - **Rollback:** `$SSH "cd ${NAS_DOCKER_ROOT} && sudo -n /usr/local/bin/docker compose down"` (**never `-v`**), restore `pgdata/` from snapshot **or** `pg_restore` the latest dump, `compose up -d`.
+
+## Phase 5 — Network exposure & access hardening (this deployment)
+
+Intent: 5434 reachable only from the trusted LAN + the tutor backend, **never the internet**. How that maps depends on topology. For **whitestocks** (NAS LAN `172.30.1.0/24` on `eth0`; tailnet `100.64.0.0/10`, NAS = `100.92.74.2`; edge = HPE/Aruba **Instant On SG2505P** gateway; **DSM firewall currently OFF**) enforcement is three layers, in priority order:
+
+1. **Internet edge — Aruba Instant On gateway (the control that matters).** NAT blocks all unsolicited inbound by default, so 5434 is off the internet unless a port-forward maps it. Instant On app / `portal.arubainstanton.com` → **Policies → Port Forwarding**: confirm **no** rule forwards any WAN port to `172.30.1.156` (esp. 5434) — the deploy never requests one. Instant On has no intra-LAN host ACLs, so it cannot scope which LAN devices reach 5434.
+2. **Tailnet — Tailscale ACLs (the path the app actually uses).** The DSN host resolves to the **tailnet IP `100.92.74.2`**, so the tutor backend reaches 5434 over Tailscale — governed by Tailscale ACLs, not the gateway or (reliably) the DSM firewall. Scope it in the Tailscale admin **Access Controls**: `{ "action": "accept", "src": ["tag:tutor-backend"], "dst": ["100.92.74.2:5434"] }`.
+3. **LAN host-level — DSM firewall (optional defence-in-depth, currently off).** Only restricts which `172.30.1.0/24` hosts may reach 5434. Enabling it default-denies all non-allowlisted traffic (**lockout risk**) — only turn on with a full allowlist (DSM 5000/5001, SSH 22, SMB, then allow TCP 5434 from `172.30.1.0/24` + `100.64.0.0/10`, deny 5434 otherwise, placed above the profile's default-deny). **Caveat:** DSM's firewall governs the physical adapter; `tailscale0` traffic generally **bypasses** it, so rely on layer 2 for the tailnet. The `study_tutor` role password is the LAN backstop, so this layer is optional.
+
+**Do not** treat the DSM firewall as the primary control on this deployment — layers 1 (Aruba) and 2 (Tailscale) are.
 
 ## Decision gates
 
@@ -190,7 +200,7 @@ STUDY_TUTOR_PG_DSN="postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HO
 - Do **NOT** skip the nightly `pg_dump` — this store holds **non-reindexable** learner state (the exact opposite of fleet-memory's posture).
 - Do **NOT** install pgvector or any extension — keep the surface minimal; semantic recall reuses ChromaDB, not this DB.
 - Do **NOT** put table DDL in this runbook — **Alembic** (FEAT-SMP-001) owns the schema; this runbook stands up an empty DB + role only.
-- Do **NOT** expose 5434 beyond LAN + tailnet, and do **NOT** point any CI/hermetic test at this instance.
+- Do **NOT** expose 5434 to the internet — no WAN port-forward for it on the edge gateway (Phase 5) — and do **NOT** point any CI/hermetic test at this instance.
 - Do **NOT** run `docker compose down -v` (nukes the data bind); rollback is snapshot/dump restore.
 - Do **NOT** edit compose on the NAS directly — the repo copy is canonical; change there, re-run Phase 2.
 - Do **NOT** put an SSH password in any file or reuse `sshpass` — key auth + the existing scoped NOPASSWD only.
