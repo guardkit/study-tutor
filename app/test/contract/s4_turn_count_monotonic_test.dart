@@ -3,53 +3,57 @@
 // preserved across resume.
 import 'package:flutter_test/flutter_test.dart';
 
-import 'contract_harness.dart';
+import 'contract_backend.dart';
+import 'fake_contract_backend.dart';
 
-void main() {
-  late ContractHarness h;
+void main() => runTurnCountMonotonicTests(FakeContractBackend.new);
+
+void runTurnCountMonotonicTests(ContractBackend Function() newBackend) {
+  late ContractBackend b;
 
   setUp(() async {
-    h = ContractHarness();
-    await h.identity.signIn();
+    b = newBackend();
+    await b.reset();
+    await b.signIn();
   });
 
   test('§4 turn_count starts at 0 and increments once per turn', () async {
-    final started = await h.api.startSession(subject: 'maths');
+    final started = await b.api.startSession(subject: 'maths');
     final id = started.sessionId;
 
-    expect((await h.api.sessionStatus(id)).turnCount, 0);
+    expect((await b.api.sessionStatus(id)).turnCount, 0);
 
-    await h.api.turn(id, 'one');
-    expect((await h.api.sessionStatus(id)).turnCount, 1);
+    await b.api.turn(id, 'one');
+    expect((await b.api.sessionStatus(id)).turnCount, 1);
 
-    await h.api.turn(id, 'two');
-    expect((await h.api.sessionStatus(id)).turnCount, 2);
+    await b.api.turn(id, 'two');
+    expect((await b.api.sessionStatus(id)).turnCount, 2);
   });
 
   test('§4 turn_count is preserved across resume and keeps climbing',
       () async {
-    final started = await h.api.startSession(subject: 'maths');
+    final started = await b.api.startSession(subject: 'maths');
     final id = started.sessionId;
-    await h.api.turn(id, 'one');
-    await h.api.turn(id, 'two');
+    await b.api.turn(id, 'one');
+    await b.api.turn(id, 'two');
 
-    final resumed = await h.api.resumeSession(id);
+    final resumed = await b.api.resumeSession(id);
     expect(resumed.turns, hasLength(4), reason: '2 turns = 4 entries');
-    expect((await h.api.sessionStatus(id)).turnCount, 2,
+    expect((await b.api.sessionStatus(id)).turnCount, 2,
         reason: 'resume must not reset the count');
 
-    await h.api.turn(id, 'three');
-    expect((await h.api.sessionStatus(id)).turnCount, 3);
+    await b.api.turn(id, 'three');
+    expect((await b.api.sessionStatus(id)).turnCount, 3);
   });
 
   test('§4 turn_count never decreases over a whole session history', () async {
-    final started = await h.api.startSession(subject: 'maths');
+    final started = await b.api.startSession(subject: 'maths');
     final id = started.sessionId;
 
-    var previous = (await h.api.sessionStatus(id)).turnCount;
+    var previous = (await b.api.sessionStatus(id)).turnCount;
     for (var i = 0; i < 5; i++) {
-      await h.api.turn(id, 'message $i');
-      final current = (await h.api.sessionStatus(id)).turnCount;
+      await b.api.turn(id, 'message $i');
+      final current = (await b.api.sessionStatus(id)).turnCount;
       expect(current, greaterThan(previous));
       previous = current;
     }

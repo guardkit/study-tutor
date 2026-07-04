@@ -56,9 +56,15 @@ network calls of any kind (ADR-ARCH-015; scope §5).
 
 ### `test/contract/` — the moat (scope §4)
 
-Checks `FakeSessionApi` against statements in the contract doc, named for the
-sections they verify. When the real adapter lands, this same suite runs
-against it behind the same port and proves fake and backend agree.
+Checks a backend against statements in the contract doc, named for the
+sections they verify. Since p2-wave-2 the suite is written against the
+`ContractBackend` harness abstraction (`contract_backend.dart`: clients bound
+to a principal, principal switch, token invalidation, `secondClient()`,
+`reset()`, reply/clock expectations). Each file's `main()` wires
+`FakeContractBackend` (hermetic — exactly the v1 harness behind the
+interface); p2-wave-6's `test_live/` reuses the same `run…Tests` bodies
+against the real HTTP adapter, so "fake and backend agree" is one suite run
+twice.
 
 | File | Contract § | Scope §4 test |
 |---|---|---|

@@ -4,24 +4,28 @@
 // or omitting the flag, creates a new session.
 import 'package:flutter_test/flutter_test.dart';
 
-import 'contract_harness.dart';
+import 'contract_backend.dart';
+import 'fake_contract_backend.dart';
 
-void main() {
-  late ContractHarness h;
+void main() => runResumeIfActiveTests(FakeContractBackend.new);
+
+void runResumeIfActiveTests(ContractBackend Function() newBackend) {
+  late ContractBackend b;
 
   setUp(() async {
-    h = ContractHarness();
-    await h.identity.signIn();
+    b = newBackend();
+    await b.reset();
+    await b.signIn();
   });
 
   test('§5 resume_if_active returns the existing active (student, subject) '
       'session with resumed: true and its turns', () async {
-    final first = await h.api.startSession(subject: 'maths');
-    await h.api.turn(first.sessionId, 'one');
-    await h.api.turn(first.sessionId, 'two');
+    final first = await b.api.startSession(subject: 'maths');
+    await b.api.turn(first.sessionId, 'one');
+    await b.api.turn(first.sessionId, 'two');
 
     final again =
-        await h.api.startSession(subject: 'maths', resumeIfActive: true);
+        await b.api.startSession(subject: 'maths', resumeIfActive: true);
 
     expect(again.sessionId, first.sessionId);
     expect(again.resumed, isTrue);
@@ -31,18 +35,18 @@ void main() {
   });
 
   test('§5 a different subject creates a new session', () async {
-    final maths = await h.api.startSession(subject: 'maths');
+    final maths = await b.api.startSession(subject: 'maths');
 
     final science =
-        await h.api.startSession(subject: 'science', resumeIfActive: true);
+        await b.api.startSession(subject: 'science', resumeIfActive: true);
 
     expect(science.sessionId, isNot(maths.sessionId));
     expect(science.resumed, isFalse);
   });
 
   test('§5 omitting the flag always creates a new session', () async {
-    final first = await h.api.startSession(subject: 'maths');
-    final second = await h.api.startSession(subject: 'maths');
+    final first = await b.api.startSession(subject: 'maths');
+    final second = await b.api.startSession(subject: 'maths');
 
     expect(second.sessionId, isNot(first.sessionId));
     expect(second.resumed, isFalse);
@@ -51,14 +55,14 @@ void main() {
   test('§5 duplicate active (student, subject) sessions: the most recently '
       'active one wins (contract wording is singular — see QUESTIONS.md)',
       () async {
-    final older = await h.api.startSession(subject: 'maths');
-    final newer = await h.api.startSession(subject: 'maths');
+    final older = await b.api.startSession(subject: 'maths');
+    final newer = await b.api.startSession(subject: 'maths');
     // Advance the *newer* session so it is unambiguously the most recently
     // active — the "resume where you left off" pick.
-    await h.api.turn(newer.sessionId, 'latest activity here');
+    await b.api.turn(newer.sessionId, 'latest activity here');
 
     final resumed =
-        await h.api.startSession(subject: 'maths', resumeIfActive: true);
+        await b.api.startSession(subject: 'maths', resumeIfActive: true);
 
     expect(resumed.sessionId, newer.sessionId);
     expect(resumed.sessionId, isNot(older.sessionId));
@@ -67,11 +71,11 @@ void main() {
 
   test('§5 an ended session never matches — resume_if_active only matches '
       'active sessions', () async {
-    final first = await h.api.startSession(subject: 'maths');
-    await h.api.endSession(first.sessionId);
+    final first = await b.api.startSession(subject: 'maths');
+    await b.api.endSession(first.sessionId);
 
     final again =
-        await h.api.startSession(subject: 'maths', resumeIfActive: true);
+        await b.api.startSession(subject: 'maths', resumeIfActive: true);
 
     expect(again.sessionId, isNot(first.sessionId));
     expect(again.resumed, isFalse);

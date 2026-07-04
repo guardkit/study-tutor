@@ -3,23 +3,27 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/domain/session.dart';
 
-import 'contract_harness.dart';
+import 'contract_backend.dart';
+import 'fake_contract_backend.dart';
 
-void main() {
-  late ContractHarness h;
+void main() => runListSessionsTests(FakeContractBackend.new);
+
+void runListSessionsTests(ContractBackend Function() newBackend) {
+  late ContractBackend b;
 
   setUp(() async {
-    h = ContractHarness();
-    await h.identity.signIn();
+    b = newBackend();
+    await b.reset();
+    await b.signIn();
   });
 
   test('§5 rows carry the full shape: session_id, subject, topic, status, '
       'started_at, last_activity, turn_count', () async {
     final started =
-        await h.api.startSession(subject: 'maths', topic: 'fractions');
-    await h.api.turn(started.sessionId, 'hello');
+        await b.api.startSession(subject: 'maths', topic: 'fractions');
+    await b.api.turn(started.sessionId, 'hello');
 
-    final rows = await h.api.listSessions();
+    final rows = await b.api.listSessions();
     expect(rows, hasLength(1));
 
     final row = rows.single;
@@ -28,46 +32,46 @@ void main() {
     expect(row.topic, 'fractions');
     expect(row.status, SessionStatus.active);
     expect(row.turnCount, 1);
-    expect(row.lastActivity.isAfter(row.startedAt), isTrue,
+    expect(row.lastActivity, b.advancedFrom(row.startedAt),
         reason: 'the turn moved last_activity past started_at');
   });
 
   test('§5 status filter separates active from ended', () async {
-    final a = await h.api.startSession(subject: 'maths');
-    final b = await h.api.startSession(subject: 'science');
-    await h.api.endSession(b.sessionId);
+    final maths = await b.api.startSession(subject: 'maths');
+    final science = await b.api.startSession(subject: 'science');
+    await b.api.endSession(science.sessionId);
 
-    final active = await h.api.listSessions(status: SessionStatus.active);
-    expect(active.map((r) => r.sessionId), [a.sessionId]);
+    final active = await b.api.listSessions(status: SessionStatus.active);
+    expect(active.map((r) => r.sessionId), [maths.sessionId]);
 
-    final ended = await h.api.listSessions(status: SessionStatus.ended);
-    expect(ended.map((r) => r.sessionId), [b.sessionId]);
+    final ended = await b.api.listSessions(status: SessionStatus.ended);
+    expect(ended.map((r) => r.sessionId), [science.sessionId]);
 
-    final all = await h.api.listSessions();
+    final all = await b.api.listSessions();
     expect(all, hasLength(2));
   });
 
   test('§5 turn_count and last_activity reflect activity as it happens',
       () async {
-    final started = await h.api.startSession(subject: 'maths');
+    final started = await b.api.startSession(subject: 'maths');
 
-    final before = (await h.api.listSessions()).single;
+    final before = (await b.api.listSessions()).single;
     expect(before.turnCount, 0);
 
-    await h.api.turn(started.sessionId, 'one');
-    await h.api.turn(started.sessionId, 'two');
+    await b.api.turn(started.sessionId, 'one');
+    await b.api.turn(started.sessionId, 'two');
 
-    final after = (await h.api.listSessions()).single;
+    final after = (await b.api.listSessions()).single;
     expect(after.turnCount, 2);
-    expect(after.lastActivity.isAfter(before.lastActivity), isTrue);
+    expect(after.lastActivity, b.advancedFrom(before.lastActivity));
   });
 
   test('§5 limit caps the row count', () async {
-    await h.api.startSession(subject: 'maths');
-    await h.api.startSession(subject: 'science');
-    await h.api.startSession(subject: 'history');
+    await b.api.startSession(subject: 'maths');
+    await b.api.startSession(subject: 'science');
+    await b.api.startSession(subject: 'history');
 
-    expect(await h.api.listSessions(limit: 2), hasLength(2));
-    expect(await h.api.listSessions(limit: 10), hasLength(3));
+    expect(await b.api.listSessions(limit: 2), hasLength(2));
+    expect(await b.api.listSessions(limit: 10), hasLength(3));
   });
 }
