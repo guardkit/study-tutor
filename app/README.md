@@ -34,7 +34,8 @@ lib/
                  swapping in real HTTP/WS + Keycloak adapters is a change
                  here, not in the screens
   domain/        Session, TurnEntry, SessionSummary, Principal; typed errors
-                 carrying contract §9's exact error_type strings (closed set)
+                 carrying contract §9's exact error_type strings (closed set,
+                 plus the client-local TransportError — phase-2 scope §3.2)
   ports/         SessionApi (the six §5 verbs, 1:1, transport-neutral)
                  IdentityProvider (signIn/signOut/currentPrincipal)
   fakes/         FakeIdentityProvider — two principals (Lilymay default,
@@ -79,7 +80,8 @@ against it behind the same port and proves fake and backend agree.
 - `test/errors/` — scope §3, one per induced error: invalidate token →
   sign-in; second-principal ownership → shared "can't open" surface;
   ended-elsewhere then turn → ended state, input disabled; unknown id →
-  shared surface.
+  shared surface; throwing-stub transport failure → "connection problem"
+  dialog, unsent input preserved (phase 2, all five port call paths).
 - `test/ui/` — walking-skeleton boot/navigation + slice-I wiring tests.
 - `test/unit/` — domain models, error strings (§9 verbatim), identity fake.
 
