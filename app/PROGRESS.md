@@ -7,7 +7,7 @@
 ## Waves
 
 - [x] wave-0: flutter scaffold [green] — attended, 2026-07-04
-- [ ] wave-1: domain model + SessionApi port + typed errors
+- [x] wave-1: domain model + SessionApi port + typed errors [green] — unattended, 2026-07-04
 - [ ] wave-2: IdentityProvider port + FakeIdentityProvider
 - [ ] wave-3: FakeSessionApi core + contract tests I (lifecycle)
 - [ ] wave-4: ownership + auth + errors + listSessions — contract tests II
@@ -20,6 +20,7 @@
 ## Log
 
 - 2026-07-04 — wave-0 [green], attended. Scaffold created (`flutter create`, org com.appmilla, android/ios/web); analyze clean, test green, apk-debug built (first Gradle run installed NDK 28.2 + Build-Tools 36). Landmine fixed: root `.gitignore`'s unanchored `lib/` rule was silently dropping `app/lib/**` — re-include pair added (see wave-0 commit body).
+- 2026-07-04 — wave-1 [green], unattended. `domain/` (Session, TurnEntry, SessionSummary, Principal; SessionStatus/TurnRole enums; sealed SessionApiException with the §9 closed set, errorType strings verbatim) + `ports/session_api.dart` (six §5 verbs, full return shapes incl. resumed/resumable/turnCount). 20 tests green (unit/errors + unit/domain_models + scaffold widget test); analyze clean; apk-debug built. No contract doubts.
 
 ## HANDOFF
 
