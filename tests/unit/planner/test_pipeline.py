@@ -13,11 +13,12 @@ from typing import Mapping
 
 import pytest
 
-from study_tutor.knowledge.queries import StudentState, TopicConfidenceSnapshot
+from study_tutor.knowledge.store.provider import reset_student_store, set_student_store
 from study_tutor.knowledge.student_model import (
     Misconception,
     TopicConfidence,
 )
+from tests.unit.knowledge.store.fakes import FakeStudentStore
 from study_tutor.planner.pipeline import (
     _build_planner_context,
     _build_opening_prompt,
@@ -455,52 +456,38 @@ class TestDeterminism:
 # ---------------------------------------------------------------------------
 
 
-class _FakeClient:
-    """Minimal duck-typed wrapper exposing ``client_or_none``.
-
-    The real :class:`GraphitiClient` exposes a ``client_or_none``
-    property. For ``get_student_state`` the wrapper is fine returning
-    ``None`` for the inner — the helper short-circuits to
-    ``StudentState(empty=True)``. We use this fake to drive the
-    no-state branch of ``_build_planner_context`` end-to-end.
-    """
-
-    def __init__(self, inner: object | None = None) -> None:
-        self._inner = inner
-
-    @property
-    def client_or_none(self) -> object | None:
-        return self._inner
-
-
-async def test_plan_session_with_no_client_yields_baseline_plan() -> None:
-    """End-to-end: ``client=None`` produces the baseline-degraded plan.
+async def test_plan_session_with_no_store_yields_baseline_plan() -> None:
+    """End-to-end: no wired store produces the baseline-degraded plan.
 
     Exercises the async wrapper, the read boundary
-    (:func:`get_student_state` returns an empty StudentState with no
-    client), and the final fallback (developing band empty →
-    :func:`_baseline_plan`).
+    (:func:`load_planner_inputs` degrades when no store is wired), and the
+    final fallback (developing band empty → :func:`_baseline_plan`).
     """
+    # Ensure no store is wired
+    reset_student_store()
+
     plan = await plan_session(
         "lilymay",
         topic_override=None,
         clock=_frozen_clock(),
         rng=random.Random(42),
-        client=None,
     )
     assert isinstance(plan, SessionPlan)
     assert plan.rule_selected == "baseline"
     assert plan.fallback_used == "baseline"
+    assert plan.learner_state_available is False
 
 
 async def test_plan_session_with_override_selects_rule_1() -> None:
     """End-to-end: override flows through async wrapper into rule-1."""
+    # Ensure no store wired so we're testing override path only
+    reset_student_store()
+
     plan = await plan_session(
         "lilymay",
         topic_override="dramatic irony",
         clock=_frozen_clock(),
         rng=random.Random(42),
-        client=None,
         ao_mapping={"dramatic irony": ["AO1", "AO2"]},  # type: ignore[arg-type]
     )
     assert plan.rule_selected == "rule-1"
@@ -510,47 +497,41 @@ async def test_plan_session_with_override_selects_rule_1() -> None:
     assert plan.ao_mapping_found is True
 
 
-async def test_build_planner_context_projects_snapshots() -> None:
-    """`_build_planner_context` projects StudentState into rule entities.
+async def test_build_planner_context_loads_from_store() -> None:
+    """`_build_planner_context` reads from the store via `load_planner_inputs`.
 
-    Uses a stub client+inner that returns a populated
-    :class:`StudentState`, then asserts the resulting
-    :class:`PlannerContext` carries rule-layer
-    :class:`TopicConfidence` entities.
+    Uses a wired :class:`FakeStudentStore` with populated topic confidences,
+    then asserts the resulting :class:`PlannerContext` carries rule-layer
+    :class:`TopicConfidence` entities from the store read.
     """
+    # Set up a fake store with a student and topic confidence
+    store = FakeStudentStore()
+    store.add_student("lilymay", name="Lily May", year_group=10)
 
-    class _StubInner:
-        async def search_nodes(self, group_ids: list[str], query: str) -> list:
-            return [
-                {
-                    "entity_type": "topicconfidence",
-                    "attributes": {
-                        "topic_ref": "metaphor",
-                        "band": "developing",
-                        "percentage": 55,
-                        "last_revised_at": (
-                            _FROZEN_NOW - timedelta(hours=2)
-                        ).isoformat(),
-                    },
-                }
-            ]
-
-        async def search_memory_facts(
-            self, group_ids: list[str], query: str
-        ) -> list:
-            return []
-
-    client = _FakeClient(inner=_StubInner())
-
-    ctx = await _build_planner_context(
-        "lilymay",
-        clock=_frozen_clock(),
-        rng=random.Random(42),
-        topic_override=None,
-        client=client,
+    # Add a topic confidence via the store's internal state
+    from study_tutor.knowledge.store.entities import ConfidenceUpdate
+    await store.apply_confidence_update(
+        student_id="lilymay",
+        update=ConfidenceUpdate(topic_name="metaphor", percentage=55),
     )
 
-    assert ctx.student_id == "lilymay"
-    assert len(ctx.topic_confidences) == 1
-    assert ctx.topic_confidences[0].topic_ref == "metaphor"
-    assert ctx.topic_confidences[0].band == "developing"
+    # Wire the store
+    set_student_store(store)
+
+    try:
+        ctx = await _build_planner_context(
+            "lilymay",
+            clock=_frozen_clock(),
+            rng=random.Random(42),
+            topic_override=None,
+        )
+
+        assert ctx.student_id == "lilymay"
+        assert len(ctx.topic_confidences) == 1
+        assert ctx.topic_confidences[0].topic_ref == "metaphor"
+        assert ctx.topic_confidences[0].band == "developing"
+        assert ctx.topic_confidences[0].percentage == 55
+        assert ctx.learner_state_available is True
+    finally:
+        # Clean up
+        reset_student_store()

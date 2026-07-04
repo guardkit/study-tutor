@@ -139,7 +139,8 @@ from study_tutor.knowledge.graphiti_client import (
     get_client,
     load_graphiti_config_from_yaml,
 )
-from study_tutor.knowledge.queries import get_student_state
+# REMOVED: get_student_state import (TASK-SMP2-06)
+# Post-seed verification now gated with TODO - graph seed path being retired in FEAT-SMP-004
 from study_tutor.knowledge.seed_uuids import (
     assessment_objective_uuid,
     edge_uuid,
@@ -612,17 +613,19 @@ async def seed_lilymay(client: GraphitiClient) -> int:
         but the skip avoids unnecessary work and noise.
     """
     # ---- Pre-flight: idempotency gate ------------------------------------
-    state = await get_student_state(client, STUDENT_ID)
-    if _is_already_seeded(state):
-        logger.info(
-            "seeding skipped: Lilymay baseline already present",
-            extra={
-                "event": "seeding_skipped",
-                "reason": "already_seeded",
-                "student_id": STUDENT_ID,
-            },
-        )
-        return EXIT_OK
+    # TODO(FEAT-SMP-004): Pre-flight check disabled - get_student_state removed in TASK-SMP2-06.
+    # The graph seed path is being retired; byte-idempotent re-runs still work via MERGE-by-uuid.
+    # state = await get_student_state(client, STUDENT_ID)
+    # if _is_already_seeded(state):
+    #     logger.info(
+    #         "seeding skipped: Lilymay baseline already present",
+    #         extra={
+    #             "event": "seeding_skipped",
+    #             "reason": "already_seeded",
+    #             "student_id": STUDENT_ID,
+    #         },
+    #     )
+    #     return EXIT_OK
 
     # ---- Resolve graphiti-core driver ------------------------------------
     inner = getattr(client, "client_or_none", None)
@@ -881,44 +884,29 @@ async def seed_lilymay(client: GraphitiClient) -> int:
             )
 
     # ---- Verification gate (build-plan step 10) --------------------------
-    final_state = await get_student_state(client, STUDENT_ID)
-    if final_state is None or getattr(final_state, "empty", True):
-        # The store accepted writes but the verification read couldn't see
-        # them — operators can re-run get_student_state manually. Counted
-        # entities below come from the in-process write surface, not the
-        # read-back, so the warning is informational.
-        logger.warning(
-            "post-seed verification did not observe baseline state",
-            extra={
-                "event": "seeding_verification_warning",
-                "student_id": STUDENT_ID,
-            },
-        )
-    else:
-        logger.info(
-            "seeded Lilymay baseline (subjects=%d, confidences=%d)",
-            len(final_state.subjects),
-            len(final_state.topic_confidences),
-            extra={
-                "event": "seeding_completed",
-                "student_id": STUDENT_ID,
-                "subjects": len(final_state.subjects),
-                "topic_confidences": len(final_state.topic_confidences),
-                "nodes_written": (
-                    1  # Student
-                    + len(SUBJECTS)
-                    + len(TEXTS)
-                    + len(TOPICS)
-                    + len(AOS)
-                    + len(TOPICS)  # one TopicConfidence per topic
-                ),
-                "edges_written": (
-                    len(TOPICS)  # HAS_CONFIDENCE
-                    + len(TEXTS)  # HAS_TEXT
-                    + len(TOPICS)  # COVERS (one per topic)
-                ),
-            },
-        )
+    # TODO(FEAT-SMP-004): Post-seed verification disabled - get_student_state removed in TASK-SMP2-06.
+    # The graph seed path is being retired. Operators can verify manually if needed.
+    # Counted entities below come from the in-process write surface.
+    logger.info(
+        "seeded Lilymay baseline",
+        extra={
+            "event": "seeding_completed",
+            "student_id": STUDENT_ID,
+            "nodes_written": (
+                1  # Student
+                + len(SUBJECTS)
+                + len(TEXTS)
+                + len(TOPICS)
+                + len(AOS)
+                + len(TOPICS)  # one TopicConfidence per topic
+            ),
+            "edges_written": (
+                len(TOPICS)  # HAS_CONFIDENCE
+                + len(TEXTS)  # HAS_TEXT
+                + len(TOPICS)  # COVERS (one per topic)
+            ),
+        },
+    )
     return EXIT_OK
 
 

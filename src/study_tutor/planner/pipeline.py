@@ -42,11 +42,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from study_tutor.knowledge.episodes import SessionCompletedEpisode
-from study_tutor.knowledge.queries import get_student_state
-from study_tutor.knowledge.student_model import (
-    Misconception,
-    TopicConfidence,
-)
+from study_tutor.knowledge.store.reads import PlannerInputs, load_planner_inputs
 from study_tutor.planner.protocols import (
     AOCode,
     Candidate,
@@ -280,58 +276,6 @@ def run_rule_pipeline(
 # ---------------------------------------------------------------------------
 
 
-def _project_topic_confidence(
-    student_id: str,
-    snap: Any,
-    fallback_clock: Callable[[], datetime],
-) -> TopicConfidence:
-    """Project a :class:`TopicConfidenceSnapshot` into a TopicConfidence.
-
-    The student-model query layer returns lightweight snapshots
-    (``TopicConfidenceSnapshot``); the rule layer expects full
-    :class:`TopicConfidence` entities so the existing rule code can read
-    ``percentage``, ``band``, ``last_revised_at``, and ``topic_ref``
-    uniformly. ``last_revised_at`` is required on the entity but optional
-    on the snapshot — when the snapshot is missing it, we substitute
-    ``fallback_clock()`` so the entity is well-formed; rules that gate
-    on staleness will then see the topic as freshly-revised, which is
-    the conservative default (excludes from rule-3 cooldown set).
-    """
-    last_revised = snap.last_revised_at
-    if last_revised is None:
-        last_revised = fallback_clock()
-    return TopicConfidence(
-        student_ref=student_id,
-        topic_ref=snap.topic_name,
-        percentage=int(snap.percentage),
-        band=snap.band,
-        last_revised_at=last_revised,
-    )
-
-
-def _project_misconception(
-    snap: Any,
-    band_for_topic: Mapping[str, str],
-) -> Misconception:
-    """Project a MisconceptionSnapshot into a :class:`Misconception`.
-
-    The snapshot does not carry the confidence-band-at-observation that
-    :class:`Misconception` requires; we approximate by using the
-    learner's *current* band on the topic, defaulting to ``"developing"``
-    when the topic isn't in the confidence map. This is best-effort —
-    the rule layer never reads ``confidence_band_at_observation`` for
-    selection (only ``topic_ref`` and ``observed_at`` participate per
-    the ``@security @rule-4`` invariant), so the approximation is safe.
-    """
-    band = band_for_topic.get(snap.topic_name, "developing")
-    return Misconception(
-        text=snap.text,
-        topic_ref=snap.topic_name,
-        observed_at=snap.observed_at,
-        confidence_band_at_observation=band,  # type: ignore[arg-type]
-    )
-
-
 async def _build_planner_context(
     student_id: str,
     *,
@@ -341,13 +285,12 @@ async def _build_planner_context(
     client: Any | None = None,
     ao_mapping: Mapping[str, list[AOCode]] | None = None,
 ) -> PlannerContext:
-    """Read student state and project it into a :class:`PlannerContext`.
+    """Read student state and build a :class:`PlannerContext`.
 
-    This is the read boundary to FEAT-PH1-001. It calls
-    :func:`get_student_state` to fetch the learner's per-topic
-    confidence and recent misconceptions, projects the snapshots into
-    the rule-layer entity types, and bundles everything (plus the
-    injected ``clock`` and ``rng``) into a :class:`PlannerContext`.
+    TASK-SMP2-05: This is the read boundary for the planner. It calls
+    :func:`load_planner_inputs` to fetch the learner's per-topic
+    confidence and recent misconceptions from the store-backed read layer,
+    which returns domain entities directly (no snapshot projection needed).
 
     TASK-DSP-006: this builder enforces the **inner** student-model read
     timeout itself via :func:`asyncio.wait_for` — driven by the
@@ -358,21 +301,23 @@ async def _build_planner_context(
     binding constraint by design; this inner one only fires first when
     tests enlarge the outer budget.
 
-    On read failure (timeout, ``state is None``, or ``state.empty``)
-    this function still returns a valid :class:`PlannerContext` so a
-    learner-supplied ``topic_override`` continues to flow through to
-    Rule 1, but the context is tagged ``learner_state_available=False``
-    so the pipeline (and any plan it emits) carries that signal through
-    to the response. When no override is in play and no rule produces a
-    candidate, :func:`run_rule_pipeline` then routes to
-    :func:`_baseline_plan(False) <study_tutor.planner.types._baseline_plan>`.
+    On read failure (timeout) this function still returns a valid
+    :class:`PlannerContext` so a learner-supplied ``topic_override``
+    continues to flow through to Rule 1, but the context is tagged
+    ``learner_state_available=False`` so the pipeline (and any plan it
+    emits) carries that signal through to the response. When no override
+    is in play and no rule produces a candidate, :func:`run_rule_pipeline`
+    then routes to :func:`_baseline_plan(False)
+    <study_tutor.planner.types._baseline_plan>`.
+
+    Note: The ``client`` parameter is retained for backwards compatibility
+    but is no longer used — the store-backed read does not require it.
     """
     timeout = _student_model_read_timeout_sec()
-    learner_state_available = True
 
     try:
-        state = await asyncio.wait_for(
-            get_student_state(client, student_id),
+        inputs = await asyncio.wait_for(
+            load_planner_inputs(student_id),
             timeout=timeout,
         )
     except asyncio.TimeoutError:
@@ -384,37 +329,18 @@ async def _build_planner_context(
                 "timeout_sec": timeout,
             },
         )
-        state = None
-
-    topic_confidences: list[TopicConfidence] = []
-    misconceptions: list[Misconception] = []
-
-    if state is None or state.empty:
-        # Either the read timed out (state is None), the client is
-        # missing/unwired, or the learner is unseeded. None of these
-        # are exceptional — the planner degrades to a baseline plan
-        # marked ``learner_state_available=False``.
-        learner_state_available = False
-    else:
-        topic_confidences = [
-            _project_topic_confidence(student_id, snap, clock)
-            for snap in state.topic_confidences
-        ]
-        band_for_topic = {tc.topic_ref: tc.band for tc in topic_confidences}
-        misconceptions = [
-            _project_misconception(snap, band_for_topic)
-            for snap in state.recent_misconceptions
-        ]
+        # On timeout, degrade to unavailable state
+        inputs = PlannerInputs([], [], learner_state_available=False)
 
     return PlannerContext.create(
         student_id=student_id,
-        topic_confidences=topic_confidences,
-        misconceptions=misconceptions,
+        topic_confidences=inputs.topic_confidences,
+        misconceptions=inputs.misconceptions,
         ao_mapping=ao_mapping or {},
         topic_override=topic_override,
         clock=clock,
         rng=rng,
-        learner_state_available=learner_state_available,
+        learner_state_available=inputs.learner_state_available,
     )
 
 

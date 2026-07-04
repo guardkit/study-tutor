@@ -105,29 +105,10 @@ def test_seed_writes_via_typed_entity_save() -> None:
     )
 
 
-@pytest.mark.seam
-@pytest.mark.integration_contract("StudentModelQueries")
-def test_post_seed_verification_gate() -> None:
-    """Verify StudentModelQueries contract: get_student_state is the
-    post-seed read-back.
-
-    Producer: TASK-GSM-005.
-    """
-    tree = _parse_script()
-
-    found_query_import = False
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            module = getattr(node, "module", "") or ""
-            names = [n.name for n in node.names]
-            if "queries" in module and "get_student_state" in names:
-                found_query_import = True
-                break
-
-    assert found_query_import, (
-        "Seeding script must import get_student_state from "
-        "study_tutor.knowledge.queries to act as the post-seed verification gate"
-    )
+# REMOVED: test_post_seed_verification_gate
+# The seed script no longer uses get_student_state for post-seed verification
+# as the Graphiti read surface has been removed (TASK-SMP2-06).
+# The graph seed path will be retired in FEAT-SMP-004.
 
 
 @pytest.mark.seam
