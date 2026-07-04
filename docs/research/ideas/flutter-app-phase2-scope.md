@@ -1,6 +1,6 @@
 # Flutter App — Phase 2 Scope: real transport slice
 
-**Status:** Draft — for Rich's review; §6 lists the decisions only he can make. Adversarially verified (3 lenses, 19 findings applied) 2026-07-04.
+**Status:** Draft — for Rich's review; §6 lists the decisions only he can make. Adversarially verified (3 lenses, 19 findings applied) 2026-07-04; updated same day for FEAT-SMP-003 landing at `ea7c135` (durable sessions live over MCP; HTTP/WS explicitly deferred to this phase).
 **Date:** 2026-07-04. **Owner:** Rich.
 **Contract pin:** unchanged — [API-session-cross-device.md](../../design/contracts/API-session-cross-device.md) at `CONTRACT_SHA=22791afbcdb3b71abbe6bd2f1b8e18218988942f`. Phase 2 *consumes* the contract on both sides of the seam; contract changes stay owned by `/design-refine` (contract §10). Handoff D1–D9 are closed and untouched.
 **Predecessor:** [flutter-app-scope.md](flutter-app-scope.md) (v1 — fake-backend slice, shipped 2026-07-04, 80 tests).
@@ -15,23 +15,24 @@ One sentence: **swap the fake for the real backend over HTTP, and prove they agr
 
 Two coordinated builds, one on each side of the seam:
 
-1. **Backend — FEAT-SMP-003** (not specced here): durable student-keyed sessions in the existing Postgres tables + the HTTP App Access adapter over `SessionService`. It has its own owner-process — guardkit `/feature-spec` → `/feature-plan` → autobuild per the migration plan — and this doc only states the *demand side* (§2). Ground truth as of `3cff683`: `session`/`session_turn` tables exist (W1 schema); the six PG session methods (`postgres.py:671–707`) raise `NotImplementedError`; `SessionService` is unwired scaffolding (its docstring lists 6 open decisions, one — the §9 error-set ratification — already resolved by G-CON, leaving the plan's 5 build decisions); **no web framework is a direct dependency** (starlette/uvicorn are present transitively via `mcp`, so SMP-003 could serve HTTP without a net-new framework — its call).
+1. **Backend — the HTTP App Access adapter** (not specced here). *Updated ground truth as of `ea7c135` (2026-07-04): FEAT-SMP-003 shipped* — durable Postgres sessions are live over MCP, `SessionService` is wired into `MCPAdapter` + CLI, the Postgres session CRUD is implemented (with `resume_if_active` picking `ORDER BY last_activity DESC LIMIT 1` — **matching the app fake's pick and the contract test that pins it**), and a `SessionCompletion` producer replaced the Graphiti-coupled policy. The SMP-003 spec **explicitly deferred "the HTTP/WS transport + `turn_stream`" to the mobile build** (its summary §Out-of-scope) — that deferred piece is phase 2's backend half. It is now a *thin second consumer* of a proven service, not a first consumer of untested scaffolding; it gets its own guardkit `/feature-spec` → `/feature-plan` → build, and this doc only states the demand side (§2). **No web framework is a direct dependency** (starlette/uvicorn are transitive via `mcp` — the adapter build's call whether to pin one).
 2. **App — the HTTP adapter slice** (this scope, §3): `HttpSessionApi` behind the *existing* `SessionApi` port, wire-error mapping onto the *existing* typed exceptions, a composition-root switch, and the contract suite runnable against both adapters.
 
 v1's moat is the point of this phase: the contract tests were written against the port, so "fake and backend agree" becomes a test run, not an argument.
 
-## 2. Demand side: what the app needs from FEAT-SMP-003
+## 2. Demand side: what the app needs from the HTTP adapter build
 
-The SMP-003 spec owns its design; the app slice needs this surface to exist:
+The adapter's own spec owns its design; the app slice needs this surface to exist. (Items 5–6's substance — per-turn durability, ordered resume, the §9 semantics — already exists behind `SessionService` since `ea7c135`; the remaining work is exposing it over HTTP.)
 
 1. **HTTP JSON endpoints for the six verbs** (contract §5 names and shapes; plain request/response — **no WS/streaming in this phase**, contract §7 lands with voice).
-2. **A ratified HTTP binding table** — verb → method + path + status-code-per-`error_type` (§9 envelope). The contract is deliberately transport-neutral, so this small table is where the wire is pinned; it belongs in the SMP-003 `/feature-spec`, and **app deliverable §3.1 is blocked on it** — otherwise the app invents routes that silently diverge.
+2. **A ratified HTTP binding table** — verb → method + path + status-code-per-`error_type` (§9 envelope). The contract is deliberately transport-neutral, so this small table is where the wire is pinned; it belongs in the adapter's `/feature-spec`, and **app deliverable §3.1 is blocked on it** — otherwise the app invents routes that silently diverge.
 3. **Interim auth = the fake IdP's model, server-side** (contract §3 derivation with a static table instead of Keycloak): the adapter resolves `student_id` from a **configured token→student table**. Prod config keeps the single-user posture (one entry, Lilymay). **Dev config carries two entries + reject-unknown-tokens on**, which is what lets the ownership (`SessionForbidden`) and auth (`Unauthenticated`) contract tests run live. This is config, not multi-student auth — no Keycloak, no provisioning (D9 untouched).
 4. **A dev-only state reset** (e.g. `POST /__dev__/reset`, enabled by env flag, absent in prod config): truncates session/session_turn state so live contract tests are isolated. The live suite asserts absolute state (`hasLength(1)`, `isEmpty`); without per-test reset against the durable store it fails from the second test onward.
-5. **Per-turn durability + ordered resume** (contract §4/§6) — what makes the cross-device demo real.
-6. **Error envelope** (contract §9) — flat JSON with `error_type` from the closed set.
+5. **Per-turn durability + ordered resume** (contract §4/§6) — ✅ landed in FEAT-SMP-003; the adapter just exposes it.
+6. **Error envelope** (contract §9) — flat JSON with `error_type` from the closed set (the typed errors already exist in `session/errors.py`; the adapter maps them to the wire).
+7. **A boot smoke that asserts READY** — per the 2026-07-04 call-site-drift retro: the adapter's serve entrypoint gets a smoke test that asserts a ready signal, not merely "didn't crash within N seconds".
 
-Two items that look demand-side but are **decisions for Rich, not the SMP-003 plan** (§6): the GB10 port + Tailscale ACL, and the `resume_if_active` duplicate-pick ambiguity (a *contract* question owned by `/design-refine`).
+One item that looks demand-side but is **a decision for Rich, not the adapter plan** (§6): the GB10 port + Tailscale ACL.
 
 ## 3. App-side deliverables
 
@@ -54,12 +55,13 @@ WS streaming `turn` / voice / STT-TTS (contract §7); Keycloak & real multi-stud
 
 ## 6. Decisions Rich owns (blocking, in rough order)
 
-1. **FEAT-SMP-003 ownership** — GB10 autobuild vs this Mac session; nothing in-repo records an owner and the SMP status metadata is stale (trust `git log`).
+*(Updated after FEAT-SMP-003 landed at `ea7c135`: the old ownership question is resolved — GB10 built it — and the `resume_if_active` ambiguity resolved itself: the backend's `ORDER BY last_activity DESC LIMIT 1` matches the app fake + pinned contract test. A one-line contract clarification via `/design-refine` can happen at leisure; it no longer blocks anything.)*
+
+1. **HTTP-adapter build ownership + vehicle** — SMP-003 deliberately deferred the HTTP/WS transport to the mobile build; it's now a small standalone feature with no owner. GB10 autobuild vs this Mac; guardkit `/feature-spec` either way.
 2. **GB10 port + Tailscale ACL for the HTTP surface** — nothing reserved; 8080 (Open WebUI), 9000 (llama-swap), 9100/9200 (voice) are taken/earmarked. Also fixes http-vs-https for the dev flavour (§3.5).
 3. **Approve `package:http`** — the single proposed addition to v1's closed dependency list.
-4. **`resume_if_active` duplicate-pick** — a contract-level ambiguity (contract §5 wording is singular; duplicates are permitted). Owned by `/design-refine`, not the SMP-003 spec: either ratify "most-recently-active wins" (what the app's fake + a pinned contract test do today) or add a uniqueness rule. Logged in [app/QUESTIONS.md](../../../app/QUESTIONS.md).
-5. **Sequencing deviation sign-off** — the handoff ordered voice endpoints first (step 1, rationale: also unblocks Reachy); this phase does steps 2–4 first and defers voice. Sequencing wasn't a D-numbered closed decision, but the reorder should be deliberate, not implicit.
+4. **Sequencing deviation sign-off** — the handoff ordered voice endpoints first (step 1, rationale: also unblocks Reachy); with step 2 (persistence) now shipped, this phase does steps 3–4 and defers voice. The reorder should be deliberate, not implicit.
 
 ---
 
-*Next artifacts once §6.1–§6.4 are decided: (a) FEAT-SMP-003 `/feature-spec` (backend — owns the binding table §2.2 and its own plan), (b) `flutter-app-phase2-build-plan.md` (app waves, v1 discipline).*
+*Next artifacts once §6.1–§6.3 are decided: (a) HTTP App Access adapter `/feature-spec` (backend — owns the binding table §2.2 and its own plan), (b) `flutter-app-phase2-build-plan.md` (app waves, v1 discipline).*
