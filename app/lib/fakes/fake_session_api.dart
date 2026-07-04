@@ -64,6 +64,14 @@ class FakeSessionApi implements SessionApi {
     return session;
   }
 
+  /// §5: every verb taking a `session_id` asserts the session's
+  /// `student_id` == caller's → SessionForbidden otherwise.
+  void _requireOwner(Session session, String studentId) {
+    if (session.studentId != studentId) {
+      throw const SessionForbidden();
+    }
+  }
+
   /// §4: `ended` is terminal — any verb except `session_status` on an ended
   /// session → SessionEnded.
   void _requireActive(Session session) {
@@ -126,14 +134,36 @@ class FakeSessionApi implements SessionApi {
   Future<List<SessionSummary>> listSessions({
     SessionStatus? status,
     int? limit,
-  }) {
-    throw UnimplementedError('listSessions lands in wave-4 (contract test 9)');
+  }) async {
+    final studentId = _requireStudentId();
+    // §3: student_id is the partition key — callers only ever see their own
+    // sessions. Most-recent-activity first ("resume where you left off").
+    var sessions = _store.sessions.values
+        .where((s) => s.studentId == studentId)
+        .where((s) => status == null || s.status == status)
+        .toList()
+      ..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
+    if (limit != null && sessions.length > limit) {
+      sessions = sessions.sublist(0, limit);
+    }
+    return sessions
+        .map((s) => SessionSummary(
+              sessionId: s.id,
+              subject: s.subject,
+              topic: s.topic,
+              status: s.status,
+              startedAt: s.startedAt,
+              lastActivity: s.lastActivity,
+              turnCount: s.turnCount,
+            ))
+        .toList();
   }
 
   @override
   Future<ResumeSessionResult> resumeSession(String sessionId) async {
     final studentId = _requireStudentId();
     final session = _requireSession(sessionId);
+    _requireOwner(session, studentId);
     _requireActive(session);
     return ResumeSessionResult(
       sessionId: session.id,
@@ -145,8 +175,9 @@ class FakeSessionApi implements SessionApi {
 
   @override
   Future<TurnResult> turn(String sessionId, String userMessage) async {
-    _requireStudentId();
+    final studentId = _requireStudentId();
     final session = _requireSession(sessionId);
+    _requireOwner(session, studentId);
     _requireActive(session);
 
     final now = _clock();
@@ -167,10 +198,11 @@ class FakeSessionApi implements SessionApi {
 
   @override
   Future<SessionStatusResult> sessionStatus(String sessionId) async {
-    _requireStudentId();
+    final studentId = _requireStudentId();
     // §9: session_status is the one verb that still answers on an ended
-    // session — no _requireActive here.
+    // session — no _requireActive here (ownership still applies).
     final session = _requireSession(sessionId);
+    _requireOwner(session, studentId);
     return SessionStatusResult(
       sessionId: session.id,
       studentId: session.studentId,
@@ -184,8 +216,9 @@ class FakeSessionApi implements SessionApi {
 
   @override
   Future<EndSessionResult> endSession(String sessionId) async {
-    _requireStudentId();
+    final studentId = _requireStudentId();
     final session = _requireSession(sessionId);
+    _requireOwner(session, studentId);
     _requireActive(session);
     _store.sessions[session.id] = session.copyWith(
       status: SessionStatus.ended,
