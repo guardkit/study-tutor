@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../domain/errors.dart';
 import '../domain/session.dart';
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
+import 'error_handling.dart';
 import 'session_screen.dart';
 
 /// Fixed subject for v1 — the build plan allows it; a subject picker is out
@@ -33,10 +35,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refresh() async {
-    final active =
-        await widget.sessionApi.listSessions(status: SessionStatus.active);
-    if (!mounted) return;
-    setState(() => _active = active);
+    try {
+      final active =
+          await widget.sessionApi.listSessions(status: SessionStatus.active);
+      if (!mounted) return;
+      setState(() => _active = active);
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi);
+    }
   }
 
   /// Push the session screen, then re-list on return — an ended session must
@@ -49,25 +56,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startNewSession() async {
-    final started =
-        await widget.sessionApi.startSession(subject: defaultSubject);
-    if (!mounted) return;
-    await _open(SessionScreen(
-      sessionApi: widget.sessionApi,
-      sessionId: started.sessionId,
-      initialTurns: started.turns ?? const [],
-    ));
+    try {
+      final started =
+          await widget.sessionApi.startSession(subject: defaultSubject);
+      if (!mounted) return;
+      await _open(SessionScreen(
+        identity: widget.identity,
+        sessionApi: widget.sessionApi,
+        sessionId: started.sessionId,
+        initialTurns: started.turns ?? const [],
+      ));
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi);
+    }
   }
 
   Future<void> _resume(SessionSummary summary) async {
-    final resumed =
-        await widget.sessionApi.resumeSession(summary.sessionId);
-    if (!mounted) return;
-    await _open(SessionScreen(
-      sessionApi: widget.sessionApi,
-      sessionId: resumed.sessionId,
-      initialTurns: resumed.turns,
-    ));
+    try {
+      final resumed =
+          await widget.sessionApi.resumeSession(summary.sessionId);
+      if (!mounted) return;
+      await _open(SessionScreen(
+        identity: widget.identity,
+        sessionApi: widget.sessionApi,
+        sessionId: resumed.sessionId,
+        initialTurns: resumed.turns,
+      ));
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on SessionApiException {
+      // SessionForbidden / SessionNotFoundError (and, defensively, a session
+      // that ended elsewhere): shared surface, then re-list — the stale row
+      // must drop off (scope §3).
+      if (!mounted) return;
+      await showCantOpenSession(context);
+      if (mounted) await _refresh();
+    }
   }
 
   @override

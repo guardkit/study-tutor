@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../domain/errors.dart';
 import '../domain/session.dart';
+import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
+import 'error_handling.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({
     super.key,
+    required this.identity,
     required this.sessionApi,
     required this.sessionId,
     this.initialTurns = const [],
   });
 
+  final IdentityProvider identity;
   final SessionApi sessionApi;
   final String sessionId;
 
@@ -35,10 +40,22 @@ class _SessionScreenState extends State<SessionScreen> {
   }
 
   Future<void> _endSession() async {
-    await widget.sessionApi.endSession(widget.sessionId);
-    if (!mounted) return;
-    // §4: ended is terminal — the screen goes read-only, no way back.
-    setState(() => _ended = true);
+    try {
+      await widget.sessionApi.endSession(widget.sessionId);
+      if (!mounted) return;
+      // §4: ended is terminal — the screen goes read-only, no way back.
+      setState(() => _ended = true);
+    } on SessionEnded {
+      // Already ended elsewhere — same terminal state (scope §3).
+      if (!mounted) return;
+      setState(() => _ended = true);
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on SessionApiException {
+      if (!mounted) return;
+      await showCantOpenSession(context);
+    }
   }
 
   Future<void> _send() async {
@@ -46,17 +63,32 @@ class _SessionScreenState extends State<SessionScreen> {
     if (text.isEmpty || _sending || _ended) return;
 
     setState(() => _sending = true);
-    final result = await widget.sessionApi.turn(widget.sessionId, text);
-    if (!mounted) return;
-    setState(() {
-      final now = DateTime.now();
-      _turns
-        ..add(TurnEntry(role: TurnRole.user, content: text, ts: now))
-        ..add(TurnEntry(
-            role: TurnRole.tutor, content: result.tutorResponse, ts: now));
-      _input.clear();
-      _sending = false;
-    });
+    try {
+      final result = await widget.sessionApi.turn(widget.sessionId, text);
+      if (!mounted) return;
+      setState(() {
+        final now = DateTime.now();
+        _turns
+          ..add(TurnEntry(role: TurnRole.user, content: text, ts: now))
+          ..add(TurnEntry(
+              role: TurnRole.tutor, content: result.tutorResponse, ts: now));
+        _input.clear();
+      });
+    } on SessionEnded {
+      // Ended under us (e.g. another device): ended state, input disabled
+      // (scope §3) — the unsent message is dropped, not appended.
+      if (!mounted) return;
+      setState(() => _ended = true);
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on SessionApiException {
+      // SessionForbidden / SessionNotFoundError: shared surface, back home.
+      if (!mounted) return;
+      await showCantOpenSession(context);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
   }
 
   Widget _bubble(BuildContext context, TurnEntry turn) {
