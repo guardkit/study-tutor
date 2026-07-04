@@ -26,6 +26,7 @@ class _SessionScreenState extends State<SessionScreen> {
   late final List<TurnEntry> _turns = List.of(widget.initialTurns);
   final _input = TextEditingController();
   bool _sending = false;
+  bool _ended = false;
 
   @override
   void dispose() {
@@ -33,9 +34,16 @@ class _SessionScreenState extends State<SessionScreen> {
     super.dispose();
   }
 
+  Future<void> _endSession() async {
+    await widget.sessionApi.endSession(widget.sessionId);
+    if (!mounted) return;
+    // §4: ended is terminal — the screen goes read-only, no way back.
+    setState(() => _ended = true);
+  }
+
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty || _sending) return;
+    if (text.isEmpty || _sending || _ended) return;
 
     setState(() => _sending = true);
     final result = await widget.sessionApi.turn(widget.sessionId, text);
@@ -72,7 +80,16 @@ class _SessionScreenState extends State<SessionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Session')),
+      appBar: AppBar(
+        title: const Text('Session'),
+        actions: [
+          if (!_ended)
+            TextButton(
+              onPressed: _endSession,
+              child: const Text('End session'),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -83,6 +100,11 @@ class _SessionScreenState extends State<SessionScreen> {
                     itemBuilder: (context, i) => _bubble(context, _turns[i]),
                   ),
           ),
+          if (_ended)
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Text('Session ended'),
+            ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(8),
@@ -91,7 +113,7 @@ class _SessionScreenState extends State<SessionScreen> {
                   Expanded(
                     child: TextField(
                       controller: _input,
-                      enabled: !_sending,
+                      enabled: !_sending && !_ended,
                       onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
                           hintText: 'Type a message…'),
@@ -99,7 +121,7 @@ class _SessionScreenState extends State<SessionScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.send),
-                    onPressed: _sending ? null : _send,
+                    onPressed: (_sending || _ended) ? null : _send,
                   ),
                 ],
               ),
