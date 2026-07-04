@@ -30,9 +30,13 @@ class FakeIdentityProvider implements IdentityProvider {
   @override
   Principal? get currentPrincipal => _current;
 
-  /// Signs in the default student (Lilymay).
+  /// Signs in the default student (Lilymay). Re-authenticating restores a
+  /// previously invalidated token — as with a real IdP, signing in again
+  /// yields a valid credential (here the constant token regains validity),
+  /// so the Unauthenticated → sign-in → retry loop can actually recover.
   @override
   Future<Principal> signIn() async {
+    _invalidatedTokens.remove(lilymay.token);
     _current = lilymay;
     return lilymay;
   }
@@ -45,6 +49,7 @@ class FakeIdentityProvider implements IdentityProvider {
   /// Test hook: sign in as a specific principal (e.g. [secondStudent] for
   /// ownership tests). Not on the port — the v1 UI only ever [signIn]s.
   Future<Principal> signInAs(Principal principal) async {
+    _invalidatedTokens.remove(principal.token);
     _current = principal;
     return principal;
   }

@@ -30,13 +30,33 @@ class SessionScreen extends StatefulWidget {
 class _SessionScreenState extends State<SessionScreen> {
   late final List<TurnEntry> _turns = List.of(widget.initialTurns);
   final _input = TextEditingController();
+  final _scroll = ScrollController();
   bool _sending = false;
   bool _ended = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Resume paths arrive with a full transcript: open at the latest
+    // exchange, not the oldest message.
+    if (_turns.isNotEmpty) _showLatest();
+  }
+
+  @override
   void dispose() {
+    _scroll.dispose();
     _input.dispose();
     super.dispose();
+  }
+
+  /// ListView stays anchored to its current offset when items are appended,
+  /// so newly added turns end up below the fold once the transcript exceeds
+  /// the viewport. Jump after the frame in which the new items are laid out.
+  void _showLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
   }
 
   Future<void> _endSession() async {
@@ -74,6 +94,7 @@ class _SessionScreenState extends State<SessionScreen> {
               role: TurnRole.tutor, content: result.tutorResponse, ts: now));
         _input.clear();
       });
+      _showLatest();
     } on SessionEnded {
       // Ended under us (e.g. another device): ended state, input disabled
       // (scope §3) — the unsent message is dropped, not appended.
@@ -128,6 +149,7 @@ class _SessionScreenState extends State<SessionScreen> {
             child: _turns.isEmpty
                 ? const Center(child: Text('No messages yet'))
                 : ListView.builder(
+                    controller: _scroll,
                     itemCount: _turns.length,
                     itemBuilder: (context, i) => _bubble(context, _turns[i]),
                   ),
@@ -145,7 +167,12 @@ class _SessionScreenState extends State<SessionScreen> {
                   Expanded(
                     child: TextField(
                       controller: _input,
-                      enabled: !_sending && !_ended,
+                      // Only the ended state disables the field. Disabling on
+                      // `_sending` would unfocus it and dismiss the keyboard
+                      // on every send once the port has real latency; the
+                      // `_send` guard + disabled send button already prevent
+                      // double-send.
+                      enabled: !_ended,
                       onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
                           hintText: 'Type a message…'),

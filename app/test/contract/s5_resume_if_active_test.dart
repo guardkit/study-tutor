@@ -48,6 +48,23 @@ void main() {
     expect(second.resumed, isFalse);
   });
 
+  test('§5 duplicate active (student, subject) sessions: the most recently '
+      'active one wins (contract wording is singular — see QUESTIONS.md)',
+      () async {
+    final older = await h.api.startSession(subject: 'maths');
+    final newer = await h.api.startSession(subject: 'maths');
+    // Advance the *newer* session so it is unambiguously the most recently
+    // active — the "resume where you left off" pick.
+    await h.api.turn(newer.sessionId, 'latest activity here');
+
+    final resumed =
+        await h.api.startSession(subject: 'maths', resumeIfActive: true);
+
+    expect(resumed.sessionId, newer.sessionId);
+    expect(resumed.sessionId, isNot(older.sessionId));
+    expect(resumed.resumed, isTrue);
+  });
+
   test('§5 an ended session never matches — resume_if_active only matches '
       'active sessions', () async {
     final first = await h.api.startSession(subject: 'maths');

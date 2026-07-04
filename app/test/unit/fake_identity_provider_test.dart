@@ -94,5 +94,16 @@ void main() {
       idp.invalidateCurrentToken();
       expect(idp.studentIdForToken('token-lilymay'), 'lilymay');
     });
+
+    test('re-signing in restores validity — the recovery loop closes', () async {
+      final idp = FakeIdentityProvider();
+      await idp.signIn();
+      idp.invalidateCurrentToken();
+      expect(idp.studentIdForToken(idp.currentPrincipal?.token), isNull);
+
+      await idp.signIn();
+      expect(idp.studentIdForToken(idp.currentPrincipal?.token), 'lilymay',
+          reason: 're-auth must yield a valid credential, not a dead end');
+    });
   });
 }
