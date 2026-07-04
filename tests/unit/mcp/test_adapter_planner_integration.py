@@ -45,7 +45,8 @@ from study_tutor.planner.pipeline import (
 )
 from study_tutor.planner.types import SessionPlan, _baseline_plan
 from study_tutor.roles.loader import RoleConfig
-from study_tutor.session.tutor_session import SessionStore
+from study_tutor.session.service import SessionService
+from tests.unit.knowledge.store.fakes import FakeStudentStore
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +69,10 @@ def role_config(tmp_path: Path) -> RoleConfig:
 
 @pytest.fixture
 def adapter(role_config: RoleConfig) -> MCPAdapter:
-    return MCPAdapter(role_config=role_config, store=SessionStore())
+    return MCPAdapter(
+        role_config=role_config,
+        session_service=SessionService(store=FakeStudentStore()),
+    )
 
 
 async def _drain_warmups(adapter: MCPAdapter) -> None:

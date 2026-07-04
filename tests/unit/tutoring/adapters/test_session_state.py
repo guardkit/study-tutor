@@ -25,9 +25,10 @@ import pytest
 
 from study_tutor.mcp.adapter import MCPAdapter
 from study_tutor.roles.loader import RoleConfig
-from study_tutor.session.tutor_session import SessionStore
+from study_tutor.session.service import SessionService
 from study_tutor.tutoring.adapters.session_state import SessionState
 from study_tutor.tutoring.orchestrator import TurnResult
+from tests.unit.knowledge.store.fakes import FakeStudentStore
 
 
 pytestmark = pytest.mark.feat_lca
@@ -205,10 +206,10 @@ async def test_tutor_turn_passes_session_state_to_orchestrator(
         stubs.append(stub)
         return stub
 
-    store = SessionStore()
+    session_service = SessionService(store=FakeStudentStore())
     adapter = MCPAdapter(
         role_config=role_config,
-        store=store,
+        session_service=session_service,
         orchestrator_factory=factory,
     )
 
@@ -281,7 +282,10 @@ async def test_tutor_turn_phase_zero_path_unchanged_when_factory_is_none(
 
     monkeypatch.setattr(llm_client.LLMClient, "generate", fake_generate)
 
-    adapter = MCPAdapter(role_config=role_config, store=SessionStore())
+    adapter = MCPAdapter(
+        role_config=role_config,
+        session_service=SessionService(store=FakeStudentStore()),
+    )
     assert adapter._orchestrator_factory is None
 
     started = await adapter.tutor_start_session(

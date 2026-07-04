@@ -29,6 +29,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import (
     Column,
@@ -676,10 +677,139 @@ class PostgresStudentStore:
         topic: str | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Create a session, or resume the active one.
+
+        Returns (record, created) - created=True for new, False for resumed.
+        ONE transaction (ASSUM-003): SELECT for resume check + INSERT if needed.
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Compute now for timestamps (deterministic, tz-aware)
+        now = datetime.now(timezone.utc)
+
+        # Use transaction for atomicity (resume check + conditional insert)
+        async with engine.begin() as conn:
+            # If resume requested, check for existing active session
+            if resume_if_active:
+                result = await conn.execute(
+                    sql_text(
+                        "SELECT session_id, student_id, subject, topic, status, "
+                        "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                        "FROM session "
+                        "WHERE student_id = :sid AND subject = :subj AND status = 'active' "
+                        "ORDER BY last_activity DESC LIMIT 1"
+                    ),
+                    {"sid": student_id, "subj": subject},
+                )
+                row = result.fetchone()
+
+                if row is not None:
+                    # Resume existing session
+                    return (
+                        SessionRecord(
+                            session_id=row[0],
+                            student_id=row[1],
+                            subject=row[2],
+                            topic=row[3],
+                            status=row[4],
+                            started_at=row[5],
+                            last_activity=row[6],
+                            turn_count=row[7],
+                            aos_scaffolded=row[8] if row[8] else [],
+                            summary=row[9],
+                        ),
+                        False,  # Not created, resumed
+                    )
+
+            # Create new session
+            session_id = str(uuid4())
+            await conn.execute(
+                sql_text(
+                    "INSERT INTO session "
+                    "(session_id, student_id, subject, topic, status, "
+                    "started_at, last_activity, turn_count, xp_awarded, aos_scaffolded, summary) "
+                    "VALUES "
+                    "(:session_id, :student_id, :subject, :topic, :status, "
+                    ":started_at, :last_activity, :turn_count, :xp_awarded, :aos_scaffolded, :summary)"
+                ),
+                {
+                    "session_id": session_id,
+                    "student_id": student_id,
+                    "subject": subject,
+                    "topic": topic,
+                    "status": "active",
+                    "started_at": now,
+                    "last_activity": now,
+                    "turn_count": 0,
+                    "xp_awarded": 0,
+                    "aos_scaffolded": "[]",
+                    "summary": None,
+                },
+            )
+
+            return (
+                SessionRecord(
+                    session_id=session_id,
+                    student_id=student_id,
+                    subject=subject,
+                    topic=topic,
+                    status="active",
+                    started_at=now,
+                    last_activity=now,
+                    turn_count=0,
+                    aos_scaffolded=[],
+                    summary=None,
+                ),
+                True,  # Created
+            )
 
     async def get_session(self, session_id: str) -> SessionRecord | None:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Fetch a session, or None if unknown.
+
+        Returns SessionRecord with all fields mapped from DB row.
+        Note: xp_awarded exists in DB but NOT on SessionRecord.
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Read-only connection (no transaction needed)
+        async with engine.connect() as conn:
+            result = await conn.execute(
+                sql_text(
+                    "SELECT session_id, student_id, subject, topic, status, "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                    "FROM session WHERE session_id = :sid"
+                ),
+                {"sid": session_id},
+            )
+            row = result.fetchone()
+
+            if row is None:
+                return None
+
+            return SessionRecord(
+                session_id=row[0],
+                student_id=row[1],
+                subject=row[2],
+                topic=row[3],
+                status=row[4],
+                started_at=row[5],
+                last_activity=row[6],
+                turn_count=row[7],
+                aos_scaffolded=row[8] if row[8] else [],
+                summary=row[9],
+            )
 
     async def list_sessions(
         self,
@@ -688,7 +818,63 @@ class PostgresStudentStore:
         status: SessionStatus | None = None,
         limit: int = DEFAULT_SESSION_LIST_LIMIT,
     ) -> list[SessionRecord]:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """List sessions for a student, newest last_activity first.
+
+        Returns SessionRecord list ordered by last_activity DESC, capped at limit.
+        Optional status filter narrows to active or ended when supplied.
+        Returns [] for a student with no sessions (no existence pre-check needed).
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Read-only connection (no transaction needed)
+        async with engine.connect() as conn:
+            # Build query with optional status filter
+            if status is not None:
+                query = sql_text(
+                    "SELECT session_id, student_id, subject, topic, status, "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                    "FROM session "
+                    "WHERE student_id = :sid AND status = :status "
+                    "ORDER BY last_activity DESC LIMIT :limit"
+                )
+                params = {"sid": student_id, "status": status, "limit": limit}
+            else:
+                query = sql_text(
+                    "SELECT session_id, student_id, subject, topic, status, "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                    "FROM session "
+                    "WHERE student_id = :sid "
+                    "ORDER BY last_activity DESC LIMIT :limit"
+                )
+                params = {"sid": student_id, "limit": limit}
+
+            result = await conn.execute(query, params)
+            rows = result.fetchall()
+
+            # Map rows to SessionRecord entities
+            sessions = [
+                SessionRecord(
+                    session_id=row[0],
+                    student_id=row[1],
+                    subject=row[2],
+                    topic=row[3],
+                    status=row[4],
+                    started_at=row[5],
+                    last_activity=row[6],
+                    turn_count=row[7],
+                    aos_scaffolded=row[8] if row[8] else [],
+                    summary=row[9],
+                )
+                for row in rows
+            ]
+
+            return sessions
 
     async def append_turn(
         self,
@@ -698,13 +884,189 @@ class PostgresStudentStore:
         content: str,
         ao_scaffolded: str | None = None,
     ) -> SessionTurn:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Append one turn, bumping turn_count + last_activity atomically.
+
+        Args:
+            session_id: Target session UUID
+            role: 'learner' or 'tutor'
+            content: Turn content (message text)
+            ao_scaffolded: Optional AO scaffold type applied
+
+        Returns:
+            SessionTurn with the inserted turn (turn_index is 0-based, monotonic)
+
+        Raises:
+            IntegrityError: If session_id is unknown (FK constraint violation)
+            Database errors propagate
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Compute timestamp (tz-aware UTC)
+        now = datetime.now(timezone.utc)
+
+        # ONE transaction: read turn_count (FOR UPDATE), insert turn, update session
+        async with engine.begin() as conn:
+            # Read current turn_count (this becomes the new turn's index)
+            # FOR UPDATE locks the row to prevent race conditions
+            result = await conn.execute(
+                sql_text(
+                    "SELECT turn_count FROM session WHERE session_id = :sid FOR UPDATE"
+                ),
+                {"sid": session_id},
+            )
+            row = result.fetchone()
+
+            if row is None:
+                # Unknown session - let the FK constraint reject the insert
+                # (but we've detected it early, so provide a clear message)
+                # The FK will raise IntegrityError if we proceed
+                pass
+
+            turn_index = row[0] if row else 0
+
+            # Insert turn
+            await conn.execute(
+                sql_text(
+                    "INSERT INTO session_turn "
+                    "(session_id, turn_index, role, content, ts, ao_scaffolded) "
+                    "VALUES (:session_id, :turn_index, :role, :content, :ts, :ao_scaffolded)"
+                ),
+                {
+                    "session_id": session_id,
+                    "turn_index": turn_index,
+                    "role": role,
+                    "content": content,
+                    "ts": now,
+                    "ao_scaffolded": ao_scaffolded,
+                },
+            )
+
+            # Update session: bump turn_count and last_activity
+            await conn.execute(
+                sql_text(
+                    "UPDATE session "
+                    "SET turn_count = turn_count + 1, last_activity = :now "
+                    "WHERE session_id = :sid"
+                ),
+                {"now": now, "sid": session_id},
+            )
+
+        # Return the SessionTurn
+        return SessionTurn(
+            session_id=session_id,
+            turn_index=turn_index,
+            role=role,
+            content=content,
+            ts=now,
+            ao_scaffolded=ao_scaffolded,
+        )
 
     async def get_turns(self, session_id: str) -> list[SessionTurn]:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Get ordered transcript for a session.
+
+        Returns SessionTurn list ordered by turn_index ascending.
+        Returns [] when the session has no turns or is unknown (no existence pre-check).
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Read-only connection (no transaction needed)
+        async with engine.connect() as conn:
+            result = await conn.execute(
+                sql_text(
+                    "SELECT session_id, turn_index, role, content, ts, ao_scaffolded "
+                    "FROM session_turn "
+                    "WHERE session_id = :sid "
+                    "ORDER BY turn_index"
+                ),
+                {"sid": session_id},
+            )
+            rows = result.fetchall()
+
+            # Map rows to SessionTurn entities
+            turns = [
+                SessionTurn(
+                    session_id=row[0],
+                    turn_index=row[1],
+                    role=row[2],
+                    content=row[3],
+                    ts=row[4],
+                    ao_scaffolded=row[5],  # Pass through as str | None
+                )
+                for row in rows
+            ]
+
+            return turns
 
     async def end_session(self, session_id: str) -> SessionRecord:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Transition session status to 'ended' and stamp last_activity.
+
+        Args:
+            session_id: Target session UUID
+
+        Returns:
+            SessionRecord with updated status='ended' and fresh last_activity
+
+        Raises:
+            SessionNotFoundError: If session_id is unknown
+            Database errors propagate
+        """
+        # Import error here to avoid circular import issues
+        from study_tutor.session.errors import SessionNotFoundError
+
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Compute timestamp (tz-aware UTC)
+        now = datetime.now(timezone.utc)
+
+        # Update status and last_activity, returning the updated row
+        async with engine.begin() as conn:
+            result = await conn.execute(
+                sql_text(
+                    "UPDATE session "
+                    "SET status = 'ended', last_activity = :now "
+                    "WHERE session_id = :sid "
+                    "RETURNING session_id, student_id, subject, topic, status, "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary"
+                ),
+                {"now": now, "sid": session_id},
+            )
+            row = result.fetchone()
+
+            if row is None:
+                # Session not found - raise typed error
+                raise SessionNotFoundError(f"Session not found: {session_id}")
+
+            # Map row to SessionRecord
+            return SessionRecord(
+                session_id=row[0],
+                student_id=row[1],
+                subject=row[2],
+                topic=row[3],
+                status=row[4],
+                started_at=row[5],
+                last_activity=row[6],
+                turn_count=row[7],
+                aos_scaffolded=row[8] if row[8] else [],
+                summary=row[9],
+            )
 
 
 __all__ = ["PostgresStudentStore"]

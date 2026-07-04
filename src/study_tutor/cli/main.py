@@ -45,6 +45,8 @@ import click
 
 from study_tutor.cli.rag_wiring import build_rag_providers
 from study_tutor.knowledge.store.wiring import build_student_store
+from study_tutor.session.provider import get_session_service
+from study_tutor.session.wiring import build_session_service
 from study_tutor.knowledge.async_write import GraphitiWriteHelper
 from study_tutor.knowledge.coach_handover import apply_quote_verification
 from study_tutor.knowledge.graphiti_client import (
@@ -353,8 +355,12 @@ def serve(role: str, transport: str, log_level: str) -> None:
     if os.environ.get("STUDY_TUTOR_PG_DSN"):
         build_student_store()
         logger.info("event=student_store_wired")
+        # TASK-SMP3-04 — wire the SessionService after the store is wired
+        build_session_service()
+        logger.info("event=session_service_wired")
     else:
         logger.info("event=student_store_skipped reason=no_dsn")
+        logger.info("event=session_service_skipped reason=no_dsn")
 
     # Graphiti client construction is async (it does a healthcheck), but
     # the FastMCP server.run loop is sync. We use a one-shot asyncio.run
@@ -379,10 +385,9 @@ def serve(role: str, transport: str, log_level: str) -> None:
 
     adapter = MCPAdapter(
         role_config=role_config,
+        session_service=get_session_service(),
         orchestrator_factory=orchestrator_factory,
-        write_helper=write_helper,
         event_bus=event_bus,
-        graphiti_client=wrapper,
     )
     server = create_mcp_server(role_config, adapter)
 
@@ -512,6 +517,20 @@ def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
     # above for the same ordering invariant).
     build_rag_providers(role_config)
 
+    # TASK-SMP3-04 — wire the Postgres student store and SessionService
+    # into the NATS runtime path (same conditional posture as ``serve``).
+    # The SessionService needs the store wired first, so build_student_store
+    # is called before build_session_service.
+    logger = logging.getLogger(__name__)
+    if os.environ.get("STUDY_TUTOR_PG_DSN"):
+        build_student_store()
+        logger.info("event=student_store_wired path=nats")
+        build_session_service()
+        logger.info("event=session_service_wired path=nats")
+    else:
+        logger.info("event=student_store_skipped reason=no_dsn path=nats")
+        logger.info("event=session_service_skipped reason=no_dsn path=nats")
+
     # Graphiti client construction is async (it does a healthcheck); we
     # use a one-shot ``asyncio.run`` here because :func:`_build_nats_runtime`
     # itself is sync and ``serve`` uses the same pattern.
@@ -524,10 +543,9 @@ def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
 
     mcp_adapter = MCPAdapter(
         role_config=role_config,
+        session_service=get_session_service(),
         orchestrator_factory=orchestrator_factory,
-        write_helper=write_helper,
         event_bus=event_bus,
-        graphiti_client=wrapper,
     )
 
     role_entry = get_role("tutor")

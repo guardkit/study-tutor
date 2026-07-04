@@ -47,7 +47,8 @@ import pytest
 
 from study_tutor.mcp.adapter import MCPAdapter
 from study_tutor.roles.loader import RoleConfig, load_role
-from study_tutor.session.tutor_session import SessionStore
+from study_tutor.session.service import SessionService
+from tests.unit.knowledge.store.fakes import FakeStudentStore
 from study_tutor.tutoring.coach import CoachVerdict
 from study_tutor.tutoring.coach.factory import CoachConfigurationError
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
@@ -58,6 +59,18 @@ from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
 # additional ``live`` marker on top so the gate command excludes it
 # unless the operator opts in via env var.
 pytestmark = [pytest.mark.feat_lca, pytest.mark.smoke]
+
+
+def _fake_session_service() -> SessionService:
+    """Durable-store-backed SessionService seeded with lilymay.
+
+    Post-FEAT-SMP-003 the MCP adapter takes ``session_service=`` (not the retired
+    in-memory ``store=``); this mirrors the unit-test fixture so the integration
+    smoke drives the same durable path.
+    """
+    store = FakeStudentStore()
+    store.add_student(student_id="lilymay", year_group=9)
+    return SessionService(store=store)
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +233,7 @@ async def test_per_turn_factory_isolation_concurrent_sessions(
 
     adapter = MCPAdapter(
         role_config=role_config,
-        store=SessionStore(),
+        session_service=_fake_session_service(),
         orchestrator_factory=tracking_factory,
     )
     # Boot smoke check should have invoked the factory exactly once.
@@ -282,7 +295,7 @@ async def test_phase1_metadata_shape_returned_by_tutor_turn(
 
     adapter = MCPAdapter(
         role_config=role_config,
-        store=SessionStore(),
+        session_service=_fake_session_service(),
         orchestrator_factory=factory,
     )
     started = await adapter.tutor_start_session(student_id="lilymay-meta")
@@ -352,7 +365,7 @@ async def test_same_provider_rejected_at_boot_via_production_closure(
     with pytest.raises(CoachConfigurationError) as excinfo:
         MCPAdapter(
             role_config=role_config,
-            store=SessionStore(),
+            session_service=_fake_session_service(),
             orchestrator_factory=factory,
         )
 
@@ -399,7 +412,7 @@ async def test_live_lilymay_two_turn_session_calibration_fallback(
     factory = _build_orchestrator_factory(role_config)
     adapter = MCPAdapter(
         role_config=role_config,
-        store=SessionStore(),
+        session_service=_fake_session_service(),
         orchestrator_factory=factory,
     )
 

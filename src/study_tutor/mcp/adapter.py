@@ -43,23 +43,22 @@ from typing import Any
 
 from datetime import datetime, timezone
 
-from study_tutor.knowledge.async_write import GraphitiWriteHelper
-from study_tutor.knowledge.queries import (
-    Phase1MinimalDeltaPolicy,
-    record_topic_confidence_update,
-)
 from study_tutor.llm.client import LLMClient, _default_player_model
 from study_tutor.planner.pipeline import plan_session
 from study_tutor.planner.types import SessionPlan, _baseline_plan
 from study_tutor.roles.loader import RoleConfig
-from study_tutor.session.tutor_session import (
+from study_tutor.session.completion import build_session_completion
+from study_tutor.session.errors import (
+    SessionEnded,
+    SessionForbidden,
     SessionNotFoundError,
-    SessionStore,
-    get_default_store,
 )
+from study_tutor.session.provider import get_session_service
+from study_tutor.session.service import SessionService, TutorReply
+from study_tutor.session.wiring import resolve_student_id
 from study_tutor.tutoring.adapters.session_state import SessionState
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
-from study_tutor.tutoring.session_end import EventBus, perform_session_end
+from study_tutor.tutoring.session_end import EventBus, SESSION_COMPLETED_EVENT
 
 logger = logging.getLogger(__name__)
 
@@ -130,14 +129,19 @@ class MCPAdapter:
     def __init__(
         self,
         role_config: RoleConfig,
-        store: SessionStore | None = None,
+        session_service: SessionService | None = None,
         orchestrator_factory: Any = None,
-        write_helper: GraphitiWriteHelper | None = None,
         event_bus: EventBus | None = None,
-        graphiti_client: Any | None = None,
     ) -> None:
         self._role = role_config
-        self._store = store or get_default_store()
+        self._session_service = session_service or get_session_service()
+        if self._session_service is None:
+            raise RuntimeError(
+                "MCPAdapter requires a SessionService — call "
+                "session.wiring.build_session_service at startup or inject one"
+            )
+        # Store the StudentStore reference for build_session_completion.
+        self._student_store = self._session_service._resolve_store()
         self._player_prompt = role_config.load_player_prompt()
         # Track warm-up task so pytest/GC don't complain about orphans.
         self._warmup_tasks: set[asyncio.Task[Any]] = set()
@@ -152,18 +156,9 @@ class MCPAdapter:
         # ``None``, the Phase 0 single-LLM path is preserved so this
         # change is backward-compatible.
         self._orchestrator_factory = orchestrator_factory
-        # TASK-GR-WIRE BLOCK-3a: session-end Graphiti writeback dependencies.
-        # All three default to ``None`` / a fresh empty bus so existing tests
-        # (and any caller that doesn't need Graphiti persistence) continue to
-        # work — ``perform_session_end`` accepts ``write_helper=None`` as a
-        # graceful no-op for the F3 dispatch, and an unsubscribed
-        # :class:`EventBus` is functionally a no-op for the bus emit. The
-        # ``graphiti_client`` is held for future read-back uses (e.g.
-        # ``mcp__graphiti__get_episodes`` confirmation paths) and is
-        # otherwise unused on this code path.
-        self._write_helper = write_helper
+        # TASK-SMP3-06: EventBus for session.completed emission.
+        # Defaults to a fresh empty bus so existing tests continue to work.
         self._event_bus = event_bus if event_bus is not None else EventBus()
-        self._graphiti_client = graphiti_client
 
         # TASK-LCA-004 — boot-time smoke check (AC-LCA-02 / AC-LCA-08).
         #
@@ -218,24 +213,20 @@ class MCPAdapter:
     ) -> dict[str, Any]:
         """Create a session and plan it via the deterministic planner.
 
-        TASK-DSP-006: this is the **graceful-degradation boundary** for
-        the planner pipeline. ``session_id`` is minted *before* the
-        planner is invoked (AC-002) so a planner failure or timeout
-        never blocks session creation. Every failure mode below
-        (timeout, internal exception, unknown learner) collapses to
-        :func:`_baseline_plan(False) <study_tutor.planner.types._baseline_plan>`
+        TASK-SMP3-06: session creation is now durable via SessionService.
+        The session is minted *before* the planner is invoked (AC-002) so
+        a planner failure or timeout never blocks session creation. Every
+        failure mode below (timeout, internal exception, unknown learner)
+        collapses to :func:`_baseline_plan(False) <study_tutor.planner.types._baseline_plan>`
         rather than propagating an exception (AC-001 / AC-009).
 
-        The 2.0s outer guard
-        (:data:`_PLANNER_HANDLER_BUDGET_DEFAULT`, ASSUM-006) is the
-        binding constraint by design: with the default configuration it
-        always fires before the inner 5.0s student-model read timeout
-        (``STUDENT_MODEL_READ_TIMEOUT_SEC``, ASSUM-007). The inner
-        timeout fires first only when ``PLANNER_HANDLER_BUDGET_SEC`` is
-        enlarged — typically only in tests.
+        The 2.0s outer guard (:data:`_PLANNER_HANDLER_BUDGET_DEFAULT`,
+        ASSUM-006) is the binding constraint by design.
 
         Args:
-            student_id: Stable learner slug, e.g. ``"lilymay"``.
+            student_id: Planner learner slug, e.g. ``"lilymay"``. This is
+                the PLANNER input (today's subject value per ASSUM-002),
+                NOT the ownership identity.
             topic_override: Optional learner-supplied topic. When set,
                 Rule 1 short-circuits the rule list inside
                 :func:`plan_session`.
@@ -247,14 +238,19 @@ class MCPAdapter:
             ``{"session_id": <uuid4>, "plan_summary": {...}}`` — see
             :func:`_plan_summary` for the summary shape.
         """
-        # Mint session_id *before* the planner is invoked (AC-002). The
-        # legacy session-store create() path doubles as Phase 0
-        # compatibility for ``tutor_turn`` / ``tutor_session_end`` which
-        # still look up sessions through ``self._store``.
-        session = self._store.create(
-            subject=student_id, topic=topic_override
+        # TASK-SMP3-06: resolve the single-user identity (ownership key).
+        # This is the OWNERSHIP identity, kept SEPARATE from the planner
+        # slug (ASSUM-001).
+        identity = resolve_student_id()
+
+        # Mint session_id *before* the planner is invoked (AC-002).
+        # SessionService.start_session creates the durable session.
+        result = await self._session_service.start_session(
+            student_id=identity,
+            subject=student_id,
+            topic=topic_override,
         )
-        session_id = session.session_id
+        session_id = result.session_id
 
         # Fire-and-forget LLM warm-up so the first ``tutor_turn`` doesn't
         # pay cold-start latency. Independent of the planner so a planner
@@ -312,226 +308,208 @@ class MCPAdapter:
         user_message: str,
         player_model: str | None = None,
     ) -> dict[str, Any]:
-        """Generate one tutor reply for ``user_message`` within the session."""
+        """Generate one tutor reply for ``user_message`` within the session.
+
+        TASK-SMP3-06: now delegates to SessionService.turn with the
+        orchestrator/Phase-0 loop wrapped as reply_fn.
+        """
+        identity = resolve_student_id()
+
+        # Build the reply_fn that wraps the orchestrator/Phase-0 loop.
+        # SessionService.turn will call this after persisting the user turn.
+        async def reply_fn(msg: str) -> TutorReply:
+            plan = self._plan_sessions.get(session_id)
+            # TASK-DTL-003: route through PlayerCoachOrchestrator when a
+            # factory is wired (production Phase 1 path).
+            if self._orchestrator_factory is not None:
+                # TASK-LCA-003: build the typed SessionState boundary object
+                # from the cached SessionPlan. Optional fields default to
+                # ``None`` / ``()`` so a baseline-degraded plan still yields
+                # a valid construction (ASSUM-LCA-007).
+                text_name_value = (
+                    getattr(plan, "text_name", None) if plan is not None else None
+                )
+                session_state = SessionState(
+                    session_id=session_id,
+                    student_id=identity,
+                    text_name=text_name_value if text_name_value else None,
+                    topic=plan.topic_name if plan is not None else None,
+                    focus_aos=tuple(plan.focus_aos) if plan is not None else (),
+                    mode="tutor",
+                )
+                orchestrator: PlayerCoachOrchestrator = self._orchestrator_factory()
+                turn_result = await orchestrator.run_turn(
+                    session_state=session_state,
+                    learner_message=msg,
+                )
+                return TutorReply(
+                    response=turn_result.response,
+                    metadata={
+                        "decision": turn_result.decision,
+                        "attempts": turn_result.attempts,
+                        "flagged_for_review": turn_result.flagged_for_review,
+                        "duration_seconds": turn_result.duration_seconds,
+                    },
+                )
+
+            # Phase 0 path: single-LLM reply.
+            provider = player_model or _default_player_model()
+            client = LLMClient(provider=provider)
+            response = await asyncio.to_thread(
+                client.generate, msg, self._player_prompt
+            )
+            return TutorReply(response=response)
+
+        # Delegate to SessionService.turn, mapping exceptions to the
+        # existing error envelopes.
         try:
-            session = self._store.get(session_id)
+            result = await self._session_service.turn(
+                student_id=identity,
+                session_id=session_id,
+                user_message=user_message,
+                reply_fn=reply_fn,
+            )
         except SessionNotFoundError:
             return _session_not_found(session_id)
-
-        if session.status == "ended":
+        except SessionEnded:
             return {
                 "error": f"Session '{session_id}' has ended.",
                 "error_type": "SessionEnded",
             }
-
-        self._store.append_turn(session_id, "user", user_message)
-
-        # TASK-DTL-003: route through PlayerCoachOrchestrator when a
-        # factory is wired (production Phase 1 path). Per-turn
-        # construction guarantees concurrency isolation — two concurrent
-        # ``tutor_turn`` calls get two independent orchestrator
-        # instances and cannot contaminate each other's Coach
-        # observations.
-        if self._orchestrator_factory is not None:
-            # TASK-LCA-003: build the typed SessionState boundary object
-            # from the cached SessionPlan + TutorSession. This is the
-            # producer for the §4 SessionState integration contract
-            # consumed by TASK-LCA-001 (Player adapter) and TASK-LCA-002
-            # (Coach adapter). Optional fields default to ``None`` /
-            # ``()`` so a baseline-degraded plan (no ``text_name`` /
-            # missing ``focus_aos``) still yields a valid construction
-            # (ASSUM-LCA-007).
-            plan = self._plan_sessions.get(session_id)
-            text_name_value = (
-                getattr(plan, "text_name", None) if plan is not None else None
-            )
-            session_state = SessionState(
-                session_id=session_id,
-                student_id=session.subject,
-                text_name=text_name_value if text_name_value else None,
-                topic=plan.topic_name if plan is not None else None,
-                focus_aos=tuple(plan.focus_aos) if plan is not None else (),
-                mode="tutor",
-            )
-            orchestrator: PlayerCoachOrchestrator = self._orchestrator_factory()
-            turn_result = await orchestrator.run_turn(
-                session_state=session_state,
-                learner_message=user_message,
-            )
-            self._store.append_turn(session_id, "tutor", turn_result.response)
+        except SessionForbidden as exc:
             return {
-                "tutor_response": turn_result.response,
-                "decision": turn_result.decision,
-                "attempts": turn_result.attempts,
-                "flagged_for_review": turn_result.flagged_for_review,
-                "duration_seconds": turn_result.duration_seconds,
+                "error": str(exc),
+                "error_type": "SessionForbidden",
             }
 
-        provider = player_model or _default_player_model()
-        client = LLMClient(provider=provider)
-
-        # Generate in a worker thread so async MCP framework isn't blocked
-        # by the synchronous httpx call inside LLMClient.generate().
-        response = await asyncio.to_thread(
-            client.generate, user_message, self._player_prompt
-        )
-
-        self._store.append_turn(session_id, "tutor", response)
-        return {"tutor_response": response}
+        # Re-project metadata into the unchanged response shape.
+        if result.metadata:
+            return {
+                "tutor_response": result.tutor_response,
+                **result.metadata,
+            }
+        return {"tutor_response": result.tutor_response}
 
     async def tutor_session_status(self, session_id: str) -> dict[str, Any]:
-        """Return current session state."""
+        """Return current session state.
+
+        TASK-SMP3-06: now delegates to SessionService.session_status.
+        """
+        identity = resolve_student_id()
         try:
-            session = self._store.get(session_id)
+            status = await self._session_service.session_status(
+                student_id=identity,
+                session_id=session_id,
+            )
         except SessionNotFoundError:
             return _session_not_found(session_id)
+        except SessionForbidden as exc:
+            return {
+                "error": str(exc),
+                "error_type": "SessionForbidden",
+            }
 
         return {
-            "session_id": session.session_id,
-            "status": session.status,
-            "turn_count": len(session.turns),
-            "started_at": session.started_at.isoformat(),
+            "session_id": status.session_id,
+            "status": status.status,
+            "turn_count": status.turn_count,
+            "started_at": status.started_at.isoformat(),
         }
 
     async def tutor_session_end(self, session_id: str) -> dict[str, Any]:
-        """Mark the session ended (TASK-GR-WIRE BLOCK-3a).
+        """Mark the session ended (TASK-SMP3-06).
 
-        Delegates to
-        :func:`study_tutor.tutoring.session_end.perform_session_end` which
-        owns the full FEAT-PH1-003 session-end workflow:
+        Now delegates to SessionService.end_session with a durable
+        completion payload. The I-T6 zero-turn invariant is preserved:
+        sessions ended before any tutor turn flip status to ``"ended"``
+        but do NOT emit ``session.completed`` and do NOT write learner-state
+        deltas (``completion=None``).
 
-        * F4 in-flight ``tutor_turn`` resolution (3 s inner timeout).
-        * I-T6 zero-turn invariant guard — sessions ended before any tutor
-          turn flip status to ``"ended"`` but do NOT emit
-          ``session.completed`` and do NOT schedule the F3 Graphiti write.
-        * DDR-003 ordering: bus emit precedes the F3 ``create_task`` call.
-        * F3 fire-and-forget Graphiti write via the injected
-          :class:`GraphitiWriteHelper` (graceful no-op if ``None``).
-        * Caller-facing return within the ASSUM-004 2 s wall-clock budget
-          regardless of Graphiti latency (ADR-ARCH-019).
+        DDR-003 ordering: ``session.completed`` is emitted BEFORE
+        SessionService.end_session persists the completion (emit-before-write).
 
         ``topics_covered`` and ``aos_exercised`` are sourced from the
         cached :class:`SessionPlan` for ``session_id``. If no plan is
-        cached (e.g. a session_id from a prior process restart), both
-        default to empty — :func:`build_session_completed_episode` will
-        fall back to ``[session.topic]`` if available, otherwise the
-        learner subject slug.
+        cached, both default to empty.
         """
+        identity = resolve_student_id()
+
+        # Load the session to check turn count and get session data.
         try:
-            session = self._store.get(session_id)
+            status = await self._session_service.session_status(
+                student_id=identity,
+                session_id=session_id,
+            )
         except SessionNotFoundError:
             return _session_not_found(session_id)
+        except SessionForbidden as exc:
+            return {
+                "error": str(exc),
+                "error_type": "SessionForbidden",
+            }
 
+        # Extract plan data for topics_covered and aos_exercised.
         plan = self._plan_sessions.get(session_id)
         if plan is not None:
-            topics_covered = [plan.topic_name]
+            topic = plan.topic_name
             aos_exercised = list(plan.focus_aos)
         else:
             # Stale-lookup fallback: a tutor_session_end called for a
             # session_id never seen by this process's tutor_start_session
             # (e.g. server restart between the two endpoints) is still a
-            # valid graceful path — the session itself exists in the
-            # store, but the per-process plan cache is cold. Empty
-            # topics/AOs let perform_session_end derive defaults from
-            # session.topic.
-            topics_covered = []
+            # valid graceful path. Use empty defaults.
+            topic = status.student_id  # Fallback to subject
             aos_exercised = []
 
-        # transition_state closure — perform_session_end calls this
-        # exactly once at the documented ordering point (after I-T6
-        # check, before bus emit) so the test surface can assert "state
-        # flipped before session.completed dispatched". We do not flip
-        # state here ourselves.
-        def _transition_state() -> None:
-            self._store.end(session_id)
-
-        result = await perform_session_end(
-            session=session,
-            student_id=session.subject,
-            write_helper=self._write_helper,
-            event_bus=self._event_bus,
-            topics_covered=topics_covered,
-            aos_exercised=aos_exercised,
-            transition_state=_transition_state,
-        )
-
-        # AC-CONF-08 (TASK-GR-CONF / BLOCK-3b): TopicConfidence node
-        # update on session end. We dispatch this as a separate fire-
-        # and-forget task so the caller-facing path returns within the
-        # ASSUM-004 2 s budget regardless of FalkorDB latency on the
-        # node load. The helper itself is structured-log-only on every
-        # failure mode (AC-CONF-06), so an exception inside the task
-        # never escapes to the MCP caller.
-        #
-        # Skip conditions (graceful degradation):
-        #
-        # * Zero-turn sessions — ``perform_session_end`` already
-        #   suppressed ``session.completed`` and the F3 write under
-        #   I-T6, so the F2 episode would be temporally orphaned.
-        # * No write_helper — Graphiti not wired (test path / Phase 0
-        #   compatibility). Helper would be a no-op anyway, but
-        #   skipping avoids the empty task scheduling.
-        # * No cached plan — we have no ``topic_ref`` to update; the
-        #   F3 episode in ``perform_session_end`` already fell back to
-        #   ``session.topic`` and the AC-DEMO-03 entity round-trip
-        #   degrades cleanly.
-        if (
-            len(session.turns) > 0
-            and self._write_helper is not None
-            and plan is not None
-            and self._graphiti_client is not None
-        ):
-            # ``perform_session_end`` returns only ``{session_id, status}``
-            # so we mint our own end timestamp here. This runs synchronously
-            # immediately after the bus emit; the few ms drift vs the
-            # episode's internal ``ended_at`` is well below any temporal-
-            # analytics resolution we care about.
-            ended_at = datetime.now(timezone.utc)
-            student_turn_count = sum(
-                1 for turn in session.turns if turn.role == "user"
+        # I-T6 zero-turn invariant: sessions with no turns do NOT emit
+        # session.completed and do NOT write learner-state deltas.
+        completion = None
+        if status.turn_count > 0:
+            # Build the SessionCompletion via the pure store-backed producer.
+            # Assumes all turns are (user, tutor) pairs; student_turn_count
+            # is half the total.
+            student_turn_count = status.turn_count // 2
+            completion = await build_session_completion(
+                store=self._student_store,
+                student_id=identity,
+                topic=topic,
+                student_turn_count=student_turn_count,
+                aos_scaffolded=aos_exercised,
+                misconceptions_per_topic={},  # ASSUM-007 placeholder
             )
-            # Phase-1 fallback per the task spec: ``TutorSession`` does
-            # not currently track per-turn ``CoachVerdict`` payloads, so
-            # we feed an empty misconception map. Phase1MinimalDeltaPolicy
-            # produces ``+1`` for engagement-only sessions (turns >= 5)
-            # and ``0`` otherwise — both satisfy AC-DEMO-03 because the
-            # ``last_revised_at`` flip is the structural change.
-            session_summary: dict[str, Any] = {
-                "misconceptions_per_topic": {},
-                "student_turn_count": student_turn_count,
-                "ended_at": ended_at,
-                "triggering_session_id": session_id,
-            }
-            try:
-                asyncio.create_task(
-                    record_topic_confidence_update(
-                        client=self._graphiti_client,
-                        write_helper=self._write_helper,
-                        student_id=session.subject,
-                        topic_ref=plan.topic_name,
-                        session_summary=session_summary,
-                        policy=Phase1MinimalDeltaPolicy(),
-                    ),
-                    name=f"topic-confidence-{session_id}",
-                )
-            except Exception as exc:  # noqa: BLE001 — boundary catch
-                # ``asyncio.create_task`` only fails when there's no
-                # running loop; in that path we drop the update with a
-                # log line — the session is still observably ``ended``
-                # and ``perform_session_end`` already emitted
-                # ``session.completed``.
-                logger.warning(
-                    "topic confidence dispatch failed; session.completed "
-                    "already emitted",
-                    extra={
-                        "event": "topic_confidence_dispatch_failed",
-                        "session_id": session_id,
-                        "error_type": type(exc).__name__,
-                        "error": str(exc),
-                    },
-                )
 
-        return result
+            # DDR-003: emit session.completed BEFORE the SessionService write.
+            # Preserve the exact payload shape from session_end.py:440-450.
+            ended_at = datetime.now(timezone.utc)
+            payload: dict[str, Any] = {
+                "session_id": session_id,
+                "student_id": identity,
+                "subject_slug": status.student_id,
+                "topics_covered": [topic],
+                "aos_exercised": aos_exercised,
+                "turn_count": status.turn_count,
+                "narrative_summary": "",  # Not produced by this cutover
+                "started_at": status.started_at.isoformat(),
+                "ended_at": ended_at.isoformat(),
+            }
+            await self._event_bus.emit(SESSION_COMPLETED_EVENT, payload)
+
+        # Delegate to SessionService.end_session with the completion.
+        try:
+            await self._session_service.end_session(
+                student_id=identity,
+                session_id=session_id,
+                completion=completion,
+            )
+        except SessionNotFoundError:
+            return _session_not_found(session_id)
+        except SessionForbidden as exc:
+            return {
+                "error": str(exc),
+                "error_type": "SessionForbidden",
+            }
+
+        return {"session_id": session_id, "status": "ended"}
 
     async def _warm_up(self, provider: str) -> None:
         """Fire an empty generate() to prime the Ollama model into memory."""
