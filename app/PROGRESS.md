@@ -15,7 +15,7 @@
 - [x] wave-6: slice I — sign in, start, exchange turns [green] — unattended, 2026-07-04
 - [x] wave-7: slice II — resume + end + happy-path test [green] — unattended, 2026-07-04
 - [x] wave-8: error handling (scope §3) [green] — unattended, 2026-07-04
-- [ ] wave-9: hardening + app README
+- [x] wave-9: hardening + app README [green] — unattended, 2026-07-04
 
 ## Log
 
@@ -28,7 +28,14 @@
 - 2026-07-04 — wave-6 [green], unattended. Composition root wired: main.dart constructs FakeIdentityProvider + FakeSessionApi, injects via constructors; screens import ports only, never fakes. Sign-in button drives signIn() → pushReplacement(home); Home "Start new session" → startSession(subject: 'maths' fixed) → SessionScreen(sessionId, initialTurns — resume paths reuse this seam in wave-7); SessionScreen stateful: transcript bubbles + input, send → turn() → user msg + canned reply appended. test/ui/slice_i_test.dart (3 tests: port actually called on sign-in; startSession creates store row; two round-trips render + append); walking_skeleton_test updated for injection. 69 tests; analyze clean; apk-debug built. *Morning boot checkpoint reached: can start a session and exchange turns.*
 - 2026-07-04 — wave-7 [green], unattended. Home now stateful: lists active sessions via listSessions(status: active) as cards (subject + turn count) with Resume → resumeSession → SessionScreen(initialTurns: resumed.turns); re-lists on return from a session so ended sessions drop off. SessionScreen: 'End session' AppBar action → endSession → read-only ended state ('Session ended' banner, input + send disabled, End affordance gone — reused by wave-8 for SessionEnded). No loading spinner on home (infinite animation breaks pumpAndSettle; fake is instant). test/slice/happy_path_test.dart: sign in → start → 2 turns → away (home shows '2 turns') → resume (transcript intact, dy-ordered, reply index continues at cannedReplies[2]) → end (input disabled, no re-end) → home shows no active sessions. 70 tests; analyze clean; apk-debug built. *Morning boot checkpoint reached: full slice works.*
 - 2026-07-04 — wave-8 [green], unattended (1 red then fixed — attempt 1 of 2, not blocked). `ui/error_handling.dart`: routeToSignIn (pushAndRemoveUntil, stack cleared) + showCantOpenSession (AlertDialog — deliberate, not SnackBar: no auto-dismiss timer to flake pumpAndSettle; OK → popUntil first). Guards: home _refresh/_startNewSession/_resume, session _send/_endSession — Unauthenticated → sign-in; SessionEnded → in-place ended state (unsent msg dropped from transcript, kept in input); Forbidden/NotFound → shared dialog, back home, re-list. SessionScreen gained the identity port for sign-in routing. 4 error tests in test/errors/ (invalidate token ×2 paths; owner-flip store row to Alex; end-behind-UI via second device client; store.remove). The one red: find.text matched unsent text in the disabled TextField, not a transcript bubble — finder scoped to ListView; app behaviour was already correct. 75 tests; analyze clean; apk-debug built. *Morning boot checkpoint reached: no error state crashes the app.*
+- 2026-07-04 — wave-9 [green], unattended. app/README.md rewritten: run/test, ports/fakes overview, contract-test → §s map, CONTRACT_SHA pin, scope-§8 DoD checklist all ticked. Sweep: no dead scaffold code left (counter demo went in wave-5); pubspec runtime deps = flutter + cupertino_icons only (zero added). Blast-radius check surfaced one artifact — `git diff main` phantom-deletes docs/runbooks/RUNBOOK-overnight-fable-flutter-launch.md because main moved ahead post-branch (3d448ac); merge-base diff is app/** only; noted in QUESTIONS.md for morning triage. 75 tests; analyze clean; apk-debug built.
 
 ## HANDOFF
 
-(run not started)
+**State (run complete, 2026-07-04):** all 10 waves (0–9) green and committed, one commit per wave, local only (runbook rule 7 — morning review pushes). 75 tests: full contract suite 1–9, happy-path slice, 4 error handlings, skeleton/wiring, units. Zero interventions, zero blocked waves, zero contract doubts, zero dependency wants.
+
+**Red-count honesty for the Fable ledger:** two reds all night, both fixed on the wave's first retry — wave-3 (analyzer info: prefer_initializing_formals) and wave-8 (test finder matched the disabled input's text instead of the transcript; app behaviour was already correct). No wave reached attempt 2.
+
+**Next step (attended, morning gate — build plan §4):** spot re-verify HEAD (analyze + test), boot the APK on the Android emulator and walk the slice checkpoints (sign-in/nav → start+turns → resume/end → error non-crash), triage QUESTIONS.md (one note: phantom runbook deletion vs main — explained, no action), record the Fable data point (waves 9/9 attempted-unattended, 9 completed, 0 blocked), then push.
+
+**Blockers:** none.
