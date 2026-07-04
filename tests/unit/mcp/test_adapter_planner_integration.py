@@ -478,17 +478,17 @@ async def test_inner_timeout_fires_when_outer_is_enlarged(
     """ASSUM-007 inner timeout: 0.1s inner trips before 10s outer.
 
     With ``STUDENT_MODEL_READ_TIMEOUT_SEC=0.1`` and the outer set to 10s,
-    a slow ``get_student_state`` (0.5s) trips the inner timeout. The
+    a slow ``load_planner_inputs`` (0.5s) trips the inner timeout. The
     pipeline then routes to ``_baseline_plan(False)`` per TASK-DSP-006.
     """
     monkeypatch.setenv("STUDENT_MODEL_READ_TIMEOUT_SEC", "0.1")
 
-    async def slow_get_student_state(client: Any, student_id: str) -> Any:
+    async def slow_load_planner_inputs(student_id: str, **kwargs: Any) -> Any:
         await asyncio.sleep(0.5)
         return None  # never reached
 
     monkeypatch.setattr(
-        pipeline_module, "get_student_state", slow_get_student_state
+        pipeline_module, "load_planner_inputs", slow_load_planner_inputs
     )
 
     plan = await plan_session("lilymay", topic_override=None, client=object())

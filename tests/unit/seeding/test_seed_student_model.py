@@ -45,7 +45,10 @@ from scripts.seed_student_model import (
     require_client_or_exit,
     seed_lilymay,
 )
-from study_tutor.knowledge.queries import StudentState, TopicConfidenceSnapshot
+from study_tutor.knowledge.store.entities import (
+    StudentState,
+    TopicConfidenceSnapshot,
+)
 from study_tutor.knowledge.seed_uuids import (
     assessment_objective_uuid,
     edge_uuid,
@@ -251,40 +254,20 @@ def test_is_already_seeded_returns_false_for_empty_states(
     assert _is_already_seeded(state) is False
 
 
+@pytest.mark.skip(reason="TASK-SMP2-06: Pre-flight check removed with get_student_state")
 @pytest.mark.asyncio
 async def test_seed_lilymay_skips_when_already_seeded(
     monkeypatch: pytest.MonkeyPatch,
     save_recorder: dict[str, list[Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Pre-flight non-empty state ⇒ exit 0 + seeding_skipped log; no writes."""
-    wrapper = _FakeWrapper()
+    """SKIPPED: Pre-flight check removed in TASK-SMP2-06.
 
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return StudentState(
-            empty=False,
-            student_id=student_id,
-            subjects=["English Literature"],
-        )
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-
-    with caplog.at_level(logging.INFO, logger="study_tutor.seed"):
-        rc = await seed_lilymay(wrapper)
-
-    assert rc == EXIT_OK
-    assert save_recorder["nodes"] == []
-    assert save_recorder["edges"] == []
-    skipped = next(
-        (
-            r
-            for r in caplog.records
-            if getattr(r, "event", "") == "seeding_skipped"
-        ),
-        None,
-    )
-    assert skipped is not None
-    assert skipped.reason == "already_seeded"
+    Original: Pre-flight non-empty state ⇒ exit 0 + seeding_skipped log; no writes.
+    The seed script no longer uses get_student_state for pre-flight checks.
+    TODO(FEAT-SMP-004): Remove this test when graph seed path is fully retired.
+    """
+    pass
 
 
 # ---------------------------------------------------------------------------
@@ -294,17 +277,11 @@ async def test_seed_lilymay_skips_when_already_seeded(
 
 @pytest.mark.asyncio
 async def test_seed_lilymay_returns_exit_2_when_inner_client_missing(
-    monkeypatch: pytest.MonkeyPatch,
     save_recorder: dict[str, list[Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A wrapper without an inner client surfaces an exit-2 + structured log."""
     wrapper = _FakeWrapperWithoutInner()
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return StudentState(empty=True)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
 
     with caplog.at_level(logging.ERROR, logger="study_tutor.seed"):
         rc = await seed_lilymay(wrapper)
@@ -321,17 +298,11 @@ async def test_seed_lilymay_returns_exit_2_when_inner_client_missing(
 
 @pytest.mark.asyncio
 async def test_seed_lilymay_returns_exit_2_when_driver_missing(
-    monkeypatch: pytest.MonkeyPatch,
     save_recorder: dict[str, list[Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """An inner client without a ``driver`` attribute surfaces exit-2."""
     wrapper = _FakeWrapperWithoutDriver()
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return StudentState(empty=True)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
 
     with caplog.at_level(logging.ERROR, logger="study_tutor.seed"):
         rc = await seed_lilymay(wrapper)
@@ -373,13 +344,13 @@ def _post_seed_state() -> StudentState:
 
 @pytest.fixture
 def state_iter(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fixture wiring ``get_student_state`` to return [empty, post-seed]."""
-    states = iter([StudentState(empty=True), _post_seed_state()])
+    """REMOVED (TASK-SMP2-06): Fixture previously wired ``get_student_state``.
 
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
+    The seed script no longer uses get_student_state for pre-flight/post-seed
+    verification. This fixture is kept as a no-op to avoid changing all test
+    signatures, but it does nothing.
+    """
+    pass
 
 
 @pytest.mark.asyncio
@@ -665,27 +636,12 @@ async def test_seed_lilymay_uses_deterministic_uuids(
 @pytest.mark.asyncio
 async def test_seed_lilymay_second_run_produces_identical_uuids(
     save_recorder: dict[str, list[Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A re-seed (pre-flight returns empty both times) writes nodes with the
-    same uuids — graphiti-core's FalkorDB MERGE-by-uuid then collapses them
-    rather than duplicating, which is the on-graph idempotency story.
+    """A re-seed writes nodes with the same uuids.
+
+    graphiti-core's FalkorDB MERGE-by-uuid then collapses them rather than
+    duplicating, which is the on-graph idempotency story.
     """
-    # First run: pre-flight empty, post empty (verification warning ok)
-    states = iter(
-        [
-            StudentState(empty=True),
-            StudentState(empty=True),
-            StudentState(empty=True),
-            StudentState(empty=True),
-        ]
-    )
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-
     rc1 = await seed_lilymay(_FakeWrapper())
     first_run_uuids = [n.uuid for n in save_recorder["nodes"]]
     assert rc1 == EXIT_OK
@@ -770,7 +726,11 @@ async def test_seed_lilymay_emits_completion_log(
     state_iter: None,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Successful seed emits ``seeding_completed`` with entity counts."""
+    """Successful seed emits ``seeding_completed`` with entity counts.
+
+    TASK-SMP2-06: Post-seed verification removed, so subjects/topic_confidences
+    fields are no longer present. Only nodes_written and edges_written remain.
+    """
     with caplog.at_level(logging.INFO, logger="study_tutor.seed"):
         rc = await seed_lilymay(_FakeWrapper())
     assert rc == EXIT_OK
@@ -783,42 +743,26 @@ async def test_seed_lilymay_emits_completion_log(
         None,
     )
     assert completion is not None
-    assert completion.subjects == len(SUBJECTS)
-    assert completion.topic_confidences == len(TOPICS)
+    # subjects and topic_confidences fields removed with get_student_state
     assert completion.nodes_written == 1 + len(SUBJECTS) + len(TEXTS) + 2 * len(
         TOPICS
     ) + len(AOS)
     assert completion.edges_written == 2 * len(TOPICS) + len(TEXTS)
 
 
+@pytest.mark.skip(reason="TASK-SMP2-06: Post-seed verification removed with get_student_state")
 @pytest.mark.asyncio
 async def test_seed_lilymay_warns_when_post_read_returns_empty(
     save_recorder: dict[str, list[Any]],
-    monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Verification-warning path when the read-back can't see the writes."""
-    states = iter([StudentState(empty=True), StudentState(empty=True)])
+    """SKIPPED: Post-seed verification removed in TASK-SMP2-06.
 
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
-
-    with caplog.at_level(logging.WARNING, logger="study_tutor.seed"):
-        rc = await seed_lilymay(_FakeWrapper())
-
-    assert rc == EXIT_OK
-    warning = next(
-        (
-            r
-            for r in caplog.records
-            if getattr(r, "event", "") == "seeding_verification_warning"
-        ),
-        None,
-    )
-    assert warning is not None
-    assert warning.student_id == STUDENT_ID
+    Original: Verification-warning path when the read-back can't see the writes.
+    The seed script no longer uses get_student_state for post-seed verification.
+    TODO(FEAT-SMP-004): Remove this test when graph seed path is fully retired.
+    """
+    pass
 
 
 # ---------------------------------------------------------------------------
@@ -856,15 +800,7 @@ async def test_main_returns_zero_on_success(
     async def fake_get_client(config: Any) -> Any:
         return wrapper
 
-    states = iter(
-        [StudentState(empty=True), _post_seed_state()]
-    )
-
-    async def fake_get_state(client: Any, student_id: str, **kwargs: Any) -> Any:
-        return next(states)
-
     monkeypatch.setattr(seed_module, "get_client", fake_get_client)
-    monkeypatch.setattr(seed_module, "get_student_state", fake_get_state)
 
     rc = await main([])
 

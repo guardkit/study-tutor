@@ -27,7 +27,7 @@ Design intent the build should honour:
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import (
@@ -45,10 +45,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_en
 
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
+    MisconceptionSnapshot,
     SessionRecord,
     SessionStatus,
     SessionTurn,
     StudentState,
+    TopicConfidenceSnapshot,
     TurnRole,
 )
 from study_tutor.knowledge.store.port import (
@@ -251,10 +253,180 @@ class PostgresStudentStore:
     # -- Reads --------------------------------------------------------------
 
     async def get_student_state(self, student_id: str) -> StudentState:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Aggregate learner snapshot from Postgres (TASK-SMP2-03).
+
+        Returns a complete StudentState combining student profile, topic
+        confidences, recent misconceptions, and most recent session ID.
+
+        Early-returns StudentState(empty=True) when student_id has no row,
+        avoiding unnecessary child queries. DB/connection errors propagate
+        for graceful degradation by callers.
+
+        Args:
+            student_id: Student identifier to query.
+
+        Returns:
+            StudentState with empty=False for known students, empty=True for
+            unknown. All timestamps are timezone-aware UTC.
+
+        Raises:
+            Database errors propagate (not swallowed) so callers can degrade.
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Read-only connection (all four SELECTs on one connection)
+        async with engine.connect() as conn:
+            # 1. Check student existence FIRST (early return for unknown learner)
+            student_result = await conn.execute(
+                sql_text(
+                    "SELECT student_id, year_group, target_grade "
+                    "FROM student "
+                    "WHERE student_id = :sid"
+                ),
+                {"sid": student_id},
+            )
+            student_row = student_result.fetchone()
+
+            # Unknown student → empty=True (avoids three more queries)
+            if student_row is None:
+                return StudentState(empty=True)
+
+            # Extract student profile
+            year_group = student_row[1]
+            target_grade = student_row[2]
+
+            # 2. Read topic_confidence rows → TopicConfidenceSnapshot[]
+            confidence_result = await conn.execute(
+                sql_text(
+                    "SELECT topic_name, percentage, band, last_revised_at "
+                    "FROM topic_confidence "
+                    "WHERE student_id = :sid "
+                    "ORDER BY last_revised_at DESC"
+                ),
+                {"sid": student_id},
+            )
+            confidence_rows = confidence_result.fetchall()
+
+            topic_confidences = [
+                TopicConfidenceSnapshot(
+                    topic_name=row[0],
+                    percentage=row[1],
+                    band=row[2],
+                    last_revised_at=row[3],
+                )
+                for row in confidence_rows
+            ]
+
+            # 3. Read misconception rows within 30-day window → MisconceptionSnapshot[]
+            cutoff = datetime.now(timezone.utc) - timedelta(
+                days=DEFAULT_MISCONCEPTION_WINDOW_DAYS
+            )
+            misconception_result = await conn.execute(
+                sql_text(
+                    "SELECT topic_name, text, observed_at "
+                    "FROM misconception "
+                    "WHERE student_id = :sid AND observed_at >= :cutoff "
+                    "ORDER BY observed_at DESC"
+                ),
+                {"sid": student_id, "cutoff": cutoff},
+            )
+            misconception_rows = misconception_result.fetchall()
+
+            recent_misconceptions = [
+                MisconceptionSnapshot(
+                    topic_name=row[0],
+                    text=row[1],
+                    observed_at=row[2],
+                )
+                for row in misconception_rows
+            ]
+
+            # 4. Read most recent session_id by last_activity DESC
+            session_result = await conn.execute(
+                sql_text(
+                    "SELECT session_id "
+                    "FROM session "
+                    "WHERE student_id = :sid "
+                    "ORDER BY last_activity DESC "
+                    "LIMIT 1"
+                ),
+                {"sid": student_id},
+            )
+            session_row = session_result.fetchone()
+            most_recent_session_id = session_row[0] if session_row else None
+
+            # Assemble StudentState
+            return StudentState(
+                empty=False,
+                stale=False,  # Retired Graphiti-era flag (ASSUM-005)
+                student_id=student_id,
+                year_group=year_group,
+                target_grade=target_grade,
+                subjects=[],  # No source in Postgres schema (ASSUM-002)
+                current_texts=[],  # No source in Postgres schema (ASSUM-002)
+                topic_confidences=topic_confidences,
+                recent_misconceptions=recent_misconceptions,
+                most_recent_session_id=most_recent_session_id,
+            )
 
     async def get_topic_confidences(self, student_id: str) -> list[TopicConfidence]:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Read per-topic confidence entities from Postgres (TASK-SMP2-01).
+
+        Returns one TopicConfidence domain entity per topic_confidence row for
+        the given student, ordered newest last_revised_at first.
+
+        Args:
+            student_id: Student identifier to query.
+
+        Returns:
+            List of TopicConfidence entities. Empty list if student has no rows
+            or is unknown (no student existence pre-check — graceful degradation).
+
+        Raises:
+            Database errors propagate (not swallowed) so the caller can degrade.
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Read-only connection (no transaction needed)
+        async with engine.connect() as conn:
+            # Parameterised SELECT with ORDER BY last_revised_at DESC
+            result = await conn.execute(
+                sql_text(
+                    "SELECT topic_name, percentage, band, last_revised_at "
+                    "FROM topic_confidence "
+                    "WHERE student_id = :sid "
+                    "ORDER BY last_revised_at DESC"
+                ),
+                {"sid": student_id},
+            )
+
+            rows = result.fetchall()
+
+            # Map rows to TopicConfidence domain entities
+            confidences = [
+                TopicConfidence(
+                    student_ref=student_id,
+                    topic_ref=row[0],  # topic_name
+                    percentage=row[1],  # percentage
+                    band=row[2],  # band (verbatim from column, no re-derivation)
+                    last_revised_at=row[3],  # last_revised_at (TIMESTAMPTZ, UTC-aware)
+                )
+                for row in rows
+            ]
+
+            return confidences
 
     async def get_recent_misconceptions(
         self,
@@ -262,7 +434,70 @@ class PostgresStudentStore:
         *,
         window_days: int = DEFAULT_MISCONCEPTION_WINDOW_DAYS,
     ) -> list[Misconception]:
-        raise NotImplementedError(_NOT_IMPLEMENTED)
+        """Read recent misconceptions from Postgres (TASK-SMP2-02).
+
+        Returns one Misconception domain entity per misconception row for the
+        given student observed within the trailing window_days, ordered newest
+        observed_at first.
+
+        The confidence_band_at_observation field is approximated from the
+        learner's CURRENT confidence band for that topic via LEFT JOIN with
+        topic_confidence, defaulting to "struggling" when no confidence row exists.
+
+        Args:
+            student_id: Student identifier to query.
+            window_days: Trailing window in days (default 30). Boundary is inclusive.
+
+        Returns:
+            List of Misconception entities. Empty list if student has no in-window
+            rows or is unknown (no student existence pre-check — graceful degradation).
+
+        Raises:
+            Database errors propagate (not swallowed) so the caller can degrade.
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Compute cutoff timestamp (inclusive boundary)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
+
+        # Read-only connection (no transaction needed)
+        async with engine.connect() as conn:
+            # Parameterised SELECT with LEFT JOIN for band approximation
+            result = await conn.execute(
+                sql_text(
+                    "SELECT m.topic_name, m.text, m.observed_at, "
+                    "COALESCE(tc.band, 'struggling') AS band "
+                    "FROM misconception m "
+                    "LEFT JOIN topic_confidence tc "
+                    "ON tc.student_id = m.student_id AND tc.topic_name = m.topic_name "
+                    "WHERE m.student_id = :sid AND m.observed_at >= :cutoff "
+                    "ORDER BY m.observed_at DESC"
+                ),
+                {"sid": student_id, "cutoff": cutoff},
+            )
+
+            rows = result.fetchall()
+
+            # Map rows to Misconception domain entities
+            misconceptions = [
+                Misconception(
+                    text=row[1],  # text
+                    topic_ref=row[0],  # topic_name
+                    observed_at=row[2],  # observed_at (TIMESTAMPTZ, UTC-aware)
+                    confidence_band_at_observation=row[
+                        3
+                    ],  # band (from JOIN or default)
+                )
+                for row in rows
+            ]
+
+            return misconceptions
 
     # -- Learner-state writes ----------------------------------------------
 

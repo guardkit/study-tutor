@@ -174,22 +174,7 @@ class TestBootWiring:
 
 
 class TestNotImplementedBoundary:
-    """AC-006: Read and session-CRUD methods still raise NotImplementedError."""
-
-    @pytest.mark.asyncio
-    async def test_read_methods_raise_not_implemented(self) -> None:
-        """get_student_state, get_topic_confidences, get_recent_misconceptions raise."""
-        dsn = "postgresql://user:pass@host:5432/db"
-        store = PostgresStudentStore(dsn)
-
-        with pytest.raises(NotImplementedError):
-            await store.get_student_state("student123")
-
-        with pytest.raises(NotImplementedError):
-            await store.get_topic_confidences("student123")
-
-        with pytest.raises(NotImplementedError):
-            await store.get_recent_misconceptions("student123")
+    """AC-006: Session-CRUD methods raise NotImplementedError (read methods are implemented in TASK-01/02/03)."""
 
     @pytest.mark.asyncio
     async def test_session_crud_methods_raise_not_implemented(self) -> None:

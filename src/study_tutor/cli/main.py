@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import signal
 import sys
 from typing import Any, Callable
@@ -43,6 +44,7 @@ from typing import Any, Callable
 import click
 
 from study_tutor.cli.rag_wiring import build_rag_providers
+from study_tutor.knowledge.store.wiring import build_student_store
 from study_tutor.knowledge.async_write import GraphitiWriteHelper
 from study_tutor.knowledge.coach_handover import apply_quote_verification
 from study_tutor.knowledge.graphiti_client import (
@@ -339,6 +341,20 @@ def serve(role: str, transport: str, log_level: str) -> None:
     # returns — the runtime continues with the verifier-against-empty
     # corpus fallback per the graceful-degradation envelope.
     build_rag_providers(role_config)
+
+    # TASK-SMP2-04 — wire the Postgres student store into the runtime
+    # *before* the orchestrator starts, so learner-state reads are live
+    # when STUDY_TUTOR_PG_DSN is set. When the DSN is absent, skip wiring
+    # (reads degrade to empty — same posture as the graph-read graceful
+    # fallback). The guard belongs here (not inside build_student_store)
+    # so the write path can still demand a hard failure elsewhere if
+    # needed.
+    logger = logging.getLogger(__name__)
+    if os.environ.get("STUDY_TUTOR_PG_DSN"):
+        build_student_store()
+        logger.info("event=student_store_wired")
+    else:
+        logger.info("event=student_store_skipped reason=no_dsn")
 
     # Graphiti client construction is async (it does a healthcheck), but
     # the FastMCP server.run loop is sync. We use a one-shot asyncio.run
