@@ -6,7 +6,7 @@
 [unified-voice-orientation.md](../research/ideas/unified-voice-orientation.md) (ratified pins + topology) ·
 [ADR-ARCH-024 r1](../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) (STT pin, D3 no-cloud-audio, OQ#2 transport) ·
 [voice-implementation-blueprint.md](voice-implementation-blueprint.md) (what to lift from `lpa-platform-poc`, phase/gate order) ·
-`lpa-platform-poc` ADR-POC-015 r1 · [ADR-ARCH-026](../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (async Coach — **still Proposed**, ratification gated in the build plan)
+`lpa-platform-poc` ADR-POC-015 r1 · [ADR-ARCH-026](../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (async Coach — **Accepted**, ratified at G-RAT 2026-07-05) · [ADR-ARCH-027](../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (chunk-boundary quote verification — the §5.4 recommendation, ratified)
 **Build plan:** [voice-tutor-and-reachy-scope-and-build-plan.md](../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md)
 
 ---
@@ -483,10 +483,15 @@ SHAs bump together, once:
 3. **Contract §9 / binding §4:** add the six voice `error_type`s (§5.5) to the closed
    set (the set is a closed contract; `session/errors.py:6-9` says extending it
    requires `/design-refine` on the cross-device contract).
-4. Re-freeze both docs; **re-pin `CONTRACT_SHA`** (binding header lines 5/16 + the
-   phase-2 plan header) and **bump `BINDING_SHA`** (phase-2 plan header,
-   `app/PROGRESS.md`, dev-deploy runbook — there is no app-side config pin today;
-   `main.dart` carries only `API_BASE_URL`).
+4. Re-freeze both docs; **re-pin `CONTRACT_SHA`** (binding header) and **bump
+   `BINDING_SHA`**, with the voice-phase pins recorded in the
+   [build plan §0 header](../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md)
+   — the living consumption point. The phase-2 plan header, `app/PROGRESS.md`,
+   and the dev-deploy runbook keep their `22791afb…`/`6eb7b88c…` pins untouched:
+   they are the historical record of what phase 2 verified, and the change is
+   additive so those clients stay valid. (There is no app-side config pin;
+   `main.dart` carries only `API_BASE_URL`.)
+   **Executed 2026-07-05:** contract Rev 1 = `574615e9…`, binding Rev 1 = `e50897d1…`.
 
 The Reachy track touches **none** of this contract (its surface is `/v1/realtime` +
 the same already-frozen session verbs via `ask_tutor`), so robot work never blocks on
@@ -510,7 +515,7 @@ the freeze.
 
 ## 10. Open items carried into gates (not silently decided)
 
-1. Quote-handover ratification (§5.4) — ADR at G-RAT.
+1. ~~Quote-handover ratification (§5.4) — ADR at G-RAT.~~ **Done:** ADR-ARCH-027 (2026-07-05).
 2. m4a acceptance by live STT + recorder encoder choice — Phase-0.
 3. s2s on GB10: install path (bare-metal cu130 wheels vs patched ARM64 container),
    0.6B TTS checkpoint support, tool-call forwarding, open-mic latency, and the
