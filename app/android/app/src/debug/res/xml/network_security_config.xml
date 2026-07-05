@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug flavour ONLY (this file lives under src/debug/): cleartext-HTTP
+     allowance for the GB10 dev adapter (scope §6.2: port 8100, HTTP over
+     Tailscale), scoped to named backend hosts.
+
+     Honest scope note (2026-07-05 review, engine-verified): this config
+     governs the ANDROID PLATFORM network stack (WebView, native plugins) —
+     of which this app currently has no consumers. The app's own
+     package:http traffic rides dart:io, which on current Flutter engines
+     does NOT consult network-security-config and allows cleartext to any
+     host by default, debug and release alike. The config is kept as
+     hygiene: it future-proofs any native-stack traffic (e.g. a WS plugin
+     when voice lands) and documents the intended posture. Fail-closed
+     enforcement for the app's own HTTP would have to live in Dart — see
+     QUESTIONS.md.
+
+     10.0.2.2 is the emulator's alias for the HOST MACHINE'S LOOPBACK (see
+     README §Phase-2 flavours for the port-forward rule). For a physical
+     device on the tailnet, the GB10's MagicDNS hostname would be the entry
+     to add — deliberately not guessed here. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

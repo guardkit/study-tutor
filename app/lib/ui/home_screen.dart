@@ -49,6 +49,11 @@ class _HomeScreenState extends State<HomeScreen> {
     } on Unauthenticated {
       if (!mounted) return;
       routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on TransportError {
+      // Stay put with whatever list we already had — "try again" is the
+      // pull-to-refresh on this list once the connection returns.
+      if (!mounted) return;
+      await showConnectionProblem(context);
     }
   }
 
@@ -77,6 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
     } on Unauthenticated {
       if (!mounted) return;
       routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on TransportError {
+      // Nothing was started — stay home; the button works again once
+      // `_busy` resets in `finally`.
+      if (!mounted) return;
+      await showConnectionProblem(context);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -98,6 +108,12 @@ class _HomeScreenState extends State<HomeScreen> {
     } on Unauthenticated {
       if (!mounted) return;
       routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on TransportError {
+      // Before the SessionApiException catch-all: a dead network is not
+      // "can't open this session". The row stays (it may be perfectly
+      // resumable) and there is no re-list — the server is unreachable.
+      if (!mounted) return;
+      await showConnectionProblem(context);
     } on SessionApiException {
       // SessionForbidden / SessionNotFoundError (and, defensively, a session
       // that ended elsewhere): shared surface, then re-list — the stale row
@@ -114,31 +130,38 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          for (final summary in _active)
-            Card(
-              child: ListTile(
-                title: Text(summary.subject ?? 'Session'),
-                subtitle: Text('${summary.turnCount} turns'),
-                trailing: FilledButton.tonal(
-                  onPressed: _busy ? null : () => _resume(summary),
-                  child: const Text('Resume'),
+      // Pull-to-refresh is the retry gesture for a failed list call — without
+      // it a TransportError on the initial refresh dead-ends on a stale
+      // "No active sessions" until some other navigation re-lists.
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            for (final summary in _active)
+              Card(
+                child: ListTile(
+                  title: Text(summary.subject ?? 'Session'),
+                  subtitle: Text('${summary.turnCount} turns'),
+                  trailing: FilledButton.tonal(
+                    onPressed: _busy ? null : () => _resume(summary),
+                    child: const Text('Resume'),
+                  ),
                 ),
               ),
+            if (_active.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text('No active sessions')),
+              ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: _busy ? null : _startNewSession,
+              child: const Text('Start new session'),
             ),
-          if (_active.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: Text('No active sessions')),
-            ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: _busy ? null : _startNewSession,
-            child: const Text('Start new session'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

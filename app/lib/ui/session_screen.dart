@@ -72,6 +72,11 @@ class _SessionScreenState extends State<SessionScreen> {
     } on Unauthenticated {
       if (!mounted) return;
       routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on TransportError {
+      // The end never reached the backend: not ended, nothing lost — the
+      // End affordance stays and tapping it again is the retry.
+      if (!mounted) return;
+      await showConnectionProblem(context);
     } on SessionApiException {
       if (!mounted) return;
       await showCantOpenSession(context);
@@ -103,6 +108,12 @@ class _SessionScreenState extends State<SessionScreen> {
     } on Unauthenticated {
       if (!mounted) return;
       routeToSignIn(context, widget.identity, widget.sessionApi);
+    } on TransportError {
+      // The turn may never have reached the backend. Nothing is appended and
+      // `_input` is NOT cleared (that only happens on success) — the unsent
+      // message survives in the field, so "try again" is tapping send again.
+      if (!mounted) return;
+      await showConnectionProblem(context);
     } on SessionApiException {
       // SessionForbidden / SessionNotFoundError: shared surface, back home.
       if (!mounted) return;
