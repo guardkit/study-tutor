@@ -1,14 +1,14 @@
 id: FEAT-APP-001
 name: HTTP App Access Adapter
-description: 'FEAT-APP-001: the six contract §5 verbs as plain JSON endpoints on :8100,
-  a second consumer of the proven SessionService (MCP surface untouched). Wave 1 publishes
-  the frozen HTTP binding table (the Mac-side app''s BINDING_SHA dependency). Interim
-  token-table auth (prod: lilymay; dev: two tokens + reject-unknown), dev-only session
-  reset, idempotent student-identity seed (closes the session.student_id FK gap),
-  serve-http CLI + deploy/http compose, READY boot smoke. Builds BEFORE FEAT-SMP-004.
-  Out of scope: WS/turn_stream, Keycloak, app/**, the pinned contract.'
+description: "FEAT-APP-001: the six contract \xA75 verbs as plain JSON endpoints on\
+  \ :8100, a second consumer of the proven SessionService (MCP surface untouched).\
+  \ Wave 1 publishes the frozen HTTP binding table (the Mac-side app's BINDING_SHA\
+  \ dependency). Interim token-table auth (prod: lilymay; dev: two tokens + reject-unknown),\
+  \ dev-only session reset, idempotent student-identity seed (closes the session.student_id\
+  \ FK gap), serve-http CLI + deploy/http compose, READY boot smoke. Builds BEFORE\
+  \ FEAT-SMP-004. Out of scope: WS/turn_stream, Keycloak, app/**, the pinned contract."
 created: '2026-07-05T08:11:33.751570'
-status: planned
+status: completed
 complexity: 6
 estimated_tasks: 8
 tasks:
@@ -17,80 +17,152 @@ tasks:
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-01-http-binding-table-doc.md
   complexity: 4
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-05T08:16:57.218895'
+  completed_at: '2026-07-05T08:27:04.033712'
 - id: TASK-APP1-02
   name: Token-table auth and HTTP config
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-02-token-table-auth-and-config.md
   complexity: 5
   dependencies:
   - TASK-APP1-01
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-05T08:27:24.509129'
+  completed_at: '2026-07-05T08:37:42.681301'
 - id: TASK-APP1-03
   name: Six JSON endpoints and error envelope
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-03-six-json-endpoints.md
   complexity: 6
   dependencies:
   - TASK-APP1-02
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-05T09:06:03.086564'
+  completed_at: '2026-07-05T09:16:34.428259'
 - id: TASK-APP1-04
   name: serve-http CLI and production wiring
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-04-serve-http-cli-and-wiring.md
   complexity: 6
   dependencies:
   - TASK-APP1-03
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 3
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 3
+  current_turn: 0
+  started_at: '2026-07-05T09:16:54.736223'
+  completed_at: '2026-07-05T09:45:43.985805'
 - id: TASK-APP1-05
   name: seed-students CLI and dev reset
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-05-seed-students-and-dev-reset.md
   complexity: 4
   dependencies:
   - TASK-APP1-04
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-05T09:46:05.540157'
+  completed_at: '2026-07-05T09:57:37.803749'
 - id: TASK-APP1-06
   name: deploy/http compose flavours
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-06-deploy-http-compose.md
   complexity: 3
   dependencies:
   - TASK-APP1-05
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-05T09:57:59.584867'
+  completed_at: '2026-07-05T10:11:24.290433'
 - id: TASK-APP1-07
   name: BDD steps and conformance tests
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-07-bdd-steps-and-conformance-tests.md
   complexity: 5
   dependencies:
   - TASK-APP1-06
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-05T10:11:46.127437'
+  completed_at: '2026-07-05T10:28:53.790907'
 - id: TASK-APP1-08
   name: GB10 deployment and live proof
   file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-08-gb10-deployment-and-live-proof.md
   complexity: 2
   dependencies:
   - TASK-APP1-07
-  status: pending
-  description: ''
+  status: deferred
   implementation_mode: direct
   estimated_minutes: 22
+  requires_infrastructure: []
+  result:
+    total_turns: 0
+    final_decision: deferred
+    error: null
+    deferred_reason: "operator follow-up \u2014 runtime verification required"
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: '2026-07-05T10:29:15.632773'
 orchestration:
   parallel_groups:
   - - TASK-APP1-01
@@ -105,8 +177,33 @@ orchestration:
   recommended_parallel: 1
 smoke_gates:
   after_wave: all
-  command: |
-    set -e
+  command: 'set -e
+
     pytest tests/unit -x -q
+
+    '
   expected_exit: 0
   timeout: 600
+  exit5_is_hard_fail: false
+preflight_strict: false
+evidence_repos: []
+execution:
+  started_at: '2026-07-05T08:16:56.969579'
+  completed_at: '2026-07-05T10:29:36.007365'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  total_turns: 9
+  tasks_completed: 8
+  tasks_failed: 0
+  current_wave: 8
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  last_updated: '2026-07-05T10:29:36.001393'
+  archived_at: null
+  archived_to: null

@@ -1,6 +1,6 @@
 ---
 id: TASK-APP1-01
-title: "HTTP binding table doc — API-session-http-binding.md (THE Mac unblock)"
+title: "HTTP binding table doc \u2014 API-session-http-binding.md (THE Mac unblock)"
 task_type: documentation
 feature_id: FEAT-APP-001
 wave: 1
@@ -8,6 +8,23 @@ implementation_mode: task-work
 complexity: 4
 dependencies: []
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  base_branch: main
+  started_at: '2026-07-05T08:16:57.226386'
+  last_updated: '2026-07-05T08:27:04.031338'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-05T08:16:57.226386'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Objective

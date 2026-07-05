@@ -1,19 +1,39 @@
 ---
 id: TASK-APP1-06
-title: "deploy/http/ compose (dev + prod flavours) + .env.example entries"
+title: deploy/http/ compose (dev + prod flavours) + .env.example entries
 task_type: scaffolding
 feature_id: FEAT-APP-001
 wave: 6
 implementation_mode: task-work
 complexity: 3
-dependencies: [TASK-APP1-05]
+dependencies:
+- TASK-APP1-05
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
 consumer_context:
-  - task: TASK-APP1-02
-    consumes: STUDY_TUTOR_HTTP_TOKENS
-    framework: "docker compose environment blocks"
-    driver: "env var (JSON object)"
-    format_note: "JSON object mapping token to student_id, e.g. {\"token-lilymay\": \"lilymay\", \"token-alex\": \"alex\"}; dev flavour carries two entries + STUDY_TUTOR_HTTP_DEV_RESET=1, prod carries one entry and no reset flag"
+- task: TASK-APP1-02
+  consumes: STUDY_TUTOR_HTTP_TOKENS
+  framework: docker compose environment blocks
+  driver: env var (JSON object)
+  format_note: 'JSON object mapping token to student_id, e.g. {"token-lilymay": "lilymay",
+    "token-alex": "alex"}; dev flavour carries two entries + STUDY_TUTOR_HTTP_DEV_RESET=1,
+    prod carries one entry and no reset flag'
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  base_branch: main
+  started_at: '2026-07-05T09:57:59.593419'
+  last_updated: '2026-07-05T10:11:24.288035'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-05T09:57:59.593419'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Objective

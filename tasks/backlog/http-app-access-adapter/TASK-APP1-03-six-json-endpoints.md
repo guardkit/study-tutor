@@ -1,19 +1,38 @@
 ---
 id: TASK-APP1-03
-title: "Six JSON endpoints over SessionService + §9 error envelope mapping"
+title: "Six JSON endpoints over SessionService + \xA79 error envelope mapping"
 task_type: feature
 feature_id: FEAT-APP-001
 wave: 3
 implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-APP1-02]
+dependencies:
+- TASK-APP1-02
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
 consumer_context:
-  - task: TASK-APP1-01
-    consumes: API-session-http-binding.md
-    framework: "starlette (Route table + JSONResponse)"
-    driver: "starlette"
-    format_note: "Every route path, method, and status-per-error_type is fixed by the binding doc — implementation conforms to the doc, never the reverse"
+- task: TASK-APP1-01
+  consumes: API-session-http-binding.md
+  framework: starlette (Route table + JSONResponse)
+  driver: starlette
+  format_note: "Every route path, method, and status-per-error_type is fixed by the\
+    \ binding doc \u2014 implementation conforms to the doc, never the reverse"
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  base_branch: main
+  started_at: '2026-07-05T09:06:03.097759'
+  last_updated: '2026-07-05T09:16:34.426758'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-05T09:06:03.097759'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Objective

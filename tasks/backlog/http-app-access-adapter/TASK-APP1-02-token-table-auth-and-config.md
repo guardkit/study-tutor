@@ -1,19 +1,38 @@
 ---
 id: TASK-APP1-02
-title: "Token-table auth layer + HTTP config (interim single-user auth, server-side)"
+title: Token-table auth layer + HTTP config (interim single-user auth, server-side)
 task_type: feature
 feature_id: FEAT-APP-001
 wave: 2
 implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-APP1-01]
+dependencies:
+- TASK-APP1-01
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
 consumer_context:
-  - task: TASK-APP1-01
-    consumes: API-session-http-binding.md
-    framework: "starlette (auth middleware/dependency)"
-    driver: "n/a (contract doc)"
-    format_note: "Unauthenticated status code + envelope shape and the header-only token rule are fixed by the binding doc"
+- task: TASK-APP1-01
+  consumes: API-session-http-binding.md
+  framework: starlette (auth middleware/dependency)
+  driver: n/a (contract doc)
+  format_note: Unauthenticated status code + envelope shape and the header-only token
+    rule are fixed by the binding doc
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  base_branch: main
+  started_at: '2026-07-05T08:27:24.520012'
+  last_updated: '2026-07-05T08:37:42.678358'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-05T08:27:24.520012'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Objective

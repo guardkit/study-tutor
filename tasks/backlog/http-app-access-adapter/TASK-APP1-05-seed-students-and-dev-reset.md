@@ -1,13 +1,31 @@
 ---
 id: TASK-APP1-05
-title: "seed-students CLI (idempotent identity rows) + dev-only reset endpoint"
+title: seed-students CLI (idempotent identity rows) + dev-only reset endpoint
 task_type: feature
 feature_id: FEAT-APP-001
 wave: 5
 implementation_mode: task-work
 complexity: 4
-dependencies: [TASK-APP1-04]
+dependencies:
+- TASK-APP1-04
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  base_branch: main
+  started_at: '2026-07-05T09:46:05.548758'
+  last_updated: '2026-07-05T09:57:37.801386'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-05T09:46:05.548758'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Objective

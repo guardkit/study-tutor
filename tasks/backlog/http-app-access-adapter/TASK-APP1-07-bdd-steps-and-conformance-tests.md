@@ -1,19 +1,39 @@
 ---
 id: TASK-APP1-07
-title: "BDD step definitions + binding-conformance + MCP-freeze regression + full-suite gate"
+title: BDD step definitions + binding-conformance + MCP-freeze regression + full-suite
+  gate
 task_type: testing
 feature_id: FEAT-APP-001
 wave: 7
 implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-APP1-06]
+dependencies:
+- TASK-APP1-06
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
 consumer_context:
-  - task: TASK-APP1-01
-    consumes: API-session-http-binding.md
-    framework: "pytest (conformance assertions)"
-    driver: "pytest-bdd"
-    format_note: "The conformance test parses the doc's verb table and asserts the served route set matches it exactly"
+- task: TASK-APP1-01
+  consumes: API-session-http-binding.md
+  framework: pytest (conformance assertions)
+  driver: pytest-bdd
+  format_note: The conformance test parses the doc's verb table and asserts the served
+    route set matches it exactly
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-APP-001
+  base_branch: main
+  started_at: '2026-07-05T10:11:46.138963'
+  last_updated: '2026-07-05T10:28:53.788284'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-05T10:11:46.138963'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Objective
