@@ -1,0 +1,11 @@
+{
+  "session_id": "f8290dc3-61a7-4cd6-9881-2d71ac9e0885",
+  "command": "task-complete",
+  "slug": "TASK-APP1-08",
+  "prompt": "/task-complete TASK-APP1-08",
+  "transcript_path": "/home/richardwoollcott/.claude/projects/-home-richardwoollcott-Projects-appmilla-github-study-tutor/f8290dc3-61a7-4cd6-9881-2d71ac9e0885.jsonl",
+  "started_at": "2026-07-05T10:23:49Z",
+  "started_at_epoch": 1783247029.1288884,
+  "completion_written": true,
+  "completed_at": "2026-07-05T10:30:02Z"
+}
