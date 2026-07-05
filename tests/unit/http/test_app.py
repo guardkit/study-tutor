@@ -180,7 +180,7 @@ def test_list_sessions_happy_path(test_client, fake_service):
             subject="English",
             topic="Macbeth",
             status="active",
-            turn_count=5,
+            turn_count=6,  # store rows; response is (user, tutor) pairs = 3
             started_at=datetime(2026, 7, 5, 10, 0, 0),
             last_activity=datetime(2026, 7, 5, 10, 30, 0),
         ),
@@ -196,7 +196,7 @@ def test_list_sessions_happy_path(test_client, fake_service):
     assert len(data) == 1
     assert data[0]["session_id"] == "sess-1"
     assert data[0]["status"] == "active"
-    assert data[0]["turn_count"] == 5
+    assert data[0]["turn_count"] == 3  # 6 store rows → 3 (user, tutor) pairs (binding §5, scope §3.6)
 
 
 def test_list_sessions_with_filters(test_client, fake_service):
@@ -245,6 +245,12 @@ def test_resume_session_happy_path(test_client, fake_service):
     data = response.json()
     assert data["session_id"] == "sess-123"
     assert len(data["turns"]) == 1
+    # Frozen binding §5: each turn entry is {role, content, ts} — NOT "timestamp".
+    turn0 = data["turns"][0]
+    assert turn0["role"] == "user"
+    assert turn0["content"] == "Hello"
+    assert "ts" in turn0
+    assert "timestamp" not in turn0  # regression guard: was mis-serialized as "timestamp"
 
 
 def test_resume_session_not_found(test_client, fake_service):
@@ -334,7 +340,7 @@ def test_session_status_happy_path(test_client, fake_service):
         session_id="sess-123",
         student_id="test-student",
         status="active",
-        turn_count=5,
+        turn_count=6,  # store rows; response = 3 pairs
         started_at=datetime(2026, 7, 5, 10, 0, 0),
         last_activity=datetime(2026, 7, 5, 10, 30, 0),
         resumable=True,
@@ -350,6 +356,7 @@ def test_session_status_happy_path(test_client, fake_service):
     assert data["session_id"] == "sess-123"
     assert data["status"] == "active"
     assert data["resumable"] is True
+    assert data["turn_count"] == 3  # 6 store rows → 3 (user, tutor) pairs
 
 
 def test_session_status_allows_ended(test_client, fake_service):
@@ -373,6 +380,7 @@ def test_session_status_allows_ended(test_client, fake_service):
     data = response.json()
     assert data["status"] == "ended"
     assert data["resumable"] is False
+    assert data["turn_count"] == 5  # 10 store rows → 5 (user, tutor) pairs
 
 
 # -------------------- end_session tests --------------------

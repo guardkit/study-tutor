@@ -150,7 +150,7 @@ async def start_session(request: Request) -> JSONResponse:
                 {
                     "role": turn.role,
                     "content": turn.content,
-                    "timestamp": turn.ts.isoformat(),
+                    "ts": turn.ts.isoformat(),
                 }
                 for turn in result.turns
             ]
@@ -199,7 +199,12 @@ async def list_sessions(request: Request) -> JSONResponse:
                 "status": s.status,
                 "started_at": s.started_at.isoformat(),
                 "last_activity": s.last_activity.isoformat(),
-                "turn_count": s.turn_count,
+                # Store turn_count is raw transcript rows (learner + tutor row
+                # per exchange); the contract's turn_count is (user, tutor)
+                # PAIRS — binding §5 + scope §3.6 ("two turns → turn_count: 2").
+                # Halve, mirroring the MCP adapter's
+                # student_turn_count = turn_count // 2 (mcp/adapter.py).
+                "turn_count": s.turn_count // 2,
             }
             for s in sessions
         ]
@@ -237,7 +242,7 @@ async def resume_session(request: Request) -> JSONResponse:
                 {
                     "role": turn.role,
                     "content": turn.content,
-                    "timestamp": turn.ts.isoformat(),
+                    "ts": turn.ts.isoformat(),
                 }
                 for turn in result.turns
             ],
@@ -328,7 +333,9 @@ async def session_status(request: Request) -> JSONResponse:
             "session_id": result.session_id,
             "student_id": result.student_id,
             "status": result.status,
-            "turn_count": result.turn_count,
+            # Rows → (user, tutor) pairs per binding §5 + scope §3.6
+            # (see list_sessions).
+            "turn_count": result.turn_count // 2,
             "started_at": result.started_at.isoformat(),
             "last_activity": result.last_activity.isoformat(),
             "resumable": result.resumable,
