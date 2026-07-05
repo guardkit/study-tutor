@@ -39,8 +39,10 @@ class HttpSessionApi implements SessionApi {
 
   /// Per-request deadlines aligned to the contract budgets (plan p2-wave-4):
   /// `turn` has a p95 < 10s budget (§5) → 15s; every other verb is a
-  /// fast read / ms-scale write (§6) → 5s. Constructor overrides exist as
-  /// the hermetic test seam only.
+  /// fast read / ms-scale write (§6) → 5s. Constructor overrides exist for
+  /// tests only: hermetic tests shrink them; the live contract suite raises
+  /// `turn` above the contract's 30s hard ceiling (SR-07), which the
+  /// product posture deliberately undercuts.
   ///
   /// A deadline abandons the request client-side but cannot cancel it: a
   /// timed-out `turn` may still commit on the server, so a retry can append
