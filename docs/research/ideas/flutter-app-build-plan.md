@@ -1,6 +1,7 @@
 # Flutter App — Overnight Build Plan (waves)
 
-**Status:** Ready — G-P3 gate artifact ([RUNBOOK-overnight-fable-flutter](../../runbooks/RUNBOOK-overnight-fable-flutter.md) §1).
+**Status: ✅ COMPLETE** — executed overnight 2026-07-04 (waves 0–9 unattended green + wave-10 morning fix-wave; merged `cf68d03`, RESULTS in `docs/runbooks/RESULTS-overnight-fable-flutter-2026-07-04.md`). **Phase 2 (real transport) also complete 2026-07-05** — see [flutter-app-phase2-build-plan.md](flutter-app-phase2-build-plan.md).
+*(Plan was: Ready — G-P3 gate artifact, [RUNBOOK-overnight-fable-flutter](../../runbooks/RUNBOOK-overnight-fable-flutter.md) §1.)*
 **Date:** 2026-07-04. **Owner:** Rich.
 **CONTRACT_SHA:** `22791afbcdb3b71abbe6bd2f1b8e18218988942f` — [API-session-cross-device.md](../../design/contracts/API-session-cross-device.md) at this commit is the pinned truth. Contract doubts → `app/QUESTIONS.md`, never contract edits (runbook §2 rule 3).
 **Scope:** [flutter-app-scope.md](flutter-app-scope.md) (G-P1) — defines the fake's semantics (§2.3), the test suites (§3–4), the approved-dependency list (§6), and what's OUT (§7). This plan only sequences it.
