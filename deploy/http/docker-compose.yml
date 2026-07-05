@@ -4,15 +4,23 @@
 # Flavours: Dev (two tokens + reset flag) vs Prod (single token, no reset).
 services:
   study_tutor_http:
+    # Build context is the PARENT of the repo: the Dockerfile sources the
+    # sibling nats-core repo via a BuildKit named context (same shape as the
+    # root docker-compose.study-tutor.yml — additional_contexts, not a build
+    # arg). Paths are relative to this compose file (deploy/http/).
     build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BUILD_CONTEXT=nats-core=../nats-core
+      context: ../../..
+      dockerfile: study-tutor/Dockerfile
+      additional_contexts:
+        nats-core: ../../../nats-core
     image: study-tutor:latest
     container_name: study_tutor_http
     restart: unless-stopped
     command: ["study-tutor", "serve-http", "--host", "0.0.0.0", "--port", "8100"]
+    # host-gateway lets the container reach llama-swap on the Docker host
+    # (port 9000) — the tutor loop's model endpoints below depend on it.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # Postgres DSN — required; fail fast if missing
       STUDY_TUTOR_PG_DSN: ${STUDY_TUTOR_PG_DSN:?set STUDY_TUTOR_PG_DSN in .env}
@@ -26,6 +34,21 @@ services:
       # Dev: STUDY_TUTOR_HTTP_DEV_RESET=1
       # Prod: unset (route does not exist)
       STUDY_TUTOR_HTTP_DEV_RESET: ${STUDY_TUTOR_HTTP_DEV_RESET:-}
+
+      # Tutor-loop model config — serve-http boots the SAME tutor loop as
+      # serve/serve-nats (two-provider invariant validated at boot), so the
+      # model env mirrors the root docker-compose.study-tutor.yml. Defaults
+      # target llama-swap on the Docker host (GB10 :9000).
+      AGENT_MODELS__REASONING_MODEL: ${TUTOR_REASONING_PROVIDER:-local}
+      AGENT_MODELS__REASONING_ENDPOINT: ${TUTOR_OPENAI_BASE_URL:-http://host.docker.internal:9000/v1}
+      AGENT_MODELS__COACH_MODEL: ${TUTOR_COACH_PROVIDER:-local-coach}
+      AGENT_MODELS__COACH_ENDPOINT: ${TUTOR_COACH_ENDPOINT:-http://host.docker.internal:9000/v1}
+      OPENAI_BASE_URL: ${TUTOR_OPENAI_BASE_URL:-http://host.docker.internal:9000/v1}
+      LLM_BASE_URL: ${TUTOR_LLM_BASE_URL:-http://host.docker.internal:9000}
+      LOCAL_MODEL: ${TUTOR_LOCAL_MODEL:-gemma4-tutor}
+      LOCAL_BASE_URL: ${TUTOR_LLM_BASE_URL:-http://host.docker.internal:9000}
+      LOCAL_COACH_MODEL: ${TUTOR_COACH_MODEL:-qwen36-workhorse}
+      OPENAI_API_KEY: ${TUTOR_OPENAI_API_KEY:-local-no-auth-required}
     ports:
       - "${HTTP_PORT:-8100}:8100"
     healthcheck:
