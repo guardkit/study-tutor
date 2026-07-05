@@ -60,9 +60,9 @@ is done and live-verified. Full runtime evidence is the execution record in
 |----|--------|----------|
 | **AC-OP-01** GB10 `:8100/healthz` from GB10 | ✅ verified | Runbook phase 3 (`{"status":"ok"}`); re-confirmed live at completion time via `http://100.84.90.91:8100/healthz` |
 | **AC-OP-02** seed + `start_session` both tokens | ✅ verified | Runbook phase 4 — seed 2 students; 200 for `token-lilymay` + `token-alex`; 401 unknown token; 403 cross-student; real tutored turn; ordered resume; end → `resumable:false`; reset roundtrip |
-| **AC-OP-03** Tailscale ACL Mac→GB10 `:8100` | 🟡 GB10 side verified | Tailnet interface answers (`100.84.90.91:8100`), reachable from a non-GB10 tailnet host → permissive/allow-all tailnet needs no scoped rule. **Mac-side curl confirmation = operator, tracked at feature-complete.** |
-| **AC-OP-04** Mac live contract suite green | ⏳ Mac-side, pending | `app/test_live/` is built by the app repo's p2 waves; "may not exist yet — that is expected." Gate for `/feature-complete`, not this task. |
-| **AC-OP-05** Cross-device walk end-to-end | ⏳ Mac-side attended, pending | Phase-2 scope §3.6; runbook phase 6. Gate for `/feature-complete`. |
+| **AC-OP-03** Tailscale ACL Mac→GB10 `:8100` | ✅ verified (2026-07-05, Mac) | Mac-side `healthz` 200 in 16ms; tailnet allow-all, no ACL work needed |
+| **AC-OP-04** Mac live contract suite green | 🟢 running green (Mac, 2026-07-05) | `app/test_live/` `--concurrency=1` detached; §9 unknown-session mapping green; full result ~30 min. Gate for `/feature-complete`, not this task. |
+| **AC-OP-05** Cross-device walk end-to-end | ⏳ GB10/operator, pending | Phase-2 scope §3.6; needs emulator observed on screen. Gate for `/feature-complete`. |
 | **AC-OP-06** BINDING_SHA communicated | ✅ done | `BINDING_SHA=6eb7b88c4c8ae412fb36327a4f56286c6b539a7a` frozen; recorded in the runbook handoff + `docs/design/contracts/API-session-http-binding.md`; app-side header filled by app p2-wave-3 |
 
 **Next step (separate, gated on the Mac suite):** run
@@ -74,3 +74,10 @@ service is up, seeded, and the dev reset is armed
 **Deployment standing posture:** dev flavour left running with reset armed for
 the Mac acceptance run. Per the runbook, take it `docker compose down` or
 re-flavour to prod once phase-2 acceptance is signed off.
+
+**Open conformance gap (surfaced by the Mac acceptance run):** `tutor_turn`
+latency ~43s warm / 66s cold breaches SR-07 (p95<10s, 30s hard ceiling). This
+is a *deployment* gap, not an app-posture issue — see the runbook's "Conformance
+gap" section for ranked GB10-side triage (top suspect: llama-swap thrash between
+the Player `gemma4-tutor` and Coach `qwen36-workhorse` aliases). Blocks the
+*latency* half of `/feature-complete`; the *functional* live suite is unaffected.

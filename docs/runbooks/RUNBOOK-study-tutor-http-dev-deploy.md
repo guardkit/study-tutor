@@ -207,3 +207,59 @@ process squatting `127.0.0.1:8100`.
 **For the Mac session:** `API_BASE_URL=http://promaxgb10-41b1.tailebf801.ts.net:8100`
 (or `http://100.84.90.91:8100`), `BINDING_SHA=6eb7b88c…`, live suite with
 `--concurrency=1`. The service is up and seeded; the reset is armed.
+
+---
+
+## Mac-side acceptance — 2026-07-05 (phase 6, in progress)
+
+Reported by the Mac Flutter session against this deployment.
+
+| AC | Result |
+|---|---|
+| **AC-OP-03** Tailnet reachability | ✅ **Closed.** `healthz` answered 200 in 16ms from the Mac; tailnet is allow-all, **no ACL work needed**. |
+| **AC-OP-04** Live contract suite | 🟢 **Running green.** `app/test_live/`, `--concurrency=1`, detached (~37 real LLM turns, ~30 min at observed latency). §9 unknown-session mapping already green against the real adapter; full triage against the pre-registered success bar when it finishes. |
+| **AC-OP-05** Cross-device walk | ⏳ **Stays with GB10/operator** — needs the emulator observed on screen (scope §3.6). |
+
+Full manual round-trip independently re-verified on the Mac: start → real
+tutored turn (Socratic reply on fractions) → reset, both directions clean.
+
+### ⚠️ Conformance gap — turn latency breaches SR-07 (GB10-side triage)
+
+**Observed:** `tutor_turn` ~**43s warm, 66s cold**. **Contract:** SR-07 =
+p95 < 10s, **hard ceiling 30s** ([API-tutoring.md](../design/contracts/API-tutoring.md#L67)).
+So warm turns are ~4× the p95 budget **and over the 30s hard ceiling** — the
+tool is currently outside its *sync* classification. Graphiti writes are
+fire-and-forget (ADR-ARCH-019) and are **not** the cause; this is the
+Player→Coach generation path itself.
+
+- **Not an app-posture issue.** The Mac session correctly kept the app's 15s
+  product deadline (the UI would show "connection problem" on most turns
+  today — that is the *deployment* being out of spec, not the client). The
+  live harness deadline was raised to 120s (loudly documented) so the
+  **functional** conformance run stays meaningful; latency conformance is
+  tracked separately here.
+- **Ranked triage (GB10 side):**
+  1. **llama-swap model thrash (most likely, biggest lever).** Player
+     (`gemma4-tutor`) and Coach (`qwen36-workhorse`) are two different aliases
+     on the single-GPU llama-swap at `:9000`. If they are not co-resident,
+     **every turn pays ≥1 model load/unload** (the ~23s cold-vs-warm delta ≈
+     one model load, consistent with swapping). `graphiti.yaml` proves
+     always-loaded aliases exist on this llama-swap; make `gemma4-tutor` +
+     `qwen36-workhorse` (and `nomic-embed` if the coach-handover RAG hits it)
+     co-resident / same group, or split them across ports. See in-review
+     `TASK-LSP-001` (player-provider route via llama-swap). Confirm from
+     llama-swap logs (load/unload lines correlated with turns).
+  2. **Per-turn sequential call count.** Happy path = Player **then** Coach = 2
+     sequential calls; a below-threshold Coach verdict enters the bounded
+     revision loop (`MAX_REVISION_ATTEMPTS=3`) → up to **6** sequential calls.
+     Check `TurnResult.attempts`/`decision` in logs — if `attempts>1` is
+     common, the Coach rubric threshold is driving revisions. The orchestrator
+     already self-reports the breach via `latency_over_budget` flags (budget
+     30s, orchestrator.py:72); grep those.
+  3. **Generation length + model sizing.** `num_predict ≥ 1500`
+     ([API-inference-runtime.md](../design/contracts/API-inference-runtime.md#L100));
+     verify GB10 token throughput for the loaded quants.
+
+This gate is for `/feature-complete FEAT-APP-001`'s *latency* conformance, not
+for the *functional* live-suite result. Recommend a dedicated GB10-side triage
+task before the real app points at this deployment.
