@@ -262,6 +262,26 @@ tutor set); `gemma4-tutor` has `ttl:1800`, so **warm the set with one throwaway
 turn before the attended §3.6 walk** to keep every observed send ~8.5s (< the
 app's 15s deadline). `tutor-coach` is `ttl:0` (stays resident).
 
+### Multi-turn latency — async Coach ([ADR-ARCH-026](../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md))
+
+The coach-model swap fixed the *single*-turn case, but the Mac then measured
+**36–48s deep in a session**. Probing showed it was neither prefill (3,385 tok
+→ 2.7s) nor the revision loop (fired 0/20) — it was the **synchronous Coach
+generating a ~500-token verdict (~9s) before the learner saw anything**, every
+turn. Fix (ADR-ARCH-026): the Coach is now an **async monitor** — `run_turn`
+returns the Player response immediately and `coach.evaluate` runs off the caller
+path (single pass, no revision, still flags below-threshold turns); the verdict
+prompt is trimmed to ~250 tokens so the background eval clears the single GPU
+before the next turn.
+
+**Validated live (2026-07-05, `study-tutor:latest` rebuilt):** with realistic
+think-time, turns are **2.1–3.6s** (Player-only critical path; was ~43s). Coach
+runs in the background (0 failures; 1 below-threshold turn correctly flagged for
+review). Rapid-fire (zero think-time) worst case ~5–12s from background-Coach
+GPU contention — not representative of real use, and still < 15s. The cold-load
+warm-up note above still applies. Streaming (the perceived-latency end-state) is
+tracked as `TASK-STREAM-001` (ADR-ARCH-026 D4), purely additive to this.
+
 **Remaining:** Mac re-runs `test_live` (command unchanged) → expected **35/35**;
 then the attended §3.6 cross-device walk (operator, emulator on screen); then
 `/feature-complete FEAT-APP-001`.
