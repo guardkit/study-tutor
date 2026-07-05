@@ -1,0 +1,112 @@
+id: FEAT-APP-001
+name: HTTP App Access Adapter
+description: 'FEAT-APP-001: the six contract §5 verbs as plain JSON endpoints on :8100,
+  a second consumer of the proven SessionService (MCP surface untouched). Wave 1 publishes
+  the frozen HTTP binding table (the Mac-side app''s BINDING_SHA dependency). Interim
+  token-table auth (prod: lilymay; dev: two tokens + reject-unknown), dev-only session
+  reset, idempotent student-identity seed (closes the session.student_id FK gap),
+  serve-http CLI + deploy/http compose, READY boot smoke. Builds BEFORE FEAT-SMP-004.
+  Out of scope: WS/turn_stream, Keycloak, app/**, the pinned contract.'
+created: '2026-07-05T08:11:33.751570'
+status: planned
+complexity: 6
+estimated_tasks: 8
+tasks:
+- id: TASK-APP1-01
+  name: HTTP binding table doc
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-01-http-binding-table-doc.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-APP1-02
+  name: Token-table auth and HTTP config
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-02-token-table-auth-and-config.md
+  complexity: 5
+  dependencies:
+  - TASK-APP1-01
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-APP1-03
+  name: Six JSON endpoints and error envelope
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-03-six-json-endpoints.md
+  complexity: 6
+  dependencies:
+  - TASK-APP1-02
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-APP1-04
+  name: serve-http CLI and production wiring
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-04-serve-http-cli-and-wiring.md
+  complexity: 6
+  dependencies:
+  - TASK-APP1-03
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-APP1-05
+  name: seed-students CLI and dev reset
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-05-seed-students-and-dev-reset.md
+  complexity: 4
+  dependencies:
+  - TASK-APP1-04
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-APP1-06
+  name: deploy/http compose flavours
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-06-deploy-http-compose.md
+  complexity: 3
+  dependencies:
+  - TASK-APP1-05
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-APP1-07
+  name: BDD steps and conformance tests
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-07-bdd-steps-and-conformance-tests.md
+  complexity: 5
+  dependencies:
+  - TASK-APP1-06
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-APP1-08
+  name: GB10 deployment and live proof
+  file_path: tasks/backlog/http-app-access-adapter/TASK-APP1-08-gb10-deployment-and-live-proof.md
+  complexity: 2
+  dependencies:
+  - TASK-APP1-07
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 22
+orchestration:
+  parallel_groups:
+  - - TASK-APP1-01
+  - - TASK-APP1-02
+  - - TASK-APP1-03
+  - - TASK-APP1-04
+  - - TASK-APP1-05
+  - - TASK-APP1-06
+  - - TASK-APP1-07
+  - - TASK-APP1-08
+  estimated_duration_minutes: 531
+  recommended_parallel: 1
+smoke_gates:
+  after_wave: all
+  command: |
+    set -e
+    pytest tests/unit -x -q
+  expected_exit: 0
+  timeout: 600
