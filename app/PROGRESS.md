@@ -22,7 +22,7 @@
 
 - [x] p2-wave-1: TransportError + fourth UI treatment [green] — attended, 2026-07-04
 - [x] p2-wave-2: ContractBackend harness refactor [green] — attended, 2026-07-04
-- [ ] p2-wave-3: HttpSessionApi — six verbs + JSON mapping (blocked on binding doc from GB10)
+- [x] p2-wave-3: HttpSessionApi — six verbs + JSON mapping [green] — attended, 2026-07-05 (BINDING_SHA `6eb7b88` pinned)
 - [ ] p2-wave-4: wire errors + timeouts
 - [ ] p2-wave-5: composition switch + Android dev networking
 - [ ] p2-wave-6: live ContractBackend (test_live/)
@@ -30,6 +30,7 @@
 
 ## Log
 
+- 2026-07-05 — p2-wave-3 [green], attended. Unblocked by GB10: binding doc frozen at BINDING_SHA `6eb7b88c4c8ae412fb36327a4f56286c6b539a7a` — verified on pin (six verbs, 404/410/403/401 envelope map, dev tokens == fake-IdP constants verbatim, reset route + `--concurrency=1`, `/healthz`, :8100, CONTRACT_SHA match); SHA pinned in the plan header as part of this commit. `package:http` added (the one approved dep — scope §6.3). `lib/adapters/http_session_api.dart`: six verbs per the binding table (POST start / GET list+query / GET resume / POST turn / GET status / POST end), bearer token from the identity port (no principal → no header, server 401s — never a client guess), JSON ↔ domain via enum-name wire values + `DateTime.parse`, `utf8.decode(bodyBytes)` (charset header not trusted), session ids URL-encoded. Wave-3 scope stops at happy path: non-2xx → TransportError placeholder, §9 envelope mapping + deadlines land in wave-4. `test/unit/http_session_api_test.dart` (13 tests, MockClient): request direction (method/path/query/auth-header/body per verb, incl. no-stream-field pin) + response direction (contract §5 fixture → domain round-trips per verb, wire order preserved, non-ASCII UTF-8 case). One assumption logged in QUESTIONS.md: timestamp encoding not explicitly pinned in the binding doc (ISO-8601 assumed). Two analyzer infos fixed on first red (prefer_initializing_formals, use_null_aware_elements). 101 tests; analyze clean; apk-debug built.
 - 2026-07-04 — wave-0 [green], attended. Scaffold created (`flutter create`, org com.appmilla, android/ios/web); analyze clean, test green, apk-debug built (first Gradle run installed NDK 28.2 + Build-Tools 36). Landmine fixed: root `.gitignore`'s unanchored `lib/` rule was silently dropping `app/lib/**` — re-include pair added (see wave-0 commit body).
 - 2026-07-04 — wave-1 [green], unattended. `domain/` (Session, TurnEntry, SessionSummary, Principal; SessionStatus/TurnRole enums; sealed SessionApiException with the §9 closed set, errorType strings verbatim) + `ports/session_api.dart` (six §5 verbs, full return shapes incl. resumed/resumable/turnCount). 20 tests green (unit/errors + unit/domain_models + scaffold widget test); analyze clean; apk-debug built. No contract doubts.
 - 2026-07-04 — wave-2 [green], unattended. `ports/identity_provider.dart` (signIn/signOut/currentPrincipal) + `fakes/fake_identity_provider.dart`: two principals (Lilymay default, Alex second for ownership tests), `signInAs` test hook, invalidate-token switch that leaves the client-side principal set (stale-token shape), and `studentIdForToken` — the fake auth-server introspection FakeSessionApi will trust for §3 token→student_id derivation (wave-3 seam decided here). 31 tests green; analyze clean; apk-debug built.

@@ -38,6 +38,9 @@ lib/
                  plus the client-local TransportError — phase-2 scope §3.2)
   ports/         SessionApi (the six §5 verbs, 1:1, transport-neutral)
                  IdentityProvider (signIn/signOut/currentPrincipal)
+  adapters/      HttpSessionApi — the real transport behind SessionApi
+                 (phase 2; binding table API-session-http-binding.md at the
+                 BINDING_SHA pinned in the phase-2 build plan header)
   fakes/         FakeIdentityProvider — two principals (Lilymay default,
                  Alex for ownership tests), invalidate-token switch, and the
                  token → student_id introspection the fake backend trusts (§3)
