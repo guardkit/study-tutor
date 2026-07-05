@@ -3,6 +3,7 @@
 **Bounded context:** Tutoring + App Access (HTTP/WS adapter)
 **Phase:** FEAT-SMP-003 (this cluster) → mobile+voice slice
 **Status:** **Accepted** — ratified 2026-07-03 via `/design-refine` (G-CON gate — [migration build plan §5a](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md)). Feeds the [FEAT-SMP-003 `/feature-spec`](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md) and the mobile [`/goal`](../../handoffs/study-tutor-mobile-voice-conversation-starter.md). §10's three accepted-contract changes are recorded: [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) partially superseded for app clients (ADR-FLEET-003); [API-tutoring.md §8](API-tutoring.md) "end-once/append-only" relaxed; API-tutoring §4 closed error set extended (`SessionForbidden` / `Unauthenticated`).
+**Revision 1 (2026-07-05)** — voice extension, ratified via `/design-refine` (G-CON gate — [voice build plan §5a](../../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md), [voice design §8](../voice-tutor-and-reachy-design.md)): §5 gains `voice_turn`/`voice_audio`, §7 gains the voice frame vocabulary, §9 gains six voice error types, §11 OQ3 resolved. **Additive only** — the six existing verbs, their shapes, and the four original error types are unchanged (§10 change 4).
 **Generated:** 2026-07-02.
 **Related:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) (Postgres StudentStore — sessions persist here), ADR-FLEET-003 (MCP for agent-hosts, HTTP/WS for app clients), [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) (**partially superseded** for app clients — §10), [API-tutoring.md](API-tutoring.md) (the MCP verbs this mirrors), [mobile+voice handoff](../../handoffs/study-tutor-mobile-voice-conversation-starter.md) (D6–D9), [events-schema.yaml](../events-schema.yaml).
 
@@ -62,6 +63,8 @@ Shapes are transport-neutral; HTTP = request/response JSON, WS = the same messag
 | `turn` | `{ session_id, user_message, stream? }` | `{ tutor_response }` or a token stream (§7) | Same shape; now **persists the pair per-turn**. p95 < 10s budget unchanged. |
 | `session_status` | `{ session_id }` | `{ session_id, student_id, status, turn_count, started_at, last_activity, resumable }` | Adds `student_id`, `last_activity`, `resumable`. |
 | `end_session` | `{ session_id }` | `{ session_id, status:"ended" }` | Same. Triggers the synchronous StudentStore write (XP/streak/confidence/achievement — FEAT-SMP-001) and the `session.completed` event. |
+| `voice_turn` | `{ session_id, audio (binary upload: bytes + content_type + filename), stream? }` (student from auth) | `{ transcript, tutor_response, audio: [{seq, chunk_id, url}] }`, or streamed frames (§7) | **New (Rev 1).** Voice variant of `turn`: the server transcribes the clip (shared GB10 STT), runs the *identical* turn pipeline, and synthesizes the reply (TTS) as ordered wav chunks referenced by `audio[]`. The transcript persists as a typed user turn — per-turn durability, ownership, and lifecycle rules unchanged. Caps: 60 s (client-enforced primary, server best-effort) / 10 MB. Inbound audio is ephemeral: transcribed and discarded, never at rest ([ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) D3 + blueprint §5). |
+| `voice_audio` | `{ session_id, chunk_id }` | binary `audio/wav` | **New (Rev 1).** Fetches one synthesized reply chunk by reference. Chunks are held in memory only, TTL-bounded (≤120 s) — an expired/unknown `chunk_id` is a transport-level 404 (binding §4.2), and the client skips that chunk (best-effort playback). |
 
 **Ownership check:** every verb taking a `session_id` asserts the session's `student_id == caller student_id`, else `error_type: "SessionForbidden"`.
 
@@ -77,7 +80,12 @@ Shapes are transport-neutral; HTTP = request/response JSON, WS = the same messag
 - The **voice path** (handoff D6: phone → WS → STT → `turn` → TTS → back) needs **token streaming** to stay inside the turn budget with speech on both ends.
 - **WS `turn`** with `stream: true` emits `{type:"token", text}` frames then a terminal `{type:"done", turn_index}`. TTS consumes tokens as they arrive.
 - **HTTP `turn`** (simple web/text) returns the whole `{ tutor_response }` — no streaming required.
-- Whether STT/TTS ride the *same* conversation WS or separate endpoints is the GB10-voice-endpoint decision (handoff OQ2) — out of scope here; this contract only fixes that `turn` **has** a streaming variant on WS.
+- **Voice frame vocabulary (Rev 1)** — extends, never replaces, the frames above (`token`/`done` are byte-for-byte unchanged; non-voice streamed turns never see the new frames):
+  - Client → server, voice turn over the WS: `{type:"voice_turn", content_type, size_bytes}` header frame, followed by **one binary frame** carrying the recorded clip (≤10 MB).
+  - Server → client, in order: `{type:"transcript", text}` first (the STT confirmation, persisted as the typed user turn) → `{type:"token", text}` × N → `{type:"audio_ref", seq, chunk_id, url}` per synthesized sentence chunk (fetched via `voice_audio`, played in `seq` order) → terminal `{type:"done", turn_index}`.
+  - Errors on the WS surface as `{type:"error", error, error_type}` frames carrying the §9 envelope.
+  - Token release is gated by chunk-boundary quote verification ([ADR-ARCH-027](../../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md)): a sentence chunk's tokens are emitted only after that chunk passes verification.
+- **Resolved (Rev 1)** — the question this section previously deferred to handoff OQ2 (single Realtime-style WS vs separate STT/TTS endpoints) is closed by [ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) r1: STT/TTS are **server-side** calls to the shared GB10 audio endpoints made inside `voice_turn`; the conversation WS carries only the frames above. `/v1/realtime` is Reachy's in-process shape, not part of this contract.
 
 ## 8. Events (Shared Kernel B) — unchanged vocabulary
 
@@ -93,6 +101,14 @@ Flat dict per [API-tutoring.md §4](API-tutoring.md). Closed set extended by:
 | `SessionEnded` | verb on an `ended` session (except `session_status`) |
 | `SessionForbidden` | **new** — session's `student_id` ≠ caller's |
 | `Unauthenticated` | **new** (HTTP/WS) — missing/invalid Keycloak token |
+| `RecordingTooLarge` | **Rev 1 (voice)** — `voice_turn` upload exceeds the 10 MB byte cap |
+| `QueryTooLong` | **Rev 1 (voice)** — recording exceeds the 60 s cap (server best-effort probe; the client-side stop is primary enforcement) |
+| `UnsupportedAudioFormat` | **Rev 1 (voice)** — upload MIME base-type not in the supported set (matching is on base type; codec parameters ignored) |
+| `EmptyRecording` | **Rev 1 (voice)** — zero-byte upload |
+| `UnintelligibleQuery` | **Rev 1 (voice)** — STT produced an empty/whitespace transcript |
+| `VoiceUnavailable` | **Rev 1 (voice)** — STT/TTS unreachable; the text `turn` path is unaffected (degradation is a feature with copy — no cloud failover exists, [ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) D3) |
+
+Voice `error_type` values are exception class names, matching the original four. They occur only on the Rev 1 voice verbs/frames — the four original types remain the complete set for the six original verbs.
 
 ## 10. Contract changes requiring `/design-refine`
 
@@ -104,13 +120,15 @@ This doc was **Proposed** precisely because it touches accepted contracts; all t
 
 None of these change the MCP surface's existing behaviour; they *extend* it. Agent-hosts keep the four MCP tools exactly as-is.
 
+4. **Revision 1 (2026-07-05, `/design-refine` G-CON — voice):** adds `voice_turn`/`voice_audio` (§5), the voice WS frame vocabulary (§7), and six voice error types (§9). **Additive only** — the six existing verbs, their wire shapes, the four original error types, and the MCP surface are byte-for-byte unchanged; existing clients pinned to the pre-Rev-1 SHAs keep working. Decisions consumed, not made, here: [ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) r1 (transport, pins, D3), [ADR-ARCH-026](../../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (async Coach precondition), [ADR-ARCH-027](../../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (chunk-boundary verification).
+
 ## 11. Open questions
 
 1. **`sub → student_id` mapping** (handoff OQ4/D9) — where it lives (Keycloak attribute vs a `student` table lookup) and how a new student is provisioned.
 2. **Concurrent resume** — is last-writer-wins + `session_version` enough, or does the robot↔phone hand-off need an explicit "active device" lease? (Single-user makes this low-stakes; revisit if two devices are ever truly simultaneous.)
-3. **Voice transport shape** (handoff OQ2) — single Realtime-style WS vs separate STT/TTS; decided when the GB10 voice endpoints are built.
+3. ~~**Voice transport shape** (handoff OQ2) — single Realtime-style WS vs separate STT/TTS; decided when the GB10 voice endpoints are built.~~ **Resolved 2026-07-05** (Rev 1 §7; ADR-ARCH-024 r1): server-side STT/TTS inside `voice_turn` + the tutor's own WS. `/v1/realtime` is Reachy's shape only.
 4. **Session TTL / auto-end** — does an `active` session that's untouched for N hours auto-`end` (triggering the StudentStore write) or stay resumable indefinitely? Affects streak/XP attribution timing.
 
 ---
 
-*Proposed 2026-07-02; **Accepted 2026-07-03** via `/design-refine` (§10 changes recorded). Consumed by FEAT-SMP-003 (`/feature-spec`) and the mobile `/goal` opener.*
+*Proposed 2026-07-02; **Accepted 2026-07-03** via `/design-refine` (§10 changes recorded). **Revision 1 (voice) 2026-07-05** via `/design-refine` (§10 change 4; G-CON, voice build plan §5a). Consumed by FEAT-SMP-003 (`/feature-spec`), the mobile `/goal` opener, and FEAT-VOICE-001…004.*
