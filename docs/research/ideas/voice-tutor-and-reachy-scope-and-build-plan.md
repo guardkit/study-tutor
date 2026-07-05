@@ -20,7 +20,8 @@
 | ADR-ARCH-026 (async Coach — streaming precondition) | **Accepted** — G-RAT executed 2026-07-05 | `fdb2878` |
 | Quote-handover decision (design §5.4 recommendation) | **Decided** — [ADR-ARCH-027](../../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (chunk-boundary verification) | `fdb2878` |
 | Contract change + CONTRACT_SHA/BINDING_SHA re-freeze, once (design §8) | **Done** — contract Rev 1 + binding Rev 1; SHAs in the header above (local commits, finalized on push) | `574615e` · `e50897d` |
-| W0-T pre-flight (tutor) / W0-R feasibility gates (Reachy, incl. R-G5 resident-set posture) | **Not run — NEXT** | §5 |
+| W0-T pre-flight (tutor) | **PASS** 2026-07-05 — all four gates green; STT warm 0.11–0.29 s across wav/ogg-opus/**m4a**; TTS Ryan 2.09 s/sentence | [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md) |
+| W0-R feasibility gates (Reachy, R-G1..R-G5) | **Blocked on GB10 shell access — NEXT** (no passwordless SSH from the dev box; operator route or key grant) | §5 |
 | FEAT-VOICE-001…004 | **Not specced** | §4 |
 
 Detailed, ordered actions in **§9**.
