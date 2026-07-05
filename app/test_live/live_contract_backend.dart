@@ -28,14 +28,14 @@ final _apiBaseUrl = _rawApiBaseUrl.endsWith('/')
     : _rawApiBaseUrl;
 
 /// The contract authorizes turns up to a 30s hard ceiling (API-tutoring
-/// SR-07; the p95 < 10s line is a budget, not a bound), so this began at
-/// 35s. Measured against the first dev deployment (2026-07-05, GB10
-/// llama-swap): ~66s cold-load, ~43s WARM — the deployment currently
-/// exceeds the contract's own ceiling, logged in QUESTIONS.md as an
-/// adapter-side conformance gap. The harness deadline accommodates the
-/// observed reality so the FUNCTIONAL conformance run stays meaningful;
-/// the app's 15s product posture is unchanged.
-const _liveTurnDeadline = Duration(seconds: 120);
+/// SR-07; the p95 < 10s line is a budget, not a bound), which would put a
+/// conformance harness at ~35s. Measured on the dev deployment
+/// (2026-07-05, post Coach-model fix): first turn ~12-22s, but turns WITH
+/// HISTORY run ~36-48s — still above the contract's own ceiling (open item
+/// in QUESTIONS.md; also still above the app's 15s product posture, so the
+/// §3.6 walk stays latency-blocked). 90s keeps the FUNCTIONAL conformance
+/// run meaningful while that is triaged.
+const _liveTurnDeadline = Duration(seconds: 90);
 
 /// The one raw HTTP call this backend makes itself. Without it, a
 /// blackholed host (the Tailscale-ACL-not-yet-open state wave-7 names)
