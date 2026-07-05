@@ -178,7 +178,10 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-021 | Typed-entity seed design resolutions (G1/G2/G3) | Accepted (CC-13 invariant retired by ADR-ARCH-023) |
 | ADR-ARCH-022 | Corpus retrieval: add lexical/exact-match path; defer agentic retrieval-as-tool | Proposed |
 | ADR-ARCH-023 | Drop Graphiti/FalkorDB; study-tutor-owned Postgres (JSONB) student store; synchronous writes | Accepted (supersedes ADR-ARCH-003/007/019; retires CC-13) |
-| ADR-ARCH-024 | Voice STT: cache-aware streaming (English) on shared GB10; multilingual deferred | Proposed |
+| ADR-ARCH-024 | Voice STT: unified pin `parakeet-tdt-0.6b-v3` behind llama-swap `:9000`; French gap dissolved; no cloud audio (D3) | Accepted — Revision 1 (2026-07-05) |
+| ADR-ARCH-025 | Flutter app lives at `app/` in the monorepo; contract-by-SHA coupling | Accepted |
+| ADR-ARCH-026 | Player-Coach: async Coach monitor (off the pre-send path), streaming-ready | Accepted (ratified 2026-07-05, G-RAT; extended by ADR-ARCH-027) |
+| ADR-ARCH-027 | Quote verification under streaming: verify at the sentence-chunk boundary | Accepted (extends ADR-ARCH-026 D3) |
 | ADR-TUTOR-MULTI-SUBJECT | Single fine-tune, multi-subject architecture | Accepted |
 
 ## 10. Assumptions
@@ -207,7 +210,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 - `system-context.md` — C4 Level 1 diagram
 - `container.md` — C4 Level 2 diagram
 - `assumptions.yaml` — 18 captured assumptions
-- `decisions/ADR-ARCH-*.md` — 25 ADRs (through ADR-ARCH-024 + ADR-TUTOR-MULTI-SUBJECT)
+- `decisions/ADR-ARCH-*.md` — 28 ADRs (through ADR-ARCH-027 + ADR-TUTOR-MULTI-SUBJECT)
 
 ---
 

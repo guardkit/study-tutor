@@ -5,7 +5,7 @@ status: backlog
 task_type: feature
 implementation_mode: task-work
 complexity: 8
-dependencies: [ADR-ARCH-026]
+dependencies: [ADR-ARCH-026, ADR-ARCH-027]
 adr: docs/architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md
 ---
 
@@ -29,9 +29,12 @@ sits alongside the JSON one.
    the Player LLM adapter / `LLMClient` (the underlying llama-swap/OpenAI
    endpoint already supports SSE token streaming). The Coach stays async
    (ADR-ARCH-026 D1), evaluating the assembled full response after the stream
-   completes. The synchronous quote-handover (ADR-ARCH-026 D3) needs a
+   completes. ~~The synchronous quote-handover (ADR-ARCH-026 D3) needs a
    streaming-compatible story — decide: verify-then-stream (adds first-token
-   latency) vs stream-then-annotate.
+   latency) vs stream-then-annotate.~~ **Decided 2026-07-05 at G-RAT:
+   verify-at-the-sentence-chunk-boundary —
+   [ADR-ARCH-027](../../docs/architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md).
+   Implement to that shape (note its chunk-straddling-quote obligation).**
 2. **Transport + contract.** Add a streaming surface — SSE, or the WebSocket
    `turn` the binding sketches (`API-session-http-binding.md` §7; the `stream?`
    request field is already reserved). This is a **`BINDING_SHA` change**:
@@ -55,5 +58,6 @@ FEAT-APP-001 cross-device walk.
 ## References
 
 - [ADR-ARCH-026](../../docs/architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (D4 — streaming as phase 2, this task)
+- [ADR-ARCH-027](../../docs/architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (quote handover under streaming — decided; consume, don't re-open)
 - [ADR-ARCH-024](../../docs/architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) (voice transport shape, OQ#2)
 - `docs/design/contracts/API-session-http-binding.md` §7 (`stream?`, WS token streaming, deferred to OQ2)

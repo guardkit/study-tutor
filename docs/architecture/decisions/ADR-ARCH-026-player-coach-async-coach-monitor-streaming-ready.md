@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted — ratified 2026-07-05 at gate G-RAT (voice scope & build plan §5a). Decisions D1–D5 and D-DATA stand as written. **Extended by [ADR-ARCH-027](ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md)**, which resolves the quote-handover-under-streaming question this ADR's D4a left to the streaming design pass.
 
 **Date:** 2026-07-05
 **Phase:** FEAT-APP-001 acceptance follow-on (HTTP App Access adapter live on GB10)
