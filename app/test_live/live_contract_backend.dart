@@ -28,14 +28,19 @@ final _apiBaseUrl = _rawApiBaseUrl.endsWith('/')
     : _rawApiBaseUrl;
 
 /// The contract authorizes turns up to a 30s hard ceiling (API-tutoring
-/// SR-07; the p95 < 10s line is a budget, not a bound), which would put a
-/// conformance harness at ~35s. Measured on the dev deployment
-/// (2026-07-05, post Coach-model fix): first turn ~12-22s, but turns WITH
-/// HISTORY run ~36-48s — still above the contract's own ceiling (open item
-/// in QUESTIONS.md; also still above the app's 15s product posture, so the
-/// §3.6 walk stays latency-blocked). 90s keeps the FUNCTIONAL conformance
-/// run meaningful while that is triaged.
-const _liveTurnDeadline = Duration(seconds: 90);
+/// SR-07; the p95 < 10s line is a budget, not a bound). A conformance
+/// harness must survive contract-conforming tail latency, so the live
+/// adapter gets a deadline above the ceiling — unlike the app, where 15s
+/// is the product posture. Measured on the async-Coach deployment
+/// (2026-07-05, ADR-ARCH-026): ~0.5-10s per turn regardless of history,
+/// ~26s model cold-load. Headroom note: this SUITE fires turns with zero
+/// think-time, so the previous turn's background Coach contends for the
+/// single GPU and can occasionally stack past 35s (observed once,
+/// attempt 3) — an access pattern real use never produces (ADR-ARCH-026's
+/// design-honesty note). 60s absorbs that harness-only artefact while
+/// still failing fast on genuine hangs. (Earlier attempts ran at 120s/90s
+/// against slower deployments; see QUESTIONS.md ledger.)
+const _liveTurnDeadline = Duration(seconds: 60);
 
 /// The one raw HTTP call this backend makes itself. Without it, a
 /// blackholed host (the Tailscale-ACL-not-yet-open state wave-7 names)
