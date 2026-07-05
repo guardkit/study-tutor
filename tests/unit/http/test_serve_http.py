@@ -298,3 +298,47 @@ async def test_session_events_emitted_with_pinned_payload():
     completed_event = next(e for e in emitted_events if e[0] == "session.completed")
     assert "session_id" in completed_event[1]
     assert "turn_count" in completed_event[1]
+
+
+# ---------------------------------------------------------------------------
+# Production-wiring guard: the HTTP reply factory must drive the REAL
+# orchestrator API (run_turn + typed SessionState). The original serve-http
+# closure called a nonexistent ``orchestrate`` — invisible to every
+# injected-stub test, caught only at live deployment (TASK-APP1-08).
+# ---------------------------------------------------------------------------
+
+
+def test_http_reply_fn_factory_drives_run_turn_with_session_state() -> None:
+    import asyncio
+    from dataclasses import dataclass
+
+    from study_tutor.cli.main import _build_http_reply_fn_factory
+
+    @dataclass
+    class _FakeTurnResult:
+        response: str = "the dagger is a hallucination of guilt"
+        decision: str = "accept"
+        attempts: int = 1
+        flagged_for_review: bool = False
+        duration_seconds: float = 0.1
+
+    seen: dict = {}
+
+    class _FakeOrchestrator:
+        # Deliberately defines ONLY run_turn — a factory calling any other
+        # method (e.g. the old ``orchestrate``) raises AttributeError here.
+        async def run_turn(self, *, session_state, learner_message):
+            seen["session_state"] = session_state
+            seen["learner_message"] = learner_message
+            return _FakeTurnResult()
+
+    factory = _build_http_reply_fn_factory(lambda: _FakeOrchestrator())
+    reply_fn = factory(session_id="sess-1", student_id="lilymay")
+    reply = asyncio.run(reply_fn("What does the dagger symbolise?"))
+
+    assert reply.response == "the dagger is a hallucination of guilt"
+    assert reply.metadata["decision"] == "accept"
+    assert seen["session_state"].session_id == "sess-1"
+    assert seen["session_state"].student_id == "lilymay"
+    assert seen["session_state"].mode == "tutor"
+    assert seen["learner_message"] == "What does the dagger symbolise?"

@@ -33,6 +33,11 @@ logger = logging.getLogger(__name__)
 # Type alias for the injected reply function
 ReplyFn = Callable[[str], Awaitable[TutorReply]]
 
+#: Per-request reply builder: (session_id=, student_id=) → ReplyFn. Lets the
+#: transport hand the tutor loop its typed SessionState context (the MCP
+#: adapter builds the same boundary object per turn).
+ReplyFnFactory = Callable[..., ReplyFn]
+
 
 # -------------------- Error mapping (contract §9 + §4) --------------------
 
@@ -270,7 +275,9 @@ async def turn(request: Request) -> JSONResponse:
             raise ValueError("user_message is required")
 
         service: SessionService = request.app.state.service
-        reply_fn: ReplyFn = request.app.state.reply_fn
+        reply_fn: ReplyFn = request.app.state.reply_fn_factory(
+            session_id=session_id, student_id=student_id
+        )
 
         result = await service.turn(
             student_id=student_id,
@@ -420,21 +427,36 @@ async def dev_reset(request: Request) -> JSONResponse:
 def create_app(
     *,
     service: SessionService,
-    reply_fn: ReplyFn,
+    reply_fn: ReplyFn | None = None,
     auth_config: HTTPAuthConfig,
     student_store: Any,
+    reply_fn_factory: ReplyFnFactory | None = None,
 ) -> Starlette:
     """Create Starlette app with the six session routes.
 
     Args:
         service: SessionService instance (injected, can be fake for tests).
-        reply_fn: Injected tutor reply function (mirrors SessionService.turn signature).
+        reply_fn: Session-agnostic tutor reply function (tests). Ignored when
+            reply_fn_factory is supplied.
         auth_config: HTTPAuthConfig with token→student_id mapping.
         student_store: StudentStore instance for unseeded-student guard.
+        reply_fn_factory: Per-request reply builder receiving the turn's
+            session_id/student_id (production — threads the typed
+            SessionState into the tutor loop). Exactly one of reply_fn /
+            reply_fn_factory is required.
 
     Returns:
         Configured Starlette application.
     """
+    if reply_fn_factory is None:
+        if reply_fn is None:
+            raise ValueError(
+                "create_app requires reply_fn or reply_fn_factory"
+            )
+        _session_agnostic_reply = reply_fn
+
+        def reply_fn_factory(**_context: str) -> ReplyFn:
+            return _session_agnostic_reply
     # Route table exactly per binding doc §2 (frozen contract)
     routes = [
         Route("/healthz", healthz, methods=["GET"]),  # TASK-APP1-04: READY health check
@@ -456,6 +478,7 @@ def create_app(
     # Inject dependencies into app.state for handlers to access
     app.state.service = service
     app.state.reply_fn = reply_fn
+    app.state.reply_fn_factory = reply_fn_factory
     app.state.auth_config = auth_config
     app.state.student_store = student_store
 

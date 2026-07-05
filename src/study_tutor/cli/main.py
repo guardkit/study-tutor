@@ -768,6 +768,50 @@ def serve_nats(nats_url: str | None, agent_id: str, log_level: str) -> None:
     )
 
 
+def _build_http_reply_fn_factory(orchestrator_factory: Any) -> Any:
+    """Per-request tutor reply factory for the HTTP adapter.
+
+    Mirrors the MCP adapter's turn path: builds the typed
+    :class:`~study_tutor.tutoring.adapters.session_state.SessionState`
+    boundary object and drives ``PlayerCoachOrchestrator.run_turn``.
+    Module-level (not a ``serve-http`` closure) so a wiring test can hold
+    it to the real orchestrator API — the original closure called a
+    nonexistent ``orchestrate`` and no injected-stub unit test could see it
+    (TASK-APP1-08 deployment hand-fix, 2026-07-05).
+    """
+
+    def factory(*, session_id: str, student_id: str) -> Any:
+        async def reply_fn(user_message: str) -> Any:
+            from study_tutor.session.service import TutorReply
+            from study_tutor.tutoring.adapters.session_state import (
+                SessionState,
+            )
+
+            session_state = SessionState(
+                session_id=session_id,
+                student_id=student_id,
+                mode="tutor",
+            )
+            orchestrator = orchestrator_factory()
+            turn_result = await orchestrator.run_turn(
+                session_state=session_state,
+                learner_message=user_message,
+            )
+            return TutorReply(
+                response=turn_result.response,
+                metadata={
+                    "decision": turn_result.decision,
+                    "attempts": turn_result.attempts,
+                    "flagged_for_review": turn_result.flagged_for_review,
+                    "duration_seconds": turn_result.duration_seconds,
+                },
+            )
+
+        return reply_fn
+
+    return factory
+
+
 @cli.command("serve-http")
 @click.option(
     "--port",
@@ -854,32 +898,9 @@ def serve_http(port: int, host: str, log_level: str) -> None:
     # (following serve/serve-nats pattern; not yet integrated with HTTP adapter)
     _event_bus = EventBus()  # noqa: F841 - Reserved for future wiring
 
-    # Build reply_fn closure that uses the shared orchestrator
-    async def reply_fn(user_message: str) -> Any:
-        """Tutor reply function using shared orchestrator factory.
-
-        This closure is injected into SessionService.turn and uses the
-        exact same orchestrator construction as the MCP adapter (AC-003).
-
-        Args:
-            user_message: Learner input message.
-
-        Returns:
-            TutorReply with tutor response.
-
-        Raises:
-            Any exception from the orchestrator (caught by HTTP layer).
-        """
-        from study_tutor.session.service import TutorReply
-
-        orchestrator = orchestrator_factory()
-        # TODO: Wire actual session state when available
-        session_state = None
-        result = await orchestrator.orchestrate(
-            learner_message=user_message,
-            session_state=session_state,
-        )
-        return TutorReply(response=result.response)
+    # Per-request tutor reply factory — mirrors the MCP adapter's turn path
+    # (SessionState boundary object + PlayerCoachOrchestrator.run_turn).
+    reply_fn_factory = _build_http_reply_fn_factory(orchestrator_factory)
 
     # Wire HTTP auth config
     from study_tutor.http.auth import HTTPAuthConfig
@@ -916,7 +937,7 @@ def serve_http(port: int, host: str, log_level: str) -> None:
 
     app = create_app(
         service=get_session_service(),
-        reply_fn=reply_fn,
+        reply_fn_factory=reply_fn_factory,
         auth_config=auth_config,
         student_store=student_store,
     )

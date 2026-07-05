@@ -180,15 +180,30 @@ docker run --rm -i -e PGPASSWORD='<pw>' postgres:16 \
 
 ---
 
-## Execution record — 2026-07-05 (GB10, phases 0–5)
+## Execution record — 2026-07-05 (GB10, phases 0–5) ✅
 
-Filled in by the deploying session; Mac-side phases 6–7 pending.
+Executed by the deploying session; Mac-side phases 6–7 pending.
 
 | Phase | Result |
 |---|---|
-| 0 Prerequisites | *(see log below)* |
-| 1 Safety dump | |
-| 2 `.env` authored | |
-| 3 Build + READY | |
-| 4 Seed + smoke | |
-| 5 Tailnet reachability | |
+| 0 Prerequisites | ✅ NAS PG accepting from GB10; llama-swap OK with `gemma4-tutor` + `qwen36-workhorse`; tailscale up; nats-core sibling present |
+| 1 Safety dump | ✅ `~/study-tutor-dumps/pre-http-deploy-20260705-1100.dump`; pre-deploy counts: sessions=0, turns=0, **students=0** (store had never been seeded — the FK gap was live) |
+| 2 `.env` authored | ✅ dev flavour, tailnet-IP DSN, gitignore-confirmed |
+| 3 Build + READY | ✅ healthy + `{"status":"ok"}` — after three deploy-time fixes (below) |
+| 4 Seed + smoke | ✅ seed 2 students (idempotent); start 200 for BOTH tokens; 401 missing/unknown token; 403 cross-student; **real tutored turn** (52s incl. model cold-load); resume returns ordered 2-turn transcript; end → status shows `ended`/`resumable:false` (carve-out); reset deleted 3 sessions + 3 turns, learner rows survived, list `[]` |
+| 5 Tailnet reachability | ✅ `http://100.84.90.91:8100/healthz` answers from the GB10 tailnet interface; **Mac-side curl + ACL confirmation = operator** |
+
+**Deploy-time fixes (all pushed):** the wave-6/4 artefacts carried four defects
+invisible to config-parse/stub-injection validation — (1) compose build
+context/named-context wiring, (2) missing tutor-loop model env +
+host-gateway, (3) healthcheck used `curl` (absent from python:3.11-slim →
+perpetual unhealthy), (4) `serve-http`'s reply closure called a nonexistent
+`PlayerCoachOrchestrator.orchestrate` → every real turn 500'd; replaced with a
+per-request `reply_fn_factory` that builds the typed `SessionState` and calls
+`run_turn` (the MCP path's API), plus a wiring-guard unit test that pins the
+real orchestrator method. Also killed a leaked wave-4 boot-smoke `serve-http`
+process squatting `127.0.0.1:8100`.
+
+**For the Mac session:** `API_BASE_URL=http://promaxgb10-41b1.tailebf801.ts.net:8100`
+(or `http://100.84.90.91:8100`), `BINDING_SHA=6eb7b88c…`, live suite with
+`--concurrency=1`. The service is up and seeded; the reset is armed.
