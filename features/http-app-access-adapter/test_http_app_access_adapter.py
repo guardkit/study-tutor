@@ -24,7 +24,11 @@ from starlette.testclient import TestClient
 
 from study_tutor.http.app import create_app
 from study_tutor.http.auth import HTTPAuthConfig
-from study_tutor.knowledge.store.entities import SessionStatus, SessionTurn
+from study_tutor.knowledge.store.entities import (
+    SessionRecord,
+    SessionStatus,
+    SessionTurn,
+)
 from study_tutor.mcp.adapter import MCPAdapter
 from study_tutor.mcp.server import create_mcp_server
 from study_tutor.roles.loader import RoleConfig
@@ -240,15 +244,17 @@ def _student_has_session_with_exchanges(
         turns=tuple(turns),
     )
 
+    # list_sessions returns SessionRecord (has .subject, which the route
+    # projects) — NOT SessionStatusView. Using the View here 500s the route.
     fake_service.list_sessions.return_value = [
-        SessionStatusView(
+        SessionRecord(
             session_id=session_id,
             student_id=student,
+            subject="english-literature",
             status="active",
             turn_count=len(turns),
             started_at=datetime.now(timezone.utc),
             last_activity=datetime.now(timezone.utc),
-            resumable=True,
         )
     ]
 
@@ -336,14 +342,14 @@ def _student_has_many_sessions(
 ) -> None:
     """Mock list_sessions to return default limit (20)."""
     sessions = [
-        SessionStatusView(
+        SessionRecord(
             session_id=f"sess-{i}",
             student_id=student,
+            subject="english-literature",
             status="active",
             turn_count=0,
             started_at=datetime.now(timezone.utc),
             last_activity=datetime.now(timezone.utc),
-            resumable=True,
         )
         for i in range(20)
     ]
@@ -358,14 +364,14 @@ def _student_has_ended_and_active_sessions(
 ) -> None:
     """Mock list_sessions with mixed statuses."""
     fake_service.list_sessions.return_value = [
-        SessionStatusView(
+        SessionRecord(
             session_id="sess-active",
             student_id=student,
+            subject="english-literature",
             status="active",
             turn_count=0,
             started_at=datetime.now(timezone.utc),
             last_activity=datetime.now(timezone.utc),
-            resumable=True,
         )
     ]
 
@@ -510,9 +516,13 @@ def _postgres_unreachable(fake_service: AsyncMock) -> None:
 
 
 @given("the tutor loop will fail on the next message")
-def _tutor_loop_will_fail(fake_reply_fn: AsyncMock) -> None:
-    """Mock tutor failure."""
-    fake_reply_fn.side_effect = Exception("LLM failure")
+def _tutor_loop_will_fail(fake_service: AsyncMock) -> None:
+    """Mock tutor failure.
+
+    The routes call SessionService.turn (which runs the injected reply_fn),
+    so at this test's seam the failure surfaces as service.turn raising.
+    """
+    fake_service.turn.side_effect = Exception("LLM failure")
 
 
 # ========================================================================
@@ -566,7 +576,7 @@ def _when_send_message(
         pass
     else:
         fake_service.turn.return_value = TurnResult(
-            tutor_response="Tutor response"
+            tutor_response="Tutor response", turn_index=1
         )
 
     response = test_client.post(
@@ -688,11 +698,27 @@ def _when_compare_routes_to_binding() -> None:
 @when(parsers.parse('the app starts a session on the subject "{subject}" asking to resume if one is active'))
 def _when_start_with_resume_if_active(
     test_client: TestClient,
+    fake_service: AsyncMock,
     context: dict[str, Any],
     subject: str = "test-subject",
 ) -> None:
     """Execute start_session with resume_if_active=true."""
     student_id = context.get("student_id", "lilymay")
+
+    # Scenarios whose Given configured a resumable session already set
+    # start_session.return_value; otherwise default to the fresh-session
+    # branch (resumed=False) so the response carries the contract shape.
+    if not isinstance(
+        fake_service.start_session.return_value, StartSessionResult
+    ):
+        fake_service.start_session.return_value = StartSessionResult(
+            session_id=f"sess-new-{subject}",
+            student_id=student_id,
+            subject=subject,
+            topic=None,
+            resumed=False,
+            turns=None,
+        )
 
     response = test_client.post(
         "/api/sessions/start",
@@ -801,10 +827,36 @@ def _when_alex_calls_verb_on_session(
 
     method, path = verb_to_endpoint[verb]
 
+    # turn requires a valid body — an empty one 400s at validation BEFORE
+    # the ownership guard, which is not what this scenario exercises.
+    post_body = {"user_message": "hello"} if verb == "turn" else {}
+
     if method == "POST":
-        response = test_client.post(path, json={}, headers={"Authorization": "Bearer token-alex"})
+        response = test_client.post(path, json=post_body, headers={"Authorization": "Bearer token-alex"})
     else:
         response = test_client.get(path, headers={"Authorization": "Bearer token-alex"})
+
+    context["last_response"] = response
+
+
+@when("alex's app sends a message to that session")
+def _when_alex_sends_message(
+    test_client: TestClient,
+    fake_service: AsyncMock,
+    context: dict[str, Any],
+) -> None:
+    """Turn on another student's (ended) session — ownership wins over ended."""
+    session_id = context["session_id"]
+
+    fake_service.turn.side_effect = SessionForbidden(
+        f"session {session_id!r} is not owned by 'alex'"
+    )
+
+    response = test_client.post(
+        f"/api/sessions/{session_id}/turn",
+        json={"user_message": "hello"},
+        headers={"Authorization": "Bearer token-alex"},
+    )
 
     context["last_response"] = response
 
