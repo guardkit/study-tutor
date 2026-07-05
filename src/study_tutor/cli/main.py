@@ -32,6 +32,7 @@ The runtime shutdown hook
 ``server.run`` exits so in-flight F3 fire-and-forget writes get the
 configured drain window (ASSUM-011, default 5 s) before process exit.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -297,9 +298,7 @@ def cli() -> None:
 )
 @click.option(
     "--log-level",
-    type=click.Choice(
-        ["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False
-    ),
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
     default="INFO",
     show_default=True,
 )
@@ -710,9 +709,7 @@ async def _serve_adapter(
 )
 @click.option(
     "--log-level",
-    type=click.Choice(
-        ["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False
-    ),
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
     default="INFO",
     show_default=True,
     help="Root logger level.",
@@ -768,6 +765,310 @@ def serve_nats(nats_url: str | None, agent_id: str, log_level: str) -> None:
             agent_id=agent_id,
             nats_url=config.nats.url,
         )
+    )
+
+
+@cli.command("serve-http")
+@click.option(
+    "--port",
+    default=8100,
+    show_default=True,
+    type=int,
+    help="HTTP port to bind on",
+)
+@click.option(
+    "--host",
+    default="127.0.0.1",
+    show_default=True,
+    help="Host interface to bind on",
+)
+@click.option(
+    "--log-level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+    show_default=True,
+    help="Root logger level.",
+)
+def serve_http(port: int, host: str, log_level: str) -> None:
+    """Run the HTTP session API server (TASK-APP1-04).
+
+    \b
+    Boots the TASK-APP1-03 Starlette app on uvicorn with production wiring:
+    - Postgres store (STUDY_TUTOR_PG_DSN required — fail fast if missing)
+    - Shared tutor loop (reuses _build_orchestrator_factory)
+    - EventBus for session lifecycle events
+    - /healthz READY endpoint
+
+    \b
+    Environment variables:
+
+    \b
+      STUDY_TUTOR_PG_DSN        Required. PostgreSQL connection string.
+      STUDY_TUTOR_HTTP_TOKENS   Required. JSON token→student_id mapping.
+      STUDY_TUTOR_HTTP_DEV_RESET
+                                Dev reset flag (true/false).
+      AGENT_MODELS__REASONING_MODEL
+                                Required. LLM provider for reasoning model.
+    """
+    import uvicorn
+
+    logging.basicConfig(
+        level=log_level.upper(),
+        stream=sys.stderr,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    # AC-002: Fail fast if STUDY_TUTOR_PG_DSN is missing
+    dsn = os.environ.get("STUDY_TUTOR_PG_DSN")
+    if not dsn:
+        click.echo(
+            "[study-tutor] Error: STUDY_TUTOR_PG_DSN environment variable is required "
+            "for serve-http. The Postgres store must be available before serving "
+            "HTTP traffic.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # AC-002: Fail fast if store is unreachable
+    # Wire the Postgres store and SessionService (same pattern as serve/serve-nats)
+    try:
+        build_student_store()
+        logger.info("event=student_store_wired path=http")
+        build_session_service()
+        logger.info("event=session_service_wired path=http")
+    except Exception as exc:
+        click.echo(
+            f"[study-tutor] Error: Failed to connect to Postgres store: {exc}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    # Wire RAG providers (same pattern as serve)
+    role_config = load_role("tutor")
+    build_rag_providers(role_config)
+
+    # AC-003: Build the shared orchestrator factory (no duplication)
+    orchestrator_factory = _build_orchestrator_factory(role_config)
+
+    # AC-005: EventBus available for future session lifecycle event wiring
+    # (following serve/serve-nats pattern; not yet integrated with HTTP adapter)
+    _event_bus = EventBus()  # noqa: F841 - Reserved for future wiring
+
+    # Build reply_fn closure that uses the shared orchestrator
+    async def reply_fn(user_message: str) -> Any:
+        """Tutor reply function using shared orchestrator factory.
+
+        This closure is injected into SessionService.turn and uses the
+        exact same orchestrator construction as the MCP adapter (AC-003).
+
+        Args:
+            user_message: Learner input message.
+
+        Returns:
+            TutorReply with tutor response.
+
+        Raises:
+            Any exception from the orchestrator (caught by HTTP layer).
+        """
+        from study_tutor.session.service import TutorReply
+
+        orchestrator = orchestrator_factory()
+        # TODO: Wire actual session state when available
+        session_state = None
+        result = await orchestrator.orchestrate(
+            learner_message=user_message,
+            session_state=session_state,
+        )
+        return TutorReply(response=result.response)
+
+    # Wire HTTP auth config
+    from study_tutor.http.auth import HTTPAuthConfig
+
+    tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
+    dev_reset_str = os.environ.get("STUDY_TUTOR_HTTP_DEV_RESET", "false")
+
+    try:
+        auth_config = HTTPAuthConfig.from_env(
+            tokens_json=tokens_json,
+            dev_reset=dev_reset_str,
+        )
+    except ValueError as exc:
+        click.echo(
+            f"[study-tutor] Error: HTTP auth configuration failed: {exc}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    # Get student store provider
+    from study_tutor.knowledge.store.provider import get_student_store
+
+    student_store = get_student_store()
+    if student_store is None:
+        click.echo(
+            "[study-tutor] Error: Student store not available. "
+            "Ensure build_student_store() succeeded.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # Create the Starlette app with all production dependencies
+    from study_tutor.http.app import create_app
+
+    app = create_app(
+        service=get_session_service(),
+        reply_fn=reply_fn,
+        auth_config=auth_config,
+        student_store=student_store,
+    )
+
+    click.echo(
+        f"[study-tutor] Serving HTTP API on {host}:{port} "
+        f"(health check at /healthz). Press Ctrl+C to stop.",
+        err=True,
+    )
+
+    # AC-001: Run uvicorn with the production-wired app
+    uvicorn.run(app, host=host, port=port, log_level=log_level.lower())
+
+
+@cli.command("seed-students")
+@click.option(
+    "--student-ids",
+    default=None,
+    help="Comma-separated student IDs to seed (default: from token table)",
+)
+@click.option(
+    "--log-level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+    show_default=True,
+)
+def seed_students(student_ids: str | None, log_level: str) -> None:
+    """Seed student identity rows idempotently (TASK-APP1-05).
+
+    Inserts student rows with ON CONFLICT DO NOTHING semantics. Identity rows
+    ONLY — does not touch topic_confidence or other learner state (baseline
+    seeding stays with FEAT-SMP-004).
+
+    \b
+    Environment variables:
+
+    \b
+      STUDY_TUTOR_PG_DSN        Required. PostgreSQL connection string.
+      STUDY_TUTOR_HTTP_TOKENS   Optional. JSON token→student_id mapping.
+                                Used as default student ID list when --student-ids is omitted.
+
+    \b
+    Examples:
+      # Seed students from token table (default)
+      study-tutor seed-students
+
+      # Seed specific students
+      study-tutor seed-students --student-ids=lilymay,bobsmith
+    """
+    import asyncio
+    import json
+
+    logging.basicConfig(
+        level=log_level.upper(),
+        stream=sys.stderr,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    # AC-002: Fail fast if STUDY_TUTOR_PG_DSN is missing
+    dsn = os.environ.get("STUDY_TUTOR_PG_DSN")
+    if not dsn:
+        click.echo(
+            "[study-tutor] Error: STUDY_TUTOR_PG_DSN environment variable is required "
+            "for seed-students. Set the PostgreSQL connection string first.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # Determine student IDs to seed
+    if student_ids:
+        # Use explicit CLI argument
+        ids_to_seed = [sid.strip() for sid in student_ids.split(",")]
+    else:
+        # Default: extract from token table
+        tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
+        try:
+            token_map = json.loads(tokens_json)
+            if not isinstance(token_map, dict):
+                click.echo(
+                    "[study-tutor] Error: STUDY_TUTOR_HTTP_TOKENS must be a JSON object.",
+                    err=True,
+                )
+                raise SystemExit(1)
+            ids_to_seed = list(set(token_map.values()))  # Unique student IDs
+        except json.JSONDecodeError as exc:
+            click.echo(
+                f"[study-tutor] Error: Failed to parse STUDY_TUTOR_HTTP_TOKENS: {exc}",
+                err=True,
+            )
+            raise SystemExit(1)
+
+    if not ids_to_seed:
+        click.echo(
+            "[study-tutor] Error: No student IDs to seed. "
+            "Provide --student-ids or set STUDY_TUTOR_HTTP_TOKENS.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # Wire the student store
+    try:
+        build_student_store()
+        logger.info("event=student_store_wired path=seed")
+    except Exception as exc:
+        click.echo(
+            f"[study-tutor] Error: Failed to connect to Postgres store: {exc}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    # Get the store instance
+    from study_tutor.knowledge.store.provider import get_student_store
+
+    store = get_student_store()
+    if store is None:
+        click.echo(
+            "[study-tutor] Error: Student store not available after wiring.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # Seed each student (idempotent)
+    async def _seed_all() -> tuple[int, int]:
+        """Seed all students and return (inserted_count, skipped_count)."""
+        inserted = 0
+        skipped = 0
+
+        for student_id in ids_to_seed:
+            # Default profile values (production should load from config)
+            was_inserted = await store.seed_student(
+                student_id,
+                name=student_id.title(),  # Default: capitalize ID as name
+                year_group=10,
+                target_grade="7",
+            )
+
+            if was_inserted:
+                inserted += 1
+                logger.info("event=student_seeded student_id=%s", student_id)
+            else:
+                skipped += 1
+                logger.info("event=student_already_exists student_id=%s", student_id)
+
+        return inserted, skipped
+
+    # Run async seeding
+    inserted_count, skipped_count = asyncio.run(_seed_all())
+
+    click.echo(
+        f"[study-tutor] Seeded {inserted_count} students, "
+        f"{skipped_count} already existed (idempotent).",
+        err=True,
     )
 
 

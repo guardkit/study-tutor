@@ -251,6 +251,152 @@ class PostgresStudentStore:
             await conn.execute(sql_text("SELECT 1"))
             return True
 
+    # -- Student identity seeding (TASK-APP1-05) ---------------------------
+
+    async def student_exists(self, student_id: str) -> bool:
+        """Check if student has an identity row (unseeded-student guard).
+
+        Args:
+            student_id: Student identifier to check.
+
+        Returns:
+            True if student row exists, False otherwise.
+
+        Raises:
+            Database errors propagate (not swallowed).
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Read-only connection
+        async with engine.connect() as conn:
+            result = await conn.execute(
+                sql_text("SELECT 1 FROM student WHERE student_id = :sid"),
+                {"sid": student_id},
+            )
+            return result.fetchone() is not None
+
+    async def seed_student(
+        self,
+        student_id: str,
+        *,
+        name: str,
+        year_group: int,
+        target_grade: str,
+    ) -> bool:
+        """Seed student identity row idempotently (TASK-APP1-05).
+
+        Uses INSERT ... ON CONFLICT DO NOTHING semantics to ensure exactly one
+        row per student_id. Identity row ONLY — does not touch topic_confidence
+        or other learner state (baseline seeding stays with FEAT-SMP-004).
+
+        Args:
+            student_id: Student identifier (PK).
+            name: Student full name.
+            year_group: Year group (7-13 per schema CHECK constraint).
+            target_grade: Target GCSE grade.
+
+        Returns:
+            True if row was inserted, False if already existed (idempotent).
+
+        Raises:
+            ValueError: If year_group is outside [7, 13] range.
+            Database errors propagate (constraint violations, etc.).
+        """
+        # Validate year_group range (matches schema CHECK constraint)
+        if not (7 <= year_group <= 13):
+            raise ValueError(f"year_group must be between 7 and 13, got {year_group}")
+
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Compute timestamp app-side for deterministic/testable UTC
+        now_utc = datetime.now(timezone.utc)
+
+        # Build table metadata
+        metadata = MetaData()
+        student_table = Table(
+            "student",
+            metadata,
+            Column("student_id", String, primary_key=True),
+            Column("name", String),
+            Column("year_group", Integer),
+            Column("target_grade", String),
+            Column("created_at", DateTime(timezone=True)),
+        )
+
+        # INSERT ... ON CONFLICT DO NOTHING (idempotent)
+        stmt = postgresql.insert(student_table).values(
+            student_id=student_id,
+            name=name,
+            year_group=year_group,
+            target_grade=target_grade,
+            created_at=now_utc,
+        )
+
+        # ON CONFLICT: do nothing, return 0 rows
+        # We use RETURNING to detect if insert happened
+        idempotent_stmt = stmt.on_conflict_do_nothing(
+            index_elements=["student_id"]
+        ).returning(student_table.c.student_id)
+
+        # Execute in transaction
+        async with engine.begin() as conn:
+            result = await conn.execute(idempotent_stmt)
+            inserted_row = result.fetchone()
+
+        # If a row was returned, insert happened; otherwise already existed
+        return inserted_row is not None
+
+    async def truncate_sessions(self) -> dict[str, int]:
+        """Truncate session and session_turn tables (dev reset, TASK-APP1-05).
+
+        Deletes ALL rows from session and session_turn tables. Learner-state
+        tables (student, topic_confidence, misconception, achievement, quest)
+        are NOT touched — XP/streak/confidence survive the reset.
+
+        Returns:
+            Dict with deleted counts: {"sessions": N, "turns": M}
+
+        Raises:
+            Database errors propagate.
+        """
+        # Get engine/pool
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        # Single transaction for both truncates
+        async with engine.begin() as conn:
+            # Count before deletion
+            session_count_result = await conn.execute(
+                sql_text("SELECT COUNT(*) FROM session")
+            )
+            session_count = session_count_result.scalar()
+
+            turn_count_result = await conn.execute(
+                sql_text("SELECT COUNT(*) FROM session_turn")
+            )
+            turn_count = turn_count_result.scalar()
+
+            # TRUNCATE both tables (CASCADE handles FK constraints)
+            await conn.execute(sql_text("TRUNCATE TABLE session CASCADE"))
+
+        return {"sessions": session_count or 0, "turns": turn_count or 0}
+
     # -- Reads --------------------------------------------------------------
 
     async def get_student_state(self, student_id: str) -> StudentState:

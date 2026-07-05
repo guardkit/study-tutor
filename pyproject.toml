@@ -17,6 +17,11 @@ dependencies = [
     "python-dotenv>=1.0",
     "mcp>=1.0",
     "httpx>=0.27",
+    # TASK-APP1-03 / FEAT-APP-001 (2026-07-05): Starlette HTTP server + Uvicorn
+    # ASGI runner for the mobile/voice app HTTP adapter. Previously transitive via
+    # mcp; pinned as direct deps so the served stack version is explicit.
+    "starlette>=0.27",
+    "uvicorn>=0.27",
     # TASK-SMP-01 / FEAT-SMP-001 (2026-07-03): SQLAlchemy async + Alembic for
     # the Postgres StudentStore schema. asyncpg is the async driver; alembic
     # is the migration engine. Pinned to SQLAlchemy 2.0+ for async ORM support.

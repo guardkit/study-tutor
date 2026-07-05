@@ -1,0 +1,36 @@
+# study-tutor HTTP Session API — independent deployment (FEAT-APP-001 / ADR-ARCH-023).
+# Port 8100, NO NATS dependency. Runs study-tutor serve-http against StudentStore (Postgres).
+# Prerequisites: StudentStore (deploy/postgres/) running; study-tutor seed-students executed.
+# Flavours: Dev (two tokens + reset flag) vs Prod (single token, no reset).
+services:
+  study_tutor_http:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BUILD_CONTEXT=nats-core=../nats-core
+    image: study-tutor:latest
+    container_name: study_tutor_http
+    restart: unless-stopped
+    command: ["study-tutor", "serve-http", "--host", "0.0.0.0", "--port", "8100"]
+    environment:
+      # Postgres DSN — required; fail fast if missing
+      STUDY_TUTOR_PG_DSN: ${STUDY_TUTOR_PG_DSN:?set STUDY_TUTOR_PG_DSN in .env}
+
+      # HTTP auth token table (JSON) — required; fail fast if missing
+      # Dev: {"token-lilymay": "lilymay", "token-alex": "alex"}
+      # Prod: {"token-lilymay": "lilymay"}
+      STUDY_TUTOR_HTTP_TOKENS: ${STUDY_TUTOR_HTTP_TOKENS:?set STUDY_TUTOR_HTTP_TOKENS in .env}
+
+      # Dev-only reset flag — gates POST /__dev__/reset (TASK-APP1-05)
+      # Dev: STUDY_TUTOR_HTTP_DEV_RESET=1
+      # Prod: unset (route does not exist)
+      STUDY_TUTOR_HTTP_DEV_RESET: ${STUDY_TUTOR_HTTP_DEV_RESET:-}
+    ports:
+      - "${HTTP_PORT:-8100}:8100"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8100/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
