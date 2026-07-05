@@ -2,11 +2,59 @@
 
 ## Status
 
-Proposed
+Accepted — **as revised 2026-07-05** (Revision 1, below). The original D1
+model pick and the D2 deferral are superseded together by the unified voice
+pin `parakeet-tdt-0.6b-v3`; D3 (no cloud audio) and the shared-backend
+posture stand, and are now implemented and live-verified on the GB10.
 
-**Date:** 2026-07-03
+**Date:** 2026-07-03 · **Revised:** 2026-07-05
 **Phase:** Mobile + Voice client (transition Act 2 — production observability)
 **Related:** [ADR-ARCH-015](ADR-ARCH-015-uk-on-device-data-residency.md) (on-device residency / minor-data-by-design), [ADR-ARCH-006](ADR-ARCH-006-dual-inference-path-ollama-bedrock.md) (env-var-driven model selection at the client factory), [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) (removed the last cloud write-back exception), [ADR-ARCH-014](ADR-ARCH-014-single-user-scalability-posture.md) (single-user posture), the mobile + voice client conversation-starter (`docs/handoffs/study-tutor-mobile-voice-conversation-starter.md` — D5 shared backend, OQ#2 model/transport, OQ#3 tap-to-talk). **Cross-repo:** the shared GB10 voice cascade + OpenAI-compatible endpoint contract lives in `lpa-platform-poc/docs/poc/decisions/ADR-POC-015-voice-cascade-and-audio-endpoints.md` (+ its `RUNBOOK-gb10-voice-endpoints.md`); this ADR selects the STT **model** that runs behind those shared endpoints for study-tutor's use.
+
+> **⚠️ Revision 1 (2026-07-05) — unified voice pins ratified and deployed;
+> read alongside the original.** Two days after this ADR was proposed, the
+> three-consumer survey (`docs/research/ideas/unified-voice-orientation.md`)
+> found the fleet's voice record disagreeing with itself four ways and
+> ratified one pin set, which was stood up and live-smoked on the GB10 the
+> same day (`lpa-platform-poc` RUNBOOK/RESULTS-gb10-voice-unified-2026-07).
+> What changes here:
+>
+> - **D1 superseded — STT is `parakeet-tdt-0.6b-v3`** (CC-BY-4.0, ~2 GB,
+>   25 European languages **including French**, punctuation + caps,
+>   GB10-proven ARM64 container). Alias `parakeet-tdt` behind the shared
+>   endpoint; env-var swap discipline (ADR-ARCH-006 pattern) unchanged.
+> - **D2 dissolved, not merely deferred.** The French gap that
+>   `nemotron-3.5-asr-streaming-0.6b`'s licence blocked is closed by the
+>   multilingual Parakeet under a production-usable licence. The watch-list
+>   narrows to one trigger: **true cache-aware streaming / barge-in on the
+>   phone.** Parakeet TDT is not cache-aware (VAD-chunked partials only) —
+>   the trade-off D1 originally refused is now **accepted**, because the
+>   validated interaction shapes (tap-to-talk on the phone per OQ#3;
+>   press-to-ask in the LPA app) never stream word-by-word, and Reachy's
+>   open-mic VAD runs in-process in its s2s pipeline (Silero v5), not in
+>   the shared STT service. Nemotron (or a successor) returns to the table
+>   only if open-mic/barge-in lands on the *phone* under a production
+>   licence.
+> - **D4's premise updated:** the shared TTS pin is now **Qwen3-TTS 0.6B
+>   CustomVoice** (Apache-2.0, CUDA-graph serving); **Kokoro-82M demotes to
+>   named fallback**. Still out of scope here; recorded in the
+>   ADR-POC-015 revision + orientation doc §2.
+> - **Topology/transport (closes OQ#2's remaining half):** the `:9100`/
+>   `:9200` standalone earmarks are dead — both audio models run as a
+>   persistent, never-evicted group **behind llama-swap on `gb10:9000`**
+>   (discrete OpenAI-compatible `/v1/audio/*` routes). study-tutor voice
+>   uses those discrete routes plus the tutor's own `turn` WebSocket
+>   (contract §7); `/v1/realtime` is Reachy's shape, not the household
+>   standard. Token streaming for tutor voice remains TASK-STREAM-001 —
+>   the LLM, not the audio models, is the latency wall.
+> - **The "open owner decision" (canonical record location) is resolved:**
+>   pins are recorded once in the orientation doc + the live llama-swap
+>   config mirror (`dgx-spark` repo, digest-pinned launch scripts +
+>   vendored Dockerfiles); this ADR and ADR-POC-015 cross-reference it
+>   rather than duplicating authority.
+> - **D3 stands and is now evidence-backed:** the LPA live smoke proved
+>   text-only degradation with zero third-party calls under a forced
+>   outage; both containers run with `HF_HUB_OFFLINE=1`.
 
 ## Context
 
