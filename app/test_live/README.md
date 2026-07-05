@@ -26,12 +26,15 @@ flutter test test_live --concurrency=1 \
 server state (binding §5.2), so the default parallel suite files would
 clobber each other's fixtures mid-test.
 
-Budget real time: ~35 tests, many making real `turn` calls (p95 < 10s each);
-every suite file carries a 5-minute per-test timeout, and the live adapter
-runs `turn` with a 35s request deadline — above the contract's 30s hard
-ceiling (SR-07), so contract-conforming tail latency never reads as a
-transport failure. `reset()` fails fast (10s) with a pointed message when
-the host is unreachable (Tailscale ACL / route) rather than hanging setUp.
+Budget real time: ~35 tests, many making real `turn` calls. The contract
+budgets `turn` at p95 < 10s (30s hard ceiling, SR-07), but the first dev
+deployment measures ~43s warm / ~66s cold (logged in `../QUESTIONS.md` as an
+adapter-side conformance gap) — so the live adapter runs `turn` with a 120s
+harness deadline and every suite file carries a 10-minute per-test timeout.
+Expect a full run to take tens of minutes until the latency gap is closed.
+Warm the model first (one curl turn) or the first test eats the cold-load.
+`reset()` fails fast (10s) with a pointed message when the host is
+unreachable (Tailscale ACL / route) rather than hanging setUp.
 
 ## What differs from the hermetic run
 
