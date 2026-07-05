@@ -272,6 +272,10 @@ def _build_orchestrator_factory(
             quote_verifier=None,  # ASSUM-LCA-015 — follow-up subtask
             coach_handover=coach_handover_closure,
             on_flag=_on_flag,
+            # ADR-ARCH-026 D1 — production runs the Coach as a background
+            # monitor (return the Player response immediately; evaluate off the
+            # caller path). Streaming-ready; keeps turns inside the 15s deadline.
+            coach_evaluation="async",
         )
 
     return orchestrator_factory

@@ -26,7 +26,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Literal, Protocol, runtime_checkable
 
 from study_tutor.knowledge.quote_verifier import VerifierMetadata
@@ -72,8 +72,36 @@ MAX_REVISION_ATTEMPTS: int = 3
 LATENCY_BUDGET_SECONDS: float = 30.0
 
 
-#: Decision tag attached to :class:`TurnResult.decision`.
-TurnDecision = Literal["accept", "exhausted", "fallback"]
+#: Decision tag attached to :class:`TurnResult.decision`. ``"deferred"`` is the
+#: async-Coach return tag (ADR-ARCH-026 D1): the response was delivered before
+#: the Coach evaluated, so no accept/revise decision is available at return time.
+TurnDecision = Literal["accept", "exhausted", "fallback", "deferred"]
+
+
+#: Module-level registry of in-flight background Coach tasks (ADR-ARCH-026 D1).
+#: asyncio keeps only a weak reference to a bare task, so a fire-and-forget
+#: evaluation can be garbage-collected mid-flight — we hold a strong reference
+#: here and drop it in the done-callback. The Coach is a background MONITOR (the
+#: learner already has the response), so a task that raises is logged and
+#: suppressed, never surfaced to the turn.
+_BACKGROUND_COACH_TASKS: "set[asyncio.Task[Any]]" = set()
+
+
+def _background_coach_done(task: "asyncio.Task[Any]") -> None:
+    """Done-callback for background Coach tasks: drop the ref, log any escape."""
+    _BACKGROUND_COACH_TASKS.discard(task)
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.warning(
+            "background Coach task raised (suppressed — response already delivered)",
+            extra={
+                "event": "orchestrator_async_coach_task_error",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -361,6 +389,7 @@ class PlayerCoachOrchestrator:
         on_flag: Callable[[str, dict[str, Any]], Awaitable[None] | None] | None = None,
         latency_budget_seconds: float = LATENCY_BUDGET_SECONDS,
         max_revision_attempts: int = MAX_REVISION_ATTEMPTS,
+        coach_evaluation: Literal["sync", "async"] = "sync",
     ) -> None:
         """Wire the orchestrator with its components.
 
@@ -409,6 +438,11 @@ class PlayerCoachOrchestrator:
         self._on_flag = on_flag
         self._latency_budget_seconds = latency_budget_seconds
         self._max_revision_attempts = max_revision_attempts
+        # ADR-ARCH-026 D1: "async" returns the Player response immediately and
+        # runs the Coach as a background monitor (no revision loop); "sync"
+        # (default, backward-compatible) keeps the FEAT-PH1-003 pre-send gate.
+        # Production wiring opts into "async" explicitly.
+        self._coach_evaluation = coach_evaluation
 
     async def run_turn(
         self,
@@ -491,6 +525,28 @@ class PlayerCoachOrchestrator:
         first_response, first_metadata = self._apply_coach_handover(
             first_raw_response, learner_message, session_state
         )
+
+        # ADR-ARCH-026 D1 — async Coach mode: the learner-visible response
+        # (Player + synchronous quote-handover, D3) is ready. Hand the rubric
+        # evaluation to a background monitor and return NOW; no revision loop
+        # runs on the caller path. This is the streaming-ready shape — a
+        # pre-send gate is incompatible with token streaming (D4).
+        if self._coach_evaluation == "async":
+            self._dispatch_async_coach(
+                session_state=session_state,
+                learner_message=learner_message,
+                player_response=first_response,
+                verifier_metadata=first_metadata,
+            )
+            return self._build_result(
+                response=first_response,
+                verdict=None,
+                decision="deferred",
+                attempts=1,
+                start=start,
+                flag_reason=None,
+                verifier_metadata=first_metadata,
+            )
 
         # Coach evaluation. If the Coach is unreachable here, we return
         # the Player's response under the unevaluated-turn fallback and
@@ -692,6 +748,82 @@ class PlayerCoachOrchestrator:
             learner_message=learner_message,
             player_response=player_response,
         )
+
+    # ------------------------------------------------------------------
+    # Async Coach monitor (ADR-ARCH-026 D1)
+    # ------------------------------------------------------------------
+
+    def _dispatch_async_coach(
+        self,
+        *,
+        session_state: Any,
+        learner_message: str,
+        player_response: str,
+        verifier_metadata: VerifierMetadata | None,
+    ) -> None:
+        """Fire-and-forget the Coach evaluation off the caller path.
+
+        The learner already received ``player_response``; the Coach here is a
+        background MONITOR that evaluates once (no revision) and emits an
+        ``on_flag`` review marker for below-threshold turns. Mirrors the
+        ADR-ARCH-019 fire-and-forget discipline. ``run_turn`` is only awaited
+        inside a running loop, so ``ensure_future`` succeeds normally; if a
+        loop is somehow absent we close the coroutine rather than leak it —
+        the monitor is best-effort and the response is already delivered.
+        """
+        coro = self._run_async_coach(
+            session_state=session_state,
+            learner_message=learner_message,
+            player_response=player_response,
+            verifier_metadata=verifier_metadata,
+        )
+        try:
+            task = asyncio.ensure_future(coro)
+        except RuntimeError:
+            coro.close()
+            return
+        _BACKGROUND_COACH_TASKS.add(task)
+        task.add_done_callback(_background_coach_done)
+
+    async def _run_async_coach(
+        self,
+        *,
+        session_state: Any,
+        learner_message: str,
+        player_response: str,
+        verifier_metadata: VerifierMetadata | None,
+    ) -> None:
+        """Background Coach body: evaluate once, flag below-threshold turns.
+
+        Never raises — the response is already with the learner, so any
+        failure is logged and suppressed (the done-callback is the backstop).
+        A below-threshold verdict is surfaced via ``on_flag`` for session-end
+        review: the same signal that used to drive a live revision, now
+        observational (ASSUM-001 threshold, ADR-ARCH-026 D1).
+        """
+        try:
+            verdict = await self._evaluate_with_metadata(
+                session_state=session_state,
+                learner_message=learner_message,
+                player_response=player_response,
+                verifier_metadata=verifier_metadata,
+            )
+        except Exception as exc:  # noqa: BLE001 — background monitor never raises
+            logger.warning(
+                "background Coach evaluation failed (non-fatal — response delivered)",
+                extra={
+                    "event": "orchestrator_async_coach_failed",
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                },
+            )
+            return
+        if verdict.decision != "accept":
+            await self._emit_flag(
+                f"async_coach_below_threshold: decision={verdict.decision} "
+                f"weighted_total={verdict.weighted_total:.4f}",
+                {"decision": verdict.decision},
+            )
 
     async def _fallback_coach_unreachable(
         self,

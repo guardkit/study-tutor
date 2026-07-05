@@ -185,9 +185,15 @@ def test_turn_decision_literal_does_not_include_revise() -> None:
     a code-path problem. The orchestrator deliberately collapses revise
     outcomes into ``accept`` (revision succeeded), ``exhausted`` (3
     revise attempts hit the cap), or ``fallback`` (Coach unreachable
-    mid-revision). If a future refactor adds ``"revise"`` to
-    :data:`TurnDecision`, this test fails and forces a re-think — that
-    addition would also require an audit of every ``result.decision ==``
-    site downstream (mcp adapter, session-end summariser, etc.).
+    mid-revision). ``deferred`` (ADR-ARCH-026 D1) is the async-Coach return
+    tag — the response is delivered before the Coach evaluates, so no
+    accept/revise decision exists at return time; it is a legitimate fourth
+    value and NOT the ``revise`` this guard forbids. If a future refactor
+    adds ``"revise"`` to :data:`TurnDecision`, this test fails and forces a
+    re-think — that addition would also require an audit of every
+    ``result.decision ==`` site downstream (mcp adapter, session-end
+    summariser, etc.).
     """
-    assert get_args(TurnDecision) == ("accept", "exhausted", "fallback")
+    args = get_args(TurnDecision)
+    assert "revise" not in args
+    assert set(args) == {"accept", "exhausted", "fallback", "deferred"}

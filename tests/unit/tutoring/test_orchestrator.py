@@ -432,8 +432,10 @@ async def test_two_concurrent_orchestrators_do_not_contaminate() -> None:
         student_b_observations.append((session_state["student_id"], player_response))
         return _verdict(decision="accept", weighted_total=0.9)
 
-    coach_a = MagicMock(); coach_a.evaluate = coach_a_evaluate
-    coach_b = MagicMock(); coach_b.evaluate = coach_b_evaluate
+    coach_a = MagicMock()
+    coach_a.evaluate = coach_a_evaluate
+    coach_b = MagicMock()
+    coach_b.evaluate = coach_b_evaluate
     player_a = _make_player(responses=["A's reply"])
     player_b = _make_player(responses=["B's reply"])
 
@@ -590,3 +592,86 @@ async def test_p95_latency_under_30s_across_fast_trials(monkeypatch) -> None:
     durations.sort()
     p95 = durations[int(0.95 * len(durations)) - 1]
     assert p95 < LATENCY_BUDGET_SECONDS
+
+
+# ---------------------------------------------------------------------------
+# ADR-ARCH-026 D1 — async Coach monitor (off the caller path)
+# ---------------------------------------------------------------------------
+
+
+async def _drain_background_coach() -> None:
+    """Await any in-flight background Coach tasks so assertions are stable."""
+    from study_tutor.tutoring import orchestrator as _orch
+
+    pending = list(_orch._BACKGROUND_COACH_TASKS)
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_async_mode_returns_deferred_before_coach_runs() -> None:
+    """The learner-facing response returns immediately; verdict is deferred."""
+    accept = _verdict(decision="accept", weighted_total=0.95)
+    player = _make_player(responses=["A Socratic reply."])
+    coach = _make_coach(verdicts=[accept])
+
+    orch = PlayerCoachOrchestrator(
+        player=player, coach=coach, coach_evaluation="async"
+    )
+    result = await orch.run_turn(session_state={"sid": "s1"}, learner_message="hi")
+
+    # Returned off the Player path, before the Coach evaluated.
+    assert result.response == "A Socratic reply."
+    assert result.decision == "deferred"
+    assert result.verdict is None
+    assert result.attempts == 1
+    assert result.flagged_for_review is False
+    coach.evaluate.assert_not_called()  # background task not yet run
+
+    # ...but the Coach DOES evaluate in the background.
+    await _drain_background_coach()
+    coach.evaluate.assert_awaited_once()
+    player.revise.assert_not_called()  # no revision loop in async mode
+
+
+@pytest.mark.asyncio
+async def test_async_mode_below_threshold_flags_but_does_not_revise() -> None:
+    """A below-threshold background verdict emits a review flag, no revision."""
+    below = _verdict(decision="revise", weighted_total=0.4, rubric_feedback=[_rubric()])
+    player = _make_player(responses=["A weaker reply."], revisions=["unused"])
+    coach = _make_coach(verdicts=[below])
+    on_flag = MagicMock()
+
+    orch = PlayerCoachOrchestrator(
+        player=player, coach=coach, on_flag=on_flag, coach_evaluation="async"
+    )
+    result = await orch.run_turn(session_state={}, learner_message="q")
+
+    # The below-threshold response is STILL shown (async monitor, not a gate).
+    assert result.response == "A weaker reply."
+    assert result.decision == "deferred"
+
+    await _drain_background_coach()
+    player.revise.assert_not_called()  # monitor evaluates once, never revises
+    on_flag.assert_called_once()
+    reason = on_flag.call_args.args[0]
+    assert "async_coach_below_threshold" in reason
+
+
+@pytest.mark.asyncio
+async def test_async_mode_coach_failure_never_affects_the_turn() -> None:
+    """A background Coach failure is swallowed; the turn already succeeded."""
+    player = _make_player(responses=["A reply that was delivered."])
+    coach = MagicMock()
+    coach.evaluate = AsyncMock(side_effect=CoachUnavailableError("coach down"))
+
+    orch = PlayerCoachOrchestrator(
+        player=player, coach=coach, coach_evaluation="async"
+    )
+    result = await orch.run_turn(session_state={}, learner_message="q")
+
+    assert result.response == "A reply that was delivered."
+    assert result.decision == "deferred"
+    # Draining the failed background task must not raise.
+    await _drain_background_coach()
+    coach.evaluate.assert_awaited_once()
