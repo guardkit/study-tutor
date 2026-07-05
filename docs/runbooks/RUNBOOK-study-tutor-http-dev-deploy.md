@@ -210,56 +210,58 @@ process squatting `127.0.0.1:8100`.
 
 ---
 
-## Mac-side acceptance — 2026-07-05 (phase 6, in progress)
+## Mac-side acceptance — 2026-07-05 (phase 6)
 
 Reported by the Mac Flutter session against this deployment.
 
 | AC | Result |
 |---|---|
 | **AC-OP-03** Tailnet reachability | ✅ **Closed.** `healthz` answered 200 in 16ms from the Mac; tailnet is allow-all, **no ACL work needed**. |
-| **AC-OP-04** Live contract suite | 🟢 **Running green.** `app/test_live/`, `--concurrency=1`, detached (~37 real LLM turns, ~30 min at observed latency). §9 unknown-session mapping already green against the real adapter; full triage against the pre-registered success bar when it finishes. |
+| **AC-OP-04** Live contract suite | 🟡 **22/35, all 13 failures backend-side (none app-side).** Both root causes fixed (below); re-run expected **35/35**. §9 error mappings, auth, ownership, lifecycle, list semantics, reset isolation all passed live on first contact; the same 35 test bodies pass on the fake ran unmodified against the real adapter. |
 | **AC-OP-05** Cross-device walk | ⏳ **Stays with GB10/operator** — needs the emulator observed on screen (scope §3.6). |
 
-Full manual round-trip independently re-verified on the Mac: start → real
-tutored turn (Socratic reply on fractions) → reset, both directions clean.
+### Live-run failures → all three GB10-side, all resolved 2026-07-05
 
-### ⚠️ Conformance gap — turn latency breaches SR-07 (GB10-side triage)
+1. **8× wire-shape:** turn entries emitted `"timestamp"` where binding §5 +
+   contract §5 pin `ts`. **Fixed** — `http/app.py` serializers, commit `208ebf1`
+   (+ a wire-shape regression guard on `resume_session`).
+2. **4× `turn_count`:** counted raw transcript rows, not `(user, tutor)` pairs
+   (1 turn reported 2). **Fixed** — halved at the serializer, mirroring the MCP
+   adapter's `student_turn_count = turn_count // 2` (commit `208ebf1`).
+3. **1× >120s first-turn cold-load:** transient — the latency issue below.
 
-**Observed:** `tutor_turn` ~**43s warm, 66s cold**. **Contract:** SR-07 =
-p95 < 10s, **hard ceiling 30s** ([API-tutoring.md](../design/contracts/API-tutoring.md#L67)).
-So warm turns are ~4× the p95 budget **and over the 30s hard ceiling** — the
-tool is currently outside its *sync* classification. Graphiti writes are
-fire-and-forget (ADR-ARCH-019) and are **not** the cause; this is the
-Player→Coach generation path itself.
+### Turn latency (SR-07) — root cause + fix ✅
 
-- **Not an app-posture issue.** The Mac session correctly kept the app's 15s
-  product deadline (the UI would show "connection problem" on most turns
-  today — that is the *deployment* being out of spec, not the client). The
-  live harness deadline was raised to 120s (loudly documented) so the
-  **functional** conformance run stays meaningful; latency conformance is
-  tracked separately here.
-- **Ranked triage (GB10 side):**
-  1. **llama-swap model thrash (most likely, biggest lever).** Player
-     (`gemma4-tutor`) and Coach (`qwen36-workhorse`) are two different aliases
-     on the single-GPU llama-swap at `:9000`. If they are not co-resident,
-     **every turn pays ≥1 model load/unload** (the ~23s cold-vs-warm delta ≈
-     one model load, consistent with swapping). `graphiti.yaml` proves
-     always-loaded aliases exist on this llama-swap; make `gemma4-tutor` +
-     `qwen36-workhorse` (and `nomic-embed` if the coach-handover RAG hits it)
-     co-resident / same group, or split them across ports. See in-review
-     `TASK-LSP-001` (player-provider route via llama-swap). Confirm from
-     llama-swap logs (load/unload lines correlated with turns).
-  2. **Per-turn sequential call count.** Happy path = Player **then** Coach = 2
-     sequential calls; a below-threshold Coach verdict enters the bounded
-     revision loop (`MAX_REVISION_ATTEMPTS=3`) → up to **6** sequential calls.
-     Check `TurnResult.attempts`/`decision` in logs — if `attempts>1` is
-     common, the Coach rubric threshold is driving revisions. The orchestrator
-     already self-reports the breach via `latency_over_budget` flags (budget
-     30s, orchestrator.py:72); grep those.
-  3. **Generation length + model sizing.** `num_predict ≥ 1500`
-     ([API-inference-runtime.md](../design/contracts/API-inference-runtime.md#L100));
-     verify GB10 token throughput for the loaded quants.
+The earlier "llama-swap thrash" hypothesis was **wrong** — direct inspection
+disproved it (both models were co-resident; the keepalive timer is not even
+installed). **Actual root cause:** the `tutor` llama-swap set and the
+deployment both pointed the Coach at **`qwen36-workhorse`** — a 35B *reasoning*
+model (`--reasoning auto`). The study-tutor Coach parser
+([`rubric.py` `parse_coach_output`](../../src/study_tutor/tutoring/coach/rubric.py))
+does a **strict `json.loads`** on `message.content` (the prompt demands "ONE
+JSON object — no prose, no fences"). qwen36-workhorse emitted ~8.8 KB of CoT
+into `content` (often leaving it empty) → **`MalformedCoachOutputError` on every
+turn**, so the Coach was silently bypassed via the unevaluated-turn fallback,
+*and* it burned ~33s doing it → ~43s turns, breaching SR-07 (p95<10s / 30s ceiling).
 
-This gate is for `/feature-complete FEAT-APP-001`'s *latency* conformance, not
-for the *functional* live-suite result. Recommend a dedicated GB10-side triage
-task before the real app points at this deployment.
+**Fix (applied 2026-07-05):**
+- New llama-swap model **`tutor-coach`** = base Gemma-4-26B-A4B-IT GGUF (same
+  weights as `gemma4-coach`, 17/17 JSON-discipline) with **`--reasoning off
+  --reasoning-budget 0`**, ctx 32768. `tutor` set changed `gt & qw & em` →
+  **`gt & tc & em`** (lighter — drops the 35B @ ctx 131072). Config at
+  `/opt/llama-swap/config/config.yaml` (backup `.bak-pre-tutor-coach-2026-07-05`).
+- Deployment `deploy/http/.env`: `TUTOR_COACH_MODEL=tutor-coach` (overrides the
+  compose default `qwen36-workhorse`). Container rebuilt + recreated.
+- `coach-ft-v3` was rejected — `--reasoning off` but its autobuild fine-tune
+  emits ```json fences that break the strict parser.
+
+**Validated live (smoke):** warm turn **8.5s** (was ~43s), **0
+`MalformedCoachOutputError` / 0 `coach_unreachable`** — the Coach now actually
+evaluates (`decision=accept`, 6 criteria). Cold first-turn ≈ **26s** (loads the
+tutor set); `gemma4-tutor` has `ttl:1800`, so **warm the set with one throwaway
+turn before the attended §3.6 walk** to keep every observed send ~8.5s (< the
+app's 15s deadline). `tutor-coach` is `ttl:0` (stays resident).
+
+**Remaining:** Mac re-runs `test_live` (command unchanged) → expected **35/35**;
+then the attended §3.6 cross-device walk (operator, emulator on screen); then
+`/feature-complete FEAT-APP-001`.
