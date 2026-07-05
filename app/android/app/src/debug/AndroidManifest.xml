@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Debug-flavour cleartext posture, scoped to the dev backend hosts
+         (see res/xml/network_security_config.xml) — merged onto the main
+         manifest's <application> by the manifest merger. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
 </manifest>

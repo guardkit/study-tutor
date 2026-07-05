@@ -1,9 +1,12 @@
 # study_tutor_app — Flutter v1 (walking skeleton + one vertical slice)
 
-Cross-device tutoring sessions against an **in-process fake backend** whose
-seams are exactly the ratified session contract's seams. No network, no real
-backend, no Keycloak (scope §1). The verified target is **Android**; iOS/web
-folders exist but v1 makes no boot claim for them.
+Cross-device tutoring sessions against the ratified session contract's
+seams. The **default flavour** composes an in-process fake backend — no
+network, no Keycloak (v1 scope §1), and the hermetic test gate only ever
+runs this flavour. Phase 2 added an opt-in **real-transport flavour**
+(`--dart-define=API_BASE_URL=…` → `HttpSessionApi`, see §Phase-2 flavours).
+The verified target is **Android**; iOS/web folders exist but carry no boot
+claim.
 
 **Contract pin:** `docs/design/contracts/API-session-cross-device.md` at
 `CONTRACT_SHA=22791afbcdb3b71abbe6bd2f1b8e18218988942f` (ratified 2026-07-03).
@@ -26,13 +29,48 @@ flutter run                # attended: Android emulator/device
 
 Per-wave green gate = all three of analyze / test / apk-debug.
 
+## Phase-2 flavours (phase-2 scope §3.3)
+
+One compile-time switch — no settings UI:
+
+```bash
+# Hermetic flavour (default): fake backend, exactly v1 behaviour.
+flutter run
+
+# Real-transport flavour: HTTP adapter against the GB10 dev deployment.
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8100
+```
+
+Base-URL rule: on the **Android emulator**, `10.0.2.2` is the host machine's
+**own loopback** (127.0.0.1 of the dev machine) — not a gateway onto the
+host's tailnet. To reach the GB10 adapter from the emulator, either forward
+the port on the host first (`ssh -L 8100:localhost:8100 <gb10>`, then
+`API_BASE_URL=http://10.0.2.2:8100`) or point `API_BASE_URL` at the GB10's
+tailnet address directly and let the emulator's NAT route it — the wave-7
+attended run records which of the two the walk actually used. On a
+**physical device** on the tailnet, use the GB10's MagicDNS hostname
+directly.
+
+Cleartext posture, honestly stated: the app's own `package:http` traffic
+rides `dart:io`, which on current Flutter engines does **not** consult
+Android's network-security-config and allows cleartext HTTP to any host,
+debug and release alike (engine-verified in the wave-5 review). The
+debug-only `network_security_config.xml` is kept as hygiene — it scopes any
+future Android-platform-stack traffic (WebView/native plugins, e.g. a WS
+voice plugin) to named backend hosts, but it does not constrain
+`HttpSessionApi`. The real residency guarantee stays ADR-ARCH-015 discipline:
+`API_BASE_URL` only ever points at household/Tailscale infrastructure
+(fail-closed Dart-side enforcement is an open question in `QUESTIONS.md`).
+Identity stays the fake IdP in both flavours; its constant token is the
+binding doc's dev-table entry #1.
+
 ## Architecture: two ports, two fakes (scope §2)
 
 ```
 lib/
-  main.dart      composition root — the ONLY place fakes are constructed;
-                 swapping in real HTTP/WS + Keycloak adapters is a change
-                 here, not in the screens
+  main.dart      composition root — the ONLY place adapters are constructed;
+                 composeSessionApi() switches fake ↔ HttpSessionApi on the
+                 API_BASE_URL define (Keycloak later lands here the same way)
   domain/        Session, TurnEntry, SessionSummary, Principal; typed errors
                  carrying contract §9's exact error_type strings (closed set,
                  plus the client-local TransportError — phase-2 scope §3.2)
