@@ -150,19 +150,23 @@ tasks:
   complexity: 2
   dependencies:
   - TASK-APP1-07
-  status: deferred
+  status: completed
   implementation_mode: direct
   estimated_minutes: 22
   requires_infrastructure: []
   result:
     total_turns: 0
-    final_decision: deferred
+    final_decision: operator_completed
     error: null
     deferred_reason: "operator follow-up \u2014 runtime verification required"
+    operator_note: "AutoBuild-deferred; operator ran runbook phases 0-5 on GB10\
+      \ (AC-OP-01/02/06 verified, AC-OP-03 GB10-side). AC-OP-04/05 (Mac-side live\
+      \ suite + cross-device walk) remain the /feature-complete gate."
   turns_completed: 0
   current_turn: 0
   started_at: null
   completed_at: '2026-07-05T10:29:15.632773'
+  operator_completed_at: '2026-07-05T10:26:35Z'
 orchestration:
   parallel_groups:
   - - TASK-APP1-01

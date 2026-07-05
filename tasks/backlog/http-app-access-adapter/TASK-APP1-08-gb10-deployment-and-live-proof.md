@@ -8,6 +8,9 @@ implementation_mode: direct
 complexity: 2
 dependencies: [TASK-APP1-07]
 parent_feature_spec: features/http-app-access-adapter/http-app-access-adapter_summary.md
+status: completed
+completed: 2026-07-05T10:26:35Z
+completed_by: operator
 ---
 
 ## Objective
@@ -42,3 +45,32 @@ mark the task complete via `/task-complete`.
 
 Coordinate with Rich before calling the feature complete — the app suite is
 the acceptance test.
+
+---
+
+## Completion Record — 2026-07-05 (operator handoff closed)
+
+Completed via `/task-complete TASK-APP1-08`. The server-side deliverable — put
+the dev flavour live on GB10 `:8100` and hand off the acceptance environment —
+is done and live-verified. Full runtime evidence is the execution record in
+[docs/runbooks/RUNBOOK-study-tutor-http-dev-deploy.md](../../../docs/runbooks/RUNBOOK-study-tutor-http-dev-deploy.md)
+(phases 0–5, ✅).
+
+| AC | Status | Evidence |
+|----|--------|----------|
+| **AC-OP-01** GB10 `:8100/healthz` from GB10 | ✅ verified | Runbook phase 3 (`{"status":"ok"}`); re-confirmed live at completion time via `http://100.84.90.91:8100/healthz` |
+| **AC-OP-02** seed + `start_session` both tokens | ✅ verified | Runbook phase 4 — seed 2 students; 200 for `token-lilymay` + `token-alex`; 401 unknown token; 403 cross-student; real tutored turn; ordered resume; end → `resumable:false`; reset roundtrip |
+| **AC-OP-03** Tailscale ACL Mac→GB10 `:8100` | 🟡 GB10 side verified | Tailnet interface answers (`100.84.90.91:8100`), reachable from a non-GB10 tailnet host → permissive/allow-all tailnet needs no scoped rule. **Mac-side curl confirmation = operator, tracked at feature-complete.** |
+| **AC-OP-04** Mac live contract suite green | ⏳ Mac-side, pending | `app/test_live/` is built by the app repo's p2 waves; "may not exist yet — that is expected." Gate for `/feature-complete`, not this task. |
+| **AC-OP-05** Cross-device walk end-to-end | ⏳ Mac-side attended, pending | Phase-2 scope §3.6; runbook phase 6. Gate for `/feature-complete`. |
+| **AC-OP-06** BINDING_SHA communicated | ✅ done | `BINDING_SHA=6eb7b88c4c8ae412fb36327a4f56286c6b539a7a` frozen; recorded in the runbook handoff + `docs/design/contracts/API-session-http-binding.md`; app-side header filled by app p2-wave-3 |
+
+**Next step (separate, gated on the Mac suite):** run
+`/feature-complete FEAT-APP-001` only after the Mac-side live suite (AC-OP-04)
+and cross-device walk (AC-OP-05) pass green against this deployment. The
+service is up, seeded, and the dev reset is armed
+(`API_BASE_URL=http://promaxgb10-41b1.tailebf801.ts.net:8100`, `--concurrency=1`).
+
+**Deployment standing posture:** dev flavour left running with reset armed for
+the Mac acceptance run. Per the runbook, take it `docker compose down` or
+re-flavour to prod once phase-2 acceptance is signed off.
