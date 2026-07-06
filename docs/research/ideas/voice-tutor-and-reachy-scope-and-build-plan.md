@@ -1,8 +1,8 @@
 # Voice — Tutor Voice (server + Flutter) and Reachy Local Migration — Scope + Build Plan
 
-**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05** (§0) — next action is **W0-T / W0-R discovery (§9 Step 3)**. Living status in §0.
+**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06** — next actions: **W1 build (§9 Step 4a: `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001`)** ‖ **W0-R operator run on the GB10 ([runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md))**. Living status in §0.
 **Voice-phase contract pins (authoritative consumption point):** `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a` (contract Rev 1) · `BINDING_SHA=e50897d12470b9f7c9455d5c5836f0d7ee298a50` (binding Rev 1). *Local commits — finalized on push ("frozen once pushed"); do not amend/rebase them or the pins invalidate. Phase-2 pins (`22791afb…`/`6eb7b88c…`) remain the historical record of what phase 2 verified.*
-**Generated:** 2026-07-05 · **status refreshed:** 2026-07-05
+**Generated:** 2026-07-05 · **status refreshed:** 2026-07-06
 **Design:** [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md) — closes the blueprint's open decisions (streaming-first contract, Starlette port map, audio delivery, quote-handover recommendation) and adds the Reachy track
 **Decision authority:** [unified-voice-orientation.md](unified-voice-orientation.md) (ratified pins) · [ADR-ARCH-024 r1](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) · [voice-implementation-blueprint.md](../../design/voice-implementation-blueprint.md) — **do not re-open pins here**
 **Inputs:** [ADR-ARCH-026](../../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (Proposed — gated) · [TASK-STREAM-001](../../../tasks/backlog/TASK-STREAM-001-tutor-turn-token-streaming.md) · [API-session-http-binding.md](../../design/contracts/API-session-http-binding.md) · [conversation starter](../../handoffs/study-tutor-mobile-voice-conversation-starter.md) · [flutter-app-phase2-build-plan.md](flutter-app-phase2-build-plan.md) (this plan is its phase-3 successor)
@@ -256,4 +256,4 @@ Run order: **{ G-RAT → G-CON } ‖ W0-T ‖ W0-R** first, then **{ W1 → W2(+
 
 ---
 
-*Generated 2026-07-05; status refreshed 2026-07-05 (G-RAT + G-CON executed — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next action: **Step 3 (W0-T / W0-R discovery)** in §9.*
+*Generated 2026-07-05; status refreshed 2026-07-06 (G-RAT + G-CON executed 2026-07-05 — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header; W0-T PASS with [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md); W0-R runbook written, awaiting the GB10 operator run; W1 spec 27 scenarios + plan TASK-VOX-001..007 committed, AutoBuild-ready). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next actions: **Step 4a (W1 build)** ‖ **Step 3 remainder (W0-R operator run)** in §9.*
