@@ -22,7 +22,8 @@
 | Contract change + CONTRACT_SHA/BINDING_SHA re-freeze, once (design §8) | **Done** — contract Rev 1 + binding Rev 1; SHAs in the header above (local commits, finalized on push) | `574615e` · `e50897d` |
 | W0-T pre-flight (tutor) | **PASS** 2026-07-05 — all four gates green; STT warm 0.11–0.29 s across wav/ogg-opus/**m4a**; TTS Ryan 2.09 s/sentence | [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md) |
 | W0-R feasibility gates (Reachy, R-G1..R-G6) | **Operator runbook written 2026-07-06 — awaiting GB10 run.** R-G5 pre-decided (tutor set default); R-G6 added (two robots) | [runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) |
-| W1 — FEAT-VOICE-001 `/feature-spec` | **NEXT (W-track)** | §6 |
+| W1 — FEAT-VOICE-001 spec + plan | **Done 2026-07-06**: 27-scenario BDD spec (all assumptions owner-confirmed) + TASK-VOX-001..007 breakdown, AutoBuild YAML validated, all scenarios `@task:`-linked | `c149929` · `2f8b299` |
+| W1 — FEAT-VOICE-001 build (TASK-VOX-001..007) | **NEXT (W-track)** — `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001` sequentially | `tasks/backlog/voice-server-module/` |
 | FEAT-VOICE-001…004 | **Not specced** | §4 |
 
 Detailed, ordered actions in **§9**.
