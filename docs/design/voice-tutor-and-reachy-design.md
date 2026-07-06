@@ -386,7 +386,16 @@ Nothing exists yet (grep-verified across `dgx-spark`) — this is greenfield:
   set switch (evicting the resident family), and after 30 min idle the next turn pays
   a 26B cold load. The robot's resident-set posture (promote the alias into more sets,
   add a robot set, or knowingly accept the thrash) is an explicit W0-R gate (R-G5),
-  not a silent consequence.
+  not a silent consequence. **R-G5 decided 2026-07-05 (owner):** the `tutor` set
+  becomes the GB10's standing default outside heavy-workload sessions, with
+  `gemma4-tutor`'s ttl raised within it — executed as runbook Phase 6.
+- **Two robots (fleet fact, 2026-07-06):** the household runs **two Reachy Minis**
+  (Scholar + Bridge profiles). Both re-point to the same s2s URL, but the HF
+  pipeline is single-conversation-shaped — **two concurrent Realtime sessions is
+  gate R-G6** ([W0-R runbook](../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md)
+  Phase 5), with a pre-approved fallback of one instance per robot (`:8765`/`:8766`)
+  priced by R-G4's memory arithmetic. `ask_tutor` lands on Scholar (the tutor
+  persona); Bridge's tool set is unaffected by this feature.
 - **Residency is its own decision:** llama-swap fronts HTTP request/response; a
   persistent-WS server does not fit the swap-on-request model. Run s2s as a standalone
   systemd/docker unit on `:8765` with digest-pinned images / vendored install (the
