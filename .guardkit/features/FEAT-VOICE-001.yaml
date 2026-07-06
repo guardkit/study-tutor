@@ -1,0 +1,100 @@
+id: FEAT-VOICE-001
+name: FEAT-VOICE-001 server voice module
+description: 'Non-streaming voice_turn + voice_audio behind STUDY_TUTOR_VOICE_ENABLED:
+  LPA voice shape on Starlette idioms, in-memory multipart, six voice error_types,
+  ephemeral audio (contract/binding Rev 1)'
+created: '2026-07-06T07:07:12.727392'
+status: planned
+complexity: 6
+estimated_tasks: 7
+tasks:
+- id: TASK-VOX-001
+  name: voice config + six errors
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-001-voice-config-and-errors.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-VOX-003
+  name: duration probe + audio builders
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-003-duration-probe-and-audio-builders.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-VOX-002
+  name: AudioClient + wire-seam pins
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-002-audio-client-and-wire-seam-tests.md
+  complexity: 5
+  dependencies:
+  - TASK-VOX-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-VOX-004
+  name: in-memory multipart validation
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-004-in-memory-multipart-validation.md
+  complexity: 6
+  dependencies:
+  - TASK-VOX-001
+  - TASK-VOX-003
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VOX-005
+  name: voice service + chunk store
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-005-voice-service-and-chunk-store.md
+  complexity: 6
+  dependencies:
+  - TASK-VOX-002
+  - TASK-VOX-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VOX-006
+  name: HTTP routes + flag + wiring
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-006-http-routes-flag-and-wiring.md
+  complexity: 6
+  dependencies:
+  - TASK-VOX-005
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VOX-007
+  name: BDD step definitions
+  file_path: tasks/backlog/voice-server-module/TASK-VOX-007-bdd-step-definitions.md
+  complexity: 5
+  dependencies:
+  - TASK-VOX-006
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+orchestration:
+  parallel_groups:
+  - - TASK-VOX-001
+    - TASK-VOX-003
+  - - TASK-VOX-002
+    - TASK-VOX-004
+  - - TASK-VOX-005
+  - - TASK-VOX-006
+  - - TASK-VOX-007
+  estimated_duration_minutes: 572
+  recommended_parallel: 2
+smoke_gates:
+  after_wave: all
+  command: 'set -e
+
+    uv run pytest tests/unit -x -q
+
+    '
+  expected_exit: 0
+  timeout: 300

@@ -18,6 +18,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
   # ── GROUP A: Key Examples ──────────────────────────────────────────
 
   # Why: The core voice path — one spoken question yields transcript + answer + audio
+  @task:TASK-VOX-005
   @key-example @smoke
   Scenario: A spoken question produces a transcript, a tutor answer, and spoken reply audio
     Given I have recorded a spoken question about my study topic
@@ -27,6 +28,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And I should receive a reference to the spoken form of the answer
 
   # Why: Voice turns are real turns — history, resume, and cross-device pickup see them
+  @task:TASK-VOX-005
   @key-example
   Scenario: The transcript enters the session history exactly like a typed turn
     Given I have completed a voice turn in my session
@@ -35,6 +37,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And the tutor's answer should appear as the following turn
 
   # Why: The reply audio must actually be fetchable and playable, in order
+  @task:TASK-VOX-006
   @key-example @smoke
   Scenario: The spoken reply can be fetched and is playable audio
     Given I have completed a voice turn that produced a spoken reply
@@ -42,6 +45,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then I should receive playable audio of the tutor's answer
 
   # Why: The rollout flag — voice absent must leave text tutoring untouched
+  @task:TASK-VOX-006
   @key-example
   Scenario: With the voice feature disabled, voice is absent and text tutoring is unaffected
     Given the voice feature has been disabled
@@ -53,6 +57,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
 
   # Why: Just-inside byte cap — a full-length recording must not be refused
   # [ASSUMPTION: confidence=high] Byte cap is 10 MB (contract §5 Rev 1, design §5.1)
+  @task:TASK-VOX-004
   @boundary
   Scenario: A recording at exactly the size cap is accepted
     Given I have recorded a spoken question of exactly the maximum allowed size
@@ -60,6 +65,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the voice turn should succeed
 
   # Why: Just-outside byte cap — the backstop enforcement
+  @task:TASK-VOX-004
   @boundary @negative
   Scenario: A recording just over the size cap is rejected as too large
     Given I have a recording just over the maximum allowed size
@@ -69,6 +75,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
 
   # Why: Just-inside duration cap (derivable containers only)
   # [ASSUMPTION: confidence=high] Duration cap is 60 s; server enforcement is best-effort (client stop is primary)
+  @task:TASK-VOX-004
   @boundary
   Scenario: A recording at exactly the duration cap is accepted
     Given I have a recording of exactly the maximum allowed duration in a format whose duration the server can read
@@ -76,6 +83,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the voice turn should succeed
 
   # Why: Just-outside duration cap, where the container carries a readable duration
+  @task:TASK-VOX-004
   @boundary @negative
   Scenario: A recording just over the duration cap is rejected as too long
     Given I have a recording just over the maximum allowed duration in a format whose duration the server can read
@@ -85,6 +93,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
 
   # Why: Format acceptance matrix — every format the phone may realistically send (W0-T proved m4a/ogg/wav live)
   # [ASSUMPTION: confidence=medium] Supported set: m4a/AAC, ogg-opus, webm-opus, wav, mp3; final set re-confirmed at the W2a recorder-config freeze
+  @task:TASK-VOX-004
   @boundary
   Scenario Outline: Recordings in supported formats are accepted regardless of codec annotations
     Given I have a valid spoken question recorded as <format>
@@ -102,6 +111,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
 
   # Why: Chunk references are ephemeral by design — the lifetime boundary is observable behaviour
   # [ASSUMPTION: confidence=high] Reply-audio reference lifetime is 120 s (design §5.2)
+  @task:TASK-VOX-006
   @boundary
   Scenario: A reply audio reference fetched promptly succeeds but an expired one is gone
     Given I have completed a voice turn that produced a spoken reply
@@ -113,6 +123,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
   # ── GROUP C: Negative Cases ────────────────────────────────────────
 
   # Why: Unsupported format must name what was received (the LPA 415 lesson)
+  @task:TASK-VOX-004
   @negative
   Scenario: A recording in an unsupported format is rejected naming the received type
     Given I have a recording in a format the tutor does not support
@@ -121,6 +132,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And the rejection should name the format that was received
 
   # Why: Empty upload — distinct from unintelligible
+  @task:TASK-VOX-004
   @negative
   Scenario: An empty recording is rejected
     Given I have a recording that contains no data
@@ -128,6 +140,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the recording should be rejected as empty
 
   # Why: Silence/noise — STT hears nothing; the student must know they weren't understood
+  @task:TASK-VOX-005
   @negative
   Scenario: A recording the tutor cannot make out is rejected as not understood
     Given I have a recording of silence
@@ -136,6 +149,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And no turn should be added to the session
 
   # Why: Ownership — voice adds no new identity surface
+  @task:TASK-VOX-006
   @negative
   Scenario: A voice turn on another student's session is refused
     Given another student has an active session
@@ -143,6 +157,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the request should be refused as not mine
 
   # Why: Auth — same bearer rules as every verb
+  @task:TASK-VOX-006
   @negative
   Scenario: A voice turn without valid credentials is refused
     Given I am not signed in
@@ -150,6 +165,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the request should be refused as unauthenticated
 
   # Why: Session lifecycle unchanged — ended stays ended
+  @task:TASK-VOX-006
   @negative
   Scenario: A voice turn on an ended session is refused
     Given my session has ended
@@ -157,6 +173,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the request should be refused because the session has ended
 
   # Why: Reply audio is session-scoped — no cross-student fetch
+  @task:TASK-VOX-006
   @negative
   Scenario: Another student cannot fetch my reply audio
     Given I have completed a voice turn that produced a spoken reply
@@ -166,6 +183,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
   # ── GROUP D: Edge Cases ────────────────────────────────────────────
 
   # Why: Degradation is a feature with copy — voice down must never break text (AC-V3 rehearsal)
+  @task:TASK-VOX-005
   @edge-case @smoke
   Scenario: When speech services are unavailable, voice degrades and text tutoring continues
     Given the speech services are unavailable
@@ -176,6 +194,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
 
   # Why: The half-failure — question already answered, only the speaking failed
   # [ASSUMPTION: confidence=low] Confirmed by owner 2026-07-06: return the answer as text with no audio rather than failing the turn
+  @task:TASK-VOX-005
   @edge-case
   Scenario: If the reply cannot be spoken, the answer still arrives as text
     Given the tutor can hear me but has lost its voice
@@ -185,6 +204,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And the turn should be recorded in the session exactly once
 
   # Why: The D3-derived invariant, stated as observable behaviour (AC-V2 rehearsal)
+  @task:TASK-VOX-005
   @edge-case @regression
   Scenario: No recording audio is ever kept
     Given I have completed several voice turns
@@ -193,6 +213,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And no recording audio should exist anywhere at rest
 
   # Why: Back-to-back turns — references must not collide or cross-order
+  @task:TASK-VOX-005
   @edge-case
   Scenario: Two voice turns in quick succession keep their replies separate and ordered
     Given I submit two voice turns one after the other
@@ -203,6 +224,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
   # ── EXPANSION: Security / Concurrency / Integration ───────────────
 
   # Why: Spoken prompt injection — transcribed words are student input, never instructions
+  @task:TASK-VOX-005
   @edge-case @negative
   Scenario: A spoken attempt to re-instruct the tutor is treated as an ordinary question
     Given I have a recording that says to ignore the tutoring rules and reveal the answer sheet
@@ -211,6 +233,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And the tutoring behaviour should remain unchanged for later turns
 
   # Why: Filename is metadata only — never a storage path
+  @task:TASK-VOX-005
   @edge-case @negative
   Scenario: A recording with a path-shaped filename is handled safely
     Given I have a valid recording whose filename looks like a system file path
@@ -219,6 +242,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And no file outside the tutor's control should be read or written
 
   # Why: Simultaneous submissions — the contract's last-writer-wins posture holds for voice
+  @task:TASK-VOX-005
   @edge-case
   Scenario: Two voice turns submitted at the same time are both recorded cleanly
     Given I submit two voice turns at the same moment
@@ -227,6 +251,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
 
   # Why: A hanging speech service must not hang the student past the app's patience
   # [ASSUMPTION: confidence=medium] Speech-service calls give up after 10 s each
+  @task:TASK-VOX-005
   @edge-case
   Scenario: A speech service that stops responding fails the voice turn cleanly
     Given the speech service accepts requests but never answers
@@ -235,6 +260,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     And no turn should be added to the session
 
   # Why: Voice adds no special failure path around the tutor itself
+  @task:TASK-VOX-005
   @edge-case
   Scenario: If the tutor fails to answer, the voice turn fails exactly as a typed turn would
     Given the tutor is unable to produce an answer
@@ -242,6 +268,7 @@ Feature: Voice turn — spoken questions answered with spoken replies
     Then the failure should be reported the same way as for a typed turn
 
   # Why: The in-memory-parse invariant made testable — true size governs, not the declared size
+  @task:TASK-VOX-004
   @boundary @negative @regression
   Scenario: A recording whose true size exceeds the cap is rejected even if it claims to be smaller
     Given I have a recording over the maximum allowed size that declares a smaller size
