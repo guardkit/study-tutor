@@ -10,7 +10,7 @@
 
 ---
 
-## 0. Status (2026-07-05)
+## 0. Status (2026-07-06)
 
 | Item | State | Record |
 |---|---|---|
@@ -24,7 +24,7 @@
 | W0-R feasibility gates (Reachy, R-G1..R-G6) | **Operator runbook written 2026-07-06 — awaiting GB10 run.** R-G5 pre-decided (tutor set default); R-G6 added (two robots) | [runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) |
 | W1 — FEAT-VOICE-001 spec + plan | **Done 2026-07-06**: 27-scenario BDD spec (all assumptions owner-confirmed) + TASK-VOX-001..007 breakdown, AutoBuild YAML validated, all scenarios `@task:`-linked | `c149929` · `2f8b299` |
 | W1 — FEAT-VOICE-001 build (TASK-VOX-001..007) | **NEXT (W-track)** — `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001` sequentially | `tasks/backlog/voice-server-module/` |
-| FEAT-VOICE-001…004 | **Not specced** | §4 |
+| FEAT-VOICE-002…004 | **Not specced** — 002 at W2 (joint with TASK-STREAM-001), 003 at W2a/W3, 004 after W0-R passes | §4/§6 |
 
 Detailed, ordered actions in **§9**.
 
