@@ -62,6 +62,11 @@ The pipeline's documented default is the **1.7B** checkpoint; our fleet pin is *
 
 ## Phase 3 — R-G3: tool calls round-trip through local s2s
 
+**Pre-flight (added 2026-07-06 — [recon deltas](../research/ideas/reachy-local-backend-recon-deltas-2026-07-06.md) D1/D3; skipping these risks a FALSE FAIL of the highest-risk gate):**
+
+1. **D1 — the planned proof tool would not load, regardless of s2s health.** `query_student_model` still uses the *rejected* tool-interface shape (`parameters` + `async def run()` — verified 2026-07-06 at `fleet-gateway/reachy/external_content/external_tools/query_student_model.py:125,148`); only `ask_jarvis` conforms (`parameters_schema` + `async def __call__`, `ask_jarvis.py:93,108`) and it is the only tool with demo-proven firing (13/20 May). **Either** port `query_student_model` to the conformant shape before the run (copy `ask_jarvis.py`'s pattern), **or** make `ask_jarvis` the R-G3 proof tool (ask "ask Jarvis what time it is" → NATS round-trip narrated) and treat `query_student_model` firing as a secondary check whose failure is a tool bug, not an s2s finding. Note its data is also stale either way (frozen Graphiti — FEAT-VOICE-004 recon D2), so judge R-G3 on *tool forwarding + narration*, not answer freshness.
+2. **D3 — confirm the Mac clone actually reads the re-point keys before trusting them.** `grep -rn "HF_REALTIME_CONNECTION_MODE\|HF_REALTIME_WS_URL"` in the clone; if absent (older app version), the `.env` keys silently no-op and the session stays on HF cloud — you'd only find out at the no-cloud check. Record the clone's `git rev-parse HEAD` in the evidence. (The **Pi's** installed version is a separate unknown — R2's problem, but record it here if convenient.)
+
 Highest-fidelity client without touching a robot: the **MacBook's `reachy_mini_conversation_app` clone** in local mode (robot not required — it runs with local mic/speaker):
 
 ```bash
@@ -73,7 +78,7 @@ Highest-fidelity client without touching a robot: the **MacBook's `reachy_mini_c
 # Ask: "what do you know about Lilymay's studies?"  → must trigger query_student_model
 ```
 
-**Gate R-G3 (PASS =):** the session runs against the local server (verify no HF-cloud websocket: `ss -tnp | grep -i python` on the Mac shows only the GB10 connection), the tool **fires**, and its result is **narrated back**. Record end-to-end latency of one simple turn and one tool turn.
+**Gate R-G3 (PASS =):** the session runs against the local server (verify no HF-cloud websocket: `ss -tnp | grep -i python` on the Mac shows only the GB10 connection), the **pre-flight-chosen proof tool fires**, and its result is **narrated back**. Record end-to-end latency of one simple turn and one tool turn. (A non-loading tool with the pre-flight skipped is a tool-interface bug, not an s2s failure — re-run with the pre-flight applied before recording a FAIL.)
 **FAIL path:** if the s2s Realtime implementation doesn't forward tool calls, the Reachy track is blocked pending an s2s patch/issue — record precisely what frame the flow died on (this is the single highest-risk unknown).
 
 ## Phase 4 — R-G4: memory arithmetic, measured not assumed

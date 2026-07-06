@@ -1,6 +1,6 @@
 # Voice — Tutor Voice (server + Flutter) and Reachy Local Migration — Scope + Build Plan
 
-**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06** — next actions: **W1 build (§9 Step 4a: `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001`)** ‖ **W0-R operator run on the GB10 ([runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md))**. Living status in §0.
+**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06** — next actions: **W1 build — Opus session (§9 Step 4a: `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001`)** ‖ **W0-R operator run on the GB10 ([runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) — apply its Phase-3 pre-flight first)** ‖ **FEAT-VOICE-002/003 spec+plan — Fable session before 2026-07-08**. Living status in §0; **model allocation in §0a**.
 **Voice-phase contract pins (authoritative consumption point):** `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a` (contract Rev 1) · `BINDING_SHA=e50897d12470b9f7c9455d5c5836f0d7ee298a50` (binding Rev 1). *Local commits — finalized on push ("frozen once pushed"); do not amend/rebase them or the pins invalidate. Phase-2 pins (`22791afb…`/`6eb7b88c…`) remain the historical record of what phase 2 verified.*
 **Generated:** 2026-07-05 · **status refreshed:** 2026-07-06
 **Design:** [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md) — closes the blueprint's open decisions (streaming-first contract, Starlette port map, audio delivery, quote-handover recommendation) and adds the Reachy track
@@ -21,12 +21,46 @@
 | Quote-handover decision (design §5.4 recommendation) | **Decided** — [ADR-ARCH-027](../../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (chunk-boundary verification) | `fdb2878` |
 | Contract change + CONTRACT_SHA/BINDING_SHA re-freeze, once (design §8) | **Done** — contract Rev 1 + binding Rev 1; SHAs in the header above (local commits, finalized on push) | `574615e` · `e50897d` |
 | W0-T pre-flight (tutor) | **PASS** 2026-07-05 — all four gates green; STT warm 0.11–0.29 s across wav/ogg-opus/**m4a**; TTS Ryan 2.09 s/sentence | [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md) |
-| W0-R feasibility gates (Reachy, R-G1..R-G6) | **Operator runbook written 2026-07-06 — awaiting GB10 run.** R-G5 pre-decided (tutor set default); R-G6 added (two robots) | [runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) |
+| W0-R feasibility gates (Reachy, R-G1..R-G6) | **Operator runbook written 2026-07-06 — awaiting GB10 run.** R-G5 pre-decided (tutor set default); R-G6 added (two robots); **Phase-3 pre-flight added 2026-07-06** (D1 proof-tool false-fail + D3 re-point-key version check — [recon deltas](reachy-local-backend-recon-deltas-2026-07-06.md)) | [runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) |
 | W1 — FEAT-VOICE-001 spec + plan | **Done 2026-07-06**: 27-scenario BDD spec (all assumptions owner-confirmed) + TASK-VOX-001..007 breakdown, AutoBuild YAML validated, all scenarios `@task:`-linked | `c149929` · `2f8b299` |
 | W1 — FEAT-VOICE-001 build (TASK-VOX-001..007) | **NEXT (W-track)** — `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001` sequentially | `tasks/backlog/voice-server-module/` |
-| FEAT-VOICE-002…004 | **Not specced** — 002 at W2 (joint with TASK-STREAM-001), 003 at W2a/W3, 004 after W0-R passes | §4/§6 |
+| FEAT-VOICE-002…004 | **Not specced** — 002 at W2 (joint with TASK-STREAM-001), 003 at W2a/W3, 004 after W0-R passes. **Spec+plan for 002/003 assigned to the Fable window (§0a)**; 004's spec must consume the [recon deltas](reachy-local-backend-recon-deltas-2026-07-06.md) (D2 Postgres-backed student read, D6 subject constant, D7 Pi deploy mechanics, D4 profile reconcile) | §4/§6 |
 
 Detailed, ordered actions in **§9**.
+
+## 0a. Model allocation (Fable window 2026-07-06 → 07)
+
+Fable 5 is available only through **2026-07-07**; Opus thereafter. Allocation principle (from the
+2026-07-06 GuardKit stage-sensitivity review): **spend Fable where output quality has no downstream
+verification** — feature decomposition (`/feature-plan` is the most model-sensitive stage: informational
+gates only, errors amplified by autonomous execution), scenario coverage (`/feature-spec`: the human
+curates only what the model proposes), contract/design surgery, and adversarial review. **Implementation
+is gate-carried** (Coach re-runs tests independently against deterministic thresholds; nothing
+auto-merges) — Opus runs it.
+
+Mechanical fact so nobody misallocates: AutoBuild's Player/Coach models come from the FEAT YAML
+(`player_model`/`coach_model`), defaulting to Sonnet 4.5 — `FEAT-VOICE-001.yaml` pins neither, so
+**builds never run on the driving session's model**. The rules below are about (a) not burning
+Fable-session time orchestrating gate-carried builds, and (b) `/task-work`, which **does** run on the
+session model.
+
+| Work | Session model | Why |
+|---|---|---|
+| `/feature-spec` + `/feature-plan` FEAT-VOICE-002 + 003 (004 once W0-R passes within the window) | **Fable, before 2026-07-08** | spec/plan are the model-sensitive, least-gated stages; contract already frozen at G-CON so early speccing is safe |
+| Adversarial review of authored specs/plans and of the W1 merged diff | **Fable** | review quality is unverifiable-by-tests |
+| `/feature-build FEAT-VOICE-001` (W1) and all later wave builds; any `/task-work TASK-VOX-*` | **Opus** | deterministic Coach gates + human merge carry the bar; autobuild Player/Coach are YAML-pinned anyway |
+| W2 joint TASK-STREAM-001 + FEAT-VOICE-002 build; W2a/W3 Flutter builds | **Opus** (against the Fable-authored spec/plan) | same |
+| W0-R run, R1–R4 GB10/robot config, `TASK-VOX-SMK-*` smokes | **Operator (Rich)** | hardware/attended (`operator_handoff` pattern) |
+| Roadmap row, backlog hygiene, pin bookkeeping, evidence write-ups | **Opus** | mechanical, self-evident from repo state |
+
+Sibling Fable-window tracks (outside this plan's scope, same allocation logic): the auth/D9
+[design](../../design/keycloak-auth-user-management-design.md) +
+[scope/build plan](keycloak-auth-scope-and-build-plan.md) (authored 2026-07-06 — note its
+FEAT-AUTH-004 ↔ R3 coupling), and the AWS hosting scope + ADR-ARCH-006 revision seeded by
+[aws-production-hosting-research-2026-07-06.md](aws-production-hosting-research-2026-07-06.md);
+the W0-R pre-run amendments from
+[reachy-local-backend-recon-deltas-2026-07-06.md](reachy-local-backend-recon-deltas-2026-07-06.md)
+are already applied to the runbook.
 
 ## 1. Why this document exists
 
@@ -66,7 +100,7 @@ _Look for: every wave leaves a working system; the robot track never blocks on t
 - Phone open-mic/VAD/barge-in — the accepted ADR-ARCH-024 r1 trade; sole revisit trigger is open-mic/barge-in landing on the phone.
 - On-device Gemma offline fallback — phase-2 keep-warm (conversation starter).
 - LPA narration cache / batch jobs / donor-attorney plumbing — explicitly not ported (blueprint §3).
-- Keycloak — D9 lands separately; interim single-user tokens serve both clients.
+- Keycloak — D9 lands separately ([design](../../design/keycloak-auth-user-management-design.md) + [plan](keycloak-auth-scope-and-build-plan.md), authored 2026-07-06; its FEAT-AUTH-004 couples to this plan's R3); interim single-user tokens serve both clients until its prod cutover.
 - Jarvis changes — it simply stops being in the tutoring path.
 - LPA browser/React voice UI — different repo, already live-smoked.
 
@@ -175,9 +209,10 @@ graph TD
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 
 # ── R-track ─────────────────────────────────────────────────────────
-/feature-spec "FEAT-VOICE-004 Reachy local voice migration: huggingface speech-to-speech realtime unit on GB10 :8765 (Silero VAD, --stt parakeet-tdt, --tts qwen3 with the 0.6B pin per R-G2, Ryan voice flag, --llm_backend responses-api pointed at llama-swap :9000 with the resident-set posture from R-G5); robot re-point via HF_REALTIME_CONNECTION_MODE=local + HF_REALTIME_WS_URL through sitecustomize.py; verify tool round-trip; ask_tutor external tool direct to the study-tutor HTTP adapter :8100 with resume_if_active session pickup and the subject string pinned to the app's constant (no Jarvis in the tutoring loop); Scholar profile update" \
+/feature-spec "FEAT-VOICE-004 Reachy local voice migration: huggingface speech-to-speech realtime unit on GB10 :8765 (Silero VAD, --stt parakeet-tdt, --tts qwen3 with the 0.6B pin per R-G2, Ryan voice flag, --llm_backend responses-api pointed at llama-swap :9000 with the resident-set posture from R-G5); robot re-point via HF_REALTIME_CONNECTION_MODE=local + HF_REALTIME_WS_URL through sitecustomize.py (recon D3: verify the Pi's installed app version supports these keys; plan an upgrade step if not); verify tool round-trip; ask_tutor external tool direct to the study-tutor HTTP adapter :8100 with resume_if_active session pickup and the subject string pinned to the app's constant (recon D6: app pins 'maths' at app/lib/ui/home_screen.dart:12 while the Scholar persona is English — resolve to ONE shared constant or D8 pickup never matches; no Jarvis in the tutoring loop); port query_student_model off frozen Graphiti onto a Postgres-backed read via :8100 (recon D2) and fix its rejected tool-interface shape (recon D1); ship to the Pi via clean re-clone, not git pull (recon D7 — hand-edited clone); Scholar profile update reconciling repo-vs-Pi drift to the Pi where the Pi is right (recon D4)" \
   --context docs/design/voice-tutor-and-reachy-design.md \
   --context docs/research/ideas/unified-voice-orientation.md \
+  --context docs/research/ideas/reachy-local-backend-recon-deltas-2026-07-06.md \
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 ```
 
@@ -232,28 +267,28 @@ Run order: **{ G-RAT → G-CON } ‖ W0-T ‖ W0-R** first, then **{ W1 → W2(+
 **Produces:** both docs re-frozen; `CONTRACT_SHA` + `BINDING_SHA` bumped together, once; pin locations updated (phase-2 plan header, `app/PROGRESS.md`, dev-deploy runbook).
 **Gate:** app side has signed off; freeze cost paid **once** — W2 later implements against this shape with no second freeze.
 
-### Step 3 — W0-T + W0-R (if not already run)
-**Do:** tutor pre-flight (timings, m4a test) and Reachy feasibility gates R-G1..R-G5 against a throwaway s2s instance; record evidence.
+### Step 3 — W0-T + W0-R (if not already run) — **Operator**
+**Do:** tutor pre-flight (timings, m4a test) and Reachy feasibility gates R-G1..R-G5 against a throwaway s2s instance; record evidence. **Apply the runbook's Phase-3 pre-flight (D1 proof-tool fix/swap + D3 re-point-key check) before the run — otherwise R-G3 can false-fail for reasons unrelated to s2s.**
 **Produces:** evidence file; recorder-format decision (m4a vs opus); s2s install-path, TTS-checkpoint, and resident-set-posture decisions.
 **Gate:** every gate passed or its fallback decided by the owner.
 
-### Step 4a — W1 (FEAT-VOICE-001)
-**Do:** `/feature-spec` + `/feature-plan` + build the server voice module.
+### Step 4a — W1 (FEAT-VOICE-001) — **Opus session** (spec+plan already done)
+**Do:** build the server voice module — `/feature-build FEAT-VOICE-001` (or `/task-work TASK-VOX-001` sequentially). Do **not** run this from a Fable session (§0a): the build is gate-carried and the autobuild Player/Coach models are YAML-pinned anyway.
 **Gate:** suite green; seam tests pin the multipart contract; flag off ⇒ 404.
 
-### Step 4b — R1 → R2 → R3 (parallel to Steps 4a–5)
-**Do:** productionize the W0-R configuration as the durable s2s unit; re-point the robot; verify tools; build `ask_tutor` (subject pinned) + profile update.
+### Step 4b — R1 → R2 → R3 (parallel to Steps 4a–5) — **Operator + Opus** (FEAT-VOICE-004 spec by **Fable** if W0-R passes within the window)
+**Do:** productionize the W0-R configuration as the durable s2s unit; re-point the robot; verify tools; build `ask_tutor` (subject pinned — resolve recon D6 first) + profile update.
 **Gate:** R2's tool round-trip verified; robot converses locally end-to-end.
 
-### Step 5 — W2 + W2a
-**Do:** joint TASK-STREAM-001 + FEAT-VOICE-002 build; Flutter MVP slice in parallel (GB10 access is the only resource shared with the R-track).
+### Step 5 — W2 + W2a — **Opus builds; spec+plan authored by Fable first (§0a)**
+**Do:** joint TASK-STREAM-001 + FEAT-VOICE-002 build; Flutter MVP slice in parallel (GB10 access is the only resource shared with the R-track). The FEAT-VOICE-002 (and 003) `/feature-spec` + `/feature-plan` runs happen in the Fable window — the contract shape is frozen at G-CON, so speccing ahead of the W1 build is safe; fold any W1-build learnings into the plan at review.
 **Gate:** streaming contract variants green against dev deploy; MVP voice works on device.
 
-### Step 6 — W3 → W4 and R4
+### Step 6 — W3 → W4 and R4 — **Opus builds; Operator smokes**
 **Do:** streaming Flutter client; then the two operator-handoff smokes (§8).
 **Gate:** AC-V1..V3 and AC-R1..R4 hold; RESULTS + evidence written; D3 residency exception closed.
 **Then:** update roadmap row; retro the freeze discipline (did we really only bump once?).
 
 ---
 
-*Generated 2026-07-05; status refreshed 2026-07-06 (G-RAT + G-CON executed 2026-07-05 — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header; W0-T PASS with [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md); W0-R runbook written, awaiting the GB10 operator run; W1 spec 27 scenarios + plan TASK-VOX-001..007 committed, AutoBuild-ready). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next actions: **Step 4a (W1 build)** ‖ **Step 3 remainder (W0-R operator run)** in §9.*
+*Generated 2026-07-05; status refreshed 2026-07-06 (G-RAT + G-CON executed 2026-07-05 — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header; W0-T PASS with [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md); W0-R runbook written + Phase-3 pre-flight added from the [recon deltas](reachy-local-backend-recon-deltas-2026-07-06.md), awaiting the GB10 operator run; W1 spec 27 scenarios + plan TASK-VOX-001..007 committed, AutoBuild-ready; **model allocation for the Fable window recorded in §0a**). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next actions: **Step 4a (W1 build — Opus)** ‖ **Step 3 remainder (W0-R operator run, pre-flight applied)** ‖ **FEAT-VOICE-002/003 spec+plan (Fable, by 2026-07-07)** in §9.*
