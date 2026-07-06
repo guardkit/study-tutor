@@ -1,5 +1,7 @@
 project_id: study_tutor
-enabled: true
+# Graphiti retired 2026-07-06 (owner decision) — GuardKit commands must skip
+# all Graphiti seeding/queries and work from local markdown artefacts only.
+enabled: false
 graph_store: falkordb
 falkordb_host: whitestocks
 falkordb_port: 6379
