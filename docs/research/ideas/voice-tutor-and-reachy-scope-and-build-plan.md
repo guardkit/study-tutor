@@ -1,11 +1,11 @@
 # Voice — Tutor Voice (server + Flutter) and Reachy Local Migration — Scope + Build Plan
 
-**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06** — next actions: **W1 build — Opus session (§9 Step 4a: `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001`)** ‖ **W0-R operator run on the GB10 ([runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) — apply its Phase-3 pre-flight first)** ‖ **FEAT-VOICE-002/003 spec+plan — Fable session before 2026-07-08**. Living status in §0; **model allocation in §0a**.
-**Voice-phase contract pins (authoritative consumption point):** `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a` (contract Rev 1) · `BINDING_SHA=e50897d12470b9f7c9455d5c5836f0d7ee298a50` (binding Rev 1). *Local commits — finalized on push ("frozen once pushed"); do not amend/rebase them or the pins invalidate. Phase-2 pins (`22791afb…`/`6eb7b88c…`) remain the historical record of what phase 2 verified.*
+**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06**; **W0-R ALL GATES PASS 2026-07-06** ([evidence](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md)) — next actions: **W1 build — Opus session (§9 Step 4a)** ‖ **R1 (productionize the s2s unit per the W0-R evidence pins) — Operator + Opus** ‖ **FEAT-VOICE-002/003 spec+plan — Fable session before 2026-07-08; 004 now unblocked**. Living status in §0; **model allocation in §0a**.
+**Voice-phase contract pins (authoritative consumption point):** `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a` (contract Rev 1) · `BINDING_SHA=e50897d12470b9f7c9455d5c5836f0d7ee298a50` (binding Rev 1). *Pushed to origin/main (verified 2026-07-06) — the freeze is finalized ("frozen once pushed"); do not amend/rebase these commits or the pins invalidate. Phase-2 pins (`22791afb…`/`6eb7b88c…`) remain the historical record of what phase 2 verified.*
 **Generated:** 2026-07-05 · **status refreshed:** 2026-07-06
 **Design:** [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md) — closes the blueprint's open decisions (streaming-first contract, Starlette port map, audio delivery, quote-handover recommendation) and adds the Reachy track
 **Decision authority:** [unified-voice-orientation.md](unified-voice-orientation.md) (ratified pins) · [ADR-ARCH-024 r1](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) · [voice-implementation-blueprint.md](../../design/voice-implementation-blueprint.md) — **do not re-open pins here**
-**Inputs:** [ADR-ARCH-026](../../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (Proposed — gated) · [TASK-STREAM-001](../../../tasks/backlog/TASK-STREAM-001-tutor-turn-token-streaming.md) · [API-session-http-binding.md](../../design/contracts/API-session-http-binding.md) · [conversation starter](../../handoffs/study-tutor-mobile-voice-conversation-starter.md) · [flutter-app-phase2-build-plan.md](flutter-app-phase2-build-plan.md) (this plan is its phase-3 successor)
+**Inputs:** [ADR-ARCH-026](../../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (Accepted at G-RAT 2026-07-05) · [TASK-STREAM-001](../../../tasks/backlog/TASK-STREAM-001-tutor-turn-token-streaming.md) · [API-session-http-binding.md](../../design/contracts/API-session-http-binding.md) · [conversation starter](../../handoffs/study-tutor-mobile-voice-conversation-starter.md) · [flutter-app-phase2-build-plan.md](flutter-app-phase2-build-plan.md) (this plan is its phase-3 successor)
 **Consumed by:** `/design-refine` (G-CON) → `/feature-spec` → `/feature-plan` → `/feature-build`|`/task-work` per wave
 
 ---
@@ -19,9 +19,9 @@
 | ADR-ARCH-024 r1 | **Accepted** | — |
 | ADR-ARCH-026 (async Coach — streaming precondition) | **Accepted** — G-RAT executed 2026-07-05 | `fdb2878` |
 | Quote-handover decision (design §5.4 recommendation) | **Decided** — [ADR-ARCH-027](../../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (chunk-boundary verification) | `fdb2878` |
-| Contract change + CONTRACT_SHA/BINDING_SHA re-freeze, once (design §8) | **Done** — contract Rev 1 + binding Rev 1; SHAs in the header above (local commits, finalized on push) | `574615e` · `e50897d` |
+| Contract change + CONTRACT_SHA/BINDING_SHA re-freeze, once (design §8) | **Done + PUSHED** (verified 2026-07-06) — contract Rev 1 + binding Rev 1; SHAs in the header above; freeze finalized | `574615e` · `e50897d` |
 | W0-T pre-flight (tutor) | **PASS** 2026-07-05 — all four gates green; STT warm 0.11–0.29 s across wav/ogg-opus/**m4a**; TTS Ryan 2.09 s/sentence | [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md) |
-| W0-R feasibility gates (Reachy, R-G1..R-G6) | **Operator runbook written 2026-07-06 — awaiting GB10 run.** R-G5 pre-decided (tutor set default); R-G6 added (two robots); **Phase-3 pre-flight added 2026-07-06** (D1 proof-tool false-fail + D3 re-point-key version check — [recon deltas](reachy-local-backend-recon-deltas-2026-07-06.md)) | [runbook](../../runbooks/RUNBOOK-voice-w0r-reachy-feasibility.md) |
+| W0-R feasibility gates (Reachy, R-G1..R-G6) | **ALL GATES PASS — run 2026-07-06** (agent-on-GB10 + operator Mac/robot session). Headlines: `--num_pipelines 2` supersedes the two-instance fallback (R-G6); voice pin must be app-side (`MODEL_VOICE`), not server flag; **known defect: tool-call text is spoken** (fixes identified — template tool-call support + TTS strip filter → R1/FEAT-VOICE-004); R-G5 executed (ttl 0, tutor-set preload, keepalive rotated, dgx-spark mirror `be71e3f`); 4 install pins for R1 recorded | [EVIDENCE](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md) |
 | W1 — FEAT-VOICE-001 spec + plan | **Done 2026-07-06**: 27-scenario BDD spec (all assumptions owner-confirmed) + TASK-VOX-001..007 breakdown, AutoBuild YAML validated, all scenarios `@task:`-linked | `c149929` · `2f8b299` |
 | W1 — FEAT-VOICE-001 build (TASK-VOX-001..007) | **NEXT (W-track)** — `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001` sequentially | `tasks/backlog/voice-server-module/` |
 | FEAT-VOICE-002…004 | **Not specced** — 002 at W2 (joint with TASK-STREAM-001), 003 at W2a/W3, 004 after W0-R passes. **Spec+plan for 002/003 assigned to the Fable window (§0a)**; 004's spec must consume the [recon deltas](reachy-local-backend-recon-deltas-2026-07-06.md) (D2 Postgres-backed student read, D6 subject constant, D7 Pi deploy mechanics, D4 profile reconcile) | §4/§6 |
@@ -165,7 +165,12 @@ graph TD
 
 **R1–R4 — Reachy track** (starts after W0-R; fully parallel to the W-track): systemd/docker s2s unit productionizing the W0-R configuration (digest-pinned, non-loopback bind, Ryan voice flag located and set) → `sitecustomize.py` env injection + `HF_REALTIME_CONNECTION_MODE=local`/`HF_REALTIME_WS_URL` re-point, open-mic latency + tool verification → `ask_tutor` tool (subject pinned to the app's constant — design §7.4) + Scholar `tools.txt`/persona update (reconcile repo-vs-Pi profile drift) → live smoke AC-R1..R4. *Gates per step; R4 evidence closes the D3 residency exception.*
 
-## 5a. Ratification gates (before the dependent build)
+## 5a. Ratification gates — ✅ BOTH EXECUTED 2026-07-05, DO NOT RE-RUN
+
+> **G-RAT and G-CON are done and pushed** (`fdb2878`; contract Rev 1 `574615e9…` + binding Rev 1
+> `e50897d1…` on origin/main — re-verified 2026-07-06). Re-running the commands below would create
+> a duplicate ADR / spurious freeze cycle. They are kept **as the record of what was run**, not as
+> to-dos.
 
 | Gate | Command | Ratifies | Blocks |
 |---|---|---|---|
@@ -186,8 +191,13 @@ graph TD
 
 ## 6. /feature-spec invocations (run in wave order)
 
+**Execution state (2026-07-06): W1's invocation is ✅ DONE — do not re-run** (spec `c149929`, plan
+`2f8b299`, artifacts in `features/voice-server-module/` + `tasks/backlog/voice-server-module/`).
+**Still to run:** W2 (FEAT-VOICE-002) and W2a/W3 (FEAT-VOICE-003) — Fable window per §0a;
+R-track (FEAT-VOICE-004) — only after W0-R passes.
+
 ```bash
-# ── W1 ──────────────────────────────────────────────────────────────
+# ── W1 ── ✅ EXECUTED 2026-07-06 (kept as record — spec c149929, plan 2f8b299) ──
 /feature-spec "FEAT-VOICE-001 server voice module: port the lpa-platform-poc voice shape (config/client/errors/utils/validation/service) into src/study_tutor/voice/ on Starlette idioms per design §5.1; in-memory multipart parsing (never request.form() — Starlette spools >1MB parts to disk) with python-multipart as a direct pin; non-streaming POST voice-turn + GET voice-audio behind STUDY_TUTOR_VOICE_ENABLED; six voice error_types in the tutor envelope; httpx.MockTransport seam tests pinning the multipart wire contract; ephemeral audio invariants (no audio at rest)" \
   --context docs/design/voice-tutor-and-reachy-design.md \
   --context docs/design/voice-implementation-blueprint.md \
@@ -208,7 +218,7 @@ graph TD
   --context docs/design/contracts/API-session-http-binding.md \
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 
-# ── R-track ─────────────────────────────────────────────────────────
+# ── R-track ── (UNBLOCKED 2026-07-06: W0-R all gates PASS — spec must also consume the W0-R EVIDENCE file) ──
 /feature-spec "FEAT-VOICE-004 Reachy local voice migration: huggingface speech-to-speech realtime unit on GB10 :8765 (Silero VAD, --stt parakeet-tdt, --tts qwen3 with the 0.6B pin per R-G2, Ryan voice flag, --llm_backend responses-api pointed at llama-swap :9000 with the resident-set posture from R-G5); robot re-point via HF_REALTIME_CONNECTION_MODE=local + HF_REALTIME_WS_URL through sitecustomize.py (recon D3: verify the Pi's installed app version supports these keys; plan an upgrade step if not); verify tool round-trip; ask_tutor external tool direct to the study-tutor HTTP adapter :8100 with resume_if_active session pickup and the subject string pinned to the app's constant (recon D6: app pins 'maths' at app/lib/ui/home_screen.dart:12 while the Scholar persona is English — resolve to ONE shared constant or D8 pickup never matches; no Jarvis in the tutoring loop); port query_student_model off frozen Graphiti onto a Postgres-backed read via :8100 (recon D2) and fix its rejected tool-interface shape (recon D1); ship to the Pi via clean re-clone, not git pull (recon D7 — hand-edited clone); Scholar profile update reconciling repo-vs-Pi drift to the Pi where the Pi is right (recon D4)" \
   --context docs/design/voice-tutor-and-reachy-design.md \
   --context docs/research/ideas/unified-voice-orientation.md \
@@ -256,21 +266,20 @@ is deliberately not probed; timer inactive since 2026-07-03, confirmed during th
 
 Run order: **{ G-RAT → G-CON } ‖ W0-T ‖ W0-R** first, then **{ W1 → W2(+W2a) → W3 → W4 } ‖ { R1 → R2 → R3 → R4 }**
 
-### Step 1 — G-RAT (and start W0-T / W0-R any time)
-**Do:** `/arch-refine` ADR-ARCH-026 to Accepted; ratify the chunk-boundary quote-handover recommendation (design §5.4). W0-T and W0-R are discovery with no gate dependencies — start them in parallel whenever GB10 time allows.
-**Produces:** Accepted ADR + handover decision record.
-**Gate:** both recorded; no W-track build code before this (the R-track does not wait).
-**Why first:** async Coach is the streaming precondition; the handover shape changes what G-CON freezes.
+### Step 1 — G-RAT — ✅ DONE 2026-07-05 (`fdb2878`, pushed)
+ADR-ARCH-026 Accepted; quote-handover recorded as ADR-ARCH-027 (chunk-boundary verification).
+**Do not re-run** — verified 2026-07-06 (a re-run would mint a duplicate ADR).
 
-### Step 2 — G-CON
-**Do:** `/design-refine` the change across **both** frozen docs (design §8); coordinate the app side; execute the freeze.
-**Produces:** both docs re-frozen; `CONTRACT_SHA` + `BINDING_SHA` bumped together, once; pin locations updated (phase-2 plan header, `app/PROGRESS.md`, dev-deploy runbook).
-**Gate:** app side has signed off; freeze cost paid **once** — W2 later implements against this shape with no second freeze.
+### Step 2 — G-CON — ✅ DONE 2026-07-05 (contract Rev 1 `574615e9…` · binding Rev 1 `e50897d1…`, pushed)
+Both docs re-frozen; SHAs bumped together, once; pin locations updated. **Do not re-run** —
+verified 2026-07-06; W2 implements against this shape with **no second freeze**.
 
-### Step 3 — W0-T + W0-R (if not already run) — **Operator**
-**Do:** tutor pre-flight (timings, m4a test) and Reachy feasibility gates R-G1..R-G5 against a throwaway s2s instance; record evidence. **Apply the runbook's Phase-3 pre-flight (D1 proof-tool fix/swap + D3 re-point-key check) before the run — otherwise R-G3 can false-fail for reasons unrelated to s2s.**
-**Produces:** evidence file; recorder-format decision (m4a vs opus); s2s install-path, TTS-checkpoint, and resident-set-posture decisions.
-**Gate:** every gate passed or its fallback decided by the owner.
+### Step 3 — W0-T ✅ DONE 2026-07-05 · W0-R ✅ ALL GATES PASS 2026-07-06
+W0-T: all four gates green ([evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md)).
+W0-R: P0 + R-G1..R-G6 all PASS ([evidence](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md))
+— run by the agent on the GB10 with the operator's Mac/robot session for R-G3. R1 consumes the
+evidence file's pins verbatim (resolve-URL wheel, numba floors, `OPENAI_API_KEY`, `--num_pipelines 2`,
+app-side voice pin, tool-call-speech fixes, user-mode `systemctl --user restart llama-swap`).
 
 ### Step 4a — W1 (FEAT-VOICE-001) — **Opus session** (spec+plan already done)
 **Do:** build the server voice module — `/feature-build FEAT-VOICE-001` (or `/task-work TASK-VOX-001` sequentially). Do **not** run this from a Fable session (§0a): the build is gate-carried and the autobuild Player/Coach models are YAML-pinned anyway.
@@ -291,4 +300,4 @@ Run order: **{ G-RAT → G-CON } ‖ W0-T ‖ W0-R** first, then **{ W1 → W2(+
 
 ---
 
-*Generated 2026-07-05; status refreshed 2026-07-06 (G-RAT + G-CON executed 2026-07-05 — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header; W0-T PASS with [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md); W0-R runbook written + Phase-3 pre-flight added from the [recon deltas](reachy-local-backend-recon-deltas-2026-07-06.md), awaiting the GB10 operator run; W1 spec 27 scenarios + plan TASK-VOX-001..007 committed, AutoBuild-ready; **model allocation for the Fable window recorded in §0a**). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next actions: **Step 4a (W1 build — Opus)** ‖ **Step 3 remainder (W0-R operator run, pre-flight applied)** ‖ **FEAT-VOICE-002/003 spec+plan (Fable, by 2026-07-07)** in §9.*
+*Generated 2026-07-05; status refreshed 2026-07-06 (G-RAT + G-CON executed 2026-07-05 — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header; W0-T PASS; **W0-R all gates PASS 2026-07-06** with [evidence](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md) — R-track fully unblocked, R-G5 config executed + mirrored; W1 spec 27 scenarios + plan TASK-VOX-001..007 committed, AutoBuild-ready; **model allocation in §0a**). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next actions: **Step 4a (W1 build — Opus)** ‖ **Step 4b R1 (productionize s2s per evidence pins — Operator + Opus)** ‖ **FEAT-VOICE-002/003/004 spec+plan (Fable, by 2026-07-07)** in §9.*
