@@ -1,0 +1,113 @@
+id: FEAT-VOICE-002
+name: FEAT-VOICE-002 streaming voice
+description: 'Streaming tutoring turns (live text + voice) on the WS session channel
+  per frozen contract Rev 1 §7: generate_stream, quote-aware sentence chunker with
+  ADR-027 fail-closed gate, turn_stream/TurnEvent widening, WS route with auth + per-session
+  ordering lock, sentence-chunked TTS with audio_ref frames. Tier A (waves 1-4) independent;
+  Tier B (waves 5-7) gated on FEAT-VOICE-001 completion'
+created: '2026-07-06T22:15:36.114421'
+status: planned
+complexity: 8
+estimated_tasks: 8
+tasks:
+- id: TASK-VS2-001
+  name: LLM streaming client (generate_stream + respond_stream)
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-001-llm-streaming-client.md
+  complexity: 5
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-VS2-002
+  name: Quote-aware sentence chunker + ADR-027 fail-closed gate
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-002-quote-aware-sentence-chunker.md
+  complexity: 7
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 170
+- id: TASK-VS2-003
+  name: turn_stream + TurnEvent widening + streaming orchestrator
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-003-turn-stream-orchestrator.md
+  complexity: 8
+  dependencies:
+  - TASK-VS2-001
+  - TASK-VS2-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 256
+- id: TASK-VS2-004
+  name: WS route + auth + session ordering lock + uvicorn standard
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-004-ws-route-auth-flag-session-lock.md
+  complexity: 7
+  dependencies:
+  - TASK-VS2-003
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 170
+- id: TASK-VS2-005
+  name: Text-stream acceptance suite (Tier A closes)
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-005-text-stream-acceptance.md
+  complexity: 6
+  dependencies:
+  - TASK-VS2-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VS2-006
+  name: WS voice_turn STT + validation reuse (Tier B)
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-006-ws-voice-turn-stt.md
+  complexity: 7
+  dependencies:
+  - TASK-VS2-004
+  - TASK-VS2-005
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 170
+- id: TASK-VS2-007
+  name: Streaming TTS + audio_ref + ChunkStore (Tier B)
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-007-streaming-tts-audio-ref.md
+  complexity: 6
+  dependencies:
+  - TASK-VS2-002
+  - TASK-VS2-006
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VS2-008
+  name: Voice-channel acceptance suite (Tier B)
+  file_path: tasks/backlog/streaming-voice/TASK-VS2-008-voice-channel-acceptance.md
+  complexity: 6
+  dependencies:
+  - TASK-VS2-006
+  - TASK-VS2-007
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+orchestration:
+  parallel_groups:
+  - - TASK-VS2-001
+    - TASK-VS2-002
+  - - TASK-VS2-003
+  - - TASK-VS2-004
+  - - TASK-VS2-005
+  - - TASK-VS2-006
+  - - TASK-VS2-007
+  - - TASK-VS2-008
+  estimated_duration_minutes: 1180
+  recommended_parallel: 2
+smoke_gates:
+  after_wave: all
+  command: |
+    set -e
+    uv run pytest tests/unit -x -q
+  expected_exit: 0
+  timeout: 300

@@ -1,0 +1,107 @@
+id: FEAT-VOICE-003
+name: Flutter tap-to-talk voice client
+description: 'Client-only Flutter voice: record (60s/10MB stop), transcript-first
+  display, seq-ordered playback, streaming incremental text, VoiceUnavailable degradation,
+  and green-but-broken upload fidelity. FEAT-VOICE-003.'
+created: '2026-07-07T10:41:53.426999'
+status: planned
+complexity: 7
+estimated_tasks: 7
+tasks:
+- id: TASK-VC-001
+  name: Deps and platform manifests
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-001-deps-and-platform-manifests.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-VC-002
+  name: VoiceApi port and DTOs
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-002-voiceapi-port-and-dtos.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-VC-003
+  name: HttpVoiceApi and fidelity direction-pins
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-003-httpvoiceapi-fidelity-pins.md
+  complexity: 6
+  dependencies:
+  - TASK-VC-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VC-004
+  name: Fakes and recorder 60s 10MB stop
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-004-fakes-and-recorder.md
+  complexity: 5
+  dependencies:
+  - TASK-VC-001
+  - TASK-VC-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-VC-005
+  name: SessionScreen tap-to-talk UX and degradation
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-005-sessionscreen-taptotalk-ux.md
+  complexity: 6
+  dependencies:
+  - TASK-VC-003
+  - TASK-VC-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-VC-006
+  name: Streaming voiceTurnStream and ordered playback
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-006-streaming-and-ordered-playback.md
+  complexity: 7
+  dependencies:
+  - TASK-VC-005
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 170
+- id: TASK-VC-007
+  name: Dual-backend and live voice tests
+  file_path: tasks/backlog/flutter-voice-client/TASK-VC-007-dual-backend-and-live-tests.md
+  complexity: 5
+  dependencies:
+  - TASK-VC-003
+  - TASK-VC-005
+  - TASK-VC-006
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+orchestration:
+  parallel_groups:
+  - - TASK-VC-001
+    - TASK-VC-002
+  - - TASK-VC-003
+    - TASK-VC-004
+  - - TASK-VC-005
+  - - TASK-VC-006
+  - - TASK-VC-007
+  estimated_duration_minutes: 612
+  recommended_parallel: 2
+
+# Between-wave composition gate. Fires after Wave 3 (MVP tap-to-talk loop
+# assembled from port+adapter+fakes+recorder+UX), Wave 4 (streaming layered on),
+# and Wave 5 (dual-backend/live tests — covers the final wave so nothing
+# composes-broken ships unverified). Catches integration breakage per-task Coach
+# approval cannot see. Dart/Flutter feature -> `flutter test` in app/, not pytest.
+smoke_gates:
+  after_wave: [3, 4, 5]
+  command: |
+    set -e
+    cd app
+    flutter test
+  expected_exit: 0
+  timeout: 600

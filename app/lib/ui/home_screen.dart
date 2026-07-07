@@ -7,9 +7,14 @@ import '../ports/session_api.dart';
 import 'error_handling.dart';
 import 'session_screen.dart';
 
-/// Fixed subject for v1 — the build plan allows it; a subject picker is out
-/// of scope (scope §7).
-const defaultSubject = 'maths';
+/// Default subject for v1 — English (AQA 8700/8702), matching the tutor's
+/// fine-tune, the Scholar persona, and query_student_model's default. A subject
+/// picker is out of scope for v1 (scope §7); when it lands this becomes the
+/// fallback rather than a fixed value. The robot's ask_tutor sends this same
+/// default, so (student, subject) session pickup matches across phone and robot
+/// (recon D6/D8). Previously 'maths' — a stale placeholder with no content
+/// behind it; reconciled to the English tutor 2026-07-07 (ASSUM-001).
+const defaultSubject = 'english';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
