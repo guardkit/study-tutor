@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 0.3682310060830787,
+    "error": null,
+    "tests_run": 8,
+    "tests_failed": 0,
+    "tests_skipped": 3,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/http/test_ws.py:238: PytestWarning: The test <Function test_ended_session_refused_as_session_ended> is marked with '@pytest.mark.asyncio' but it is not an async function. Please rem",
+    "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "passed",
+    "duration_seconds": 185.03202830895316,
+    "error": null,
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}

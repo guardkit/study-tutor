@@ -20,8 +20,10 @@ dependencies = [
     # TASK-APP1-03 / FEAT-APP-001 (2026-07-05): Starlette HTTP server + Uvicorn
     # ASGI runner for the mobile/voice app HTTP adapter. Previously transitive via
     # mcp; pinned as direct deps so the served stack version is explicit.
+    # TASK-VS2-004 / FEAT-VOICE-002 (2026-07-08): uvicorn[standard] for WebSocket
+    # support (includes websockets package). Plain uvicorn rejects WS upgrades.
     "starlette>=0.27",
-    "uvicorn>=0.27",
+    "uvicorn[standard]>=0.27",
     # TASK-VOX-004 / FEAT-VOICE-001 (2026-07-08): python-multipart for in-memory
     # multipart parsing. Previously transitive via mcp; pinned as direct dep to
     # enforce the never-at-rest invariant (no disk spooling) in voice upload

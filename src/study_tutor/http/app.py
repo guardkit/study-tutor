@@ -14,7 +14,7 @@ from typing import Any, Awaitable, Callable
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from starlette.routing import Route
+from starlette.routing import Route, WebSocketRoute
 
 from study_tutor.http.auth import HTTPAuthConfig, resolve_student_from_token
 from study_tutor.session.errors import (
@@ -497,6 +497,13 @@ def create_app(
         )
         routes.append(
             Route("/api/sessions/{session_id:str}/voice-audio/{chunk_id:str}", voice_audio, methods=["GET"])
+        )
+
+        # TASK-VS2-004: Mount WebSocket route for streaming turns
+        from study_tutor.http.ws import websocket_endpoint
+
+        routes.append(
+            WebSocketRoute("/api/sessions/{session_id:str}/ws", websocket_endpoint)
         )
 
     app = Starlette(debug=False, routes=routes)

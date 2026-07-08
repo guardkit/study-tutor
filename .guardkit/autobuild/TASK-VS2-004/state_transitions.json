@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VS2-004",
+    "pre_path": "tasks/backlog/TASK-VS2-004-ws-route-auth-flag-session-lock.md",
+    "post_path": "tasks/design_approved/TASK-VS2-004-ws-route-auth-flag-session-lock.md",
+    "timestamp": "2026-07-08T14:53:47.970017+00:00",
+    "kind": "design_approved_transition"
+  }
+]

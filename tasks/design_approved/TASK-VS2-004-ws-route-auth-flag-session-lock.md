@@ -1,24 +1,30 @@
 ---
-id: TASK-VS2-004
-title: "WS live channel — WebSocketRoute, auth-at-upgrade, voice-flag gating, per-session ordering lock, uvicorn[standard]"
-task_type: feature
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 3
-implementation_mode: task-work
 complexity: 7
-dependencies: [TASK-VS2-003]
 consumer_context:
-  - task: TASK-VS2-003
-    consumes: RUN_TURN_STREAM
-    framework: "asyncio async generator"
-    driver: "python stdlib"
-    format_note: "async def run_turn_stream(session_state, learner_message) -> AsyncIterator[TurnEvent]; reuses _apply_coach_handover/_dispatch_async_coach internally — no duplicate Coach dispatch"
-  - task: TASK-VS2-003
-    consumes: TURN_EVENT_SHAPE
-    framework: "Starlette WebSocket JSON frames"
-    driver: "uvicorn[standard] / websockets"
-    format_note: "TurnEvent members serialize byte-identically to contract §7 Rev 1 frame table; error frames are {type:'error', error, error_type} closed-set envelope"
+- consumes: RUN_TURN_STREAM
+  driver: python stdlib
+  format_note: async def run_turn_stream(session_state, learner_message) -> AsyncIterator[TurnEvent];
+    reuses _apply_coach_handover/_dispatch_async_coach internally — no duplicate Coach
+    dispatch
+  framework: asyncio async generator
+  task: TASK-VS2-003
+- consumes: TURN_EVENT_SHAPE
+  driver: uvicorn[standard] / websockets
+  format_note: TurnEvent members serialize byte-identically to contract §7 Rev 1 frame
+    table; error frames are {type:'error', error, error_type} closed-set envelope
+  framework: Starlette WebSocket JSON frames
+  task: TASK-VS2-003
+dependencies:
+- TASK-VS2-003
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-004
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: feature
+title: WS live channel — WebSocketRoute, auth-at-upgrade, voice-flag gating, per-session
+  ordering lock, uvicorn[standard]
+wave: 3
 ---
 
 ## Description
