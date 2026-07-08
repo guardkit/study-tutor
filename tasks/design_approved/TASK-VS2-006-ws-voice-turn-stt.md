@@ -1,35 +1,50 @@
 ---
-id: TASK-VS2-006
-title: "WS voice_turn frame handling — STT ingestion, validation-core reuse, transcript-first ordering (Tier B)"
-task_type: feature
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 5
-implementation_mode: task-work
 complexity: 7
-dependencies: [TASK-VS2-004, TASK-VS2-005]
-external_dependencies: [TASK-VOX-001, TASK-VOX-002, TASK-VOX-003, TASK-VOX-004]
 consumer_context:
-  - task: TASK-VS2-004
-    consumes: WS_FRAME_ENVELOPE
-    framework: "Starlette WebSocket"
-    driver: "uvicorn[standard] / websockets"
-    format_note: "voice_turn = {type:'voice_turn', content_type, size_bytes} header frame + exactly one binary frame; refusals use the closed-set error envelope; validation refusals are NON-terminal (channel stays open, ASSUM-003)"
-  - task: TASK-VOX-004
-    consumes: validation core (bytes-blob entry point)
-    framework: "pure validation functions + six voice exception classes"
-    driver: "python stdlib / python-multipart (HTTP side only)"
-    format_note: "size→empty→base-MIME→duration pinned order against bytes ACTUALLY received; requires the FEAT-VOICE-001 scope note extracting a validate_audio_bytes(data, content_type)-shaped core from parse_voice_upload — do NOT write a second validator here"
-  - task: TASK-VOX-002
-    consumes: AudioClient (transcribe)
-    framework: "httpx async, injectable transport"
-    driver: "httpx"
-    format_note: "transcribe(bytes, filename=, content_type=) -> str (verbatim, may be whitespace); only VoiceUnavailable escapes"
-  - task: TASK-VS2-003
-    consumes: RUN_TURN_STREAM
-    framework: "asyncio async generator"
-    driver: "python stdlib"
-    format_note: "voice variant feeds the transcript in as learner_message; token/done frames come from the same iterator the typed path uses"
+- consumes: WS_FRAME_ENVELOPE
+  driver: uvicorn[standard] / websockets
+  format_note: voice_turn = {type:'voice_turn', content_type, size_bytes} header frame
+    + exactly one binary frame; refusals use the closed-set error envelope; validation
+    refusals are NON-terminal (channel stays open, ASSUM-003)
+  framework: Starlette WebSocket
+  task: TASK-VS2-004
+- consumes: validation core (bytes-blob entry point)
+  driver: python stdlib / python-multipart (HTTP side only)
+  format_note: size→empty→base-MIME→duration pinned order against bytes ACTUALLY received;
+    requires the FEAT-VOICE-001 scope note extracting a validate_audio_bytes(data,
+    content_type)-shaped core from parse_voice_upload — do NOT write a second validator
+    here
+  framework: pure validation functions + six voice exception classes
+  task: TASK-VOX-004
+- consumes: AudioClient (transcribe)
+  driver: httpx
+  format_note: transcribe(bytes, filename=, content_type=) -> str (verbatim, may be
+    whitespace); only VoiceUnavailable escapes
+  framework: httpx async, injectable transport
+  task: TASK-VOX-002
+- consumes: RUN_TURN_STREAM
+  driver: python stdlib
+  format_note: voice variant feeds the transcript in as learner_message; token/done
+    frames come from the same iterator the typed path uses
+  framework: asyncio async generator
+  task: TASK-VS2-003
+dependencies:
+- TASK-VS2-004
+- TASK-VS2-005
+external_dependencies:
+- TASK-VOX-001
+- TASK-VOX-002
+- TASK-VOX-003
+- TASK-VOX-004
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-006
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: feature
+title: WS voice_turn frame handling — STT ingestion, validation-core reuse, transcript-first
+  ordering (Tier B)
+wave: 5
 ---
 
 ## Description

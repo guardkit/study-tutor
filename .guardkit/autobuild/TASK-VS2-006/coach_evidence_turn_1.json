@@ -1,0 +1,163 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 92.64445955132562,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/voice/test_ws_voice_turn.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/voice/test_ws_voice_turn.py::test_actual_bytes_judged_not_declared PASSED [ 70%]\ntests/unit/voice/test_ws_voice_turn.py::test_speech_services_down_non_terminal PASSED [ 80%]\ntests/unit/voice/test_ws_voice_turn.py::test_ws_voice_turn_calls_shared_validation_core PASSED [ 90%]\ntests/unit/voice/test_ws_voice_turn.py::test_full_voice_turn_happy_path PASSED [100%]\n============================== 10 passed in 0.04s ==============================",
+    "duration_seconds": 0.35906314849853516,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002\nconfigfile: pyproject.toml\nplugins: anyio-4.13.0, cov-7.1.0, bdd-8.1.0, langsmith-0.7.37, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 10 items\n\ntests/unit/voice/test_ws_voice_turn.py::test_transcript_frame_precedes_tokens PASSED [ 10%]\ntests/unit/voice/test_ws_voice_turn.py::test_validation_refusal_non_terminal_oversized PASSED [ 20%]\ntests/unit/voice/test_ws_voice_turn.py::test_validation_refusal_non_terminal_empty PASSED [ 30%]\ntests/unit/voice/test_ws_voice_turn.py::test_validation_refusal_non_terminal_unsupported_format PASSED [ 40%]\ntests/unit/voice/test_ws_voice_turn.py::test_recording_at_size_cap_accepted PASSED [ 50%]\ntests/unit/voice/test_ws_voice_turn.py::test_recording_one_byte_over_refused PASSED [ 60%]\ntests/unit/voice/test_ws_voice_turn.py::test_actual_bytes_judged_not_declared PASSED [ 70%]\ntests/unit/voice/test_ws_voice_turn.py::test_speech_services_down_non_terminal PASSED [ 80%]\ntests/unit/voice/test_ws_voice_turn.py::test_ws_voice_turn_calls_shared_validation_core PASSED [ 90%]\ntests/unit/voice/test_ws_voice_turn.py::test_full_voice_turn_happy_path PASSED [100%]\n\n============================== 10 passed in 0.04s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 7,
+    "criteria_met": 7,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`transcript` frame observed strictly before the first `token` frame (frame-order test)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented handle_voice_turn_frame that emits transcript frame immediately after transcription, before calling turn_stream_fn. Test test_transcript_frame_precedes_tokens verifies the frame ordering by collecting all events and asserting transcript_idx < first_token_idx."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Validation refusals map to the correct contract \u00a79 `error_type`, are non-terminal, and a follow-up question on the same channel succeeds (ASSUM-003)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All validation errors (RecordingTooLarge, EmptyRecording, UnsupportedAudioFormat, QueryTooLong) are caught and yielded as error TurnEvent objects, never raised as exceptions. Tests verify error_type matches exception class name and that only one error event is yielded (non-terminal behavior)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Recording exactly at the size cap accepted; one byte over refused with the identical `error_type` a plain `voice_turn` gives, channel stays usable",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "validate_audio_bytes enforces max_recording_bytes limit. Tests test_recording_at_size_cap_accepted and test_recording_one_byte_over_refused verify boundary behavior: exactly at cap passes validation and proceeds to transcription, one byte over yields RecordingTooLarge error."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Recording with more bytes actually sent than declared is judged on bytes received",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "handle_voice_turn_frame validates audio_bytes parameter directly (actual bytes received), not any declared size from headers. Test test_actual_bytes_judged_not_declared verifies that oversized actual bytes are refused regardless of any header declaration."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Speech services down: `voice_turn` refused as unavailable (non-terminal); a typed streamed question on the same channel still succeeds",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "VoiceUnavailable exceptions from AudioClient.transcribe are caught and yielded as error events with error_type='VoiceUnavailable', not raised. Test test_speech_services_down_non_terminal mocks transcribe to raise VoiceUnavailable and verifies error event is yielded."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "Validation calls resolve to the shared VOX-004 core (seam test asserts the shared function is invoked \u2014 no second validator in this module)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Extracted validate_audio_bytes function from parse_voice_upload in validation.py, implementing the order-pinned validation (size\u2192empty\u2192MIME\u2192duration). handle_voice_turn_frame imports and calls this shared function. Test test_ws_voice_turn_calls_shared_validation_core uses patch to verify the shared function is invoked."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran ruff check --fix and ruff format on all modified files. All linting errors were automatically fixed (removed unused imports). Final verification shows zero linting errors and proper formatting applied."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": true,
+    "passed": true,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": null,
+    "output_tail": "ot an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_token_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_done_event_keys\n  tests/unit/session/test_turn_stream.py:68: PytestWarning: The test <Function test_done_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_done_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_transcript_event_keys\n  tests/unit/session/test_turn_stream.py:75: PytestWarning: The test <Function test_transcript_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_transcript_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_audio_ref_event_keys\n  tests/unit/session/test_turn_stream.py:82: PytestWarning: The test <Function test_audio_ref_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_audio_ref_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_error_event_keys\n  tests/unit/session/test_turn_stream.py:91: PytestWarning: The test <Function test_error_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_error_event_keys(self):\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1270 passed, 7 skipped, 13 warnings in 22.90s"
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}

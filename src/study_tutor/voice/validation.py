@@ -18,7 +18,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from python_multipart.multipart import parse_options_header
-from starlette.datastructures import Headers
 from starlette.requests import Request
 
 from study_tutor.voice.config import VoiceConfig
@@ -46,9 +45,52 @@ class ValidatedUpload:
     content_type: str
 
 
-async def parse_voice_upload(
-    request: Request, config: VoiceConfig
-) -> ValidatedUpload:
+def validate_audio_bytes(
+    audio_bytes: bytes, content_type: str, config: VoiceConfig
+) -> None:
+    """Validate audio bytes with order-pinned checks (shared validation core).
+
+    This is the shared validation core used by both HTTP multipart uploads
+    (parse_voice_upload) and WebSocket voice_turn frames (TASK-VS2-006).
+
+    Validation order (per spec, TASK-VOX-004):
+    1. Size check (RecordingTooLarge)
+    2. Empty check (EmptyRecording)
+    3. MIME type check (UnsupportedAudioFormat)
+    4. Duration check if derivable (QueryTooLong)
+
+    Args:
+        audio_bytes: Raw audio data to validate.
+        content_type: Full MIME type with optional codec params.
+        config: Voice configuration with validation limits.
+
+    Raises:
+        RecordingTooLarge: Audio exceeds max_recording_bytes.
+        EmptyRecording: Audio is empty.
+        UnsupportedAudioFormat: MIME type not in supported_base_mimetypes.
+        QueryTooLong: Duration exceeds max_query_seconds (when derivable).
+    """
+    # 1. SIZE CHECK
+    if len(audio_bytes) > config.max_recording_bytes:
+        raise RecordingTooLarge(config.max_recording_bytes)
+
+    # 2. EMPTY CHECK
+    if not audio_bytes:
+        raise EmptyRecording()
+
+    # 3. MIME TYPE CHECK (strip parameters, normalize case)
+    base_mime = content_type.split(";")[0].strip().lower()
+
+    if base_mime not in config.supported_base_mimetypes:
+        raise UnsupportedAudioFormat(content_type, config.supported_base_mimetypes)
+
+    # 4. DURATION CHECK (best-effort)
+    duration = probe_duration_seconds(audio_bytes, content_type)
+    if duration is not None and duration > config.max_query_seconds:
+        raise QueryTooLong(config.max_query_seconds)
+
+
+async def parse_voice_upload(request: Request, config: VoiceConfig) -> ValidatedUpload:
     """Parse and validate voice upload from multipart request.
 
     Never calls request.form() - uses in-memory push parser to enforce
@@ -108,24 +150,8 @@ async def parse_voice_upload(
     audio_filename = field_data["filename"]
     audio_content_type = field_data["content_type"]
 
-    # 1. SIZE CHECK - enforced on parsed audio field
-    if len(audio_bytes) > config.max_recording_bytes:
-        raise RecordingTooLarge(config.max_recording_bytes)
-
-    # 2. EMPTY CHECK
-    if not audio_bytes:
-        raise EmptyRecording()
-
-    # 3. MIME TYPE CHECK (strip parameters, normalize case)
-    base_mime = audio_content_type.split(";")[0].strip().lower()
-
-    if base_mime not in config.supported_base_mimetypes:
-        raise UnsupportedAudioFormat(audio_content_type, config.supported_base_mimetypes)
-
-    # 4. DURATION CHECK (best-effort)
-    duration = probe_duration_seconds(audio_bytes, audio_content_type)
-    if duration is not None and duration > config.max_query_seconds:
-        raise QueryTooLong(config.max_query_seconds)
+    # Use shared validation core (TASK-VS2-006 refactoring)
+    validate_audio_bytes(audio_bytes, audio_content_type, config)
 
     return ValidatedUpload(
         content=audio_bytes,
@@ -154,7 +180,13 @@ def _parse_multipart_simple(body: bytes, boundary: bytes) -> dict[str, dict]:
     fields = {}
 
     for part in parts_raw:
-        if not part or part == b"--\r\n" or part == b"--" or part == b"\r\n" or part == b"--\n":
+        if (
+            not part
+            or part == b"--\r\n"
+            or part == b"--"
+            or part == b"\r\n"
+            or part == b"--\n"
+        ):
             continue
 
         # Remove leading \r\n but preserve content
@@ -180,7 +212,7 @@ def _parse_multipart_simple(body: bytes, boundary: bytes) -> dict[str, dict]:
             sep_len = 4
 
         headers_raw = part[:header_end]
-        content = part[header_end + sep_len:]  # Skip separator
+        content = part[header_end + sep_len :]  # Skip separator
 
         # Remove trailing \r\n or \n (but preserve empty content)
         if content.endswith(b"\r\n"):

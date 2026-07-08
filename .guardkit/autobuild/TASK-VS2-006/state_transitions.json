@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VS2-006",
+    "pre_path": "tasks/backlog/TASK-VS2-006-ws-voice-turn-stt.md",
+    "post_path": "tasks/design_approved/TASK-VS2-006-ws-voice-turn-stt.md",
+    "timestamp": "2026-07-08T15:21:37.398771+00:00",
+    "kind": "design_approved_transition"
+  }
+]
