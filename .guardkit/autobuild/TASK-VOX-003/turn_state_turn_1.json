@@ -1,0 +1,30 @@
+{
+  "id": "TURN-FEAT-VOICE-001-1",
+  "feature_id": "FEAT-VOICE-001",
+  "task_id": "TASK-VOX-003",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "feedback",
+  "coach_decision": "feedback",
+  "coach_feedback": "- Coverage quality gate failed. Evidence bundle shows coverage_met: false while coverage_required: true, resulting in quality_gates.all_gates_passed: false. Evidence gathering status is 'partial_gate_abort' (not 'complete'), and coverage metrics (line_coverage, branch_coverage, line_threshold, branch_threshold) are all null, indicating the coverage tool did not complete successfully.: Ensure code coverage tool runs successfully and that implementation achieves the required coverage thresholds. The evidence bundle's gathering_status of 'partial_gate_abort' suggests evidence collection stopped at the coverage gate failure. Verify coverage configuration and re-run to capture complete coverage metrics.",
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: feedback",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/utils.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_utils.py",
+    "src/study_tutor/voice/utils.py",
+    "tests/unit/voice/test_utils.py",
+    ".cov_output/coverage.json"
+  ],
+  "tests_passed": null,
+  "tests_failed": null,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-08T12:47:47.219224",
+  "completed_at": "2026-07-08T12:47:47.219224",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

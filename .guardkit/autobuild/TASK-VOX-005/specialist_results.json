@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 2.635416831006296,
+    "error": null,
+    "tests_run": 14,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_stt_unavailable_propagates_before_turn PASSED [ 78%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_assum_005_tts_fai",
+    "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "passed",
+    "duration_seconds": 216.61440418590792,
+    "error": null,
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}

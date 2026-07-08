@@ -936,6 +936,66 @@ def serve_http(port: int, host: str, log_level: str) -> None:
         )
         raise SystemExit(1)
 
+    # TASK-VOX-006: Wire voice services if enabled
+    from study_tutor.voice.config import VoiceConfig
+
+    voice_enabled = os.environ.get("STUDY_TUTOR_VOICE_ENABLED", "")
+    stt_base_url = os.environ.get("STT_BASE_URL", "")
+    stt_model = os.environ.get("STT_MODEL", "")
+    tts_base_url = os.environ.get("TTS_BASE_URL", "")
+    tts_model = os.environ.get("TTS_MODEL", "")
+    tts_voice = os.environ.get("TTS_VOICE", "")
+
+    try:
+        voice_config = VoiceConfig.from_env(
+            enabled=voice_enabled,
+            stt_base_url=stt_base_url,
+            stt_model=stt_model,
+            tts_base_url=tts_base_url,
+            tts_model=tts_model,
+            tts_voice=tts_voice,
+        )
+    except ValueError as exc:
+        click.echo(
+            f"[study-tutor] Error: Voice configuration failed: {exc}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    # Wire voice service components when enabled
+    voice_service = None
+    chunk_store = None
+
+    if voice_config.enabled:
+        from study_tutor.voice.client import AudioClient
+        from study_tutor.voice.service import VoiceTurnService, ChunkStore
+
+        # Build AudioClient with config
+        audio_client = AudioClient(
+            stt_base_url=voice_config.stt_base_url,
+            stt_model=voice_config.stt_model,
+            tts_base_url=voice_config.tts_base_url,
+            tts_model=voice_config.tts_model,
+            tts_voice=voice_config.tts_voice,
+            timeout_seconds=voice_config.audio_timeout_seconds,
+        )
+
+        # Build ChunkStore with TTL from config
+        chunk_store = ChunkStore(
+            ttl_seconds=voice_config.chunk_ttl_seconds,
+            max_entries=1000,  # Hard cap per spec
+        )
+
+        # Build VoiceTurnService with all dependencies
+        voice_service = VoiceTurnService(
+            config=voice_config,
+            audio_client=audio_client,
+            session_service=get_session_service(),
+            chunk_store=chunk_store,
+        )
+
+        logger.info("event=voice_services_wired enabled=true")
+
     # Create the Starlette app with all production dependencies
     from study_tutor.http.app import create_app
 
@@ -944,6 +1004,9 @@ def serve_http(port: int, host: str, log_level: str) -> None:
         reply_fn_factory=reply_fn_factory,
         auth_config=auth_config,
         student_store=student_store,
+        voice_config=voice_config,
+        voice_service=voice_service,
+        chunk_store=chunk_store,
     )
 
     click.echo(

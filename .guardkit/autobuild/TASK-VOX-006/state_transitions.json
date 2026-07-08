@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VOX-006",
+    "pre_path": "tasks/backlog/TASK-VOX-006-http-routes-flag-and-wiring.md",
+    "post_path": "tasks/design_approved/TASK-VOX-006-http-routes-flag-and-wiring.md",
+    "timestamp": "2026-07-08T12:23:37.746434+00:00",
+    "kind": "design_approved_transition"
+  }
+]

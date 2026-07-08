@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="32" time="0.333" timestamp="2026-07-08T13:46:21.104380+01:00" hostname="promaxgb10-41b1"><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_spoken_question_produces_a_transcript_a_tutor_answer_and_spoken_reply_audio" time="0.005" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_the_transcript_enters_the_session_history_exactly_like_a_typed_turn" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_the_spoken_reply_can_be_fetched_and_is_playable_audio" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_with_the_voice_feature_disabled_voice_is_absent_and_text_tutoring_is_unaffected" time="0.004" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_at_exactly_the_size_cap_is_accepted" time="0.044" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_just_over_the_size_cap_is_rejected_as_too_large" time="0.034" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_at_exactly_the_duration_cap_is_accepted" time="0.008" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_just_over_the_duration_cap_is_rejected_as_too_long" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[m4a (AAC)]" time="0.004" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[ogg with opus codec annotation]" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[ogg with quoted, spaced codec annotation]" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[webm with opus codec annotation]" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[wav]" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[mp3]" time="0.003"><failure message="assert 415 == 200&#10; +  where 415 = &lt;Response [415 Unsupported Media Type]&gt;.status_code">fixturefunc = &lt;function _then_voice_turn_succeeds at 0xea3db59cb1a0&gt;
+request = &lt;FixtureRequest for &lt;Function test_recordings_in_supported_formats_are_accepted_regardless_of_codec_annotations[mp3]&gt;&gt;
+kwargs = {'context': {'session_id': 'sess-lilymay-active', 'student_id': 'lilymay', 'recording': b'valid-audio-bytesvalid-audio...lid-audio-bytesvalid-audio-bytesvalid-audio-bytesvalid-audio-bytesvalid-audio-bytes', 'filename': 'question.mp3', ...}}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -&gt; FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+&gt;           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.11/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+context = {'session_id': 'sess-lilymay-active', 'student_id': 'lilymay', 'recording': b'valid-audio-bytesvalid-audio-bytesvalid-...alid-audio-bytesvalid-audio-bytesvalid-audio-bytesvalid-audio-bytesvalid-audio-bytes', 'filename': 'question.mp3', ...}
+
+    @then("the voice turn should succeed")
+    def _then_voice_turn_succeeds(context: dict[str, Any]) -&gt; None:
+        """Then: voice turn succeeds (200 OK)."""
+        response = context["last_response"]
+&gt;       assert response.status_code == 200
+E       assert 415 == 200
+E        +  where 415 = &lt;Response [415 Unsupported Media Type]&gt;.status_code
+
+features/voice-server-module/test_voice_server_module.py:903: AssertionError</failure></testcase><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_reply_audio_reference_fetched_promptly_succeeds_but_an_expired_one_is_gone" time="0.004"><failure message="AttributeError: 'ChunkStore' object has no attribute '_chunks'">fixturefunc = &lt;function _when_fetch_expired_audio at 0xea3db59c9940&gt;
+request = &lt;FixtureRequest for &lt;Function test_a_reply_audio_reference_fetched_promptly_succeeds_but_an_expired_one_is_gone&gt;&gt;
+kwargs = {'test_client': &lt;starlette.testclient.TestClient object at 0xea3db5a638d0&gt;, 'context': {'session_id': 'sess-lilymay-ac...ce-audio/HnV6ufmlsYLJoUjUVLHeUA', ...}, 'chunk_store': &lt;study_tutor.voice.service.ChunkStore object at 0xea3db5a47210&gt;}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -&gt; FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+&gt;           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.11/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+test_client = &lt;starlette.testclient.TestClient object at 0xea3db5a638d0&gt;
+context = {'session_id': 'sess-lilymay-active', 'student_id': 'lilymay', 'chunk_id': 'HnV6ufmlsYLJoUjUVLHeUA', 'reply_audio_url': '/api/sessions/sess-lilymay-active/voice-audio/HnV6ufmlsYLJoUjUVLHeUA', ...}
+chunk_store = &lt;study_tutor.voice.service.ChunkStore object at 0xea3db5a47210&gt;
+
+    @when("I fetch the same reference after its lifetime has passed")
+    def _when_fetch_expired_audio(
+        test_client: TestClient,
+        context: dict[str, Any],
+        chunk_store: ChunkStore,
+    ) -&gt; None:
+        """When: fetch expired audio reference."""
+        # Simulate expiry by clearing the chunk store
+&gt;       chunk_store._chunks.clear()
+        ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'ChunkStore' object has no attribute '_chunks'
+
+features/voice-server-module/test_voice_server_module.py:631: AttributeError</failure></testcase><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_in_an_unsupported_format_is_rejected_naming_the_received_type" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_an_empty_recording_is_rejected" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_the_tutor_cannot_make_out_is_rejected_as_not_understood" time="0.004" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_voice_turn_on_another_students_session_is_refused" time="0.004" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_voice_turn_without_valid_credentials_is_refused" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_voice_turn_on_an_ended_session_is_refused" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_another_student_cannot_fetch_my_reply_audio" time="0.004"><failure message="assert 200 == 403&#10; +  where 200 = &lt;Response [200 OK]&gt;.status_code">fixturefunc = &lt;function _then_refused_forbidden at 0xea3db59cbc40&gt;
+request = &lt;FixtureRequest for &lt;Function test_another_student_cannot_fetch_my_reply_audio&gt;&gt;
+kwargs = {'context': {'session_id': 'sess-lilymay-active', 'student_id': 'lilymay', 'chunk_id': 'rdJ6toEe0ApLmHSpPp3H0w', 'reply_audio_url': '/api/sessions/sess-lilymay-active/voice-audio/rdJ6toEe0ApLmHSpPp3H0w', ...}}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -&gt; FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+&gt;           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.11/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+context = {'session_id': 'sess-lilymay-active', 'student_id': 'lilymay', 'chunk_id': 'rdJ6toEe0ApLmHSpPp3H0w', 'reply_audio_url': '/api/sessions/sess-lilymay-active/voice-audio/rdJ6toEe0ApLmHSpPp3H0w', ...}
+
+    @then("the request should be refused as not mine")
+    @then("their request should be refused as not theirs")
+    def _then_refused_forbidden(context: dict[str, Any]) -&gt; None:
+        """Then: request refused as forbidden (403)."""
+        response = context.get("last_response") or context.get("other_student_audio_response")
+&gt;       assert response.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = &lt;Response [200 OK]&gt;.status_code
+
+features/voice-server-module/test_voice_server_module.py:971: AssertionError</failure></testcase><testcase classname="features.voice-server-module.test_voice_server_module" name="test_when_speech_services_are_unavailable_voice_degrades_and_text_tutoring_continues" time="0.005" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_if_the_reply_cannot_be_spoken_the_answer_still_arrives_as_text" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_no_recording_audio_is_ever_kept" time="0.001" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_two_voice_turns_in_quick_succession_keep_their_replies_separate_and_ordered" time="0.005" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_spoken_attempt_to_reinstruct_the_tutor_is_treated_as_an_ordinary_question" time="0.004" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_with_a_pathshaped_filename_is_handled_safely" time="0.003" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_two_voice_turns_submitted_at_the_same_time_are_both_recorded_cleanly" time="0.006" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_speech_service_that_stops_responding_fails_the_voice_turn_cleanly" time="0.004" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_if_the_tutor_fails_to_answer_the_voice_turn_fails_exactly_as_a_typed_turn_would" time="0.005" /><testcase classname="features.voice-server-module.test_voice_server_module" name="test_a_recording_whose_true_size_exceeds_the_cap_is_rejected_even_if_it_claims_to_be_smaller" time="0.031" /></testsuite></testsuites>

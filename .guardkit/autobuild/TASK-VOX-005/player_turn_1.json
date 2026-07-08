@@ -1,0 +1,93 @@
+{
+  "task_id": "TASK-VOX-005",
+  "turn": 1,
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_service.py",
+    "uv.lock"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-VOX-005_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/service.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_service.py",
+    "src/study_tutor/voice/service.py",
+    "tests/unit/voice/test_service.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_service.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "ChunkStore in-memory TTL storage with session isolation and unguessable IDs",
+    "VoiceTurnService voice-turn orchestration flow (5 steps)",
+    "ASSUM-005: TTS failure after turn committed returns text-only result",
+    "Validation-before-transcribe contract (seam test)",
+    "No audio bytes at rest (ephemeral invariant)",
+    "All lint/format checks pass"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 40,
+  "sdk_max_turns": 160,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.guardkit/autobuild/TASK-VOX-005/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/service.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_service.py"
+  ],
+  "tests_passed_count": 14,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Full happy path returns transcript + tutor_response + one audio ref; transcript persisted via the standard turn path (two rows, verifiable through `SessionService`)",
+      "status": "complete",
+      "evidence": "Implemented VoiceTurnService.voice_turn() which: (1) parses/validates upload via parse_voice_upload, (2) transcribes audio via AudioClient.transcribe, (3) calls SessionService.turn() with transcript as user_message passing reply_fn, (4) synthesizes response via AudioClient.synthesize, (5) stores in ChunkStore and returns VoiceTurnResult with transcript, tutor_response, and one AudioRef. Test test_happy_path_returns_voice_turn_result verifies all components and that SessionService.turn was called (which persists two rows per its contract).",
+      "test_file": "tests/unit/voice/test_service.py",
+      "implementation_files": [
+        "src/study_tutor/voice/service.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Validation/UnintelligibleQuery/STT-down paths add **no** turn; TTS-down-after-turn returns text-only result with the turn recorded exactly once (ASSUM-005)",
+      "status": "complete",
+      "evidence": "Implemented three failure paths: (1) Validation errors from parse_voice_upload propagate immediately before any STT call (test_rejection_precedes_stt verifies STT call count = 0 on RecordingTooLarge). (2) Empty/whitespace transcript raises UnintelligibleQuery before turn is recorded (test_unintelligible_query_when_transcript_empty verifies SessionService.turn not called). (3) STT VoiceUnavailable propagates before turn (test_stt_unavailable_propagates_before_turn verifies no turn). (4) ASSUM-005: TTS failure after turn is committed returns text-only result with audio=[] (test_assum_005_tts_failure_after_turn_returns_text_only verifies turn was recorded once and result has empty audio list).",
+      "test_file": "tests/unit/voice/test_service.py",
+      "implementation_files": [
+        "src/study_tutor/voice/service.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "ChunkStore: TTL expiry \u2192 `get` returns None; cap eviction oldest-first; wrong session \u2192 None; chunk_ids unguessable and collision-free across rapid turns",
+      "status": "complete",
+      "evidence": "Implemented ChunkStore with: (1) TTL expiry checked on get and put (_evict_expired method) - test_ttl_expiry_on_get and test_ttl_eviction_on_put verify TTL behavior. (2) Hard cap with oldest-first eviction (_evict_oldest method) - test_hard_cap_eviction_oldest_first verifies oldest entry evicted when max_entries exceeded. (3) Session-scoped keys (session_id, chunk_id) tuple - test_get_returns_none_for_wrong_session verifies cross-session isolation. (4) Unguessable IDs via secrets.token_urlsafe(16) - test_put_returns_unguessable_chunk_id verifies IDs are unique and non-trivial (>8 chars).",
+      "test_file": "tests/unit/voice/test_service.py",
+      "implementation_files": [
+        "src/study_tutor/voice/service.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "No audio bytes at rest: no disk/DB writes of audio anywhere in the module; no audio bytes in log records (test with a capturing log handler)",
+      "status": "complete",
+      "evidence": "ChunkStore uses in-memory dict only (self._store), never writes to disk or DB. VoiceTurnService discards audio bytes immediately after transcription (comment in code: 'Discard audio bytes immediately (ephemeral invariant)'). All logging uses chunk_id only, never audio bytes. test_no_audio_bytes_in_logs uses caplog fixture to verify no audio bytes (b'fake audio wav bytes' or b'wav audio bytes') appear in any log messages.",
+      "test_file": "tests/unit/voice/test_service.py",
+      "implementation_files": [
+        "src/study_tutor/voice/service.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Ran 'python3 -m ruff check' and 'python3 -m ruff format' on both src/study_tutor/voice/service.py and tests/unit/voice/test_service.py. Fixed initial lint errors (removed unused imports, unused variables, extraneous f-string prefix). Re-ran checks - all passed with 'All checks passed!' and files are properly formatted.",
+      "test_file": "tests/unit/voice/test_service.py",
+      "implementation_files": [
+        "src/study_tutor/voice/service.py"
+      ]
+    }
+  ]
+}

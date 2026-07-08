@@ -1,0 +1,16 @@
+{
+  "task_id": "TASK-VOX-005",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "f7ea5d17a696570b12dcafd38fd99b0cf68b0041",
+      "timestamp": "2026-07-08T13:23:14.675342",
+      "tests_passed": true,
+      "test_count": 14,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    }
+  ],
+  "last_updated": "2026-07-08T13:23:14.675457"
+}
