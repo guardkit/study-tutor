@@ -1,0 +1,30 @@
+{
+  "id": "TURN-FEAT-VOICE-003-1",
+  "feature_id": "FEAT-VOICE-003",
+  "task_id": "TASK-VC-001",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    "app/pubspec.yaml",
+    "app/android/app/src/main/AndroidManifest.xml",
+    "app/ios/Runner/Info.plist",
+    "app/android/app/src/main/res/xml/network_security_config.xml",
+    "app/test/voice_runtime_config_test.dart"
+  ],
+  "tests_passed": 160,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-08T20:31:28.321887",
+  "completed_at": "2026-07-08T20:31:28.321887",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}
