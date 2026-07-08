@@ -1,21 +1,30 @@
 ---
-id: TASK-VC-006
-title: "Streaming voiceTurnStream + seq-ordered playback + incremental text"
-task_type: feature
-parent_review: TASK-REV-V3C1
-feature_id: FEAT-VOICE-003
-wave: 4
-implementation_mode: task-work
 complexity: 7
-dependencies: [TASK-VC-005]
-status: pending
-tags: [voice, flutter, feat-voice-003, streaming, playback]
 consumer_context:
-  - task: TASK-VC-002
-    consumes: VoiceApi
-    framework: "Dart Stream (implements VoiceApi.voiceTurnStream) + just_audio ordered queue"
-    driver: "web_socket_channel (WS) / just_audio"
-    format_note: "Consumes VoiceTurnEvent stream; playback queue keyed by seq; text tokens render ahead of audio; per-part fetchAudioChunk authenticated as the signed-in principal"
+- consumes: VoiceApi
+  driver: web_socket_channel (WS) / just_audio
+  format_note: Consumes VoiceTurnEvent stream; playback queue keyed by seq; text tokens
+    render ahead of audio; per-part fetchAudioChunk authenticated as the signed-in
+    principal
+  framework: Dart Stream (implements VoiceApi.voiceTurnStream) + just_audio ordered
+    queue
+  task: TASK-VC-002
+dependencies:
+- TASK-VC-005
+feature_id: FEAT-VOICE-003
+id: TASK-VC-006
+implementation_mode: task-work
+parent_review: TASK-REV-V3C1
+status: design_approved
+tags:
+- voice
+- flutter
+- feat-voice-003
+- streaming
+- playback
+task_type: feature
+title: Streaming voiceTurnStream + seq-ordered playback + incremental text
+wave: 4
 ---
 
 # Task: Streaming voiceTurnStream + seq-ordered playback + incremental text

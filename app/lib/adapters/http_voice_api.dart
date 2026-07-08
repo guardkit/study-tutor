@@ -9,10 +9,12 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:web_socket_channel/io.dart';
 
 import '../domain/errors.dart';
 import '../ports/identity_provider.dart';
@@ -201,14 +203,165 @@ class HttpVoiceApi implements VoiceApi {
     String sessionId,
     Uint8List audio, {
     required String contentType,
-  }) {
-    // Streaming variant not implemented in TASK-VC-003 (MVP HTTP turn only)
-    throw UnimplementedError('voiceTurnStream lands in TASK-VC-006');
+  }) async* {
+    // Build WebSocket URI from base URL (http→ws, https→wss)
+    final wsUri = _wsUri(
+      '/api/sessions/${Uri.encodeComponent(sessionId)}/voice_turn',
+    );
+
+    IOWebSocketChannel? channel;
+    try {
+      // Connect to WebSocket with authorization header
+      // Use io.WebSocket.connect to pass custom headers (bearer token)
+      final token = _identity.currentPrincipal?.token;
+      final headers = {if (token != null) 'authorization': 'Bearer $token'};
+
+      final socket =
+          await io.WebSocket.connect(
+            wsUri.toString(),
+            headers: headers,
+          ).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () =>
+                throw const TransportError('WebSocket connection timeout'),
+          );
+
+      channel = IOWebSocketChannel(socket);
+
+      // Send header frame: {type:"voice_turn", content_type, size_bytes}
+      final headerFrame = jsonEncode({
+        'type': 'voice_turn',
+        'content_type': contentType,
+        'size_bytes': audio.length,
+      });
+      channel.sink.add(headerFrame);
+
+      // Send binary frame with audio data
+      channel.sink.add(audio);
+
+      // Process incoming frames
+      await for (final message in channel.stream) {
+        if (message is String) {
+          // Parse JSON frame
+          dynamic json;
+          try {
+            json = jsonDecode(message);
+          } on FormatException {
+            throw const TransportError('malformed WebSocket frame');
+          }
+
+          if (json is! Map<String, dynamic>) {
+            throw const TransportError('WebSocket frame is not a JSON object');
+          }
+
+          final type = json['type'] as String?;
+
+          // Handle error frames
+          if (type == 'error') {
+            final errorType = json['error_type'] as String?;
+            final errorMessage = json['error'] as String? ?? 'Unknown error';
+            _throwWireErrorFromType(errorType, errorMessage);
+          }
+
+          // Map frame type to event
+          switch (type) {
+            case 'transcript':
+              final text = json['text'] as String? ?? '';
+              final isFinal = json['is_final'] as bool? ?? true;
+              yield TranscriptEvent(transcript: text, isFinal: isFinal);
+
+            case 'token':
+              final token = json['token'] as String? ?? '';
+              yield TextTokenEvent(token: token);
+
+            case 'audio_part':
+              final seq = json['seq'] as int? ?? 0;
+              final chunkId = json['chunk_id'] as String? ?? '';
+              yield AudioPartEvent(seq: seq, chunkId: chunkId);
+
+            case 'turn_complete':
+              yield const TurnCompleteEvent();
+              await channel.sink.close();
+              return;
+
+            default:
+              // Unknown frame type - ignore per robustness principle
+              continue;
+          }
+        }
+      }
+    } on io.SocketException catch (e) {
+      throw TransportError('WebSocket connection failed: ${e.message}');
+    } on TimeoutException {
+      throw const TransportError('WebSocket operation timeout');
+    } on io.WebSocketException catch (e) {
+      throw TransportError('WebSocket error: ${e.message}');
+    } finally {
+      await channel?.sink.close();
+    }
+  }
+
+  /// Build WebSocket URI from HTTP base URL (http→ws, https→wss)
+  Uri _wsUri(String path) {
+    final httpUri = Uri.parse('$_base$path');
+    final scheme = httpUri.scheme == 'https' ? 'wss' : 'ws';
+    return httpUri.replace(scheme: scheme);
+  }
+
+  /// Throw typed exception from wire error_type string (used by WebSocket path)
+  Never _throwWireErrorFromType(String? errorType, String message) {
+    switch (errorType) {
+      // Session §9 errors
+      case 'SessionNotFoundError':
+        throw SessionNotFoundError(message);
+      case 'SessionEnded':
+        throw SessionEnded(message);
+      case 'SessionForbidden':
+        throw SessionForbidden(message);
+      case 'Unauthenticated':
+        throw Unauthenticated(message);
+
+      // Voice-specific errors
+      case 'UnsupportedAudioFormat':
+        throw UnsupportedAudioFormat(message);
+      case 'EmptyRecording':
+        throw EmptyRecording(message);
+      case 'UnintelligibleQuery':
+        throw UnintelligibleQuery(message);
+      case 'QueryTooLong':
+        throw QueryTooLong(message);
+      case 'RecordingTooLarge':
+        throw RecordingTooLarge(message);
+      case 'VoiceUnavailable':
+        throw VoiceUnavailable(message);
+
+      default:
+        throw TransportError(message);
+    }
   }
 
   @override
-  Future<Uint8List> fetchAudioChunk(String sessionId, String chunkId) {
-    // Audio chunk fetching not implemented in TASK-VC-003 (MVP HTTP turn only)
-    throw UnimplementedError('fetchAudioChunk lands in TASK-VC-006');
+  Future<Uint8List> fetchAudioChunk(String sessionId, String chunkId) async {
+    // Fetch pre-generated audio chunk via authenticated GET request
+    final uri = _uri(
+      '/api/sessions/${Uri.encodeComponent(sessionId)}/audio_chunks/${Uri.encodeComponent(chunkId)}',
+    );
+
+    http.Response response;
+    try {
+      response = await _client
+          .get(uri, headers: _headers())
+          .timeout(const Duration(seconds: 10));
+    } on TimeoutException {
+      throw const TransportError('audio chunk fetch timeout');
+    } on http.ClientException catch (e) {
+      throw TransportError('network failure: ${e.message}');
+    }
+
+    // Check for wire errors (§9 + voice errors)
+    _throwWireError(response);
+
+    // Return raw audio bytes
+    return response.bodyBytes;
   }
 }
