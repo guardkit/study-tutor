@@ -1,24 +1,28 @@
 ---
-id: TASK-VOX-006
-title: "HTTP routes — flag-gated voice-turn/voice-audio, envelope mapping, serve-http wiring"
-task_type: feature
-parent_review: TASK-REV-852B
-feature_id: FEAT-VOICE-001
-wave: 4
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VOX-005]
 consumer_context:
-  - task: TASK-VOX-005
-    consumes: VoiceTurnService + ChunkStore
-    framework: "Starlette handlers over app.state"
-    driver: "starlette"
-    format_note: "voice_turn(...) -> VoiceTurnResult; ChunkStore.get(session_id, chunk_id) -> bytes | None (None ⇒ transport-level 404, no error_type)"
-  - task: TASK-VOX-001
-    consumes: VoiceConfig
-    framework: "frozen dataclass"
-    driver: "stdlib dataclasses"
-    format_note: "enabled gates route mounting; STT_/TTS_ env names read once in serve-http"
+- consumes: VoiceTurnService + ChunkStore
+  driver: starlette
+  format_note: voice_turn(...) -> VoiceTurnResult; ChunkStore.get(session_id, chunk_id)
+    -> bytes | None (None ⇒ transport-level 404, no error_type)
+  framework: Starlette handlers over app.state
+  task: TASK-VOX-005
+- consumes: VoiceConfig
+  driver: stdlib dataclasses
+  format_note: enabled gates route mounting; STT_/TTS_ env names read once in serve-http
+  framework: frozen dataclass
+  task: TASK-VOX-001
+dependencies:
+- TASK-VOX-005
+feature_id: FEAT-VOICE-001
+id: TASK-VOX-006
+implementation_mode: task-work
+parent_review: TASK-REV-852B
+status: design_approved
+task_type: feature
+title: HTTP routes — flag-gated voice-turn/voice-audio, envelope mapping, serve-http
+  wiring
+wave: 4
 ---
 
 ## Description

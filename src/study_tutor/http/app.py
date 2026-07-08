@@ -438,8 +438,11 @@ def create_app(
     auth_config: HTTPAuthConfig,
     student_store: Any,
     reply_fn_factory: ReplyFnFactory | None = None,
+    voice_config: Any | None = None,
+    voice_service: Any | None = None,
+    chunk_store: Any | None = None,
 ) -> Starlette:
-    """Create Starlette app with the six session routes.
+    """Create Starlette app with the six session routes and optional voice routes.
 
     Args:
         service: SessionService instance (injected, can be fake for tests).
@@ -451,6 +454,10 @@ def create_app(
             session_id/student_id (production — threads the typed
             SessionState into the tutor loop). Exactly one of reply_fn /
             reply_fn_factory is required.
+        voice_config: Optional VoiceConfig (TASK-VOX-006). When enabled, voice routes
+            are mounted.
+        voice_service: Optional VoiceTurnService for voice routes.
+        chunk_store: Optional ChunkStore for voice audio retrieval.
 
     Returns:
         Configured Starlette application.
@@ -480,6 +487,18 @@ def create_app(
     if auth_config.dev_reset:
         routes.append(Route("/__dev__/reset", dev_reset, methods=["POST"]))
 
+    # TASK-VOX-006: Mount voice routes ONLY when voice_config.enabled is True
+    # When flag is off, routes do not exist (unknown route 404, not 403)
+    if voice_config is not None and voice_config.enabled:
+        from study_tutor.voice.routes import voice_turn, voice_audio
+
+        routes.append(
+            Route("/api/sessions/{session_id:str}/voice-turn", voice_turn, methods=["POST"])
+        )
+        routes.append(
+            Route("/api/sessions/{session_id:str}/voice-audio/{chunk_id:str}", voice_audio, methods=["GET"])
+        )
+
     app = Starlette(debug=False, routes=routes)
 
     # Inject dependencies into app.state for handlers to access
@@ -488,6 +507,12 @@ def create_app(
     app.state.reply_fn_factory = reply_fn_factory
     app.state.auth_config = auth_config
     app.state.student_store = student_store
+
+    # TASK-VOX-006: Inject voice dependencies when available
+    if voice_config is not None and voice_config.enabled:
+        app.state.voice_config = voice_config
+        app.state.voice_service = voice_service
+        app.state.chunk_store = chunk_store
 
     return app
 
