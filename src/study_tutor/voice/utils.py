@@ -3,6 +3,7 @@
 This module provides stdlib-only duration detection for WebM and Ogg audio formats.
 Never raises exceptions on malformed input.
 """
+
 from __future__ import annotations
 
 import struct
@@ -66,7 +67,7 @@ def _probe_webm_duration(content: bytes) -> float | None:
         pos = 0
 
         # Find EBML header (0x1A 0x45 0xDF 0xA3)
-        if len(view) < 4 or bytes(view[:4]) != b"\x1A\x45\xDF\xA3":
+        if len(view) < 4 or bytes(view[:4]) != b"\x1a\x45\xdf\xa3":
             return None
 
         pos = 4
@@ -77,7 +78,7 @@ def _probe_webm_duration(content: bytes) -> float | None:
         pos += bytes_read + ebml_size
 
         # Find Segment (0x18 0x53 0x80 0x67)
-        if pos + 4 > len(view) or bytes(view[pos:pos+4]) != b"\x18\x53\x80\x67":
+        if pos + 4 > len(view) or bytes(view[pos : pos + 4]) != b"\x18\x53\x80\x67":
             return None
         pos += 4
 
@@ -103,10 +104,10 @@ def _probe_webm_duration(content: bytes) -> float | None:
                 break
 
             # Read element ID (variable length, but we check known IDs)
-            element_id = bytes(view[pos:pos+4])
+            element_id = bytes(view[pos : pos + 4])
 
             # Info element: 0x15 0x49 0xA9 0x66
-            if element_id == b"\x15\x49\xA9\x66":
+            if element_id == b"\x15\x49\xa9\x66":
                 pos += 4
                 info_size, bytes_read = _read_ebml_size(view, pos)
                 if info_size is None:
@@ -119,16 +120,18 @@ def _probe_webm_duration(content: bytes) -> float | None:
                     if pos + 4 > len(view):
                         break
 
-                    info_elem_id = bytes(view[pos:pos+4])
+                    info_elem_id = bytes(view[pos : pos + 4])
 
                     # TimestampScale: 0x2A 0xD7 0xB1 (3-byte ID)
-                    if info_elem_id[:3] == b"\x2A\xD7\xB1":
+                    if info_elem_id[:3] == b"\x2a\xd7\xb1":
                         pos += 3
                         ts_size, ts_bytes = _read_ebml_size(view, pos)
                         if ts_size is not None and ts_size == 4:
                             pos += ts_bytes
                             if pos + 4 <= len(view):
-                                timescale_ns = struct.unpack(">I", bytes(view[pos:pos+4]))[0]
+                                timescale_ns = struct.unpack(
+                                    ">I", bytes(view[pos : pos + 4])
+                                )[0]
                             pos += 4
                         else:
                             break
@@ -141,9 +144,13 @@ def _probe_webm_duration(content: bytes) -> float | None:
                             pos += dur_bytes
                             if pos + dur_size <= len(view):
                                 if dur_size == 4:
-                                    duration_ticks = struct.unpack(">f", bytes(view[pos:pos+4]))[0]
+                                    duration_ticks = struct.unpack(
+                                        ">f", bytes(view[pos : pos + 4])
+                                    )[0]
                                 else:  # 8 bytes
-                                    duration_ticks = struct.unpack(">d", bytes(view[pos:pos+8]))[0]
+                                    duration_ticks = struct.unpack(
+                                        ">d", bytes(view[pos : pos + 8])
+                                    )[0]
                             pos += dur_size
                         else:
                             break
@@ -206,7 +213,7 @@ def _probe_ogg_duration(content: bytes) -> float | None:
 
         while pos >= 26:
             # Look for "OggS" marker
-            if content[pos-3:pos+1] == b"OggS":
+            if content[pos - 3 : pos + 1] == b"OggS":
                 # Validate page structure
                 page_start = pos - 3
 
@@ -224,7 +231,7 @@ def _probe_ogg_duration(content: bytes) -> float | None:
                 is_eos = (header_type & 0x04) != 0
 
                 # Read granule position (signed 64-bit LE at offset 6)
-                granule_bytes = content[page_start + 6:page_start + 14]
+                granule_bytes = content[page_start + 6 : page_start + 14]
                 if len(granule_bytes) != 8:
                     pos -= 1
                     continue
@@ -291,7 +298,7 @@ def _read_ebml_size(view: memoryview, pos: int) -> tuple[int | None, int]:
         return None, 0
 
     # Read size value
-    size = (first_byte & mask)
+    size = first_byte & mask
     for i in range(1, length):
         size = (size << 8) | view[pos + i]
 

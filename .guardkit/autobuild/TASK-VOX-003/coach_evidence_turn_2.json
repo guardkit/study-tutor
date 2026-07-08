@@ -1,0 +1,167 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .cov_output/coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 1
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": true,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 92.10184264852053,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/voice/test_utils.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/voice/test_utils.py::test_webm_invalid_duration_size PASSED   [ 91%]\ntests/unit/voice/test_utils.py::test_webm_invalid_timescale_size PASSED  [ 94%]\ntests/unit/voice/test_utils.py::test_webm_truncated_in_info PASSED       [ 97%]\ntests/unit/voice/test_utils.py::test_ogg_page_header_truncated PASSED    [100%]\n============================== 35 passed in 0.03s ==============================",
+    "duration_seconds": 0.4522428512573242,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-mteqpkmr\nconfigfile: pyproject.toml\nplugins: anyio-4.14.1, langsmith-0.9.8, cov-7.1.0, bdd-8.1.0, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 35 items\n\ntests/unit/voice/test_utils.py::test_webm_with_duration_element PASSED   [  2%]\ntests/unit/voice/test_utils.py::test_webm_streamed_returns_none PASSED   [  5%]\ntests/unit/voice/test_utils.py::test_webm_with_custom_timescale PASSED   [  8%]\ntests/unit/voice/test_utils.py::test_ogg_opus_eos_granule PASSED         [ 11%]\ntests/unit/voice/test_utils.py::test_ogg_header_page_granule_zero PASSED [ 14%]\ntests/unit/voice/test_utils.py::test_ogg_false_sync_skipped PASSED       [ 17%]\ntests/unit/voice/test_utils.py::test_unknown_content_type_returns_none PASSED [ 20%]\ntests/unit/voice/test_utils.py::test_content_type_with_codecs_parameter PASSED [ 22%]\ntests/unit/voice/test_utils.py::test_truncated_webm_returns_none PASSED  [ 25%]\ntests/unit/voice/test_utils.py::test_garbage_bytes_returns_none PASSED   [ 28%]\ntests/unit/voice/test_utils.py::test_truncated_ogg_returns_none PASSED   [ 31%]\ntests/unit/voice/test_utils.py::test_empty_content_returns_none PASSED   [ 34%]\ntests/unit/voice/test_utils.py::test_builders_round_trip_webm PASSED     [ 37%]\ntests/unit/voice/test_utils.py::test_builders_round_trip_ogg PASSED      [ 40%]\ntests/unit/voice/test_utils.py::test_case_insensitive_content_type PASSED [ 42%]\ntests/unit/voice/test_utils.py::test_webm_malformed_ebml_header PASSED   [ 45%]\ntests/unit/voice/test_utils.py::test_webm_missing_segment PASSED         [ 48%]\ntests/unit/voice/test_utils.py::test_webm_segment_without_info PASSED    [ 51%]\ntests/unit/voice/test_utils.py::test_webm_duration_without_timescale PASSED [ 54%]\ntests/unit/voice/test_utils.py::test_webm_8byte_duration PASSED          [ 57%]\ntests/unit/voice/test_utils.py::test_webm_zero_duration PASSED           [ 60%]\ntests/unit/voice/test_utils.py::test_ogg_invalid_version PASSED          [ 62%]\ntests/unit/voice/test_utils.py::test_ogg_non_eos_page PASSED             [ 65%]\ntests/unit/voice/test_utils.py::test_ogg_negative_granule PASSED         [ 68%]\ntests/unit/voice/test_utils.py::test_ogg_too_short PASSED                [ 71%]\ntests/unit/voice/test_utils.py::test_ogg_truncated_granule PASSED        [ 74%]\ntests/unit/voice/test_utils.py::test_webm_malformed_ebml_size PASSED     [ 77%]\ntests/unit/voice/test_utils.py::test_webm_truncated_after_segment_id PASSED [ 80%]\ntests/unit/voice/test_utils.py::test_webm_info_with_unknown_elements PASSED [ 82%]\ntests/unit/voice/test_utils.py::test_webm_segment_with_unknown_top_level_elements PASSED [ 85%]\ntests/unit/voice/test_utils.py::test_webm_large_ebml_size_encoding PASSED [ 88%]\ntests/unit/voice/test_utils.py::test_webm_invalid_duration_size PASSED   [ 91%]\ntests/unit/voice/test_utils.py::test_webm_invalid_timescale_size PASSED  [ 94%]\ntests/unit/voice/test_utils.py::test_webm_truncated_in_info PASSED       [ 97%]\ntests/unit/voice/test_utils.py::test_ogg_page_header_truncated PASSED    [100%]\n\n============================== 35 passed in 0.03s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "WebM with Duration element \u2192 correct seconds; Chrome-style streamed WebM (no Duration) \u2192 `None`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented _probe_webm_duration() that performs EBML walk to find Duration element and calculates seconds from ticks * timescale. Handles streamed segments (unknown size marker) by returning None. Comprehensive tests added including: test_webm_with_duration_element (5 seconds), test_webm_streamed_returns_none, test_webm_with_custom_timescale (20 seconds), test_webm_duration_without_timescale (default 1ms), test_webm_8byte_duration (double precision), test_webm_zero_duration. All tests pass. Coverage: 83%."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Ogg/Opus EOS granule \u2192 `granule/48000`; header-page granule 0 \u2192 `None`; false-sync `OggS` bytes skipped",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented _probe_ogg_duration() that scans backwards for OggS sync pattern, validates page structure, checks EOS flag, and calculates duration as granule/48000. Returns None for header pages (granule 0). Properly skips false OggS sync bytes. Comprehensive tests added including: test_ogg_opus_eos_granule (3.5s), test_ogg_header_page_granule_zero, test_ogg_false_sync_skipped (2.0s), test_ogg_invalid_version, test_ogg_non_eos_page, test_ogg_negative_granule, test_ogg_too_short, test_ogg_truncated_granule, test_ogg_page_header_truncated. All tests pass. Coverage: 83%."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Unknown/absent content types and truncated/garbage bytes \u2192 `None`, never an exception",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "probe_duration_seconds() validates content type, strips parameters (;codecs=...), and returns None for unknown types. All parsing wrapped in try/except blocks that catch all exceptions and return None. Comprehensive tests added including: test_unknown_content_type_returns_none (audio/mp4, audio/mpeg, video/mp4, empty string), test_truncated_webm_returns_none, test_garbage_bytes_returns_none, test_truncated_ogg_returns_none, test_empty_content_returns_none, test_webm_malformed_ebml_header, test_webm_missing_segment, test_webm_segment_without_info, test_webm_malformed_ebml_size, test_webm_truncated_after_segment_id, test_webm_truncated_in_info. All tests pass without raising exceptions. Coverage: 83%."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Builders produce bytes the probe itself parses (round-trip tests)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented audio sample builders: make_webm() creates valid WebM with configurable duration_ticks, timescale_ns, and streamed_segment flag; make_ogg_page() creates valid Ogg pages with CRC32 checksums; make_ogg_opus() creates complete Ogg/Opus files with header, tags, and EOS pages. Round-trip tests: test_builders_round_trip_webm (2.5s, 10s, 0.5s all parse correctly), test_builders_round_trip_ogg (1.0s, 2.5s, 5.0s, 10.5s all parse correctly). All builders produce bytes that probe_duration_seconds() successfully parses to expected durations. All tests pass. Coverage: 83%."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All files pass ruff linting with 'All checks passed!' 35 tests run successfully. No linting errors in either implementation or test files. Turn 2 improved test coverage from 64% to 83% by adding 20 additional edge case tests while maintaining lint compliance."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": false,
+    "passed": false,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": null,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": "parallel_wave",
+    "output_tail": null
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .cov_output/coverage.json. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .cov_output/coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}

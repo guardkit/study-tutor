@@ -1,0 +1,9 @@
+{
+  "turn": 2,
+  "feedback_from_turn": 1,
+  "feedback_summary": "- Coverage quality gate failed. Evidence bundle shows coverage_met: false while coverage_required: true, resulting in quality_gates.all_gates_passed: false. Evidence gathering status is 'partial_gate_abort' (not 'complete'), and coverage metrics (line_coverage, branch_coverage, line_threshold, branch_threshold) are all null, indicating the coverage tool did not complete successfully.: Ensure code coverage tool runs successfully and that implementation achieves the required coverage thresholds. The evidence bundle's gathering_status of 'partial_gate_abort' suggests evidence collection stopped at the coverage gate failure. Verify coverage configuration and re-run to capture complete coverage metrics.",
+  "must_fix": [],
+  "should_fix": [],
+  "validation_results": {},
+  "raw_feedback": "- Coverage quality gate failed. Evidence bundle shows coverage_met: false while coverage_required: true, resulting in quality_gates.all_gates_passed: false. Evidence gathering status is 'partial_gate_abort' (not 'complete'), and coverage metrics (line_coverage, branch_coverage, line_threshold, branch_threshold) are all null, indicating the coverage tool did not complete successfully.: Ensure code coverage tool runs successfully and that implementation achieves the required coverage thresholds. The evidence bundle's gathering_status of 'partial_gate_abort' suggests evidence collection stopped at the coverage gate failure. Verify coverage configuration and re-run to capture complete coverage metrics."
+}
