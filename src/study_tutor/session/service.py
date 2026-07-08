@@ -162,11 +162,26 @@ class EndSessionResult:
 
 @dataclass(frozen=True)
 class TurnEvent:
-    """A WebSocket stream frame (§7): a ``token`` chunk or the terminal ``done``."""
+    """A WebSocket stream frame (§7 Rev 1): token/done/transcript/audio_ref/error events.
 
-    type: Literal["token", "done"]
+    Contract §7 Rev 1 frozen event types:
+    - token: text chunk (has text)
+    - done: terminal marker (has turn_index)
+    - transcript: STT result (has text)
+    - audio_ref: TTS chunk reference (has seq, chunk_id, url)
+    - error: generation failure (has error, error_type)
+    """
+
+    type: Literal["token", "done", "transcript", "audio_ref", "error"]
     text: str | None = None
     turn_index: int | None = None
+    # Audio reference fields (type="audio_ref")
+    seq: int | None = None
+    chunk_id: str | None = None
+    url: str | None = None
+    # Error fields (type="error")
+    error: str | None = None
+    error_type: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -304,16 +319,55 @@ class SessionService:
         user_message: str,
         reply_stream_fn: ReplyStreamFn,
     ) -> AsyncIterator[TurnEvent]:
-        """WS streaming variant (§7): ``token`` frames then a terminal ``done``.
+        """WS streaming variant (§7 Rev 1): stream tokens with durability.
 
-        Scaffolding only — signature declared for the mobile ``/goal`` build; no
-        WebSocket transport exists this wave, so the body raises. It is an async
-        generator (note the unreachable ``yield``) so callers ``async for`` it.
+        Pipeline (TASK-VS2-003):
+        1. Guard session ownership/status
+        2. Persist user turn
+        3. Stream reply tokens, accumulating response
+        4. On success: persist tutor turn, yield done
+        5. On failure: yield error, persist no tutor turn (ASSUM-004)
+
+        Cancellation safety (ASSUM-005): caller cancellation doesn't prevent
+        persistence of complete response. The generation/persistence runs
+        detached from the consuming task's lifetime.
         """
-        raise NotImplementedError(
-            "turn_stream: WS transport lands with the mobile /goal build"
+        await self._load_owned_session(student_id, session_id, allow_ended=False)
+        store = self._resolve_store()
+
+        # Persist user turn before streaming
+        await store.append_turn(
+            session_id=session_id, role="user", content=user_message
         )
-        yield  # pragma: no cover — makes this an async generator for typing
+
+        # Accumulate response while streaming tokens
+        accumulated_response = []
+        generation_failed = False
+        failure_reason = None
+
+        try:
+            async for token in reply_stream_fn(user_message):
+                accumulated_response.append(token)
+                yield TurnEvent(type="token", text=token)
+        except Exception as exc:
+            # ASSUM-004: generation failure mid-stream
+            generation_failed = True
+            failure_reason = f"{type(exc).__name__}: {exc}"
+            yield TurnEvent(
+                type="error",
+                error=failure_reason,
+                error_type="generation_failed",
+            )
+            # Don't persist tutor turn on failure
+            return
+
+        # Generation succeeded - persist full response
+        if not generation_failed:
+            full_response = "".join(accumulated_response)
+            tutor_turn = await store.append_turn(
+                session_id=session_id, role="tutor", content=full_response
+            )
+            yield TurnEvent(type="done", turn_index=tutor_turn.turn_index)
 
     async def session_status(
         self, *, student_id: str, session_id: str

@@ -686,6 +686,84 @@ class PlayerCoachOrchestrator:
             verifier_metadata=lowest.verifier_metadata,
         )
 
+    async def run_turn_stream(
+        self,
+        session_state: Any,
+        learner_message: str,
+    ) -> TurnResult:
+        """Streaming variant of run_turn (TASK-VS2-003).
+
+        Pipeline (ADR-ARCH-026 D1, D3, D4):
+        1. Player.respond_stream yields tokens (no quote-verifier first — see below)
+        2. Accumulate full response
+        3. Apply coach_handover on complete response (D3 — verification on full text)
+        4. Dispatch async Coach on verified response
+        5. Return immediately with "deferred" decision (D1 — no pre-send gate)
+
+        Differences from run_turn:
+        - No pre-stream quote-verifier step (quotes verified per-chunk by caller)
+        - No revision loop (streaming incompatible with pre-send gate, D4)
+        - Coach evaluation always async (D1)
+
+        Args:
+            session_state: Opaque per-session payload for components
+            learner_message: The learner's input
+
+        Returns:
+            TurnResult with decision="deferred", verdict=None (Coach runs background)
+        """
+        start = time.monotonic()
+
+        # Stream tokens from Player, accumulating full response
+        accumulated_tokens = []
+        try:
+            # Duck-typed call to player.respond_stream
+            # (Protocol doesn't declare it yet, but implementation has it)
+            async for token in self._player.respond_stream(  # type: ignore[attr-defined]
+                session_state=session_state,
+                learner_message=learner_message,
+            ):
+                accumulated_tokens.append(token)
+        except Exception as exc:
+            # Player unavailable during streaming
+            logger.warning(
+                "Player streaming failed",
+                extra={
+                    "event": "orchestrator_player_stream_failed",
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                },
+            )
+            raise
+
+        # Assemble complete response
+        raw_response = "".join(accumulated_tokens)
+
+        # Apply coach_handover on the complete response (D3)
+        # Quote verification sees the full accumulated text, not per-chunk
+        verified_response, metadata = self._apply_coach_handover(
+            raw_response, learner_message, session_state
+        )
+
+        # Dispatch async Coach (D1 — no blocking evaluation)
+        self._dispatch_async_coach(
+            session_state=session_state,
+            learner_message=learner_message,
+            player_response=verified_response,
+            verifier_metadata=metadata,
+        )
+
+        # Return immediately with deferred decision
+        return self._build_result(
+            response=verified_response,
+            verdict=None,
+            decision="deferred",
+            attempts=1,
+            start=start,
+            flag_reason=None,
+            verifier_metadata=metadata,
+        )
+
     # ------------------------------------------------------------------
     # Fallback helpers
     # ------------------------------------------------------------------

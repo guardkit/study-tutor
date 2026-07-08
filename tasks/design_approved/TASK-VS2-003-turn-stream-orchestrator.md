@@ -1,24 +1,30 @@
 ---
-id: TASK-VS2-003
-title: "SessionService.turn_stream + TurnEvent widening + PlayerCoachOrchestrator.run_turn_stream (durability, async Coach)"
-task_type: feature
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 2
-implementation_mode: task-work
 complexity: 8
-dependencies: [TASK-VS2-001, TASK-VS2-002]
 consumer_context:
-  - task: TASK-VS2-001
-    consumes: GENERATE_STREAM
-    framework: "httpx AsyncClient SSE streaming"
-    driver: "httpx"
-    format_note: "AsyncIterator[str] of delta tokens in SSE source order, terminates on [DONE]; read-timeout (not total-deadline) semantics per ASSUM-009"
-  - task: TASK-VS2-002
-    consumes: VERIFIED_CHUNK_ITERATOR
-    framework: "pure async generator"
-    driver: "python stdlib"
-    format_note: "yields (chunk_text: str, seq: int) per VERIFIED chunk only, seq strictly increasing; raises (fail-closed) on verifier_exception=True"
+- consumes: GENERATE_STREAM
+  driver: httpx
+  format_note: AsyncIterator[str] of delta tokens in SSE source order, terminates
+    on [DONE]; read-timeout (not total-deadline) semantics per ASSUM-009
+  framework: httpx AsyncClient SSE streaming
+  task: TASK-VS2-001
+- consumes: VERIFIED_CHUNK_ITERATOR
+  driver: python stdlib
+  format_note: 'yields (chunk_text: str, seq: int) per VERIFIED chunk only, seq strictly
+    increasing; raises (fail-closed) on verifier_exception=True'
+  framework: pure async generator
+  task: TASK-VS2-002
+dependencies:
+- TASK-VS2-001
+- TASK-VS2-002
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-003
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: feature
+title: SessionService.turn_stream + TurnEvent widening + PlayerCoachOrchestrator.run_turn_stream
+  (durability, async Coach)
+wave: 2
 ---
 
 ## Description
