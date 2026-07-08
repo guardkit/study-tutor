@@ -1,7 +1,7 @@
 {
-  "tests_run": 210,
-  "tests_failed": 3,
-  "coverage_pct": 87.17,
-  "output_summary": "210 tests: 207 passed, 3 failed (mic disabled check, typing regression, happy path slice); 87.17% coverage",
+  "tests_run": 241,
+  "tests_failed": 1,
+  "coverage_pct": 86.84,
+  "output_summary": "241 tests: 240 passed, 1 failed (happy_path_test: missing 'maths' widget); 86.84% coverage - quality gates FAILED",
   "quality_gates_passed": false
 }

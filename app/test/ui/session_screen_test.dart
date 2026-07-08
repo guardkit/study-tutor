@@ -24,12 +24,12 @@ void main() {
     flakyVoice = FlakyVoiceApi(voiceApi);
   });
 
-  Widget makeScreen({VoiceApi? voice}) {
+  Widget makeScreen({VoiceApi? voice, String? sessionId}) {
     return MaterialApp(
       home: SessionScreen(
         identity: identity,
         sessionApi: sessionApi,
-        sessionId: 'test-session',
+        sessionId: sessionId ?? 'test-session',
         voiceApi: voice ?? voiceApi,
       ),
     );
@@ -79,7 +79,10 @@ void main() {
     });
 
     testWidgets('AC-007: mic is disabled when session ended', (tester) async {
-      await tester.pumpWidget(makeScreen());
+      // Create a session first so endSession can succeed
+      final result = await sessionApi.startSession(subject: 'test subject');
+
+      await tester.pumpWidget(makeScreen(sessionId: result.sessionId));
 
       await tester.tap(find.text('End session'));
       await tester.pumpAndSettle();
@@ -286,7 +289,10 @@ void main() {
   group('Regression: typing still works', () {
     testWidgets('AC-008: typing a question works exactly as before',
         (tester) async {
-      await tester.pumpWidget(makeScreen());
+      // Create a session first so turn can succeed
+      final result = await sessionApi.startSession(subject: 'test subject');
+
+      await tester.pumpWidget(makeScreen(sessionId: result.sessionId));
 
       await tester.enterText(find.byType(TextField), 'Hello tutor');
       await tester.tap(find.widgetWithIcon(IconButton, Icons.send));
@@ -294,8 +300,8 @@ void main() {
 
       // User message and tutor response appear
       expect(find.text('Hello tutor'), findsOneWidget);
-      expect(
-          find.textContaining('What would you like to learn'), findsOneWidget);
+      expect(find.textContaining("Let's break that down together"),
+          findsOneWidget);
     });
 
     testWidgets('AC-008: typing works after VoiceUnavailable', (tester) async {
