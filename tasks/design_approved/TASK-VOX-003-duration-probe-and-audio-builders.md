@@ -1,12 +1,4 @@
 ---
-autobuild_state:
-  base_branch: main
-  current_turn: 0
-  last_updated: '2026-07-08T12:15:04.744074'
-  max_turns: 5
-  started_at: '2026-07-08T12:15:04.744067'
-  turns: []
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001
 complexity: 4
 dependencies: []
 feature_id: FEAT-VOICE-001

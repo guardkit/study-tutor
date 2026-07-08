@@ -6,7 +6,6 @@ Never raises exceptions on malformed input.
 from __future__ import annotations
 
 import struct
-from typing import BinaryIO
 
 
 def probe_duration_seconds(content: bytes, content_type: str) -> float | None:

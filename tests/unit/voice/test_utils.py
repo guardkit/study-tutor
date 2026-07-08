@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import struct
 
-import pytest
-
 
 # ============================================================================
 # Audio Sample Builders (inline for 2-file constraint)
