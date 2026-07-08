@@ -1,21 +1,29 @@
 ---
-id: TASK-VC-004
-title: "FakeVoiceApi/FlakyVoiceApi + recorder with 60s/10MB client stop"
-task_type: feature
-parent_review: TASK-REV-V3C1
-feature_id: FEAT-VOICE-003
-wave: 2
-implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-VC-001, TASK-VC-002]
-status: pending
-tags: [voice, flutter, feat-voice-003, fakes, recorder]
 consumer_context:
-  - task: TASK-VC-002
-    consumes: VoiceApi
-    framework: "Dart abstract interface (FakeVoiceApi/FlakyVoiceApi implement VoiceApi)"
-    driver: "in-memory fake"
-    format_note: "Fakes return canned transcript + tiny silent-wav bytes; FlakyVoiceApi decorator mirrors FlakySessionApi failure injection"
+- consumes: VoiceApi
+  driver: in-memory fake
+  format_note: Fakes return canned transcript + tiny silent-wav bytes; FlakyVoiceApi
+    decorator mirrors FlakySessionApi failure injection
+  framework: Dart abstract interface (FakeVoiceApi/FlakyVoiceApi implement VoiceApi)
+  task: TASK-VC-002
+dependencies:
+- TASK-VC-001
+- TASK-VC-002
+feature_id: FEAT-VOICE-003
+id: TASK-VC-004
+implementation_mode: task-work
+parent_review: TASK-REV-V3C1
+status: design_approved
+tags:
+- voice
+- flutter
+- feat-voice-003
+- fakes
+- recorder
+task_type: feature
+title: FakeVoiceApi/FlakyVoiceApi + recorder with 60s/10MB client stop
+wave: 2
 ---
 
 # Task: FakeVoiceApi/FlakyVoiceApi + recorder with 60s/10MB client stop

@@ -1,21 +1,29 @@
 ---
-id: TASK-VC-003
-title: "HttpVoiceApi (MVP HTTP turn) + fidelity direction-pins"
-task_type: feature
-parent_review: TASK-REV-V3C1
-feature_id: FEAT-VOICE-003
-wave: 2
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VC-002]
-status: pending
-tags: [voice, flutter, feat-voice-003, adapter, fidelity]
 consumer_context:
-  - task: TASK-VC-002
-    consumes: VoiceApi
-    framework: "Dart abstract interface (implements VoiceApi.voiceTurn)"
-    driver: "package:http (MultipartRequest)"
-    format_note: "Must satisfy the voice-upload multipart contract: field name 'audio', filename extension matching the captured codec, Content-Type preserving codec params exactly as recorded"
+- consumes: VoiceApi
+  driver: package:http (MultipartRequest)
+  format_note: 'Must satisfy the voice-upload multipart contract: field name ''audio'',
+    filename extension matching the captured codec, Content-Type preserving codec
+    params exactly as recorded'
+  framework: Dart abstract interface (implements VoiceApi.voiceTurn)
+  task: TASK-VC-002
+dependencies:
+- TASK-VC-002
+feature_id: FEAT-VOICE-003
+id: TASK-VC-003
+implementation_mode: task-work
+parent_review: TASK-REV-V3C1
+status: design_approved
+tags:
+- voice
+- flutter
+- feat-voice-003
+- adapter
+- fidelity
+task_type: feature
+title: HttpVoiceApi (MVP HTTP turn) + fidelity direction-pins
+wave: 2
 ---
 
 # Task: HttpVoiceApi (MVP HTTP turn) + fidelity direction-pins

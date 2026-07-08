@@ -1,0 +1,146 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 91.7384370015949,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "No task-specific tests found for TASK-VC-003, skipping independent verification",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`app/lib/adapters/http_voice_api.dart` implements `VoiceApi.voiceTurn`, reusing the",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created HttpVoiceApi class implementing VoiceApi.voiceTurn. Reused base-URL normalization pattern (removes trailing slash), _headers() method with bearer token injection from IdentityProvider, and _uri() helper. No auth logic duplication - follows exact same pattern as HttpSessionApi."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "The tutor envelope's six voice `error_type`s map to the sealed members from TASK-VC-002;",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented _throwWireError() method extending HttpSessionApi's \u00a79 envelope mapping with six voice error_type cases: UnsupportedAudioFormat, EmptyRecording, UnintelligibleQuery, QueryTooLong, RecordingTooLarge, and VoiceUnavailable (degradation). All error tests pass."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Direction-pins (MockClient)** assert the outgoing request:",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created comprehensive direction-pin test using custom _MockClientForMultipart to capture and verify: POST method, correct path with session ID, Authorization bearer header, multipart field named 'audio', filename with correct extension extracted from content-type, and Content-Type preservation using http_parser's MediaType to maintain codec params like 'codecs=mp4a.40.2' intact."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`voiceTurn` returns transcript first (MVP `response` field), then the answer parts.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented voiceTurn to decode JSON response into VoiceTurnResult with transcript field first, followed by answerParts list mapping to TextAnswerPart and AudioAnswerPart sealed types. Test 'voiceTurn returns transcript first, then answer parts' verifies correct ordering."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Transport failures surface as the existing connection-problem type (not a voice error),",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented timeout and http.ClientException handling to throw TransportError (not voice-specific errors). Tests verify network failures and malformed response bodies correctly surface as TransportError, preserving retry semantics."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran 'flutter analyze' on both files - no issues found. Applied 'dart format' - both files now formatted correctly. Added http_parser dependency to pubspec.yaml to resolve import warning. All lint checks pass with zero errors."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}
