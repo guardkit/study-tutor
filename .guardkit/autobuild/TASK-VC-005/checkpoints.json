@@ -1,0 +1,26 @@
+{
+  "task_id": "TASK-VC-005",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "cb277f00810071a80d104078383b0e1575e2e826",
+      "timestamp": "2026-07-08T21:16:47.151306",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 1,
+      "commit_hash": "d529d57d6423f4dcbbf506a7647048acc495f30e",
+      "timestamp": "2026-07-08T21:55:59.433654",
+      "tests_passed": null,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: unknown)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    }
+  ],
+  "last_updated": "2026-07-08T22:21:46.282817"
+}

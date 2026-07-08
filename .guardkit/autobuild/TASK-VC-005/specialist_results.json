@@ -1,17 +1,17 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 115.49386033299379,
+    "duration_seconds": 132.9058499588864,
     "error": null,
-    "tests_run": 203,
-    "tests_failed": 11,
-    "coverage_pct": 81.31,
-    "output_summary": "203 tests run (192 passed, 11 failed) - 81.31% coverage. Failed tests due to missing voiceApi parameter in test fixtures",
+    "tests_run": 210,
+    "tests_failed": 3,
+    "coverage_pct": 87.17,
+    "output_summary": "210 tests: 207 passed, 3 failed (mic disabled check, typing regression, happy path slice); 87.17% coverage",
     "quality_gates_passed": false
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 241.5328483330086,
+    "duration_seconds": 267.2215906670317,
     "error": null,
     "issues": [],
     "quality_score": 0.0,

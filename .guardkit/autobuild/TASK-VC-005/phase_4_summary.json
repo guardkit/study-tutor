@@ -1,7 +1,7 @@
 {
-  "tests_run": 203,
-  "tests_failed": 11,
-  "coverage_pct": 81.31,
-  "output_summary": "203 tests run (192 passed, 11 failed) - 81.31% coverage. Failed tests due to missing voiceApi parameter in test fixtures",
+  "tests_run": 210,
+  "tests_failed": 3,
+  "coverage_pct": 87.17,
+  "output_summary": "210 tests: 207 passed, 3 failed (mic disabled check, typing regression, happy path slice); 87.17% coverage",
   "quality_gates_passed": false
 }

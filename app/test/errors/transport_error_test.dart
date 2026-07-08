@@ -9,6 +9,7 @@ import 'package:study_tutor_app/domain/errors.dart';
 import 'package:study_tutor_app/domain/session.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
+import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
 
@@ -66,12 +67,14 @@ class FlakySessionApi implements SessionApi {
 void main() {
   late FakeIdentityProvider identity;
   late FlakySessionApi sessionApi;
+  late FakeVoiceApi voiceApi;
 
   Future<void> boot(WidgetTester tester) async {
     identity = FakeIdentityProvider();
     sessionApi = FlakySessionApi(FakeSessionApi(identity: identity));
+    voiceApi = FakeVoiceApi();
     await tester
-        .pumpWidget(StudyTutorApp(identity: identity, sessionApi: sessionApi));
+        .pumpWidget(StudyTutorApp(identity: identity, sessionApi: sessionApi, voiceApi: voiceApi));
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
   }
@@ -147,12 +150,13 @@ void main() {
     identity = FakeIdentityProvider();
     final inner = FakeSessionApi(identity: identity);
     sessionApi = FlakySessionApi(inner);
+    voiceApi = FakeVoiceApi();
     // Seed one active session "server-side" before the app ever lists.
     await identity.signIn();
     await inner.startSession(subject: 'maths');
     await identity.signOut();
     await tester
-        .pumpWidget(StudyTutorApp(identity: identity, sessionApi: sessionApi));
+        .pumpWidget(StudyTutorApp(identity: identity, sessionApi: sessionApi, voiceApi: voiceApi));
 
     // The list call fails from the very first refresh (home's initState).
     sessionApi.failing.add('listSessions');
