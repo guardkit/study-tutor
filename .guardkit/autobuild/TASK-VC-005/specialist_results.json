@@ -1,17 +1,17 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 90.51937833300326,
+    "duration_seconds": 120.3602013749769,
     "error": null,
-    "tests_run": 209,
+    "tests_run": 210,
     "tests_failed": 1,
     "coverage_pct": 86.84,
-    "output_summary": "209 tests run, 1 failed (happy_path_test.dart), 86.84% coverage",
+    "output_summary": "210 tests run, 1 failed (happy_path_test: full slice integration), 86.84% line coverage",
     "quality_gates_passed": false
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 210.9485041659791,
+    "duration_seconds": 262.8078923749272,
     "error": null,
     "issues": [],
     "quality_score": 0.0,
