@@ -1,0 +1,14 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 0.9674726369557902,
+    "error": null,
+    "tests_run": 36,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/voice/test_utils.py::test_empty_content_returns_none PASSED   [ 91%]\ntests/unit/voice/test_utils.py::test_builders_round_trip_webm PASSED     [ 94%]\ntests/unit/voice/test_utils.py::",
+    "quality_gates_passed": true
+  }
+}

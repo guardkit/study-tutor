@@ -1,0 +1,138 @@
+{
+  "task_id": "TASK-VOX-003",
+  "timestamp": "2026-07-08T12:21:08.274601",
+  "completed": false,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 0,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
+  },
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_utils.py"
+  ],
+  "files_created": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/__init__.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/utils.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/__init__.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_utils.py",
+    "src/study_tutor/voice/__init__.py",
+    "src/study_tutor/voice/config.py",
+    "src/study_tutor/voice/errors.py",
+    "src/study_tutor/voice/utils.py",
+    "tests/unit/voice/__init__.py",
+    "tests/unit/voice/test_config.py",
+    "tests/unit/voice/test_errors.py",
+    "tests/unit/voice/test_utils.py"
+  ],
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.guardkit/autobuild/TASK-VOX-003/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/__init__.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/src/study_tutor/voice/utils.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/__init__.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_utils.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/tests/unit/voice/test_utils.py"
+  ],
+  "summary": "Implementation completed",
+  "sdk_turns": {
+    "turns_used": 30,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 1,
+    "missing_phases": [
+      "4",
+      "5"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 1 completed invocations\n\nMissing phases:\n  - Phase 4 (Testing)\n  - Phase 5 (Code Review)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 3 (Phase 3): Implementation (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "WebM with Duration element \u2192 correct seconds; Chrome-style streamed WebM (no Duration) \u2192 None",
+      "status": "complete",
+      "evidence": "Implemented _probe_webm_duration() with EBML parsing that correctly reads TimestampScale and Duration elements, calculates seconds as (duration_ticks * timescale_ns) / 1_000_000_000. Handles streamed segments with unknown size marker (returns None). Validated by tests: test_webm_with_duration_element (5.0s), test_webm_streamed_returns_none, test_webm_with_custom_timescale (20.0s).",
+      "test_file": "tests/unit/voice/test_utils.py",
+      "implementation_files": [
+        "src/study_tutor/voice/utils.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Ogg/Opus EOS granule \u2192 granule/48000; header-page granule 0 \u2192 None; false-sync OggS bytes skipped",
+      "status": "complete",
+      "evidence": "Implemented _probe_ogg_duration() with backwards OggS scan that validates page structure, reads signed 64-bit LE granule position, checks EOS flag, and returns granule/48000. Returns None for header pages (granule 0). Backward scan naturally skips false-sync OggS bytes in packet data. Validated by tests: test_ogg_opus_eos_granule (3.5s), test_ogg_header_page_granule_zero, test_ogg_false_sync_skipped (2.0s with embedded fake OggS).",
+      "test_file": "tests/unit/voice/test_utils.py",
+      "implementation_files": [
+        "src/study_tutor/voice/utils.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Unknown/absent content types and truncated/garbage bytes \u2192 None, never an exception",
+      "status": "complete",
+      "evidence": "probe_duration_seconds() dispatches on lowercased base MIME (strips ;codecs), returns None for unknown types (audio/mp4, audio/mpeg, empty string). All parsing wrapped in try-except that returns None on any exception. Validated by tests: test_unknown_content_type_returns_none (4 unknown types), test_truncated_webm_returns_none (20-byte truncation), test_garbage_bytes_returns_none (binary garbage), test_truncated_ogg_returns_none (15-byte truncation), test_empty_content_returns_none.",
+      "test_file": "tests/unit/voice/test_utils.py",
+      "implementation_files": [
+        "src/study_tutor/voice/utils.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Builders produce bytes the probe itself parses (round-trip tests)",
+      "status": "complete",
+      "evidence": "Created make_webm(), make_ogg_page(), and make_ogg_opus() builders inline in test file (staying within 2-file minimal constraint). make_webm() generates valid EBML structure with EBMLVersion, DocType, Segment, Info, TimestampScale, and Duration elements. make_ogg_opus() generates valid 3-page Ogg/Opus file (OpusHead BOS, OpusTags, EOS with granule). Round-trip tests validate: test_builders_round_trip_webm (2.5s, 10.0s, 0.5s), test_builders_round_trip_ogg (1.0s, 2.5s, 5.0s, 10.5s) all pass with <0.01s tolerance.",
+      "test_file": "tests/unit/voice/test_utils.py",
+      "implementation_files": [
+        "tests/unit/voice/test_utils.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Verified Python syntax with py_compile for both implementation and test files - all passed. No project linters configured (checked pyproject.toml, no ruff/black/flake8/mypy sections; no .pre-commit-config.yaml, .flake8, or .ruff.toml found). Code follows PEP 8: from __future__ annotations, type hints, docstrings, 4-space indentation. Tests run cleanly with no warnings.",
+      "test_file": "tests/unit/voice/test_utils.py",
+      "implementation_files": [
+        "src/study_tutor/voice/utils.py",
+        "tests/unit/voice/test_utils.py"
+      ]
+    }
+  ]
+}

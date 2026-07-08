@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VOX-003",
+    "pre_path": "tasks/backlog/TASK-VOX-003-duration-probe-and-audio-builders.md",
+    "post_path": "tasks/design_approved/TASK-VOX-003-duration-probe-and-audio-builders.md",
+    "timestamp": "2026-07-08T11:15:36.632130+00:00",
+    "kind": "design_approved_transition"
+  }
+]

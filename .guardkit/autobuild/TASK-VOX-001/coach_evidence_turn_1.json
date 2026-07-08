@@ -1,0 +1,118 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": false,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": true,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": false
+  },
+  "plan_audit": null,
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": null,
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/voice/test_config.py tests/unit/voice/test_errors.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/voice/test_errors.py::test_unintelligible_query_constructor_and_message PASSED [ 85%]\ntests/unit/voice/test_errors.py::test_voice_unavailable_default_message PASSED [ 90%]\ntests/unit/voice/test_errors.py::test_voice_unavailable_custom_message PASSED [ 95%]\ntests/unit/voice/test_errors.py::test_exceptions_do_not_subclass_http_types PASSED [100%]\n============================== 21 passed in 0.03s ==============================",
+    "duration_seconds": 0.4051215648651123,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-jpbipcru\nconfigfile: pyproject.toml\nplugins: anyio-4.14.1, langsmith-0.9.8, cov-7.1.0, bdd-8.1.0, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 21 items\n\ntests/unit/voice/test_config.py::test_config_from_env_default_values PASSED [  4%]\ntests/unit/voice/test_config.py::test_config_is_frozen PASSED            [  9%]\ntests/unit/voice/test_config.py::test_config_from_env_all_overrides PASSED [ 14%]\ntests/unit/voice/test_config.py::test_config_from_env_partial_overrides PASSED [ 19%]\ntests/unit/voice/test_config.py::test_config_from_env_malformed_boolean_raises_clear_error PASSED [ 23%]\ntests/unit/voice/test_config.py::test_parse_bool_flag_true_values PASSED [ 28%]\ntests/unit/voice/test_config.py::test_parse_bool_flag_false_values PASSED [ 33%]\ntests/unit/voice/test_config.py::test_parse_bool_flag_empty_string PASSED [ 38%]\ntests/unit/voice/test_config.py::test_parse_bool_flag_whitespace_handling PASSED [ 42%]\ntests/unit/voice/test_config.py::test_parse_bool_flag_invalid_value_raises PASSED [ 47%]\ntests/unit/voice/test_config.py::test_no_import_time_env_access PASSED   [ 52%]\ntests/unit/voice/test_config.py::test_hermetic_env_coverage_all_vars PASSED [ 57%]\ntests/unit/voice/test_errors.py::test_voice_error_is_base_exception PASSED [ 61%]\ntests/unit/voice/test_errors.py::test_recording_too_large_constructor_and_message PASSED [ 66%]\ntests/unit/voice/test_errors.py::test_query_too_long_constructor_and_message PASSED [ 71%]\ntests/unit/voice/test_errors.py::test_unsupported_audio_format_constructor_and_message PASSED [ 76%]\ntests/unit/voice/test_errors.py::test_empty_recording_constructor_and_message PASSED [ 80%]\ntests/unit/voice/test_errors.py::test_unintelligible_query_constructor_and_message PASSED [ 85%]\ntests/unit/voice/test_errors.py::test_voice_unavailable_default_message PASSED [ 90%]\ntests/unit/voice/test_errors.py::test_voice_unavailable_custom_message PASSED [ 95%]\ntests/unit/voice/test_errors.py::test_exceptions_do_not_subclass_http_types PASSED [100%]\n\n============================== 21 passed in 0.03s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`VoiceConfig.from_env()` returns a frozen instance; defaults above; malformed boolean raises `ValueError` naming the variable",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented VoiceConfig as @dataclass(frozen=True) with from_env() classmethod. All defaults match specification: enabled=False, stt_base_url='http://promaxgb10-41b1:9000/v1', stt_model='parakeet-tdt', tts_base_url='http://promaxgb10-41b1:9000/v1', tts_model='qwen3-tts', tts_voice='Ryan', plus constants for audio_timeout_seconds=10.0, max_query_seconds=60, max_recording_bytes=10MB, chunk_ttl_seconds=120, and supported_base_mimetypes set. Boolean parsing via _parse_bool_flag raises ValueError on invalid input with message: 'Failed to parse STUDY_TUTOR_VOICE_ENABLED: Invalid boolean value ...' which names the variable."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "No `os.environ` access at import time (SR-03 discipline)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Config module has no module-level os.environ access. All environment variable reading happens inside from_env() classmethod which accepts env values as parameters. Test test_no_import_time_env_access verifies this by setting env vars, reloading the module, and confirming that creating a config without passing values returns defaults (not the env values), proving no import-time env access occurred."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Six exception classes exist with the constructors/messages above; none subclass Starlette/HTTP types",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created six exception classes in voice/errors.py: VoiceError (base), RecordingTooLarge(max_bytes), QueryTooLong(max_seconds), UnsupportedAudioFormat(received_mimetype, supported), EmptyRecording(), UnintelligibleQuery(), and VoiceUnavailable(message='Voice services are temporarily unavailable'). All inherit from VoiceError which inherits from Exception. None subclass Starlette's HTTPException. Test test_exceptions_do_not_subclass_http_types verifies this with issubclass checks against starlette.exceptions.HTTPException."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Unit tests cover: default construction, env overrides, bad-flag error, exception messages (UnsupportedAudioFormat names received type + sorted supported set)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Comprehensive test coverage: test_config_from_env_default_values (default construction), test_config_from_env_all_overrides and test_config_from_env_partial_overrides (env overrides), test_config_from_env_malformed_boolean_raises_clear_error and test_parse_bool_flag_invalid_value_raises (bad-flag error). Exception tests cover all constructors and messages including test_unsupported_audio_format_constructor_and_message which verifies received type is in message and supported types appear sorted by checking string positions. Additional tests for hermetic env discipline (test_hermetic_env_coverage_all_vars), frozen instance verification, and HTTP type isolation."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All files are syntactically valid Python with proper formatting following project conventions. Module imports work correctly (verified via PYTHONPATH=src python3 -c import test). Code follows patterns established in HTTPAuthConfig (src/study_tutor/http/auth.py): frozen dataclass, from_env classmethod, clear error messages, docstrings with Args/Returns/Raises sections, type annotations. No explicit linting tools found in project (no ruff/black/mypy config), so compliance verified through: successful test execution (36/36 tests passed), successful module imports, and adherence to existing code style patterns in the codebase."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": false,
+    "passed": false,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": null,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": "parallel_wave",
+    "output_tail": null
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [],
+  "task_type": "declarative",
+  "profile_name": "declarative"
+}
