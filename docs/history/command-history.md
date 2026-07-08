@@ -4018,3 +4018,79 @@ Let me update the review task status to reflect completion.
 I'll execute the `/feature-spec` workflow for FEAT-VOICE-004. Starting with Phase 1: context gathering (silent).
 
 Now the design doc and orientation, plus codebase scan for conventions and the specific file references.
+
+
+---
+
+## /feature-complete FEAT-VOICE-001 — 2026-07-08T13:26:28Z
+
+### Prompt
+
+```
+/feature-complete FEAT-VOICE-001
+```
+
+### Assistant response
+
+I'll complete FEAT-VOICE-001 — merging the approved worktree to main, then archiving. Let me first run a dry-run preview, then execute.
+
+The installed CLI uses **handoff mode** — `complete` verifies, archives feature state, and hands me the merge command rather than auto-merging. It confirmed **7/7 tasks completed, ready for merge**. 
+
+I'll now perform the recommended merge into local `main` (I will **not** push — that's outward-facing and you didn't ask for it). Let me first verify the working tree is clean and inspect the merge before running it.
+
+The `complete` command left bookkeeping changes in the main working tree (feature YAML status, task frontmatter, autobuild state), and the feature branch also touches those same task files (it moved them through states). Merging directly risks modify/delete conflicts. Let me inspect precisely what's uncommitted and how the branch treats those files before proceeding.
+
+Both the main working tree and the feature branch modify the same task `.md` files (GuardKit bookkeeping), so a raw merge would be refused. The authoritative completed state lives on the branch. I'll commit the current bookkeeping on main first (nothing lost), then merge the branch, resolving any metadata conflicts in favor of the branch. Source code (`src/study_tutor/voice/`) exists only on the branch, so it merges cleanly.
+
+Conflicts are only in three **task metadata `.md` files** (GuardKit bookkeeping) — the source code merged cleanly. Let me confirm no source-code conflicts exist, then resolve the metadata files by taking the branch (authoritative completed) version.
+
+All three conflicts were metadata-only, resolved with the branch version. Let me finalize the merge commit and verify the voice module landed on main.
+
+Merged cleanly onto main — the full voice module is present and the working tree is clean. Let me verify the unit suite is green on main post-merge, then clean up the worktree.
+
+**116 voice tests pass on main.** Now let me clean up the worktree and confirm final state.
+
+The `worktree cleanup` subcommand isn't in this CLI version. I'll remove the worktree and delete the now-merged branch directly with git.
+
+
+---
+
+## /feature-complete FEAT-VOICE-002 — 2026-07-08T16:16:14Z
+
+### Prompt
+
+```
+/feature-complete FEAT-VOICE-002
+```
+
+### Assistant response
+
+The user has invoked `/feature-complete FEAT-VOICE-002` to merge the approved build. Merging to main is significant, so I'll run a `--dry-run` preview first, then execute. Let me start from the main repo root.
+
+The `--verbose` flag isn't valid on `complete`. Let me run the dry-run cleanly. I also note there are uncommitted changes in the main working tree (the feature YAML and task files the orchestrator updated) — I'll examine those too.
+
+The CLI's `complete` command in this version only prints merge instructions (Phases 2–3 are placeholders) — it hands the actual merge to me. It recommends `git merge --no-ff autobuild/FEAT-VOICE-002`. But there are uncommitted changes in the main working tree I need to understand first before merging. Let me examine them.
+
+These uncommitted main-tree changes are all **orchestrator bookkeeping** (feature YAML status updates, task-file `autobuild_state` frontmatter, a hook state artifact) plus pre-existing files — not implementation code. The actual code lives on `autobuild/FEAT-VOICE-002`. Before merging, I must verify the branch has everything **committed** (the worktree diff earlier was working-tree vs main, which doesn't tell me what's committed). Let me check the branch and worktree state.
+
+The branch has 15 committed checkpoints and the worktree is clean (just one uncommitted `checkpoints.json` bookkeeping file). Let me confirm the **committed branch tip** actually contains the source + tests (not just bookkeeping), then I'll proceed with the merge.
+
+Verified — the branch tip contains all 19 source/test files (4216 insertions) including the adapter (the `.gitignore` negation rules at lines 315–318 correctly track the adapters package; the turn-1 warning was transient). The branch is complete and healthy.
+
+Now I need to handle the merge carefully because the main working tree has uncommitted bookkeeping changes that may overlap with what the branch touches. Let me check what non-code paths the branch modifies, to see whether a merge would collide with the dirty files.
+
+Now the picture is clear. The branch also modifies the 8 task `.md` files (bookkeeping), and those same files are dirty in the main working tree — that overlap would block the merge. The feature YAML, deleted hook-state file, and `command-history.md` are dirty in main but **not** touched by the branch, so they won't block it.
+
+Let me confirm main hasn't diverged from the branch base (clean merge), then unblock and merge.
+
+main is exactly at the merge base (no divergence), so a `--no-ff` merge will be conflict-free once I unblock the working tree. I'll set aside the overlapping dirty task files (throwaway orchestrator bookkeeping — the branch carries authoritative copies), then merge.
+
+The remaining dirty files aren't touched by the branch, so the merge is unblocked. Executing the `--no-ff` merge now.
+
+Merge succeeded (commit `8d4bf2d`). The branch moved task files to `tasks/design_approved/`. Now let me verify tests pass on the merged main branch (the `--verify` step).
+
+Merged main is green: **1286 passed, 6 skipped**. Now completing the feature-complete cleanup steps: remove the worktree, then delete the now-merged branch. (The worktree holds the branch checkout, so it must go first.)
+
+The `guardkit worktree` subcommand doesn't exist in this CLI version. I'll remove the worktree with git directly, then delete the branch.
+
+Worktree removed and branch `autobuild/FEAT-VOICE-002` deleted. (The `FEAT-39E1` worktree/branch is a separate pre-existing feature — left untouched.) Let me check the final main state.
