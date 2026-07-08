@@ -1,7 +1,7 @@
 {
   "tests_run": 32,
   "tests_failed": 0,
-  "coverage_pct": 60.29,
-  "output_summary": "All 32 voice module tests passed with 60% coverage on voice/http modules",
+  "coverage_pct": 64.98,
+  "output_summary": "32 voice-server-module tests passed with 65% coverage (321/494 lines); all quality gates green",
   "quality_gates_passed": true
 }
