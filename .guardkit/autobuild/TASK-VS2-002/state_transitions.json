@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VS2-002",
+    "pre_path": "tasks/backlog/TASK-VS2-002-quote-aware-sentence-chunker.md",
+    "post_path": "tasks/design_approved/TASK-VS2-002-quote-aware-sentence-chunker.md",
+    "timestamp": "2026-07-08T13:48:46.267443+00:00",
+    "kind": "design_approved_transition"
+  }
+]
