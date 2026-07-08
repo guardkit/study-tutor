@@ -1,30 +1,41 @@
 ---
-id: TASK-VS2-007
-title: "Sentence-chunked TTS — audio_ref frames in seq order, chunk-store integration, mid-answer TTS degradation (Tier B)"
-task_type: feature
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 6
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VS2-002, TASK-VS2-006]
-external_dependencies: [TASK-VOX-002, TASK-VOX-005]
 consumer_context:
-  - task: TASK-VS2-002
-    consumes: VERIFIED_CHUNK_ITERATOR
-    framework: "pure async generator"
-    driver: "python stdlib"
-    format_note: "TTS is triggered per VERIFIED chunk only — a chunk's audio is synthesized only from text that passed the ADR-027 gate (corrected text, never the raw form)"
-  - task: TASK-VOX-002
-    consumes: AudioClient (synthesize)
-    framework: "httpx async, injectable transport"
-    driver: "httpx"
-    format_note: "synthesize(text, response_format='wav') -> bytes; one /v1/audio/speech call per chunk; only VoiceUnavailable escapes"
-  - task: TASK-VOX-005
-    consumes: ChunkStore
-    framework: "in-memory TTL store, asyncio-lock-guarded"
-    driver: "python stdlib"
-    format_note: "put(session_id, wav_bytes) -> chunk_id; get(session_id, chunk_id) -> bytes|None; url = /api/sessions/{session_id}/voice-audio/{chunk_id}; TTL ≤120s, capped, never disk — MUST be the same instance the HTTP voice_audio route reads; confirm exact put() signature when VOX-005 lands"
+- consumes: VERIFIED_CHUNK_ITERATOR
+  driver: python stdlib
+  format_note: TTS is triggered per VERIFIED chunk only — a chunk's audio is synthesized
+    only from text that passed the ADR-027 gate (corrected text, never the raw form)
+  framework: pure async generator
+  task: TASK-VS2-002
+- consumes: AudioClient (synthesize)
+  driver: httpx
+  format_note: synthesize(text, response_format='wav') -> bytes; one /v1/audio/speech
+    call per chunk; only VoiceUnavailable escapes
+  framework: httpx async, injectable transport
+  task: TASK-VOX-002
+- consumes: ChunkStore
+  driver: python stdlib
+  format_note: put(session_id, wav_bytes) -> chunk_id; get(session_id, chunk_id) ->
+    bytes|None; url = /api/sessions/{session_id}/voice-audio/{chunk_id}; TTL ≤120s,
+    capped, never disk — MUST be the same instance the HTTP voice_audio route reads;
+    confirm exact put() signature when VOX-005 lands
+  framework: in-memory TTL store, asyncio-lock-guarded
+  task: TASK-VOX-005
+dependencies:
+- TASK-VS2-002
+- TASK-VS2-006
+external_dependencies:
+- TASK-VOX-002
+- TASK-VOX-005
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-007
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: feature
+title: Sentence-chunked TTS — audio_ref frames in seq order, chunk-store integration,
+  mid-answer TTS degradation (Tier B)
+wave: 6
 ---
 
 ## Description
