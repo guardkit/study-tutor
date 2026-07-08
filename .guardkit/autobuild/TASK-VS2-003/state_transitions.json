@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VS2-003",
+    "pre_path": "tasks/backlog/TASK-VS2-003-turn-stream-orchestrator.md",
+    "post_path": "tasks/design_approved/TASK-VS2-003-turn-stream-orchestrator.md",
+    "timestamp": "2026-07-08T14:41:29.925179+00:00",
+    "kind": "design_approved_transition"
+  }
+]

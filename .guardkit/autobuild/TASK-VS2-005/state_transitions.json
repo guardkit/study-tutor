@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VS2-005",
+    "pre_path": "tasks/backlog/TASK-VS2-005-text-stream-acceptance.md",
+    "post_path": "tasks/design_approved/TASK-VS2-005-text-stream-acceptance.md",
+    "timestamp": "2026-07-08T15:08:16.332634+00:00",
+    "kind": "design_approved_transition"
+  }
+]

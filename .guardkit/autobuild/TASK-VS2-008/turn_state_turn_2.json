@@ -1,0 +1,30 @@
+{
+  "id": "TURN-FEAT-VOICE-002-2",
+  "feature_id": "FEAT-VOICE-002",
+  "task_id": "TASK-VS2-008",
+  "turn_number": 2,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "continuing_work",
+  "blockers_found": [],
+  "progress_summary": "Turn 2: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    ".guardkit/bdd/TASK-VS2-008_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/src/study_tutor/voice/routes.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/tests/integration/test_voice_channel_acceptance.py",
+    "src/study_tutor/voice/routes.py",
+    "tests/integration/test_voice_channel_acceptance.py"
+  ],
+  "tests_passed": 4,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-08T17:05:57.815955",
+  "completed_at": "2026-07-08T17:05:57.815955",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

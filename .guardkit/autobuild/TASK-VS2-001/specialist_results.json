@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 0.4569814450806007,
+    "error": null,
+    "tests_run": 18,
+    "tests_failed": 0,
+    "tests_skipped": 1,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/tutoring/test_sentence_chunker.py::test_chunk_size_approximately_fifteen_to_twenty_five_words PASSED [ 84%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunker_yields_verifie",
+    "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "failed",
+    "duration_seconds": 65.34032687498257,
+    "error": "SDKTimeoutError: Agent invocation exceeded 60s timeout",
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}

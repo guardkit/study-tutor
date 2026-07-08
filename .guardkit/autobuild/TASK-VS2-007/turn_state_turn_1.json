@@ -1,0 +1,31 @@
+{
+  "id": "TURN-FEAT-VOICE-002-1",
+  "feature_id": "FEAT-VOICE-002",
+  "task_id": "TASK-VS2-007",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/src/study_tutor/voice/streaming_tts.py",
+    ".guardkit/bdd/TASK-VS2-007_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/src/study_tutor/voice/streaming_tts.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/tests/unit/voice/test_streaming_tts.py",
+    "src/study_tutor/voice/streaming_tts.py",
+    "tests/unit/voice/test_streaming_tts.py"
+  ],
+  "tests_passed": 7,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-08T16:46:05.951264",
+  "completed_at": "2026-07-08T16:46:05.951264",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

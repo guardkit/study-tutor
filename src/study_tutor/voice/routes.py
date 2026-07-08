@@ -209,7 +209,7 @@ async def voice_audio(request: Request) -> Response:
     """GET /api/sessions/{session_id}/voice-audio/{chunk_id}.
 
     Retrieve audio chunk as audio/wav bytes. Chunk miss → 404 without error_type
-    (binding §4.2 Rev 1).
+    (binding §4.2 Rev 1). Enforces session ownership.
 
     Args:
         request: Starlette request with path params session_id and chunk_id.
@@ -219,15 +219,25 @@ async def voice_audio(request: Request) -> Response:
 
     Raises:
         Unauthenticated: Missing/invalid token → 401.
+        SessionForbidden: Student doesn't own session → 403.
+        SessionNotFoundError: Session not found → 404.
     """
     try:
-        # Resolve student_id from Authorization header (enforce auth, but don't
-        # verify session ownership since audio chunks are session-scoped already)
-        await _resolve_student_id(request)
+        # Resolve student_id from Authorization header
+        student_id = await _resolve_student_id(request)
 
         # Extract path params
         session_id = request.path_params["session_id"]
         chunk_id = request.path_params["chunk_id"]
+
+        # Verify session ownership (allow ended sessions for audio playback)
+        from study_tutor.session.service import SessionService
+        session_service: SessionService = request.app.state.service
+        await session_service._load_owned_session(
+            student_id=student_id,
+            session_id=session_id,
+            allow_ended=True,
+        )
 
         # Get chunk store from app state
         chunk_store: ChunkStore = request.app.state.chunk_store
@@ -238,7 +248,7 @@ async def voice_audio(request: Request) -> Response:
         if audio_bytes is None:
             # Chunk miss → 404 with NO error_type (binding §4.2 Rev 1)
             return JSONResponse(
-                {"error": "audio chunk expired or unknown"},
+                {"error": "audio chunk not found"},
                 status_code=404,
             )
 
@@ -249,7 +259,7 @@ async def voice_audio(request: Request) -> Response:
             status_code=200,
         )
 
-    except Unauthenticated as error:
+    except (Unauthenticated, SessionForbidden, SessionNotFoundError) as error:
         return _map_voice_error_to_response(error)
     except Exception as error:
         # Unexpected error (no error_type)

@@ -1,0 +1,156 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 92.71576679682241,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/voice/test_streaming_tts.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/voice/test_streaming_tts.py::test_audio_ref_urls_resolve_via_shared_store PASSED [ 57%]\ntests/unit/voice/test_streaming_tts.py::test_no_audio_bytes_to_disk PASSED [ 71%]\ntests/unit/voice/test_streaming_tts.py::test_token_events_passed_through PASSED [ 85%]\ntests/unit/voice/test_streaming_tts.py::test_done_event_passed_through PASSED [100%]\n============================== 7 passed in 0.03s ===============================",
+    "duration_seconds": 0.3265669345855713,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002\nconfigfile: pyproject.toml\nplugins: anyio-4.13.0, cov-7.1.0, bdd-8.1.0, langsmith-0.7.37, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 7 items\n\ntests/unit/voice/test_streaming_tts.py::test_audio_ref_seq_strictly_increasing PASSED [ 14%]\ntests/unit/voice/test_streaming_tts.py::test_audio_from_verified_text_only PASSED [ 28%]\ntests/unit/voice/test_streaming_tts.py::test_tts_failure_mid_answer PASSED [ 42%]\ntests/unit/voice/test_streaming_tts.py::test_audio_ref_urls_resolve_via_shared_store PASSED [ 57%]\ntests/unit/voice/test_streaming_tts.py::test_no_audio_bytes_to_disk PASSED [ 71%]\ntests/unit/voice/test_streaming_tts.py::test_token_events_passed_through PASSED [ 85%]\ntests/unit/voice/test_streaming_tts.py::test_done_event_passed_through PASSED [100%]\n\n============================== 7 passed in 0.03s ===============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`audio_ref.seq` strictly increasing and gapless for a fully-succeeded turn; announced order matches chunk order",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented sentence-boundary chunking with seq counter that increments for each audio_ref frame. Test `test_audio_ref_seq_strictly_increasing` verifies three sentences produce audio_ref frames with seq=[0,1,2] in order."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Audio for a corrected/annotated sentence is synthesized only from the corrected text (verified-chunk input, never raw LLM text)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Audio synthesis calls `_verify_and_get_chunk()` which calls the verifier with accumulated text before passing to `AudioClient.synthesize()`. Only verified chunks are synthesized. Test `test_audio_from_verified_text_only` verifies audio contains verified text."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Forced TTS failure after the first chunk: exactly one `audio_ref` frame, zero further `audio_ref` frames, token frames continue to `done`, turn recorded normally (ASSUM-006)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "VoiceUnavailable exceptions from AudioClient.synthesize are caught in `_synthesize_and_store()`, which returns None and sets tts_failed flag. Once tts_failed=True, no more audio_ref frames are emitted but token pass-through continues. Test `test_tts_failure_mid_answer` verifies 1 audio_ref after TTS fails, tokens continue, done event emitted."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Chunks fetched via the existing `voice_audio` route return playable `audio/wav` bytes in announced order; no new fetch route exists in this module",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Audio chunks are stored using `ChunkStore.put(session_id, wav_bytes)` which returns chunk_id. URL is constructed as `/api/sessions/{session_id}/voice-audio/{chunk_id}` matching the existing voice_audio route. No new fetch routes implemented. Test `test_audio_ref_urls_resolve_via_shared_store` (seam test) verifies chunks are retrievable from shared store and URLs match expected format."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "No audio bytes written to disk or DB anywhere in the module (never-at-rest check, capturing log handler included)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Audio bytes flow only through memory: AudioClient.synthesize() returns bytes \u2192 ChunkStore.put() stores in-memory \u2192 audio_ref emitted. No file I/O operations in module. ChunkStore is in-memory with TTL. Logger calls use structured logging (extra dict) with no audio bytes logged. Test `test_no_audio_bytes_to_disk` verifies audio exists only in in-memory chunk_store."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran black formatter on both implementation and test files. Ran ruff linter with --fix to resolve f-string issue. All tests pass after formatting. No mypy errors reported."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": true,
+    "passed": true,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": null,
+    "output_tail": "ot an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_token_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_done_event_keys\n  tests/unit/session/test_turn_stream.py:68: PytestWarning: The test <Function test_done_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_done_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_transcript_event_keys\n  tests/unit/session/test_turn_stream.py:75: PytestWarning: The test <Function test_transcript_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_transcript_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_audio_ref_event_keys\n  tests/unit/session/test_turn_stream.py:82: PytestWarning: The test <Function test_audio_ref_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_audio_ref_event_keys(self):\n\ntests/unit/session/test_turn_stream.py::TestTurnEventSerialization::test_error_event_keys\n  tests/unit/session/test_turn_stream.py:91: PytestWarning: The test <Function test_error_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.\n    def test_error_event_keys(self):\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1277 passed, 7 skipped, 13 warnings in 23.05s"
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}

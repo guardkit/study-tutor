@@ -1,13 +1,15 @@
 ---
-id: TASK-VS2-001
-title: "LLM streaming client — LLMClient.generate_stream + LLMPlayerAdapter.respond_stream (SSE token iterator)"
-task_type: feature
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 1
-implementation_mode: task-work
 complexity: 5
 dependencies: []
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-001
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: feature
+title: LLM streaming client — LLMClient.generate_stream + LLMPlayerAdapter.respond_stream
+  (SSE token iterator)
+wave: 1
 ---
 
 ## Description

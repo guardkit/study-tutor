@@ -12,7 +12,9 @@ violates SR-03.
 
 from __future__ import annotations
 
+import json
 import os
+from typing import AsyncIterator
 
 DEFAULT_PLAYER_MODEL = "local"
 DEFAULT_LOCAL_BASE_URL = "http://localhost:11434"
@@ -203,3 +205,135 @@ class LLMClient:
             return ""
         message = choices[0].get("message") or {}
         return message.get("content", "")
+
+    async def generate_stream(
+        self, prompt: str, system: str | None = None
+    ) -> AsyncIterator[str]:
+        """Stream tokens from an OpenAI-compatible /v1/chat/completions endpoint.
+
+        Yields tokens as they arrive from the SSE stream. Terminates cleanly
+        on the `data: [DONE]` marker. Used by TASK-VS2-003 run_turn_stream.
+
+        Args:
+            prompt: User message content
+            system: Optional system message
+
+        Yields:
+            Token strings from delta.content fields
+
+        Raises:
+            LLMProviderError: When the HTTP request fails or provider is unsupported
+        """
+        if self.provider == "local":
+            async for token in self._generate_stream_openai_compat(
+                prompt,
+                system,
+                model_env="LOCAL_MODEL",
+                base_url_env="LOCAL_BASE_URL",
+            ):
+                yield token
+        elif self.provider == "local-coach":
+            async for token in self._generate_stream_openai_compat(
+                prompt,
+                system,
+                model_env="LOCAL_COACH_MODEL",
+                base_url_env="LOCAL_COACH_BASE_URL",
+            ):
+                yield token
+        elif self.provider == "bedrock":
+            raise NotImplementedError(
+                "Bedrock streaming wired by FEAT-PO-004"
+            )
+        else:
+            raise LLMProviderError(
+                f"Unsupported provider: {self.provider!r}. "
+                "Expected one of: 'local', 'local-coach', 'bedrock' (Phase 0)."
+            )
+
+    async def _generate_stream_openai_compat(
+        self,
+        prompt: str,
+        system: str | None,
+        *,
+        model_env: str,
+        base_url_env: str,
+    ) -> AsyncIterator[str]:
+        """Stream from an OpenAI-compatible endpoint using SSE format.
+
+        Parses Server-Sent Events (SSE) lines in the format:
+        `data: {"choices":[{"delta":{"content":"token"}}]}`
+
+        Terminates on `data: [DONE]`.
+        """
+        import httpx  # Lazy: keeps import graph minimal for non-local paths
+
+        base_url = (
+            os.environ.get(base_url_env)
+            or os.environ.get("LOCAL_BASE_URL")
+            or DEFAULT_LOCAL_BASE_URL
+        )
+        model = os.environ.get(model_env) or DEFAULT_LOCAL_MODEL
+        num_predict = _resolve_num_predict()
+
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: dict[str, object] = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": num_predict,
+            "stream": True,  # Enable streaming
+        }
+
+        # Use instance-level async client if available (for testing),
+        # otherwise create a new one with the default timeout
+        if hasattr(self, "_async_client"):
+            client = self._async_client
+            should_close = False
+        else:
+            client = httpx.AsyncClient(
+                timeout=httpx.Timeout(
+                    DEFAULT_LOCAL_TIMEOUT_SECONDS,
+                    read=DEFAULT_LOCAL_TIMEOUT_SECONDS,
+                )
+            )
+            should_close = True
+
+        try:
+            async with client.stream(
+                "POST",
+                f"{base_url.rstrip('/')}/v1/chat/completions",
+                json=payload,
+            ) as response:
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPError as exc:
+                    raise LLMProviderError(
+                        f"OpenAI-compat streaming request to {base_url} failed: {exc}"
+                    ) from exc
+
+                async for line in response.aiter_lines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if line.startswith("data:"):
+                        data_content = line[5:].strip()
+                        # Check for termination marker
+                        if data_content == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_content)
+                            choices = chunk.get("choices") or []
+                            if choices:
+                                delta = choices[0].get("delta") or {}
+                                content = delta.get("content")
+                                if content:
+                                    yield content
+                        except json.JSONDecodeError:
+                            # Skip malformed JSON lines
+                            continue
+        finally:
+            if should_close:
+                await client.aclose()

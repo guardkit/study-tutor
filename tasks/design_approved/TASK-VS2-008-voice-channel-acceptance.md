@@ -1,20 +1,28 @@
 ---
-id: TASK-VS2-008
-title: "Voice-channel acceptance suite — chunk ownership/scoping, long-answer availability, voice scenarios (Tier B)"
-task_type: testing
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 7
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VS2-006, TASK-VS2-007]
-external_dependencies: [TASK-VOX-005, TASK-VOX-006, TASK-VOX-007]
 consumer_context:
-  - task: TASK-VS2-004
-    consumes: WS_FRAME_ENVELOPE
-    framework: "Starlette TestClient websocket_connect"
-    driver: "starlette / httpx"
-    format_note: "voice frames per contract §7 Rev 1; non-terminal refusals leave the channel open"
+- consumes: WS_FRAME_ENVELOPE
+  driver: starlette / httpx
+  format_note: voice frames per contract §7 Rev 1; non-terminal refusals leave the
+    channel open
+  framework: Starlette TestClient websocket_connect
+  task: TASK-VS2-004
+dependencies:
+- TASK-VS2-006
+- TASK-VS2-007
+external_dependencies:
+- TASK-VOX-005
+- TASK-VOX-006
+- TASK-VOX-007
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-008
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: testing
+title: Voice-channel acceptance suite — chunk ownership/scoping, long-answer availability,
+  voice scenarios (Tier B)
+wave: 7
 ---
 
 ## Description

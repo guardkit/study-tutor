@@ -1,0 +1,16 @@
+[
+  {
+    "task_id": "TASK-VS2-008",
+    "pre_path": "tasks/backlog/TASK-VS2-008-voice-channel-acceptance.md",
+    "post_path": "tasks/design_approved/TASK-VS2-008-voice-channel-acceptance.md",
+    "timestamp": "2026-07-08T15:46:29.724177+00:00",
+    "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-VS2-008",
+    "pre_path": "tasks/backlog/streaming-voice/TASK-VS2-008-voice-channel-acceptance.md",
+    "post_path": "tasks/design_approved/TASK-VS2-008-voice-channel-acceptance.md",
+    "timestamp": "2026-07-08T15:57:18.873029+00:00",
+    "kind": "design_approved_transition"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 0.45434711198322475,
+    "error": null,
+    "tests_run": 10,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/session/test_turn_stream.py:82: PytestWarning: The test <Function test_audio_ref_event_keys> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the",
+    "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "passed",
+    "duration_seconds": 136.65686634508893,
+    "error": null,
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}

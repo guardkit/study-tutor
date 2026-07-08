@@ -1,0 +1,128 @@
+{
+  "task_id": "TASK-VS2-001",
+  "turn": 1,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file src/study_tutor/llm/client.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/llm/client.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_gitignored, severity=should_fix): Player claim: Player claimed file src/study_tutor/tutoring/adapters/llm_player_adapter.py. Actual: Path is on disk but matched a .gitignore rule (.gitignore:316:!src/study_tutor/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/adapters/llm_player_adapter.py",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:316:!src/study_tutor/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file src/study_tutor/tutoring/sentence_chunker.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file tests/unit/llm/test_streaming.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/llm/test_streaming.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_gitignored, severity=should_fix): Player claim: Player claimed file tests/unit/tutoring/adapters/test_llm_player_adapter.py. Actual: Path is on disk but matched a .gitignore rule (.gitignore:318:!tests/unit/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file tests/unit/tutoring/adapters/test_llm_player_adapter.py",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:318:!tests/unit/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file tests/unit/tutoring/test_sentence_chunker.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/tutoring/test_sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Two critical implementation files exist on disk and pass tests, but are silently excluded from git commits due to .gitignore rules at lines 316 and 318. Files affected: src/study_tutor/tutoring/adapters/llm_player_adapter.py (AC-003 implementation), tests/unit/tutoring/adapters/test_llm_player_adapter.py (AC-003 tests). These files matched negation patterns (!src/study_tutor/tutoring/adapters/*.py and !tests/unit/tutoring/adapters/*.py) and were dropped by 'git add -A'.",
+      "requirement": "AC-003",
+      "suggestion": "Rebase the worktree onto main (or a branch with corrected .gitignore rules), then re-run this turn to ensure all implementation files are properly committed. The evidence bundle advisory states: 'Hint: rebase the worktree onto main if the .gitignore was fixed there.'"
+    },
+    {
+      "type": "test_failure",
+      "severity": "major",
+      "description": "AC-002 requires testing both continuous and silent timeout scenarios. test_continuous_stream_not_killed passes, but test_silent_stream_raises_timeout is skipped. The Player acknowledges: 'test_silent_stream_raises_timeout is skipped due to mock transport limitations (uses content= not true streaming)'. While the implementation uses httpx.Timeout(read=...) correctly, we cannot independently verify the silent-timeout behavior works as specified.",
+      "requirement": "AC-002",
+      "suggestion": "Implement a mock transport that supports true streaming behavior (not content= parameter) to test the silent-timeout scenario, or add an integration test with a real HTTP endpoint that can be configured to be silent. The test should assert that a stream silent for the read-timeout window raises the expected timeout exception."
+    },
+    {
+      "type": "code_quality",
+      "severity": "minor",
+      "description": "Four files claimed in files_modified show no git changes: src/study_tutor/llm/client.py, src/study_tutor/tutoring/sentence_chunker.py, tests/unit/llm/test_streaming.py, tests/unit/tutoring/test_sentence_chunker.py. These appear to be orchestrator-managed paths (under .guardkit/autobuild/ or worktree directories) incorrectly included in the report's files_modified list.",
+      "requirement": "Report accuracy",
+      "suggestion": "Filter the files_modified list to include only files that were actually modified in the main repository working tree, excluding orchestrator-managed paths under .guardkit/ directories."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "LLMClient.generate_stream implemented as async def returning AsyncIterator[str]. Independent tests confirm: test_generate_stream_token_order_and_done, test_generate_stream_handles_empty_delta, and test_generate_stream_terminates_on_done all pass. StreamingMockTransport successfully feeds canned SSE lines and verifies token order and [DONE] termination."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "rejected",
+      "notes": "Implementation uses httpx.Timeout(read=...) which is architecturally correct for read-timeout semantics. test_continuous_stream_not_killed passes, verifying continuous streams are not killed. However, test_silent_stream_raises_timeout is SKIPPED, not passed. A skipped test is an ABSENT verdict per absence-of-failure-is-not-success.md. Cannot independently verify that silent streams raise timeout as specified by ASSUM-009."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "Implementation is functionally complete - LLMPlayerAdapter.respond_stream exists and independent tests pass (test_respond_stream_yields_tokens_from_generate_stream, test_respond_stream_strips_think_tokens). However, the implementation file (src/study_tutor/tutoring/adapters/llm_player_adapter.py) and its test file are matched by .gitignore rules and silently dropped from git commits. Work exists on disk but cannot be merged because it's not persisted in version control. This is a critical blocker."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "verified",
+      "notes": "Evidence bundle confirms all existing tests pass with zero modifications. The generate() method body was not changed - only new streaming methods were added. No regression detected."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "verified",
+      "notes": "Evidence bundle confirms 'python3 -m ruff check' passed on all modified files (client.py, llm_player_adapter.py, test_streaming.py) with zero errors after removing unused imports."
+    }
+  ],
+  "rationale": "The implementation is functionally complete and independent tests confirm correctness (18 passed). However, two critical blockers prevent acceptance: (1) CRITICAL - .gitignore rules at lines 316 and 318 silently exclude AC-003 implementation files from git commits, making the work unmergeably incomplete despite being functionally correct; (2) MAJOR - AC-002's silent-timeout test is skipped, providing absent rather than passing verification. The .gitignore issue requires rebasing the worktree onto main (per evidence bundle advisory) before re-running this turn. The skipped test requires a mock transport supporting true streaming behavior."
+}
