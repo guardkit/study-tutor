@@ -67,3 +67,60 @@ final class TransportError extends SessionApiException {
   @override
   String get errorType => 'TransportError';
 }
+
+/// Voice-specific errors (FEAT-VOICE-003 §6.2): six error types for the
+/// VoiceApi port, extending the same sealed hierarchy. Like the §9 errors
+/// above, each carries its contract `error_type` string so the voice adapter
+/// can map wire envelopes 1:1.
+
+/// Audio format not supported (codec, sample rate, or container).
+final class UnsupportedAudioFormat extends SessionApiException {
+  const UnsupportedAudioFormat(
+      [super.message = 'audio format not supported']);
+
+  @override
+  String get errorType => 'UnsupportedAudioFormat';
+}
+
+/// Recording contains no audio content or is too short to process.
+final class EmptyRecording extends SessionApiException {
+  const EmptyRecording([super.message = 'recording is empty or too short']);
+
+  @override
+  String get errorType => 'EmptyRecording';
+}
+
+/// Audio is clear but the query is unintelligible (no transcribable speech).
+final class UnintelligibleQuery extends SessionApiException {
+  const UnintelligibleQuery(
+      [super.message = 'could not understand the query']);
+
+  @override
+  String get errorType => 'UnintelligibleQuery';
+}
+
+/// Transcribed query exceeds the maximum allowed length.
+final class QueryTooLong extends SessionApiException {
+  const QueryTooLong([super.message = 'query exceeds maximum length']);
+
+  @override
+  String get errorType => 'QueryTooLong';
+}
+
+/// Recording size exceeds the maximum allowed payload.
+final class RecordingTooLarge extends SessionApiException {
+  const RecordingTooLarge([super.message = 'recording exceeds size limit']);
+
+  @override
+  String get errorType => 'RecordingTooLarge';
+}
+
+/// Voice backend unavailable — drives the amber degradation copy that prompts
+/// the user to fall back to text input.
+final class VoiceUnavailable extends SessionApiException {
+  const VoiceUnavailable(
+      [super.message = 'voice service temporarily unavailable']);
+
+  @override
+  String get errorType => 'VoiceUnavailable';
+}

@@ -36,6 +36,14 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
 
+  # Voice runtime dependencies (TASK-VC-001: scope event 2026-07-08)
+  # - record: audio recording from microphone
+  # - just_audio: audio playback for TTS responses
+  # - web_socket_channel: WebSocket transport for voice streaming
+  record: ^5.1.2
+  just_audio: ^0.9.42
+  web_socket_channel: ^3.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
