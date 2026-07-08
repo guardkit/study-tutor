@@ -1,26 +1,41 @@
 {
   "honesty": {
-    "verified": true,
-    "discrepancies": [],
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/tutoring/test_sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
     "honesty_score": 1.0,
     "resolved_paths": [],
-    "should_fix_count": 0
+    "should_fix_count": 2
   },
-  "gathering_status": "partial_gate_abort",
+  "gathering_status": "complete",
   "gathering_error": null,
   "quality_gates": {
-    "tests_passed": false,
-    "coverage_met": false,
+    "tests_passed": true,
+    "coverage_met": true,
     "arch_review_passed": true,
     "plan_audit_passed": true,
     "tests_required": true,
     "coverage_required": true,
     "arch_review_required": false,
     "plan_audit_required": true,
-    "all_gates_passed": false
+    "all_gates_passed": true
   },
   "coverage_details": {
-    "coverage_met": false,
+    "coverage_met": null,
     "line_coverage": null,
     "branch_coverage": null,
     "line_threshold": null,
@@ -45,49 +60,122 @@
   "bdd_authoring_sweep": null,
   "arch_review": null,
   "tests": {
-    "tests_passed": false,
+    "tests_passed": true,
     "tests_required": true,
     "tests_run": null,
-    "tests_failed": 3,
-    "all_passed": false,
+    "tests_failed": 0,
+    "all_passed": true,
     "requires_infrastructure": []
   },
   "wiring": null,
   "mocked_seam": null,
   "spec_gap": null,
   "stub_scan": null,
-  "coverage": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 92.46374741052932,
+    "files_below_threshold": 0
+  },
   "behavioural_oracle": null,
-  "independent_tests": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/llm/test_streaming.py tests/unit/tutoring/test_sentence_chunker.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/tutoring/test_sentence_chunker.py::test_chunk_size_approximately_fifteen_to_twenty_five_words PASSED [ 84%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunker_yields_verified_chunks_with_seq PASSED [ 89%]\ntests/unit/tutoring/test_sentence_chunker.py::test_empty_stream_yields_nothing PASSED [ 94%]\ntests/unit/tutoring/test_sentence_chunker.py::test_single_word_yields_single_chunk PASSED [100%]\n======================== 18 passed, 1 skipped in 0.05s =========================",
+    "duration_seconds": 0.4015171527862549,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-umg6jec7\nconfigfile: pyproject.toml\nplugins: langsmith-0.10.0, anyio-4.14.1, cov-7.1.0, bdd-8.1.0, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 19 items\n\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_token_order_and_done PASSED [  5%]\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_handles_empty_delta PASSED [ 10%]\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_terminates_on_done PASSED [ 15%]\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_raises_on_http_error PASSED [ 21%]\ntests/unit/llm/test_streaming.py::TestLLMClientStreamingTimeout::test_continuous_stream_not_killed PASSED [ 26%]\ntests/unit/llm/test_streaming.py::TestLLMClientStreamingTimeout::test_silent_stream_raises_timeout SKIPPED [ 31%]\ntests/unit/llm/test_streaming.py::TestLLMPlayerAdapterRespondStream::test_respond_stream_yields_tokens_from_generate_stream PASSED [ 36%]\ntests/unit/llm/test_streaming.py::TestLLMPlayerAdapterRespondStream::test_respond_stream_strips_think_tokens PASSED [ 42%]\ntests/unit/tutoring/test_sentence_chunker.py::test_quote_straddling_chunk_boundary_defers_until_close PASSED [ 47%]\ntests/unit/tutoring/test_sentence_chunker.py::test_verifier_called_with_accumulated_not_chunk PASSED [ 52%]\ntests/unit/tutoring/test_sentence_chunker.py::test_previously_released_chunks_never_altered PASSED [ 57%]\ntests/unit/tutoring/test_sentence_chunker.py::test_verifier_exception_raises_instead_of_yielding PASSED [ 63%]\ntests/unit/tutoring/test_sentence_chunker.py::test_partial_verifier_exception_stops_mid_stream PASSED [ 68%]\ntests/unit/tutoring/test_sentence_chunker.py::test_short_answer_yields_single_chunk PASSED [ 73%]\ntests/unit/tutoring/test_sentence_chunker.py::test_long_answer_breaks_at_sentence_boundaries PASSED [ 78%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunk_size_approximately_fifteen_to_twenty_five_words PASSED [ 84%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunker_yields_verified_chunks_with_seq PASSED [ 89%]\ntests/unit/tutoring/test_sentence_chunker.py::test_empty_stream_yields_nothing PASSED [ 94%]\ntests/unit/tutoring/test_sentence_chunker.py::test_single_word_yields_single_chunk PASSED [100%]\n\n======================== 18 passed, 1 skipped in 0.05s =========================\n",
+    "signal_absent": false,
+    "tests_skipped": 1,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python"
+  },
   "independent_test_classification": null,
-  "requirements": null,
-  "runtime_parity": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Token stream with a quotation whose opening mark falls in the final words of a nominal chunk and closing mark in the next: chunk is NOT released until the quote closes and verification passes, and `apply_quote_verification` is invoked with accumulated text, not the isolated chunk substring",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation defers chunk boundaries when quote count is odd (line 70-74 in sentence_chunker.py). The verifier is called with accumulated_text on line 78, not isolated chunks. Tests test_quote_straddling_chunk_boundary_defers_until_close and test_verifier_called_with_accumulated_not_chunk verify this behavior and pass."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Idempotent-prefix test: previously-released chunk text is never retroactively altered by any later verification pass",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation uses last_released_pos marker (lines 50, 89, 95) to track what has been yielded. Only text from last_released_pos onward is extracted as new chunks. Previously released chunks are immutable. Test test_previously_released_chunks_never_altered verifies this and passes."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Forcing `verifier_exception=True` on a mid-stream chunk makes the generator raise/stop rather than yield the unannotated chunk (ASSUM-007 fail-closed)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation checks verifier_exception flag and raises RuntimeError instead of yielding (lines 81-85 for mid-stream, lines 104-108 for final chunk). Tests test_verifier_exception_raises_instead_of_yielding and test_partial_verifier_exception_stops_mid_stream verify this fail-closed behavior and pass."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Answer shorter than one chunk's worth of words yields exactly one chunk covering the whole answer (ASSUM-001); multi-sentence answers break only at sentence boundaries with each chunk roughly 15\u201325 words",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation detects sentence boundaries via SENTENCE_TERMINATORS (line 22, checked on lines 60-63), enforces MIN_CHUNK_WORDS=15 threshold (lines 66-68), and handles final chunk for short answers (lines 99-113). Tests test_short_answer_yields_single_chunk, test_long_answer_breaks_at_sentence_boundaries, and test_chunk_size_approximately_fifteen_to_twenty_five_words all pass."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran 'python3 -m ruff check' on both implementation files - result: 'All checks passed!'. Ran mypy type checker - no errors in sentence_chunker.py or test_sentence_chunker.py. All quality gates satisfied."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": false,
+    "passed": false,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": null,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": "parallel_wave",
+    "output_tail": null
+  },
   "evidence_repo_tests": [],
   "severity_recommendations": [],
   "advisory_issues": [
     {
       "severity": "warning",
       "category": "agent_invocations_advisory",
-      "description": "Advisory (non-blocking): task-work produced a report with 0 of 3 expected agent invocations. Missing phases: 3 (Implementation), 4 (Testing), 5 (Code Review). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Phase 4: `test-orchestrator` (Testing)\n- Phase 5: `code-reviewer` (Code Review)",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
       "details": {
         "missing_phases": [
-          "3",
-          "4",
-          "5"
+          "3"
         ],
         "expected_phases": 3,
-        "actual_invocations": 0
+        "actual_invocations": 2
       }
     },
     {
       "severity": "should_fix",
-      "category": "specialist_substrate",
-      "description": "Orchestrator-invoked specialist 'test-orchestrator' (Phase 4) did not produce evidence: tests failed (deterministic Phase 4): Error detail:\n    with pytest.raises((httpx.ReadTimeout, LLMProviderError)):\nE   Failed: DID NOT RAISE any of (ReadTimeout, LLMProviderError)\n_ TestLLMPlayerAda. This is a substrate failure attributed to the orchestrator, not a Player honesty issue \u2014 the phase's evidence is ABSENT, not failed.",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file src/study_tutor/tutoring/sentence_chunker.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
       "details": {
-        "phase": "4",
-        "agent": "test-orchestrator",
-        "status": "failed",
-        "error": "tests failed (deterministic Phase 4): Error detail:\n    with pytest.raises((httpx.ReadTimeout, LLMProviderError)):\nE   Failed: DID NOT RAISE any of (ReadTimeout, LLMProviderError)\n_ TestLLMPlayerAda"
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/tutoring/test_sentence_chunker.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/tutoring/test_sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
       }
     }
   ],
