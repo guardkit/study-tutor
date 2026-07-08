@@ -1,0 +1,69 @@
+{
+  "task_id": "TASK-VC-005",
+  "turn": 1,
+  "decision": "feedback",
+  "issues": [
+    {
+      "type": "test_failure",
+      "severity": "critical",
+      "description": "The full test suite fails to compile. 11 test files in test/errors/ directory fail with 'Required named parameter voiceApi must be provided' when instantiating StudyTutorApp. Affected files: test/errors/transport_error_test.dart (line 155), test/errors/session_ended_test.dart (line 17), test/errors/unauthenticated_test.dart (lines 15, 51), test/errors/session_forbidden_test.dart (line 19), test/errors/session_not_found_test.dart (line 17), and 6 more. Runtime parity check failed with exit code 1 (expected 0).",
+      "requirement": "AC-009, AC-008",
+      "suggestion": "Update all test files in test/errors/ directory to include the voiceApi parameter when instantiating StudyTutorApp. Create a mock VoiceApi instance in each test file and pass it to StudyTutorApp constructor: StudyTutorApp(identity: identity, sessionApi: sessionApi, voiceApi: mockVoiceApi). Verify the full test suite compiles and runs with: cd app && flutter test"
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Adding a required parameter to a widely-used widget (StudyTutorApp) requires updating ALL instantiation sites, not just the files you directly modified. The compilation failure affects at minimum 11 test files across the errors/ directory.",
+      "requirement": "AC-009",
+      "suggestion": "Before submitting, always run the full test suite (flutter test) to ensure no compilation or runtime regressions. Use IDE refactoring tools or global search to find all instantiation sites when adding required parameters."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile due to missing voiceApi parameter in multiple test files. Runtime parity check failed."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile. While the Player's implementation may be correct, we cannot run tests to confirm transcript ordering."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile. VoiceUnavailable handling cannot be independently verified without running tests."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile. The transport_error_test.dart file itself is one of the broken files."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile. Microphone permission handling cannot be tested."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile. Refusal error handling cannot be independently verified."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "rejected",
+      "notes": "Cannot verify - test suite does not compile. Session_ended_test.dart is one of the broken files (line 17)."
+    },
+    {
+      "criterion_id": "AC-008",
+      "result": "rejected",
+      "notes": "Cannot verify regression-free typing - test suite does not compile. This AC specifically requires verifying that typed tutoring remains unchanged, which requires running existing tests."
+    },
+    {
+      "criterion_id": "AC-009",
+      "result": "rejected",
+      "notes": "VIOLATED. While flutter analyze may have passed on individual files, the full test suite does not compile (exit code 1). Runtime parity check shows 11 test files fail to load with compilation errors. A non-compiling codebase fails quality standards."
+    }
+  ],
+  "rationale": "The runtime_parity check is authoritative evidence that the full test suite does not compile. The Player added voiceApi as a required parameter to StudyTutorApp but failed to update at least 11 test files in the test/errors/ directory. Exit code 1 with stderr showing 'Required named parameter voiceApi must be provided' across multiple files is a critical regression. AC-009 requires zero errors from project-configured checks - a non-compiling test suite violates this. AC-008 requires no regression to typed tutoring, which cannot be verified when existing tests don't compile. All acceptance criteria are rejected because the codebase is in a broken state that prevents independent verification."
+}

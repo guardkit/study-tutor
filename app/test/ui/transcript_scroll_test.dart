@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/domain/session.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
+import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ui/session_screen.dart';
 
 void main() {
@@ -25,10 +26,12 @@ void main() {
       (tester) async {
     final identity = FakeIdentityProvider();
     final api = FakeSessionApi(identity: identity);
+    final voiceApi = FakeVoiceApi();
 
     await tester.pumpWidget(wrap(SessionScreen(
       identity: identity,
       sessionApi: api,
+      voiceApi: voiceApi,
       sessionId: 's-1',
       initialTurns: longTranscript(15),
     )));
@@ -44,6 +47,7 @@ void main() {
       (tester) async {
     final identity = FakeIdentityProvider();
     final api = FakeSessionApi(identity: identity);
+    final voiceApi = FakeVoiceApi();
     await identity.signIn();
     final started = await api.startSession(subject: 'maths');
     for (var i = 0; i < 10; i++) {
@@ -54,6 +58,7 @@ void main() {
     await tester.pumpWidget(wrap(SessionScreen(
       identity: identity,
       sessionApi: api,
+      voiceApi: voiceApi,
       sessionId: started.sessionId,
       initialTurns: resumed.turns,
     )));

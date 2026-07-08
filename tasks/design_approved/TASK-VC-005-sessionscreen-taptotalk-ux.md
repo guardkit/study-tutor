@@ -1,21 +1,29 @@
 ---
-id: TASK-VC-005
-title: "SessionScreen tap-to-talk UX + VoiceUnavailable degradation"
-task_type: feature
-parent_review: TASK-REV-V3C1
-feature_id: FEAT-VOICE-003
-wave: 3
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VC-003, TASK-VC-004]
-status: pending
-tags: [voice, flutter, feat-voice-003, ui, degradation]
 consumer_context:
-  - task: TASK-VC-002
-    consumes: VoiceApi
-    framework: "Flutter StatefulWidget (SessionScreen) + constructor injection"
-    driver: "VoiceApi (HttpVoiceApi live / FakeVoiceApi test)"
-    format_note: "Consumes VoiceTurnResult; renders transcript first, then answer; maps VoiceUnavailable to amber degradation copy"
+- consumes: VoiceApi
+  driver: VoiceApi (HttpVoiceApi live / FakeVoiceApi test)
+  format_note: Consumes VoiceTurnResult; renders transcript first, then answer; maps
+    VoiceUnavailable to amber degradation copy
+  framework: Flutter StatefulWidget (SessionScreen) + constructor injection
+  task: TASK-VC-002
+dependencies:
+- TASK-VC-003
+- TASK-VC-004
+feature_id: FEAT-VOICE-003
+id: TASK-VC-005
+implementation_mode: task-work
+parent_review: TASK-REV-V3C1
+status: design_approved
+tags:
+- voice
+- flutter
+- feat-voice-003
+- ui
+- degradation
+task_type: feature
+title: SessionScreen tap-to-talk UX + VoiceUnavailable degradation
+wave: 3
 ---
 
 # Task: SessionScreen tap-to-talk UX + VoiceUnavailable degradation
