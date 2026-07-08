@@ -85,7 +85,12 @@ class _SessionScreenState extends State<SessionScreen> {
       setState(() => _ended = true);
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
+      routeToSignIn(
+        context,
+        widget.identity,
+        widget.sessionApi,
+        widget.voiceApi,
+      );
     } on TransportError {
       // The end never reached the backend: not ended, nothing lost — the
       // End affordance stays and tapping it again is the retry.
@@ -109,8 +114,13 @@ class _SessionScreenState extends State<SessionScreen> {
         final now = DateTime.now();
         _turns
           ..add(TurnEntry(role: TurnRole.user, content: text, ts: now))
-          ..add(TurnEntry(
-              role: TurnRole.tutor, content: result.tutorResponse, ts: now));
+          ..add(
+            TurnEntry(
+              role: TurnRole.tutor,
+              content: result.tutorResponse,
+              ts: now,
+            ),
+          );
         _input.clear();
       });
       _showLatest();
@@ -121,7 +131,12 @@ class _SessionScreenState extends State<SessionScreen> {
       setState(() => _ended = true);
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
+      routeToSignIn(
+        context,
+        widget.identity,
+        widget.sessionApi,
+        widget.voiceApi,
+      );
     } on TransportError {
       // The turn may never have reached the backend. Nothing is appended and
       // `_input` is NOT cleared (that only happens on success) — the unsent
@@ -218,11 +233,13 @@ class _SessionScreenState extends State<SessionScreen> {
       setState(() {
         final now = DateTime.now();
         // Transcript appears first (exactly like typed turn)
-        _turns.add(TurnEntry(
-            role: TurnRole.user, content: result.transcript, ts: now));
+        _turns.add(
+          TurnEntry(role: TurnRole.user, content: result.transcript, ts: now),
+        );
         // Then the tutor's spoken answer
-        _turns.add(TurnEntry(
-            role: TurnRole.tutor, content: answerText, ts: now));
+        _turns.add(
+          TurnEntry(role: TurnRole.tutor, content: answerText, ts: now),
+        );
       });
       _showLatest();
     } on VoiceUnavailable {
@@ -268,7 +285,12 @@ class _SessionScreenState extends State<SessionScreen> {
       setState(() => _ended = true);
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
+      routeToSignIn(
+        context,
+        widget.identity,
+        widget.sessionApi,
+        widget.voiceApi,
+      );
     } on TransportError {
       // Recording preserved — "try again" is tapping mic again
       if (!mounted) return;
@@ -291,7 +313,9 @@ class _SessionScreenState extends State<SessionScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
-          color: isUser ? colors.primaryContainer : colors.surfaceContainerHighest,
+          color: isUser
+              ? colors.primaryContainer
+              : colors.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(turn.content),
@@ -392,7 +416,8 @@ class _SessionScreenState extends State<SessionScreen> {
                       enabled: !_ended,
                       onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
-                          hintText: 'Type a message…'),
+                        hintText: 'Type a message…',
+                      ),
                     ),
                   ),
                   IconButton(
