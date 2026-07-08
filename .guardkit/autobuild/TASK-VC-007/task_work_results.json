@@ -1,0 +1,132 @@
+{
+  "task_id": "TASK-VC-007",
+  "timestamp": "2026-07-09T00:18:45.829376",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "(Implementation) for TASK-VC-007 in TDD mode. Let me start by reading the task requirements and impl",
+      "completed": false
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 5,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
+  },
+  "files_modified": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test/contract/voice_contract_test.dart",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test_live/voice_contract_test.dart"
+  ],
+  "files_created": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test/contract/voice_contract_test.dart",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test_live/voice_contract_test.dart",
+    "app/test/contract/voice_contract_test.dart",
+    "app/test_live/voice_contract_test.dart"
+  ],
+  "files_authored": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/.guardkit/autobuild/TASK-VC-007/player_turn_1.json",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test/contract/voice_contract_test.dart",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test_live/voice_contract_test.dart"
+  ],
+  "tests_written": [],
+  "summary": "5 tests passed",
+  "sdk_turns": {
+    "turns_used": 39,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "testing",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "Contract-style test bodies run against the dual-backend harness (ContractBackend \u2192 fake + live), following the existing app/test/contract/ pattern.",
+      "status": "complete",
+      "evidence": "Created VoiceContractBackend interface with FakeVoiceContractBackend and LiveVoiceContractBackend implementations. Shared test bodies in runVoiceContractTests() function run against both backends, following the existing SessionApi contract pattern. Tests verify voice turn upload contract and direction pins.",
+      "test_file": "app/test/contract/voice_contract_test.dart",
+      "implementation_files": [
+        "app/test/contract/voice_contract_test.dart",
+        "app/test_live/voice_contract_test.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Voice live variants added under app/test_live/, run with --concurrency=1 (binding global-reset note), quiet GPU, honouring the 60 s turn-deadline precedent.",
+      "status": "complete",
+      "evidence": "Created app/test_live/voice_contract_test.dart with LiveVoiceContractBackend that uses 60s turn deadline (_liveVoiceTurnDeadline constant set to Duration(seconds: 60)). File includes @Timeout(Duration(minutes: 5)) and documentation requiring --concurrency=1 for global reset. Follows existing LiveContractBackend pattern.",
+      "test_file": "app/test_live/voice_contract_test.dart",
+      "implementation_files": [
+        "app/test_live/voice_contract_test.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "The upload direction-pins (field audio, filename, Content-Type codec params intact, bearer, on-session) are asserted at the live seam, not only hermetically.",
+      "status": "complete",
+      "evidence": "Live test group 'live seam direction pins' includes three tests verifying direction pins at the HTTP seam: (1) voiceTurn preserves capture format/auth/session binding, (2) codec params preserved in Content-Type header with explicit 'audio/mp4; codecs=mp4a.40.2', (3) bearer auth required. Tests verify the direction pins work end-to-end through HttpVoiceApi against a real server.",
+      "test_file": "app/test_live/voice_contract_test.dart",
+      "implementation_files": [
+        "app/test_live/voice_contract_test.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Live variants are opt-in / skip cleanly when the live tutor is unavailable (no false failures in CI without the GB10).",
+      "status": "complete",
+      "evidence": "All live tests check _liveTutorUnavailable (tests if API_BASE_URL is empty) and skip with clear message 'Live tutor unavailable (no API_BASE_URL)'. Shared contract tests only run if API_BASE_URL is set (conditional: if (!_liveTutorUnavailable)). Verified by running without API_BASE_URL - all 3 tests skip cleanly with 0 failures.",
+      "test_file": "app/test_live/voice_contract_test.dart",
+      "implementation_files": [
+        "app/test_live/voice_contract_test.dart"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 50.206942415912636
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 170.8508657909697
+    }
+  ]
+}

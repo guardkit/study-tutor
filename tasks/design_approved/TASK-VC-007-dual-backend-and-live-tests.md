@@ -1,21 +1,31 @@
 ---
-id: TASK-VC-007
-title: "Dual-backend contract tests + live voice variants"
-task_type: testing
-parent_review: TASK-REV-V3C1
-feature_id: FEAT-VOICE-003
-wave: 5
-implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-VC-003, TASK-VC-005, TASK-VC-006]
-status: pending
-tags: [voice, flutter, feat-voice-003, testing, live]
 consumer_context:
-  - task: TASK-VC-003
-    consumes: VOICE_UPLOAD_MULTIPART
-    framework: "Dart live test (LiveContractBackend, app/test_live/)"
-    driver: "package:http against the live tutor on the GB10"
-    format_note: "Live-seam port of the direction pins: field 'audio', filename extension matches captured codec, Content-Type preserves codec params exactly; authenticated + on-session"
+- consumes: VOICE_UPLOAD_MULTIPART
+  driver: package:http against the live tutor on the GB10
+  format_note: 'Live-seam port of the direction pins: field ''audio'', filename extension
+    matches captured codec, Content-Type preserves codec params exactly; authenticated
+    + on-session'
+  framework: Dart live test (LiveContractBackend, app/test_live/)
+  task: TASK-VC-003
+dependencies:
+- TASK-VC-003
+- TASK-VC-005
+- TASK-VC-006
+feature_id: FEAT-VOICE-003
+id: TASK-VC-007
+implementation_mode: task-work
+parent_review: TASK-REV-V3C1
+status: design_approved
+tags:
+- voice
+- flutter
+- feat-voice-003
+- testing
+- live
+task_type: testing
+title: Dual-backend contract tests + live voice variants
+wave: 5
 ---
 
 # Task: Dual-backend contract tests + live voice variants
