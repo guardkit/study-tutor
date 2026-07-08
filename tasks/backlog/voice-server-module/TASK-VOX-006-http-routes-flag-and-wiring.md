@@ -1,24 +1,44 @@
 ---
 id: TASK-VOX-006
-title: "HTTP routes — flag-gated voice-turn/voice-audio, envelope mapping, serve-http wiring"
+title: "HTTP routes \u2014 flag-gated voice-turn/voice-audio, envelope mapping, serve-http\
+  \ wiring"
 task_type: feature
 parent_review: TASK-REV-852B
 feature_id: FEAT-VOICE-001
 wave: 4
 implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VOX-005]
+dependencies:
+- TASK-VOX-005
 consumer_context:
-  - task: TASK-VOX-005
-    consumes: VoiceTurnService + ChunkStore
-    framework: "Starlette handlers over app.state"
-    driver: "starlette"
-    format_note: "voice_turn(...) -> VoiceTurnResult; ChunkStore.get(session_id, chunk_id) -> bytes | None (None ⇒ transport-level 404, no error_type)"
-  - task: TASK-VOX-001
-    consumes: VoiceConfig
-    framework: "frozen dataclass"
-    driver: "stdlib dataclasses"
-    format_note: "enabled gates route mounting; STT_/TTS_ env names read once in serve-http"
+- task: TASK-VOX-005
+  consumes: VoiceTurnService + ChunkStore
+  framework: Starlette handlers over app.state
+  driver: starlette
+  format_note: "voice_turn(...) -> VoiceTurnResult; ChunkStore.get(session_id, chunk_id)\
+    \ -> bytes | None (None \u21D2 transport-level 404, no error_type)"
+- task: TASK-VOX-001
+  consumes: VoiceConfig
+  framework: frozen dataclass
+  driver: stdlib dataclasses
+  format_note: enabled gates route mounting; STT_/TTS_ env names read once in serve-http
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001
+  base_branch: main
+  started_at: '2026-07-08T13:23:37.742915'
+  last_updated: '2026-07-08T13:35:49.389261'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-08T13:23:37.742915'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

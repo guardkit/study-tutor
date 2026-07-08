@@ -1,6 +1,7 @@
 ---
 id: TASK-VOX-001
-title: "voice/config.py + voice/errors.py — frozen config dataclass and the six voice exceptions"
+title: "voice/config.py + voice/errors.py \u2014 frozen config dataclass and the six\
+  \ voice exceptions"
 task_type: declarative
 parent_review: TASK-REV-852B
 feature_id: FEAT-VOICE-001
@@ -8,6 +9,28 @@ wave: 1
 implementation_mode: direct
 complexity: 3
 dependencies: []
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001
+  base_branch: main
+  started_at: '2026-07-08T12:15:36.624127'
+  last_updated: '2026-07-08T12:22:22.920862'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-08T12:15:36.624127'
+    player_summary: Implemented VoiceConfig as a frozen dataclass with from_env()
+      classmethod that mirrors HTTPAuthConfig pattern. Created six exception classes
+      (VoiceError base + RecordingTooLarge, QueryTooLong, UnsupportedAudioFormat,
+      EmptyRecording, UnintelligibleQuery, VoiceUnavailable) with specified constructors
+      and messages. All exceptions are plain Python exceptions, not HTTP types. UnsupportedAudioFormat
+      includes sorted supported types in error message. Boolean parsing uses _parse_bool_flag
+      function with c
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

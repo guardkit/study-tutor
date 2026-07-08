@@ -1,24 +1,47 @@
 ---
 id: TASK-VOX-005
-title: "voice/service.py — voice-turn orchestration + in-memory TTL chunk store (ASSUM-005 half-failure)"
+title: "voice/service.py \u2014 voice-turn orchestration + in-memory TTL chunk store\
+  \ (ASSUM-005 half-failure)"
 task_type: feature
 parent_review: TASK-REV-852B
 feature_id: FEAT-VOICE-001
 wave: 3
 implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VOX-002, TASK-VOX-004]
+dependencies:
+- TASK-VOX-002
+- TASK-VOX-004
 consumer_context:
-  - task: TASK-VOX-002
-    consumes: AudioClient
-    framework: "httpx async, injectable transport"
-    driver: "httpx"
-    format_note: "transcribe(bytes, filename=, content_type=) -> str (verbatim, may be whitespace); synthesize(text, response_format='wav') -> bytes; only VoiceUnavailable escapes"
-  - task: TASK-VOX-004
-    consumes: parse_voice_upload
-    framework: "Starlette Request stream parsing"
-    driver: "python-multipart"
-    format_note: "returns ValidatedUpload(bytes, filename, content_type) already validated in the pinned order; raises the six voice exceptions"
+- task: TASK-VOX-002
+  consumes: AudioClient
+  framework: httpx async, injectable transport
+  driver: httpx
+  format_note: transcribe(bytes, filename=, content_type=) -> str (verbatim, may be
+    whitespace); synthesize(text, response_format='wav') -> bytes; only VoiceUnavailable
+    escapes
+- task: TASK-VOX-004
+  consumes: parse_voice_upload
+  framework: Starlette Request stream parsing
+  driver: python-multipart
+  format_note: returns ValidatedUpload(bytes, filename, content_type) already validated
+    in the pinned order; raises the six voice exceptions
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001
+  base_branch: main
+  started_at: '2026-07-08T13:11:43.866905'
+  last_updated: '2026-07-08T13:23:14.680538'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-08T13:11:43.866905'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

@@ -1,24 +1,46 @@
 ---
 id: TASK-VOX-004
-title: "voice/validation.py — in-memory multipart parse + order-pinned upload validation"
+title: "voice/validation.py \u2014 in-memory multipart parse + order-pinned upload\
+  \ validation"
 task_type: feature
 parent_review: TASK-REV-852B
 feature_id: FEAT-VOICE-001
 wave: 2
 implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VOX-001, TASK-VOX-003]
+dependencies:
+- TASK-VOX-001
+- TASK-VOX-003
 consumer_context:
-  - task: TASK-VOX-001
-    consumes: VoiceConfig
-    framework: "frozen dataclass"
-    driver: "stdlib dataclasses"
-    format_note: "max_recording_bytes=10MB, max_query_seconds=60, supported_base_mimetypes set"
-  - task: TASK-VOX-003
-    consumes: probe_duration_seconds
-    framework: "pure function"
-    driver: "stdlib"
-    format_note: "returns float | None; None means duration not derivable — only the byte cap applies"
+- task: TASK-VOX-001
+  consumes: VoiceConfig
+  framework: frozen dataclass
+  driver: stdlib dataclasses
+  format_note: max_recording_bytes=10MB, max_query_seconds=60, supported_base_mimetypes
+    set
+- task: TASK-VOX-003
+  consumes: probe_duration_seconds
+  framework: pure function
+  driver: stdlib
+  format_note: "returns float | None; None means duration not derivable \u2014 only\
+    \ the byte cap applies"
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001
+  base_branch: main
+  started_at: '2026-07-08T12:57:05.315102'
+  last_updated: '2026-07-08T13:11:20.491564'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-08T12:57:05.315102'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

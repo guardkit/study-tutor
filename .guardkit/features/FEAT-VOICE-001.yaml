@@ -4,7 +4,7 @@ description: 'Non-streaming voice_turn + voice_audio behind STUDY_TUTOR_VOICE_EN
   LPA voice shape on Starlette idioms, in-memory multipart, six voice error_types,
   ephemeral audio (contract/binding Rev 1)'
 created: '2026-07-06T07:07:12.727392'
-status: planned
+status: completed
 complexity: 6
 estimated_tasks: 7
 tasks:
@@ -13,29 +13,56 @@ tasks:
   file_path: tasks/backlog/voice-server-module/TASK-VOX-001-voice-config-and-errors.md
   complexity: 3
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-08T12:15:36.611729'
+  completed_at: '2026-07-08T12:23:26.582033'
 - id: TASK-VOX-003
   name: duration probe + audio builders
   file_path: tasks/backlog/voice-server-module/TASK-VOX-003-duration-probe-and-audio-builders.md
   complexity: 4
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-07-08T12:37:29.542209'
+  completed_at: '2026-07-08T12:56:42.174486'
 - id: TASK-VOX-002
   name: AudioClient + wire-seam pins
   file_path: tasks/backlog/voice-server-module/TASK-VOX-002-audio-client-and-wire-seam-tests.md
   complexity: 5
   dependencies:
   - TASK-VOX-001
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 2
+  current_turn: 0
+  started_at: '2026-07-08T12:57:05.302895'
+  completed_at: '2026-07-08T13:11:20.494457'
 - id: TASK-VOX-004
   name: in-memory multipart validation
   file_path: tasks/backlog/voice-server-module/TASK-VOX-004-in-memory-multipart-validation.md
@@ -43,10 +70,19 @@ tasks:
   dependencies:
   - TASK-VOX-001
   - TASK-VOX-003
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-08T12:57:05.305746'
+  completed_at: '2026-07-08T13:11:20.499513'
 - id: TASK-VOX-005
   name: voice service + chunk store
   file_path: tasks/backlog/voice-server-module/TASK-VOX-005-voice-service-and-chunk-store.md
@@ -54,30 +90,57 @@ tasks:
   dependencies:
   - TASK-VOX-002
   - TASK-VOX-004
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-08T13:11:43.860908'
+  completed_at: '2026-07-08T13:23:14.683502'
 - id: TASK-VOX-006
   name: HTTP routes + flag + wiring
   file_path: tasks/backlog/voice-server-module/TASK-VOX-006-http-routes-flag-and-wiring.md
   complexity: 6
   dependencies:
   - TASK-VOX-005
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-08T13:23:37.736889'
+  completed_at: '2026-07-08T13:35:49.392377'
 - id: TASK-VOX-007
   name: BDD step definitions
   file_path: tasks/backlog/voice-server-module/TASK-VOX-007-bdd-step-definitions.md
   complexity: 5
   dependencies:
   - TASK-VOX-006
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 5
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 5
+  current_turn: 0
+  started_at: '2026-07-08T13:36:12.658181'
+  completed_at: '2026-07-08T14:18:20.471513'
 orchestration:
   parallel_groups:
   - - TASK-VOX-001
@@ -98,3 +161,23 @@ smoke_gates:
     '
   expected_exit: 0
   timeout: 300
+  exit5_is_hard_fail: false
+preflight_strict: false
+evidence_repos: []
+execution:
+  started_at: '2026-07-08T12:15:36.209396'
+  completed_at: '2026-07-08T14:18:43.972151'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001
+  total_turns: 13
+  tasks_completed: 7
+  tasks_failed: 0
+  current_wave: 5
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  last_updated: '2026-07-08T14:18:43.966849'
+  archived_at: null
+  archived_to: null
