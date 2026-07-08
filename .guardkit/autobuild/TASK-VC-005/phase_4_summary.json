@@ -1,7 +1,7 @@
 {
-  "tests_run": 241,
+  "tests_run": 209,
   "tests_failed": 1,
   "coverage_pct": 86.84,
-  "output_summary": "241 tests: 240 passed, 1 failed (happy_path_test: missing 'maths' widget); 86.84% coverage - quality gates FAILED",
+  "output_summary": "209 tests run, 1 failed (happy_path_test.dart), 86.84% coverage",
   "quality_gates_passed": false
 }
