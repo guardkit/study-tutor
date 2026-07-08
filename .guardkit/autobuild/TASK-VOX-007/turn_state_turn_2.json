@@ -1,0 +1,29 @@
+{
+  "id": "TURN-FEAT-VOICE-001-2",
+  "feature_id": "FEAT-VOICE-001",
+  "task_id": "TASK-VOX-007",
+  "turn_number": 2,
+  "player_summary": "Implementation attempt",
+  "player_decision": "feedback",
+  "coach_decision": "feedback",
+  "coach_feedback": "- Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .guardkit/bdd/TASK-VOX-007_authoring_junit.xml. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..\n- AC-003 requires running `uv run pytest tests -q` to verify the full repo test suite. Runtime parity check ran `tests/unit` (1216 passed), which provides strong circumstantial evidence, but the exact command scope was not verified. The Player only modified BDD test files under features/, making it unlikely to break other tests, but explicit verification is required.: Run: uv run pytest tests -q\n- AC-004 requires lint/format verification of modified files. No evidence of lint/format checks in the evidence bundle. Modified file: features/voice-server-module/test_voice_server_module.py: Run project-configured lint/format checks (e.g., ruff check, black --check, mypy) on features/voice-server-module/test_voice_server_module.py\n... and 1 more issues",
+  "mode": "continuing_work",
+  "blockers_found": [],
+  "progress_summary": "Turn 2: feedback",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    ".guardkit/bdd/TASK-VOX-007_authoring_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/features/voice-server-module/test_voice_server_module.py",
+    "coverage.json",
+    "features/voice-server-module/test_voice_server_module.py"
+  ],
+  "tests_passed": null,
+  "tests_failed": null,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-08T14:01:58.455561",
+  "completed_at": "2026-07-08T14:01:58.455561",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

@@ -1,0 +1,63 @@
+{
+  "task_id": "TASK-VOX-007",
+  "turn": 2,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .guardkit/bdd/TASK-VOX-007_authoring_junit.xml. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-VOX-007_authoring_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "major",
+      "description": "AC-003 requires running `uv run pytest tests -q` to verify the full repo test suite. Runtime parity check ran `tests/unit` (1216 passed), which provides strong circumstantial evidence, but the exact command scope was not verified. The Player only modified BDD test files under features/, making it unlikely to break other tests, but explicit verification is required.",
+      "requirement": "AC-003: Full repo suite (`uv run pytest tests -q`) still green",
+      "suggestion": "Run: uv run pytest tests -q"
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "major",
+      "description": "AC-004 requires lint/format verification of modified files. No evidence of lint/format checks in the evidence bundle. Modified file: features/voice-server-module/test_voice_server_module.py",
+      "requirement": "AC-004: All modified files pass project-configured lint/format checks with zero errors",
+      "suggestion": "Run project-configured lint/format checks (e.g., ruff check, black --check, mypy) on features/voice-server-module/test_voice_server_module.py"
+    },
+    {
+      "type": "code_quality",
+      "severity": "minor",
+      "description": "Player incorrectly included .guardkit/bdd/TASK-VOX-007_authoring_junit.xml in files_modified list. This is an orchestrator-managed file that was not actually modified by the Player. Should be excluded from files_modified reporting.",
+      "requirement": "Accurate reporting of modified files",
+      "suggestion": "Remove orchestrator-managed paths (under .guardkit/autobuild/, .guardkit/bdd/, tasks/) from files_modified list"
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "Evidence bundle confirms all 32 BDD scenarios in features/voice-server-module pass. Player fixed three critical issues from Turn 1: MP3 MIME type (audio/mp3 \u2192 audio/mpeg), ChunkStore expiry AttributeError, and cross-student audio fetch 403 response. All scenarios wired with hermetic testing."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "verified",
+      "notes": "Evidence bundle confirms hermetic testing maintained. All tests use TestClient + MockAudioTransport with no live network calls. All audio service requests intercepted by mock transport with canned responses."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "Runtime parity check shows unit test suite passed (1216 passed, 3 skipped in tests/unit), but the criterion specifically requires `uv run pytest tests -q`. The Player only modified BDD files under features/, making breakage unlikely, but the exact command scope must be verified to confirm no integration tests or other test types were affected."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "No evidence of lint/format checks in the evidence bundle. Player explicitly marked this as 'uncertain' and listed it in requirements_remaining. Must run project-configured lint/format checks on features/voice-server-module/test_voice_server_module.py before approval."
+    }
+  ],
+  "rationale": "The Player successfully completed the core BDD wiring work (32/32 scenarios passing, hermetic testing maintained), but two acceptance criteria remain unverified. AC-003 has strong circumstantial evidence (unit tests passed, only BDD files changed) but requires explicit verification of the full test suite as specified. AC-004 has no evidence at all. The minor honesty discrepancy (listing an orchestrator-managed file) does not affect work quality. Requesting explicit verification of AC-003 and AC-004 before approval."
+}
