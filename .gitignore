@@ -342,6 +342,9 @@ stderr.log
 # Per-machine Claude Code overrides
 .claude/settings.local.json
 
+# Claude Code hook state — session-ephemeral scratch, one file per session
+.claude/hooks/.state/
+
 # GuardKit local-only archive (per /feature-complete spec)
 .guardkit/archive/
 

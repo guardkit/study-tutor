@@ -216,21 +216,21 @@ ASSUM-001 subject→`english`, 1.7B fallback pre-approved, persona copy drafted)
   --context docs/design/contracts/API-session-http-binding.md \
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 
-# ── W2 ──────────────────────────────────────────────────────────────
+# ── W2 ── ✅ EXECUTED 2026-07-07 (kept as record — spec+plan in features/streaming-voice/ + .guardkit/features/FEAT-VOICE-002.yaml; tasks TASK-VS2-001..008) ──
 /feature-spec "FEAT-VOICE-002 streaming voice on the token stream: implement and widen SessionService.turn_stream/TurnEvent + WebSocketRoute turn per the frozen contract §7 frames; uvicorn[standard]/websockets server dep; LLMClient generate_stream incl. the asyncio.to_thread Player-adapter seam (TASK-STREAM-001 Scope 1); sentence-chunked TTS (~15-25 words, response_format=wav) emitting audio_ref frames; chunk-boundary quote verification per the G-RAT ADR; streaming variants of the contract suite" \
   --context docs/design/voice-tutor-and-reachy-design.md \
   --context tasks/backlog/TASK-STREAM-001-tutor-turn-token-streaming.md \
   --context docs/design/contracts/API-session-http-binding.md \
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 
-# ── W2a/W3 ──────────────────────────────────────────────────────────
+# ── W2a/W3 ── ✅ EXECUTED 2026-07-07 (kept as record — spec+plan in features/flutter-voice-client/ + .guardkit/features/FEAT-VOICE-003.yaml; tasks TASK-VC-001..007; review TASK-REV-V3C1) ──
 /feature-spec "FEAT-VOICE-003 Flutter tap-to-talk voice client: record/just_audio/web_socket_channel deps (deliberate zero-deps DoD scope event); INTERNET+RECORD_AUDIO main-manifest + NSMicrophoneUsageDescription; VoiceApi port with Http/Fake/Flaky adapters mirroring SessionApi seams; tap-to-talk with client-side 60s hard stop; transcript-first display; ordered wav chunk playback; VoiceUnavailable amber degradation copy; hermetic direction-pin tests + app/test_live voice variants" \
   --context docs/design/voice-tutor-and-reachy-design.md \
   --context app/README.md \
   --context docs/design/contracts/API-session-http-binding.md \
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 
-# ── R-track ── (UNBLOCKED 2026-07-06: W0-R all gates PASS — spec must also consume the W0-R EVIDENCE file) ──
+# ── R-track ── ✅ EXECUTED 2026-07-07 (kept as record — spec+plan in features/reachy-local-voice-migration/ + .guardkit/features/FEAT-VOICE-004.yaml; tasks TASK-VOX-R01..R09/SMK-R; review TASK-REV-RCH4. Outcome: ASSUM-001 subject resolved to `english` — app defaultSubject moved 'maths'→'english', so the recon-D6 tension below is CLOSED, not open) ──
 /feature-spec "FEAT-VOICE-004 Reachy local voice migration: huggingface speech-to-speech realtime unit on GB10 :8765 (Silero VAD, --stt parakeet-tdt, --tts qwen3 with the 0.6B pin per R-G2, Ryan voice flag, --llm_backend responses-api pointed at llama-swap :9000 with the resident-set posture from R-G5); robot re-point via HF_REALTIME_CONNECTION_MODE=local + HF_REALTIME_WS_URL through sitecustomize.py (recon D3: verify the Pi's installed app version supports these keys; plan an upgrade step if not); verify tool round-trip; ask_tutor external tool direct to the study-tutor HTTP adapter :8100 with resume_if_active session pickup and the subject string pinned to the app's constant (recon D6: app pins 'maths' at app/lib/ui/home_screen.dart:12 while the Scholar persona is English — resolve to ONE shared constant or D8 pickup never matches; no Jarvis in the tutoring loop); port query_student_model off frozen Graphiti onto a Postgres-backed read via :8100 (recon D2) and fix its rejected tool-interface shape (recon D1); ship to the Pi via clean re-clone, not git pull (recon D7 — hand-edited clone); Scholar profile update reconciling repo-vs-Pi drift to the Pi where the Pi is right (recon D4)" \
   --context docs/design/voice-tutor-and-reachy-design.md \
   --context docs/research/ideas/unified-voice-orientation.md \
@@ -238,7 +238,8 @@ ASSUM-001 subject→`english`, 1.7B fallback pre-approved, persona copy drafted)
   --context docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md
 ```
 
-Each is followed by `/feature-plan "<title>" --context features/<slug>/<slug>_summary.md`.
+Each was followed by `/feature-plan "<title>" --context features/<slug>/<slug>_summary.md` —
+**all four `/feature-plan` runs are ✅ DONE** (task breakdowns + `.guardkit/features/FEAT-VOICE-00{1..4}.yaml` committed). **Nothing in §6 remains to run.**
 Sibling-repo context (read in-session, not `--context`): `lpa-platform-poc/src/voice/` +
 `tests/voice/`, `fleet-gateway/reachy/RUNBOOK-deploy-scholar-reachy-mini.md`,
 `dgx-spark/vendor/README.md` + `scripts/audio-*.sh`.
