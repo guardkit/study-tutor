@@ -1,19 +1,23 @@
 ---
-id: TASK-VS2-005
-title: "Text-stream acceptance suite — hermetic integration tests for every Tier-A scenario (Tier A closes here)"
-task_type: testing
-parent_review: TASK-REV-F732
-feature_id: FEAT-VOICE-002
-wave: 4
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VS2-004]
 consumer_context:
-  - task: TASK-VS2-004
-    consumes: WS_FRAME_ENVELOPE
-    framework: "Starlette TestClient websocket_connect"
-    driver: "starlette / httpx"
-    format_note: "frame types limited to contract §7 Rev 1 vocabulary; terminal errors close the socket, non-terminal refusals leave it open (ASSUM-003)"
+- consumes: WS_FRAME_ENVELOPE
+  driver: starlette / httpx
+  format_note: frame types limited to contract §7 Rev 1 vocabulary; terminal errors
+    close the socket, non-terminal refusals leave it open (ASSUM-003)
+  framework: Starlette TestClient websocket_connect
+  task: TASK-VS2-004
+dependencies:
+- TASK-VS2-004
+feature_id: FEAT-VOICE-002
+id: TASK-VS2-005
+implementation_mode: task-work
+parent_review: TASK-REV-F732
+status: design_approved
+task_type: testing
+title: Text-stream acceptance suite — hermetic integration tests for every Tier-A
+  scenario (Tier A closes here)
+wave: 4
 ---
 
 ## Description
