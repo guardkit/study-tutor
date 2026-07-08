@@ -66,30 +66,31 @@ class TestServeBootStudentStoreWiring:
         assert any("student_store_wired" in msg for msg in log_messages), \
             f"Expected student_store_wired log, got: {log_messages}"
 
-    def test_wiring_logic_when_dsn_is_unset(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    def test_serve_fails_fast_when_dsn_is_unset(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """AC-002 & AC-003: Wiring logic skips build_student_store() when DSN is unset and logs event."""
-        # Arrange
+        """FEAT-SMP-004: `serve` fail-fasts (rc=1) with a clear message when the
+        DSN is unset — the store backs the SessionService MCPAdapter requires,
+        so there is no silent-degrade branch. Invokes the real `serve` command
+        (not an inlined copy) so this stays coupled to production behaviour.
+        """
+        from click.testing import CliRunner
+
+        from study_tutor.cli.main import cli
+
         monkeypatch.delenv("STUDY_TUTOR_PG_DSN", raising=False)
 
-        # Simulate the boot wiring logic
-        logger = logging.getLogger("study_tutor.cli.main")
-        with caplog.at_level(logging.INFO, logger="study_tutor.cli.main"):
-            if os.environ.get("STUDY_TUTOR_PG_DSN"):
-                build_student_store()
-                logger.info("event=student_store_wired")
-            else:
-                logger.info("event=student_store_skipped reason=no_dsn")
+        result = CliRunner().invoke(cli, ["serve"])
 
-        # Assert: store should remain unwired (None)
-        store = get_student_store()
-        assert store is None, "Store should be None when DSN is unset"
-
-        # Assert: log should indicate store was skipped
-        log_messages = [record.getMessage() for record in caplog.records]
-        assert any("student_store_skipped" in msg and "no_dsn" in msg for msg in log_messages), \
-            f"Expected student_store_skipped log with no_dsn reason, got: {log_messages}"
+        # Exit non-zero, store never wired, and the message names the env var.
+        assert result.exit_code == 1, (
+            f"serve should fail fast without a DSN; got exit_code="
+            f"{result.exit_code}, output={result.output!r}"
+        )
+        assert get_student_store() is None, "Store must not be wired without a DSN"
+        assert "STUDY_TUTOR_PG_DSN" in result.output, (
+            f"Expected the DSN requirement in the error; got: {result.output!r}"
+        )
 
     def test_idempotent_wiring_on_second_boot(
         self, monkeypatch: pytest.MonkeyPatch

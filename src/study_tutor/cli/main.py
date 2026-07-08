@@ -9,8 +9,9 @@ output channel.
 ``StudentStore`` + ``SessionService`` via ``build_student_store`` /
 ``build_session_service``, and the in-process ``EventBus``) and injects
 them into the :class:`MCPAdapter`. The durable session-end write lives in
-``SessionService.end_session`` (ADR-ARCH-023); learner-state reads degrade
-to empty when ``STUDY_TUTOR_PG_DSN`` is unset.
+``SessionService.end_session`` (ADR-ARCH-023). ``STUDY_TUTOR_PG_DSN`` is
+required — the runtime fails fast at boot when it is unset (the store backs
+the ``SessionService`` the adapter hard-requires), matching ``serve-http``.
 
 TASK-LCA-005: ``serve`` constructs the Phase-1 ``orchestrator_factory``
 closure via :func:`_build_orchestrator_factory` and injects it into the
@@ -336,23 +337,26 @@ def serve(role: str, transport: str, log_level: str) -> None:
     # corpus fallback per the graceful-degradation envelope.
     build_rag_providers(role_config)
 
-    # TASK-SMP2-04 — wire the Postgres student store into the runtime
-    # *before* the orchestrator starts, so learner-state reads are live
-    # when STUDY_TUTOR_PG_DSN is set. When the DSN is absent, skip wiring
-    # (reads degrade to empty — same posture as the graph-read graceful
-    # fallback). The guard belongs here (not inside build_student_store)
-    # so the write path can still demand a hard failure elsewhere if
-    # needed.
+    # FEAT-SMP-004 — wire the Postgres student store + SessionService before
+    # the orchestrator starts. Post-ADR-023 the store is the backbone of the
+    # tutor runtime: ``MCPAdapter`` hard-requires a wired ``SessionService``,
+    # so a missing DSN is a fail-fast boot error (matching ``serve-http``),
+    # not a silent degrade. The store's async engine is lazy, so wiring here
+    # does not open a connection — the first query does.
     logger = logging.getLogger(__name__)
-    if os.environ.get("STUDY_TUTOR_PG_DSN"):
-        build_student_store()
-        logger.info("event=student_store_wired")
-        # TASK-SMP3-04 — wire the SessionService after the store is wired
-        build_session_service()
-        logger.info("event=session_service_wired")
-    else:
-        logger.info("event=student_store_skipped reason=no_dsn")
-        logger.info("event=session_service_skipped reason=no_dsn")
+    if not os.environ.get("STUDY_TUTOR_PG_DSN"):
+        click.echo(
+            "[study-tutor] Error: STUDY_TUTOR_PG_DSN environment variable is "
+            "required. The Postgres student store (ADR-ARCH-023) backs the "
+            "SessionService the tutor runtime requires; set it before serving.",
+            err=True,
+        )
+        raise SystemExit(1)
+    build_student_store()
+    logger.info("event=student_store_wired")
+    # TASK-SMP3-04 — wire the SessionService after the store is wired
+    build_session_service()
+    logger.info("event=session_service_wired")
 
     event_bus = EventBus()
 
@@ -490,19 +494,24 @@ def _build_nats_runtime(config: Any, agent_id: str) -> Any:
     # above for the same ordering invariant).
     build_rag_providers(role_config)
 
-    # TASK-SMP3-04 — wire the Postgres student store and SessionService
-    # into the NATS runtime path (same conditional posture as ``serve``).
-    # The SessionService needs the store wired first, so build_student_store
-    # is called before build_session_service.
+    # FEAT-SMP-004 — wire the Postgres student store + SessionService into the
+    # NATS runtime path. Same fail-fast contract as ``serve``: ``MCPAdapter``
+    # hard-requires a wired ``SessionService``, so a missing DSN is a boot
+    # error, not a silent degrade. Store first, then the SessionService.
     logger = logging.getLogger(__name__)
-    if os.environ.get("STUDY_TUTOR_PG_DSN"):
-        build_student_store()
-        logger.info("event=student_store_wired path=nats")
-        build_session_service()
-        logger.info("event=session_service_wired path=nats")
-    else:
-        logger.info("event=student_store_skipped reason=no_dsn path=nats")
-        logger.info("event=session_service_skipped reason=no_dsn path=nats")
+    if not os.environ.get("STUDY_TUTOR_PG_DSN"):
+        click.echo(
+            "[study-tutor] Error: STUDY_TUTOR_PG_DSN environment variable is "
+            "required for serve-nats. The Postgres student store (ADR-ARCH-023) "
+            "backs the SessionService the tutor runtime requires; set it before "
+            "serving.",
+            err=True,
+        )
+        raise SystemExit(1)
+    build_student_store()
+    logger.info("event=student_store_wired path=nats")
+    build_session_service()
+    logger.info("event=session_service_wired path=nats")
 
     event_bus = EventBus()
     orchestrator_factory = _build_orchestrator_factory(role_config)
