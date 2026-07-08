@@ -195,8 +195,13 @@ class CommandRouter:
                 success=False,
             )
 
+        # Echo the canonical command that actually ran (Bug #2): the same
+        # alias resolution ``_dispatch_command`` applies, so the requester
+        # sees ``start_session`` rather than the ``tutor_start_session`` MCP
+        # tool alias it happened to send. The failure paths above keep the
+        # raw name — an unsupported command has no canonical form to report.
         return ResultPayload(
-            command=command.command,
+            command=self.tool_to_command.get(command.command, command.command),
             result=result_dict,
             correlation_id=command.correlation_id,
             success=True,

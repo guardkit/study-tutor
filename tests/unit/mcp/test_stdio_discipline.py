@@ -33,6 +33,15 @@ def _spawn_serve() -> subprocess.Popen[bytes]:
     # enforced at boot by validate_coach_config). Without it, `serve` fail-fasts
     # (rc=1) before ever reaching the idle stdio loop this test observes.
     env.setdefault("AGENT_MODELS__COACH_MODEL", "local-coach")
+    # FEAT-SMP-003: MCPAdapter requires a wired SessionService, which `serve`
+    # only builds when STUDY_TUTOR_PG_DSN is set. The async engine is lazy
+    # (no connection until the first query), and an idle boot never queries,
+    # so a syntactically-valid dummy DSN lets `serve` boot the real store-wired
+    # path without a live database — exactly what this stdio-idle smoke needs.
+    env.setdefault(
+        "STUDY_TUTOR_PG_DSN",
+        "postgresql://study_tutor:test@localhost:5434/study_tutor",
+    )
     env["PYTHONUNBUFFERED"] = "1"
 
     return subprocess.Popen(
