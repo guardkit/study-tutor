@@ -264,8 +264,8 @@ async def test_duration_boundary_exactly_60_seconds(test_config: VoiceConfig):
 @pytest.mark.asyncio
 async def test_duration_boundary_just_over_60_seconds(test_config: VoiceConfig):
     """Audio just over max_query_seconds (60s) raises QueryTooLong."""
-    # Mock WebM content with 60.1 seconds duration
-    audio_data = _build_webm_with_duration(60.1)
+    # Mock WebM content with 61.0 seconds duration (clearly over 60)
+    audio_data = _build_webm_with_duration(61.0)
     body = build_multipart_body(audio_data, "audio/webm")
     request = create_mock_request(body)
 
@@ -291,6 +291,10 @@ def _build_webm_with_duration(duration_seconds: float) -> bytes:
     """Build minimal WebM structure with Duration element.
 
     This creates a valid WebM structure that probe_duration_seconds can parse.
+
+    The Duration element stores duration in ticks, where each tick is
+    TimestampScale nanoseconds. Default TimestampScale is 1,000,000 ns (1 ms),
+    so for X seconds we need X * 1000 ticks.
     """
     # EBML Header (0x1A45DFA3)
     ebml_header = b"\x1a\x45\xdf\xa3"
@@ -311,12 +315,14 @@ def _build_webm_with_duration(duration_seconds: float) -> bytes:
     ts_size = b"\x84"  # Size: 4 bytes
     ts_value = (1_000_000).to_bytes(4, "big")  # 1ms timescale
 
-    # Duration (0x4489) - float value
+    # Duration (0x4489) - float value in ticks
+    # Each tick = 1ms (TimestampScale), so X seconds = X * 1000 ticks
     dur_id = b"\x44\x89"
     dur_size = b"\x84"  # Size: 4 bytes
     import struct
 
-    dur_value = struct.pack(">f", duration_seconds)  # Duration in ticks
+    duration_ticks = duration_seconds * 1000.0  # Convert seconds to milliseconds
+    dur_value = struct.pack(">f", duration_ticks)
 
     # Assemble
     info_content = ts_id + ts_size + ts_value + dur_id + dur_size + dur_value

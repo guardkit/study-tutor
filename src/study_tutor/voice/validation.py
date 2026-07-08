@@ -83,15 +83,14 @@ async def parse_voice_upload(
         raise ValueError("Missing boundary in multipart/form-data Content-Type")
 
     # Parse multipart body in-memory using push parser
-    # Accumulate body with size enforcement during streaming
+    # Accumulate body (with generous buffer for multipart overhead)
     accumulated_body = b""
+    max_buffer = config.max_recording_bytes * 2  # Allow overhead for boundaries/headers
 
-    # Stream body and enforce max_recording_bytes during read
+    # Stream body
     async for chunk in request.stream():
-        # 1. SIZE CHECK (during read) - enforce max_recording_bytes on total body
-        # This ensures we never buffer more than max + 1 chunk
-        if len(accumulated_body) + len(chunk) > config.max_recording_bytes:
-            # Over-cap - stop reading and raise immediately
+        if len(accumulated_body) + len(chunk) > max_buffer:
+            # Prevent excessive buffering
             raise RecordingTooLarge(config.max_recording_bytes)
         accumulated_body += chunk
 
@@ -109,7 +108,7 @@ async def parse_voice_upload(
     audio_filename = field_data["filename"]
     audio_content_type = field_data["content_type"]
 
-    # Final size check (in case streaming didn't catch it)
+    # 1. SIZE CHECK - enforced on parsed audio field
     if len(audio_bytes) > config.max_recording_bytes:
         raise RecordingTooLarge(config.max_recording_bytes)
 
@@ -155,26 +154,39 @@ def _parse_multipart_simple(body: bytes, boundary: bytes) -> dict[str, dict]:
     fields = {}
 
     for part in parts_raw:
-        if not part or part == b"--\r\n" or part == b"--":
+        if not part or part == b"--\r\n" or part == b"--" or part == b"\r\n" or part == b"--\n":
             continue
 
-        # Skip leading/trailing whitespace
-        part = part.strip()
-        if not part:
-            continue
+        # Remove leading \r\n but preserve content
+        if part.startswith(b"\r\n"):
+            part = part[2:]
+        elif part.startswith(b"\n"):
+            part = part[1:]
+
+        # Skip truly empty parts after header check below
+        # (don't skip here as we need to check for headers first)
 
         # Split headers from content
         try:
             header_end = part.index(b"\r\n\r\n")
         except ValueError:
-            continue
+            # Try with just \n\n (some clients use \n instead of \r\n)
+            try:
+                header_end = part.index(b"\n\n")
+                sep_len = 2
+            except ValueError:
+                continue
+        else:
+            sep_len = 4
 
         headers_raw = part[:header_end]
-        content = part[header_end + 4 :]  # Skip \r\n\r\n
+        content = part[header_end + sep_len:]  # Skip separator
 
-        # Remove trailing \r\n
+        # Remove trailing \r\n or \n (but preserve empty content)
         if content.endswith(b"\r\n"):
             content = content[:-2]
+        elif content.endswith(b"\n"):
+            content = content[:-1]
 
         # Parse headers
         headers_text = headers_raw.decode("utf-8", errors="replace")
@@ -182,7 +194,7 @@ def _parse_multipart_simple(body: bytes, boundary: bytes) -> dict[str, dict]:
         filename = "unknown"
         content_type = "application/octet-stream"
 
-        for line in headers_text.split("\r\n"):
+        for line in headers_text.replace("\r\n", "\n").split("\n"):
             if line.lower().startswith("content-disposition:"):
                 # Extract name and filename
                 _, params = parse_options_header(line)
