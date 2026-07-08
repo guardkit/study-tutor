@@ -15,7 +15,7 @@ Layout mirrors ``knowledge/store/``:
 
 Wave map: FEAT-SMP-003 implements the durable adapter behind the service and
 repoints the MCP adapter at it; FEAT-SMP-004 deletes ``tutor_session`` +
-graphiti plumbing. See
+the remaining graph plumbing. See
 ``docs/research/ideas/student-model-postgres-migration-scope-and-build-plan.md``.
 """
 from __future__ import annotations

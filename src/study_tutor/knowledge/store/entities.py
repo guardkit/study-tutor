@@ -3,13 +3,13 @@
 This module is the **persistence-facing** record layer for the study-tutor
 learner store, per [ADR-ARCH-023]. It is intentionally stack-agnostic — it
 imports **no** database driver — mirroring the discipline already used by
-``knowledge.student_model`` (which imports no ``graphiti-core``).
+``knowledge.student_model`` (which imports no database driver either).
 
 What lives here:
 
-- **Read models re-homed from ``knowledge.queries``** — ``StudentState`` and its
-  snapshots. FEAT-SMP-002 repoints ``queries.get_student_state`` at the store
-  and imports these from here (queries.py's Graphiti-coupled copies are then
+- **Read models re-homed from the prior graph query layer** — ``StudentState``
+  and its snapshots. FEAT-SMP-002 repoints ``get_student_state`` at the store
+  and imports these from here (the old graph-coupled copies are then
   deleted). Kept byte-compatible with the current shapes so the swap is a
   drop-in for existing handler/planner callers.
 - **New persistence records** the gamification §11 schema and the cross-device
@@ -21,7 +21,7 @@ What lives here:
 ``student_model`` — the band taxonomy (ASSUM-001) does not change with the
 store swap. ``TopicConfidence`` / ``Misconception`` (the domain entities the
 planner consumes) also stay in ``student_model``; this module only adds the
-records that were previously Graphiti episodes.
+records that were previously graph episodes.
 
 Status: scaffolding for FEAT-SMP-001's ``/feature-spec`` to react to. Field
 sets are the proposed contract; the build may refine.
@@ -89,7 +89,7 @@ class StudentState(_Record):
     """Aggregated student-model snapshot returned by ``get_student_state``.
 
     ``empty=True`` is the explicit "store unavailable / no such student"
-    sentinel (the graph era used it for "graphiti unavailable"); callers branch
+    sentinel (the graph era used it for "backend unavailable"); callers branch
     on it without inspecting other fields. ``stale=True`` flags that at least
     one underlying fact is older than the configured stale threshold; the fact
     is still returned.

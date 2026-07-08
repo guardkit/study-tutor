@@ -11,7 +11,7 @@ Covers all six acceptance criteria of TASK-GSM-001:
 - AC-005: Module docstring documents the cross-repo divergence
   (``fleet:appmilla`` vs ``appmilla-fleet``).
 - AC-006: Entity Pydantic schema dumps match expected JSON shape, and
-  the module is stack-agnostic (does not import graphiti-core).
+  the module is stack-agnostic (does not import a graph-store client).
 """
 from __future__ import annotations
 
@@ -307,9 +307,9 @@ def test_relationship_constants_are_distinct() -> None:
 # ---------------------------------------------------------------------------
 
 def test_group_id_constant_values() -> None:
-    # Dash form (not colon) — graphiti-core 0.29's GroupIdValidationError
-    # rejects characters outside [A-Za-z0-9_-]. See student_model.py
-    # constant comments.
+    # Dash form (not colon) — the historical group-id validator rejected
+    # characters outside [A-Za-z0-9_-]. See student_model.py constant
+    # comments.
     assert STUDENT_GROUP_PREFIX == "student-"
     assert SUBJECT_GROUP_PREFIX == "subject-"
     assert FLEET_GROUP_ID == "fleet-appmilla"
@@ -374,7 +374,7 @@ def test_module_docstring_documents_cross_repo_divergence() -> None:
     # Must mention both conventions and the source of the convention.
     # Either form ("fleet:appmilla" historic / "fleet-appmilla" current)
     # is accepted to keep the assertion stable across the dash-form
-    # migration triggered by graphiti-core 0.29's group-id validator.
+    # migration triggered by the historical group-id validator.
     assert "fleet:appmilla" in docstring or "fleet-appmilla" in docstring
     assert "appmilla-fleet" in docstring
     # Must mention the upstream specification.

@@ -9,8 +9,8 @@ fake/in-memory implementation of the same Protocol backs the tests.
 The method set is deliberately the union of:
 
 1. **The read/write surface being replaced** — ``get_student_state`` and the
-   session-completion write from ``knowledge.queries`` / ``knowledge.async_write``
-   (the ``GraphitiWriteHelper`` F1/F2/F3 flush points), so FEAT-SMP-002 can swap
+   session-completion write (the prior async write helper's F1/F2/F3 flush
+   points), so FEAT-SMP-002 can swap
    the adapter behind the existing callers without changing their call sites.
 2. **The cross-device session contract** (``docs/design/contracts/API-session-cross-device.md``)
    — ``create_session`` / ``list_sessions`` / ``get_turns`` / ``append_turn`` /
@@ -19,7 +19,7 @@ The method set is deliberately the union of:
 Async note: every method is ``async`` and **awaited inline**. Per ADR-ARCH-023
 D2 the writes are *synchronous from the caller's flow* (the session-end handler
 awaits the transaction to completion) — they are simply not the fire-and-forget
-``asyncio.create_task`` dispatch the 79-second Graphiti write forced. A ms-scale
+``asyncio.create_task`` dispatch the old 79-second graph write forced. A ms-scale
 Postgres upsert does not need, and no longer gets, that machinery.
 
 Ownership: methods taking a ``session_id`` do NOT themselves enforce the
@@ -88,7 +88,7 @@ class StudentStore(Protocol):
         ``PlannerContext.misconceptions`` (rule-4)."""
         ...
 
-    # -- Learner-state writes (replace GraphitiWriteHelper F1/F2/F3) --------
+    # -- Learner-state writes (replace the prior write helper F1/F2/F3) -----
 
     async def record_session_completion(
         self,

@@ -552,7 +552,7 @@ def test_no_whitestocks_connection_in_tests() -> None:
 
     This guard verifies that TASK-SMP3-07's tests do NOT connect to the production
     NAS (whitestocks:5434). Existing tests from prior tasks (W1/W2 scope guards,
-    graphiti smoke tests) are grandfathered and excluded from this check.
+    prior-backend smoke tests) are grandfathered and excluded from this check.
     """
     from pathlib import Path
 

@@ -14,18 +14,18 @@ Registers four tools on the FastMCP server:
 * ``tutor_turn`` — sync; generates one tutor reply per user message.
 * ``tutor_session_status`` — sync; pure read of session state.
 * ``tutor_session_end`` — sync caller-facing return; delegates to
-  :func:`study_tutor.tutoring.session_end.perform_session_end` for the
-  DDR-003-ordered ``session.completed`` emit + F3 Graphiti write
-  fire-and-forget dispatch (TASK-GR-WIRE BLOCK-3a). Returns within the
-  ASSUM-004 2 s wall-clock budget regardless of Graphiti latency per
-  ADR-ARCH-019.
+  :meth:`study_tutor.session.service.SessionService.end_session` for the
+  DDR-003-ordered ``session.completed`` emit followed by the
+  ``StudentStore.record_session_completion`` write (emit-before-write). The
+  store write is a synchronous transactional Postgres upsert (ADR-ARCH-023),
+  and the handler returns within the ASSUM-004 2 s wall-clock budget.
 
 SR-03: every handler resolves the provider via ``_default_player_model()``
 at call time — no module-level provider hard-coding.
 
 SR-07: ``tutor_session_end`` description is *only* ``"marks session ended"``.
-The Phase 1 Graphiti write happens inside ``perform_session_end`` as a
-fire-and-forget task — not user-facing text.
+The store write happens inside ``SessionService.end_session`` as a synchronous
+transactional Postgres write — not user-facing text.
 
 Concurrency note (TASK-DSP-006): the per-instance ``_plan_sessions`` dict
 is keyed by ``session.session_id``. UUID4 collision probability is

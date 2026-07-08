@@ -41,13 +41,13 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from study_tutor.knowledge.episodes import SessionCompletedEpisode
 from study_tutor.knowledge.store.reads import PlannerInputs, load_planner_inputs
 from study_tutor.planner.protocols import (
     AOCode,
     Candidate,
     PlannerContext,
     Rule,
+    SessionCompletion,
 )
 from study_tutor.planner.rules import (
     Rule1LearnerOverride,
@@ -185,7 +185,7 @@ def _plan_from_candidate(
 def run_rule_pipeline(
     context: PlannerContext,
     *,
-    session_completions: list[SessionCompletedEpisode] | None = None,
+    session_completions: list[SessionCompletion] | None = None,
 ) -> SessionPlan:
     """Dispatch the rule pipeline against ``context`` and return a plan.
 
@@ -352,7 +352,7 @@ async def plan_session(
     rng: random.Random | None = None,
     client: Any | None = None,
     ao_mapping: Mapping[str, list[AOCode]] | None = None,
-    session_completions: list[SessionCompletedEpisode] | None = None,
+    session_completions: list[SessionCompletion] | None = None,
 ) -> SessionPlan:
     """Plan a session for ``student_id`` via the deterministic pipeline.
 
@@ -366,9 +366,10 @@ async def plan_session(
         rng: Seeded :class:`random.Random` for the rule-6 fallback.
             Production callers may pass an unseeded ``random.Random()``;
             tests pass a seeded one for reproducibility.
-        client: A :class:`GraphitiClient` wrapper or duck-typed inner
-            client. Forwarded to :func:`get_student_state`. ``None`` is
-            allowed and triggers the baseline-degraded branch.
+        client: Retained for backwards compatibility and no longer used —
+            the store-backed read resolves its own injected store. ``None``
+            is accepted; a store read that yields no state triggers the
+            baseline-degraded branch.
         ao_mapping: Optional ``topic_name → [AO codes]`` lookup used to
             populate :attr:`SessionPlan.focus_aos`. Defaults to ``{}``.
         session_completions: Recent completion episodes used by Rule 4.

@@ -6,7 +6,7 @@ pipeline (FEAT-PRV4 / FEAT-PH1-004): every other subtask in the wave consumes
 ``CorpusChunk`` from this module.
 
 The module is intentionally stack-agnostic:
-  * No imports from ``graphiti-core`` (the student-model graph backend).
+  * No imports from the Postgres ``StudentStore`` (the student-model backend).
   * No imports from ``chromadb`` (the vector store used for retrieval).
   * No file I/O — corpus loading is the responsibility of TASK-PRV-002.
   * No business logic — retrieval / filtering / ranking lives downstream.

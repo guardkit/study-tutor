@@ -49,9 +49,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-from study_tutor.knowledge.episodes import SessionCompletedEpisode
 from study_tutor.knowledge.student_model import Misconception, TopicConfidence
-from study_tutor.planner.protocols import Candidate, PlannerContext
+from study_tutor.planner.protocols import (
+    Candidate,
+    PlannerContext,
+    SessionCompletion,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -214,20 +217,18 @@ def _build_misconception_id(misconception: Misconception) -> str:
 
 def _is_misconception_revisited(
     misconception: Misconception,
-    sessions: Iterable[SessionCompletedEpisode],
+    sessions: Iterable[SessionCompletion],
 ) -> bool:
     """Return True iff the misconception's topic was revisited per ASSUM-008.
 
-    "Revisited" means: at least one ``SessionCompletedEpisode`` carries
+    "Revisited" means: at least one ``SessionCompletion`` carries
     ``misconception.topic_ref`` in its ``topics_covered`` AND the session
     ended strictly after ``misconception.observed_at``. Sessions that
     ended at or before the misconception was observed do NOT count
     (boundary is strict-greater per ASSUM-008).
 
     The session-end timestamp is read from
-    :attr:`SessionCompletedEpisode.ended_at` — the
-    ``phase-1-scope.md`` "completed_at" name is the conceptual label;
-    the concrete schema field is ``ended_at`` (TASK-GSM-002).
+    :attr:`SessionCompletion.ended_at`.
     """
     observed_at = _to_utc_aware(misconception.observed_at)
     target_topic = misconception.topic_ref
@@ -250,7 +251,7 @@ class Rule4UnrevisitedMisconception:
     """Prefer topics that carry an unrevisited misconception (ASSUM-008).
 
     A misconception ``M`` is *unrevisited* iff its ``topic_ref`` does
-    NOT appear in :attr:`SessionCompletedEpisode.topics_covered` of any
+    NOT appear in :attr:`SessionCompletion.topics_covered` of any
     session that ended strictly after ``M.observed_at`` (ASSUM-008,
     signed off 2026-04-29).
 
@@ -259,10 +260,9 @@ class Rule4UnrevisitedMisconception:
             for symmetry with Rule 3 and for future rationale-fragment
             age annotations; the unrevisited check itself is
             clock-independent.
-        session_completions: Recent
-            :class:`SessionCompletedEpisode` records for the current
-            student. The pipeline (TASK-DSP-005) supplies these via the
-            FEAT-PH1-001 query helper; in unit tests they are passed in
+        session_completions: Recent :class:`SessionCompletion` records
+            for the current student. The pipeline supplies these via the
+            store read boundary; in unit tests they are passed in
             directly. Defaults to an empty list, which makes every
             misconception trivially "unrevisited".
 
@@ -286,7 +286,7 @@ class Rule4UnrevisitedMisconception:
     """
 
     clock: Callable[[], datetime]
-    session_completions: list[SessionCompletedEpisode] = field(
+    session_completions: list[SessionCompletion] = field(
         default_factory=list,
     )
 

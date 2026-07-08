@@ -1,6 +1,6 @@
 """study-tutor StudentStore — the Postgres learner-state persistence layer.
 
-Scaffolding for **FEAT-SMP-001** ([ADR-ARCH-023]): replaces the Graphiti/FalkorDB
+Scaffolding for **FEAT-SMP-001** ([ADR-ARCH-023]): replaces the prior graph
 student model with a study-tutor-owned Postgres (JSONB) store. Layout mirrors the
 project's ports/adapters convention:
 
@@ -13,7 +13,7 @@ project's ports/adapters convention:
 - ``schema_reference.sql`` — the DDL Alembic's first migration encodes.
 
 Wave map: FEAT-SMP-001 implements the writes + ``ping``; FEAT-SMP-002 repoints
-``queries.py`` reads here (and deletes the Graphiti copies); FEAT-SMP-003 adds
+the reads here (and deletes the old graph copies); FEAT-SMP-003 adds
 the session-persistence methods behind the MCP + HTTP/WS adapters; FEAT-SMP-004
 deletes the graph plumbing. See
 ``docs/research/ideas/student-model-postgres-migration-scope-and-build-plan.md``.

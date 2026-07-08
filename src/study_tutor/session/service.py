@@ -14,7 +14,7 @@ on every verb that takes a ``session_id``.
 Two-level injection (mirrors the store): the adapters resolve the shared
 ``SessionService`` via :mod:`session.provider`; the service resolves the
 ``StudentStore`` via :mod:`knowledge.store.provider`. The service imports **no**
-MCP, FastAPI, Keycloak, or graphiti types — identity is an already-resolved
+MCP, FastAPI, or Keycloak types — identity is an already-resolved
 ``student_id: str`` parameter; the LLM/Coach loop is injected as ``reply_fn``.
 Writes are ``await``-ed inline (ADR-ARCH-023 D2), never fire-and-forget.
 
@@ -32,8 +32,7 @@ scaffolding is deliberately silent on these so the build resolves them once:
   ``cli/main.py`` (``serve`` and ``_build_nats_runtime``) via a shared helper.
 * **#4 completion producer (med).** :class:`SessionCompletion` is computed by the
   Coach domain logic and handed to :meth:`end_session`; the confidence/XP delta
-  policy (today Graphiti-coupled ``record_topic_confidence_update`` +
-  ``Phase1MinimalDeltaPolicy``) must be ported to resolve ``ConfidenceUpdate``
+  policy (the ``Phase1MinimalDeltaPolicy`` heuristic) resolves ``ConfidenceUpdate``
   values from ``StudentStore`` reads.
 * **#5 event payload (med).** ``session.started`` / ``turn_completed`` /
   ``completed`` (§8) belong on the service so both transports share them, but the

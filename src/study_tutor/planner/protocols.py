@@ -112,6 +112,32 @@ class Candidate:
 
 
 # ---------------------------------------------------------------------------
+# SessionCompletion (Rule-4 input)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SessionCompletion:
+    """A completed-session record Rule 4 reads to decide "revisited".
+
+    Formerly ``knowledge.episodes.SessionCompletedEpisode`` — a planner
+    input, never a graph episode. Rule 4 only reads ``topics_covered`` and
+    ``ended_at`` (whether a misconception's topic was revisited *after* it
+    was observed), so this planner-local DTO carries exactly those two
+    fields. Production wiring sources these from the store read boundary;
+    tests construct them directly.
+
+    Attributes:
+        topics_covered: Topics the completed session touched.
+        ended_at: When the session ended (compared strictly against a
+            misconception's ``observed_at`` per ASSUM-008).
+    """
+
+    topics_covered: list[str]
+    ended_at: datetime
+
+
+# ---------------------------------------------------------------------------
 # PlannerContext
 # ---------------------------------------------------------------------------
 
@@ -257,4 +283,5 @@ __all__ = [
     "PlannerContext",
     "Rule",
     "RuleSource",
+    "SessionCompletion",
 ]

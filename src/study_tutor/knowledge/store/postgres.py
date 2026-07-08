@@ -511,7 +511,7 @@ class PostgresStudentStore:
             # Assemble StudentState
             return StudentState(
                 empty=False,
-                stale=False,  # Retired Graphiti-era flag (ASSUM-005)
+                stale=False,  # Retired graph-era flag (ASSUM-005)
                 student_id=student_id,
                 year_group=year_group,
                 target_grade=target_grade,

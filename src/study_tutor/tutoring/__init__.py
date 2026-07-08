@@ -2,7 +2,7 @@
 
 This package houses the deepagents-based tutoring loop (FEAT-PH1-003). The
 Coach AsyncSubAgent is the per-turn evaluator that observes misconceptions
-and dispatches them through the shared Graphiti write helper (TASK-GSM-004)
+and dispatches them through the shared misconception write helper (TASK-GSM-004)
 per DDR-002 (per-observation ownership).
 
 TASK-DTL-003 adds the per-turn :class:`PlayerCoachOrchestrator` that wires

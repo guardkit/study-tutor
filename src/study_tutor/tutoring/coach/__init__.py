@@ -22,9 +22,9 @@ Public surface:
   — TASK-DTL-002 rubric scoring + quote-fidelity integration.
 
 Per TASK-DTL-004 + Finding F9 of TASK-REV-DTL3, sanitisation of learner-derived
-misconception text lives **here** (caller-side), not inside the shared Graphiti
-write helper. The helper is the dispatch surface; the Coach AsyncSubAgent is
-the content layer.
+misconception text lives **here** (caller-side), not inside the shared
+misconception write helper. The helper is the dispatch surface; the Coach
+AsyncSubAgent is the content layer.
 """
 
 from study_tutor.tutoring.coach.factory import (

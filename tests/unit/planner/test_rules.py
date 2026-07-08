@@ -17,12 +17,16 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from study_tutor.knowledge.episodes import SessionCompletedEpisode
 from study_tutor.knowledge.student_model import (
     Misconception,
     TopicConfidence,
 )
-from study_tutor.planner.protocols import Candidate, PlannerContext, Rule
+from study_tutor.planner.protocols import (
+    Candidate,
+    PlannerContext,
+    Rule,
+    SessionCompletion,
+)
 from study_tutor.planner.rules import (
     COOLDOWN_HOURS,
     Rule1LearnerOverride,
@@ -454,8 +458,8 @@ def test_rules_are_zero_arg_constructible(
 #
 # ASSUM-008 (signed off 2026-04-29): a misconception ``M`` is
 # *unrevisited* iff its ``topic_ref`` is NOT present in
-# ``SessionCompletedEpisode.topics_covered`` of any session-completed
-# episode whose end timestamp is later than ``M.observed_at``.
+# ``SessionCompletion.topics_covered`` of any completed session whose
+# end timestamp is later than ``M.observed_at``.
 # ===========================================================================
 
 
@@ -502,19 +506,10 @@ def _session_for(
     *,
     topics_covered: list[str],
     ended_at: datetime,
-    started_at: datetime | None = None,
-    session_id: str = "sess-1",
-) -> SessionCompletedEpisode:
-    """Build a SessionCompletedEpisode for revisit checks."""
-    return SessionCompletedEpisode(
-        session_id=session_id,
-        student_id="student-1",
-        subject_slug="aqa-8702-eng-lit",
-        text_name="Macbeth",
+) -> SessionCompletion:
+    """Build a SessionCompletion for revisit checks."""
+    return SessionCompletion(
         topics_covered=topics_covered,
-        aos_exercised=["AO1"],
-        narrative_summary="test session",
-        started_at=started_at or (ended_at - timedelta(minutes=30)),
         ended_at=ended_at,
     )
 
@@ -890,48 +885,38 @@ class TestPhase2Stubs:
 
 
 # ===========================================================================
-# Seam test — TASK-GSM-002 SessionCompletedEpisode.topics_covered contract
+# Seam test — SessionCompletion.topics_covered contract
 # ===========================================================================
 
 
 @pytest.mark.seam
-@pytest.mark.integration_contract("SessionCompletedEpisode.topics_covered")
-def test_session_completed_episode_topics_covered_format() -> None:
+@pytest.mark.integration_contract("SessionCompletion.topics_covered")
+def test_session_completion_topics_covered_format() -> None:
     """Verify ``topics_covered`` is a list[str] of Topic.name strings.
 
     Contract (ASSUM-008, signed off 2026-04-29): ``topics_covered``
     carries topic-name strings matching ``Topic.name`` from the student
-    model schema. Producer: TASK-GSM-002. Consumer: Rule 4 (this task).
+    model schema. Producer: the store read boundary. Consumer: Rule 4.
 
-    The spec-side seam test stub imports from
-    ``study_tutor.graphiti_client.episodes`` — that module path is the
-    historical name for the episode types subpackage. The current
-    canonical path is ``study_tutor.knowledge.episodes``. The contract
-    is the same: a list of plain string topic names.
+    ``SessionCompletion`` is the planner-local input Rule 4 reads; the
+    contract is a list of plain string topic names.
     """
-    # Producer side: construct an episode using the producer's API.
+    # Producer side: construct a completion record.
     now = datetime(2026, 4, 29, 12, 0, 0, tzinfo=timezone.utc)
-    episode = SessionCompletedEpisode(
-        session_id="s-1",
-        student_id="lilymay",
-        subject_slug="aqa-8702-eng-lit",
-        text_name="Macbeth",
+    completion = SessionCompletion(
         topics_covered=["dramatic irony", "metaphor identification"],
-        aos_exercised=["AO1"],
-        narrative_summary="seam test",
-        started_at=now - timedelta(minutes=30),
         ended_at=now,
     )
 
     # Consumer side: Rule 4 expects topics_covered to be list[str] of
     # topic-name strings, comparable by ``==`` to TopicConfidence.topic_ref.
-    assert isinstance(episode.topics_covered, list), (
+    assert isinstance(completion.topics_covered, list), (
         "topics_covered must be a list"
     )
-    assert all(isinstance(t, str) for t in episode.topics_covered), (
+    assert all(isinstance(t, str) for t in completion.topics_covered), (
         "topics_covered entries must be plain strings (not Topic objects)"
     )
-    assert episode.topics_covered == [
+    assert completion.topics_covered == [
         "dramatic irony",
         "metaphor identification",
     ], "topics_covered must preserve insertion order and string identity"

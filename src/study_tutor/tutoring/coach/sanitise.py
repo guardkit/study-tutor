@@ -38,7 +38,7 @@ hard-codes that contract: :meth:`CoachMisconceptionDispatcher.dispatch`
 accepts a *single* :class:`MisconceptionObservation` and never a list.
 
 Cross-references:
-    - DDR-002 (Coach AsyncSubAgent owns Graphiti writes — per-observation)
+    - DDR-002 (Coach AsyncSubAgent owns misconception writes — per-observation)
     - ADR-ARCH-019 (async write-back at every flush point)
     - ASSUM-007 (shutdown grace ≤ 30s)
     - phase-1-scope.md §FEAT-PH1-003 / FEAT-PH1-001 (architectural shape)
@@ -68,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 #: Maximum length (characters) of sanitised misconception text. Generous
 #: upper bound — the helper layer further caps to 500 chars for the actual
-#: Graphiti payload, so this acts as a defensive guard against pathological
+#: store payload, so this acts as a defensive guard against pathological
 #: learner inputs (e.g. paste-attack megastrings) before they hit the helper.
 MAX_MISCONCEPTION_TEXT_LENGTH: int = 4000
 
@@ -203,12 +203,12 @@ def sanitise_misconception(
 
 
 class _WriteHelperLike(Protocol):
-    """Structural protocol for the shared Graphiti write helper.
+    """Structural protocol for the shared misconception write helper.
 
     The helper exposes ``write_misconception(student_id, observation)`` as a
     coroutine method. We use a Protocol rather than a hard import so the
     dispatcher remains testable with ``unittest.mock.AsyncMock`` without
-    pulling in graphiti-core.
+    coupling to any concrete backend.
     """
 
     async def write_misconception(
@@ -242,7 +242,7 @@ class CoachMisconceptionDispatcher:
         """Construct the dispatcher around an injected helper instance.
 
         Args:
-            write_helper: The shared Graphiti write helper. Injected via
+            write_helper: The shared misconception write helper. Injected via
                 constructor — the dispatcher does **not** import the helper
                 module-globally (per TASK-DTL-001 consumer_context).
         """
@@ -330,7 +330,7 @@ class CoachMisconceptionDispatcher:
         TASK-GSM-004 ADR-ARCH-019), but we add a defence-in-depth wrapper at
         this seam so a misbehaving helper cannot leak an exception into the
         Coach's task surface (AC #3). The log line uses an event name distinct
-        from the helper's ``graphiti_write_failed`` so the two cannot conflate
+        from the helper's own failure event so the two cannot conflate
         — a Coach-side log is auditably separate from a helper-side log.
         """
         try:

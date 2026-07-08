@@ -5,14 +5,12 @@ and diagnostic goes to stderr. The root logger is configured against
 ``sys.stderr`` and ``click.echo(..., err=True)`` is the only user-facing
 output channel.
 
-TASK-GR-WIRE BLOCK-3a: ``serve`` now constructs the Phase-1 session-end
-dependencies (``GraphitiClient`` via ``get_client``, ``GraphitiWriteHelper``
-wrapping the inner client, in-process ``EventBus``) and injects them into
-the :class:`MCPAdapter`. The graceful-degradation envelope is preserved:
-when ``get_client`` returns ``None`` (FalkorDB unreachable, graphiti-core
-import failure, etc.) the write helper is constructed with ``client=None``
-and every dispatch becomes a no-op — the tutor still serves Phase-0
-``tutor_turn`` traffic without a knowledge graph behind it.
+``serve`` constructs the session-end dependencies (the durable Postgres
+``StudentStore`` + ``SessionService`` via ``build_student_store`` /
+``build_session_service``, and the in-process ``EventBus``) and injects
+them into the :class:`MCPAdapter`. The durable session-end write lives in
+``SessionService.end_session`` (ADR-ARCH-023); learner-state reads degrade
+to empty when ``STUDY_TUTOR_PG_DSN`` is unset.
 
 TASK-LCA-005: ``serve`` constructs the Phase-1 ``orchestrator_factory``
 closure via :func:`_build_orchestrator_factory` and injects it into the
@@ -27,10 +25,6 @@ surfaces at server boot rather than at first user turn. Subsequent
 gets a fresh :class:`PlayerCoachOrchestrator` so two concurrent sessions
 cannot contaminate each other's Coach observations.
 
-The runtime shutdown hook
-(:func:`study_tutor.tutoring.session_end.runtime_shutdown`) is run after
-``server.run`` exits so in-flight F3 fire-and-forget writes get the
-configured drain window (ASSUM-011, default 5 s) before process exit.
 """
 
 from __future__ import annotations
@@ -48,12 +42,7 @@ from study_tutor.cli.rag_wiring import build_rag_providers
 from study_tutor.knowledge.store.wiring import build_student_store
 from study_tutor.session.provider import get_session_service
 from study_tutor.session.wiring import build_session_service
-from study_tutor.knowledge.async_write import GraphitiWriteHelper
 from study_tutor.knowledge.coach_handover import apply_quote_verification
-from study_tutor.knowledge.graphiti_client import (
-    get_client,
-    load_graphiti_config_from_yaml,
-)
 from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.knowledge.retrieval import (
     decide_retrieval,
@@ -75,7 +64,7 @@ from study_tutor.tutoring.orchestrator import (
     CoachHandover,
     PlayerCoachOrchestrator,
 )
-from study_tutor.tutoring.session_end import EventBus, runtime_shutdown
+from study_tutor.tutoring.session_end import EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -365,16 +354,6 @@ def serve(role: str, transport: str, log_level: str) -> None:
         logger.info("event=student_store_skipped reason=no_dsn")
         logger.info("event=session_service_skipped reason=no_dsn")
 
-    # Graphiti client construction is async (it does a healthcheck), but
-    # the FastMCP server.run loop is sync. We use a one-shot asyncio.run
-    # for setup, then enter the sync server loop. The underlying
-    # graphiti-core driver is loop-agnostic at construction time;
-    # GraphitiWriteHelper.schedule_write picks up whatever loop is
-    # running when the MCP handler dispatches.
-    config = load_graphiti_config_from_yaml()
-    wrapper = asyncio.run(get_client(config))
-    inner = wrapper.client_or_none if wrapper is not None else None
-    write_helper = GraphitiWriteHelper(client=inner)
     event_bus = EventBus()
 
     # TASK-LCA-005 — orchestrator_factory closure. Built before adapter
@@ -396,18 +375,11 @@ def serve(role: str, transport: str, log_level: str) -> None:
 
     click.echo(
         f"[study-tutor] Serving role '{role_config.id}' over {transport} "
-        f"(provider resolved per-request via AGENT_MODELS__REASONING_MODEL; "
-        f"graphiti={'connected' if wrapper is not None else 'degraded'}).",
+        f"(provider resolved per-request via AGENT_MODELS__REASONING_MODEL).",
         err=True,
     )
 
-    try:
-        server.run(transport=transport)
-    finally:
-        # Drain in-flight F3 writes (ASSUM-011 / GRAPHITI_DRAIN_WINDOW).
-        # runtime_shutdown swallows its own exceptions — process exit
-        # never blocks on a drain failure.
-        asyncio.run(runtime_shutdown(write_helper))
+    server.run(transport=transport)
 
 
 # ---------------------------------------------------------------------------
@@ -470,11 +442,11 @@ def _load_agent_config() -> Any:
         raise _AgentConfigValidationError(exc) from exc
 
 
-def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
+def _build_nats_runtime(config: Any, agent_id: str) -> Any:
     """Wire MCPAdapter → CommandRouter → NATSAdapter for the tutor role.
 
     Mirrors :func:`serve` for the tutor-side wiring (RAG providers,
-    Graphiti client, write helper, event bus, orchestrator factory,
+    Postgres store + session service, event bus, orchestrator factory,
     :class:`MCPAdapter`) and then layers the NATS plumbing on top:
 
     1. :func:`_tutor_manifest_factory` — produces the manifest published
@@ -495,9 +467,7 @@ def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
             :func:`_tutor_manifest_factory` enforces the format).
 
     Returns:
-        Tuple of ``(adapter, write_helper)``. The write helper is
-        returned so :func:`_serve_adapter` can hand it to
-        :func:`runtime_shutdown` for the F3 drain on the way out.
+        The :class:`NATSAdapter` instance.
 
     Raises:
         ImportError: If TASK-NATS-PH1-004 / TASK-NATS-PH1-005 modules
@@ -534,13 +504,6 @@ def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
         logger.info("event=student_store_skipped reason=no_dsn path=nats")
         logger.info("event=session_service_skipped reason=no_dsn path=nats")
 
-    # Graphiti client construction is async (it does a healthcheck); we
-    # use a one-shot ``asyncio.run`` here because :func:`_build_nats_runtime`
-    # itself is sync and ``serve`` uses the same pattern.
-    graphiti_cfg = load_graphiti_config_from_yaml()
-    wrapper = asyncio.run(get_client(graphiti_cfg))
-    inner = wrapper.client_or_none if wrapper is not None else None
-    write_helper = GraphitiWriteHelper(client=inner)
     event_bus = EventBus()
     orchestrator_factory = _build_orchestrator_factory(role_config)
 
@@ -560,12 +523,11 @@ def _build_nats_runtime(config: Any, agent_id: str) -> tuple[Any, Any]:
         client=nats_client,
     )
     adapter = NATSAdapter(config, manifest, command_router=router)
-    return adapter, write_helper
+    return adapter
 
 
 async def _serve_adapter(
     adapter: Any,
-    write_helper: Any,
     *,
     agent_id: str,
     nats_url: str,
@@ -589,12 +551,9 @@ async def _serve_adapter(
     4. ``await adapter.stop()`` — drain in-flight, cancel heartbeat,
        deregister, disconnect (TASK-NATS-PH1-005 owns the 30 s drain
        window so AC-003 holds without timing logic in this layer).
-    5. ``await runtime_shutdown(write_helper)`` — drain in-flight F3
-       graphiti writes (mirrors ``serve``'s shutdown path).
 
     Args:
         adapter: The :class:`NATSAdapter` instance.
-        write_helper: The :class:`GraphitiWriteHelper` to drain on exit.
         agent_id: For the human-facing banner only.
         nats_url: For the banner only.
         shutdown_event: Optional pre-built event. Tests pass one in so
@@ -672,16 +631,7 @@ async def _serve_adapter(
                         pass
         terminal_close_triggered = adapter.terminal_close_event.is_set()
     finally:
-        try:
-            await adapter.stop()
-        finally:
-            try:
-                await runtime_shutdown(write_helper)
-            except Exception:
-                # ``runtime_shutdown`` already swallows its own errors
-                # in production code; the outer guard is here so a
-                # MagicMock in unit tests cannot break the shutdown path.
-                logger.exception("event=nats_serve_runtime_shutdown_error")
+        await adapter.stop()
 
     if terminal_close_triggered:
         # Exit non-zero so Docker's restart policy (or systemd's
@@ -761,11 +711,10 @@ def serve_nats(nats_url: str | None, agent_id: str, log_level: str) -> None:
         # source of truth handed downstream.
         config.nats.url = nats_url
 
-    adapter, write_helper = _build_nats_runtime(config, agent_id)
+    adapter = _build_nats_runtime(config, agent_id)
     asyncio.run(
         _serve_adapter(
             adapter,
-            write_helper,
             agent_id=agent_id,
             nats_url=config.nats.url,
         )

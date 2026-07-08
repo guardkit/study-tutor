@@ -41,7 +41,7 @@ lands; the public surface (``tools``, ``provider``, ``system_prompt``,
 
 Cross-references:
     - ADR-ARCH-012 (deepagents 0.5.3 AsyncSubAgent for Coach)
-    - DDR-002 (Coach AsyncSubAgent owns Graphiti misconception writes)
+    - DDR-002 (Coach AsyncSubAgent owns misconception writes)
     - TASK-REV-DTL3 review report finding F2 (single co-located validator)
     - ASSUM-005 (Coach refuses empty system prompt)
     - ASSUM-006 (long Coach reasoning flagged, never inlined into Player)
@@ -117,13 +117,13 @@ class CoachConfig:
 
 @runtime_checkable
 class WriteHelperLike(Protocol):
-    """Structural protocol for the shared Graphiti write helper.
+    """Structural protocol for the shared misconception write helper.
 
     The Coach calls ``write_misconception(student_id, observation)`` via
     ``asyncio.create_task(...)`` — fire-and-forget — per CC-13 + DDR-002.
     The actual helper is implemented in TASK-GSM-004; this Protocol is the
     consumer-side shape so the Coach module remains testable with
-    :class:`unittest.mock.AsyncMock` and does not pull in graphiti-core.
+    :class:`unittest.mock.AsyncMock` and does not couple to any concrete backend.
     """
 
     async def write_misconception(
@@ -220,7 +220,7 @@ class MisconceptionObservation(BaseModel):
         min_length=1,
         description=(
             "Free-text description of the misconception. The shared write "
-            "helper sanitises and length-caps this before it reaches Graphiti."
+            "helper sanitises and length-caps this before it reaches the store."
         ),
     )
     confidence_band_at_observation: str = Field(
@@ -531,7 +531,7 @@ class Coach:
             system_prompt: The Coach system prompt. Already validated by
                 :func:`create_coach`/:func:`validate_coach_config` to be
                 non-empty.
-            write_helper: The shared Graphiti write helper, passed in via
+            write_helper: The shared misconception write helper, passed in via
                 constructor injection per the TASK-DTL-001 consumer_context
                 ("do not import the helper module-globally").
         """
@@ -626,7 +626,7 @@ def create_coach(
             consulted for D3).
         system_prompt: The Coach's system prompt. Must be non-empty
             non-whitespace text (D2 / ASSUM-005).
-        write_helper: Shared Graphiti write helper, injected per the
+        write_helper: Shared misconception write helper, injected per the
             TASK-DTL-001 consumer_context. Constructor injection (rather
             than module-global import) keeps the Coach testable and
             preserves DDR-002 single-call-site isolation.

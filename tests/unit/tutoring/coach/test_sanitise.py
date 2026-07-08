@@ -50,7 +50,7 @@ from study_tutor.tutoring.coach.sanitise import (
 
 @pytest.fixture
 def helper_mock() -> AsyncMock:
-    """An AsyncMock standing in for the shared GraphitiWriteHelper.
+    """An AsyncMock standing in for the shared misconception write helper.
 
     The Coach AsyncSubAgent never imports the helper module-globally; it is
     constructor-injected. Tests follow the same shape: we hand the dispatcher
@@ -360,7 +360,7 @@ class TestHelperFailureIsolation:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         helper_mock.write_misconception.side_effect = RuntimeError(
-            "graphiti unreachable"
+            "store unreachable"
         )
 
         caplog.set_level(logging.WARNING, logger="study_tutor.tutoring.coach.sanitise")
@@ -501,7 +501,7 @@ class TestSeamSanitisationCallerSide:
     """Finding F9 of TASK-REV-DTL3: helper does NOT sanitise; Coach does."""
 
     @pytest.mark.seam
-    @pytest.mark.integration_contract("GraphitiWriteHelper")
+    @pytest.mark.integration_contract("StudentStore.record_misconception")
     @pytest.mark.asyncio
     async def test_helper_receives_sanitised_payload(
         self,
@@ -526,7 +526,7 @@ class TestSeamSanitisationCallerSide:
         assert observation.misconception_text == raw_text
 
     @pytest.mark.seam
-    @pytest.mark.integration_contract("GraphitiWriteHelper")
+    @pytest.mark.integration_contract("StudentStore.record_misconception")
     @pytest.mark.asyncio
     async def test_helper_call_has_one_create_task_per_misconception(
         self,

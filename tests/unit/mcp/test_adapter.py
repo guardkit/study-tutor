@@ -123,7 +123,7 @@ async def test_server_registers_four_tools(
     }
 
     end_tool = next(t for t in tools if t.name == "tutor_session_end")
-    # SR-07: description MUST NOT leak Phase 1 Graphiti behaviour.
+    # SR-07: description MUST NOT leak Phase 1 graph-store behaviour.
     assert "graphiti" not in end_tool.description.lower()
     assert "async" not in end_tool.description.lower()
     assert "marks session ended" in end_tool.description.lower()

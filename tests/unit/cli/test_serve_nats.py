@@ -96,10 +96,10 @@ def test_serve_nats_flag_overrides_config_nats_url(
 
     captured: dict[str, object] = {}
 
-    def _capture_runtime(config: object, agent_id: str) -> tuple[MagicMock, MagicMock]:
+    def _capture_runtime(config: object, agent_id: str) -> MagicMock:
         captured["config"] = config
         captured["agent_id"] = agent_id
-        return MagicMock(), MagicMock()
+        return MagicMock()
 
     async def _capture_serve(*args: object, **kwargs: object) -> None:
         captured["serve_args"] = args
@@ -141,7 +141,6 @@ async def test_serve_adapter_starts_then_stops_when_shutdown_event_is_set() -> N
     # ``adapter.terminal_close_event`` so the latter must be a real
     # ``asyncio.Event`` (MagicMock.wait() is not a coroutine).
     adapter.terminal_close_event = asyncio.Event()
-    write_helper = MagicMock()
 
     shutdown_event = asyncio.Event()
 
@@ -156,7 +155,6 @@ async def test_serve_adapter_starts_then_stops_when_shutdown_event_is_set() -> N
     try:
         await _serve_adapter(
             adapter,
-            write_helper,
             agent_id="gcse-tutor",
             nats_url="nats://localhost:4222",
             shutdown_event=shutdown_event,
@@ -209,7 +207,6 @@ async def test_serve_adapter_registers_sigterm_and_sigint_handlers() -> None:
         try:
             await _serve_adapter(
                 adapter,
-                MagicMock(),
                 agent_id="gcse-tutor",
                 nats_url="nats://localhost:4222",
                 shutdown_event=shutdown_event,
@@ -243,7 +240,6 @@ async def test_serve_adapter_exits_1_when_start_raises() -> None:
     with pytest.raises(SystemExit) as excinfo:
         await _serve_adapter(
             adapter,
-            MagicMock(),
             agent_id="gcse-tutor",
             nats_url="nats://localhost:4222",
             shutdown_event=asyncio.Event(),
@@ -288,7 +284,6 @@ async def test_serve_adapter_exits_1_when_terminal_close_event_fires() -> None:
         with pytest.raises(SystemExit) as excinfo:
             await _serve_adapter(
                 adapter,
-                MagicMock(),
                 agent_id="gcse-tutor",
                 nats_url="nats://localhost:4222",
                 shutdown_event=shutdown_event,
@@ -331,7 +326,6 @@ async def test_serve_adapter_exits_0_when_shutdown_event_fires_first() -> None:
         # Must NOT raise SystemExit — the function should return normally.
         await _serve_adapter(
             adapter,
-            MagicMock(),
             agent_id="gcse-tutor",
             nats_url="nats://localhost:4222",
             shutdown_event=shutdown_event,

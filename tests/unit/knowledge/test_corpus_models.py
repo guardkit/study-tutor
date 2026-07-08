@@ -6,8 +6,8 @@ Covers AC-001..AC-005 of TASK-PRV-001:
   * AC-003: ``CorpusChunk`` accepts ``citation_anchor=None`` and rejects
     unknown ``source_type`` values.
   * AC-004: ``text_name`` is a non-empty string.
-  * AC-005: Module imports cleanly with no Graphiti / ChromaDB / file-I/O
-    dependencies.
+  * AC-005: Module imports cleanly with no graph-store / ChromaDB /
+    file-I/O dependencies.
 """
 
 from __future__ import annotations

@@ -35,22 +35,6 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0,<3.0",
     "asyncpg>=0.29",
     "alembic>=1.13",
-    # TASK-GR-WIRE / AC-WIRE-06 (FEAT-FD32, 2026-05-02): pin graphiti-core to
-    # the 0.29 minor. The ``OpenAIGenericClient`` constructor surface drifted
-    # between 0.28 and 0.29 (model_size kwarg + LLMConfig signature shifts),
-    # so a wider range would re-introduce the silent-OpenAI-default failure
-    # mode this feature exists to fix. Wave 3's smoke test is the trip-wire
-    # for the next drift; until that test exists, the version bound is the
-    # only line of defence.
-    # TASK-FORK-PATCH (2026-05-04): repin from PyPI 0.29.x to the guardkit fork
-    # tag v0.29.5-guardkit.3 (bumped 2026-05-07; .3 re-applies the four-file
-    # patch set on the guardkit-tooling branch after the re-init dropped them).
-    # Fork is based on upstream 0.29.0 (preserves the constraint above) and
-    # ships fixes for bugs #5/#11 (RediSearch dash-as-NOT / @group_id filter),
-    # #6/#7 (factories OpenAI mis-routing), #8 (decorator single-group),
-    # #9 (edge search endpoints), #10 (backtick sanitiser), #12/#13 (FastMCP
-    # host binding). See FORK-NOTES.md in the fork repo.
-    "graphiti-core[falkordb] @ git+https://github.com/guardkit/graphiti.git@v0.29.5-guardkit.3",
     # TASK-NATS-PH1-001 / FEAT-NATS (2026-05-08): nats-core is the shared
     # contract library (Topics, AgentConfig, MessageEnvelope, CommandPayload,
     # ResultPayload, NATSClient) used across the Jarvis Ship's Computer fleet.
@@ -83,8 +67,8 @@ providers = [
 # TASK-RAG-001A / DECISION-RAG-001 §7 (2026-05-08): pin ``openai`` explicitly.
 # DECISION-RAG-001 wires ingest through chromadb's ``OpenAIEmbeddingFunction``,
 # which imports ``openai`` at construction time. Today ``openai`` is present
-# transitively via ``graphiti-core`` and ``langchain-openai``; pinning it here
-# guarantees the EF stays importable even if those upstreams drop the dep.
+# transitively via ``langchain-openai``; pinning it here guarantees the EF
+# stays importable even if that upstream drops the dep.
 rag = [
     "chromadb>=0.5",
     "sentence-transformers>=3.0",
@@ -102,13 +86,6 @@ dev = [
     # See guardkit:tasks/.../TASK-OPS-BDDM-11-pyproject-study-tutor.md.
     "pytest-bdd>=8.1,<9",
 ]
-
-[tool.hatch.metadata]
-# Required so the git+https direct reference for the guardkit graphiti-core
-# fork (TASK-FORK-PATCH, see project.dependencies above) is accepted by
-# hatchling. Switch back to a PyPI version pin when the fork's fixes land
-# upstream and we re-base onto a release that ships them.
-allow-direct-references = true
 
 # ---------------------------------------------------------------------------
 # uv path sources — TASK-NATS-PH1-001 / FEAT-NATS (2026-05-08)
@@ -159,7 +136,7 @@ markers = [
     "feat_ph1_002: tests scoped to the Deterministic Session Planner feature (FEAT-PH1-002)",
     "feat_ph1_003: tests scoped to the DeepAgents Tutoring Loop with Coach feature (FEAT-PH1-003)",
     "feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)",
-    "live: operator-conducted live smokes (require real LLM/Graphiti providers; excluded from default CI)",
+    "live: operator-conducted live smokes (require real LLM providers / Postgres store; excluded from default CI)",
 ]
 
 # TASK-SMP-04 coverage configuration: exclude NotImplementedError stubs

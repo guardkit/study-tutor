@@ -200,8 +200,6 @@ def _tutor_manifest_factory(agent_id: str) -> AgentManifest:
         template="study-tutor-phase-1",
         trust_tier="specialist",
         required_permissions=[
-            "graphiti:read",
-            "graphiti:write",
             "filesystem:read",
         ],
         max_concurrent=4,

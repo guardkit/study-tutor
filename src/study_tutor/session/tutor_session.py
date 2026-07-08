@@ -1,6 +1,6 @@
 """In-memory tutor session state (Phase 0).
 
-Session data are plain dataclasses so Phase 1 can serialise them to Graphiti
+Session data are plain dataclasses so Phase 1 can serialise them to the store
 without re-shaping a stateful engine.
 """
 from __future__ import annotations

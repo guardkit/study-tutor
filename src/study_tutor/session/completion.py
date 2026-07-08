@@ -2,8 +2,8 @@
 
 This module provides the producer that converts a completed session into a
 ``SessionCompletion`` by reading current confidence from the store and applying
-the Phase1MinimalDeltaPolicy heuristic. This replaces the Graphiti-coupled
-``record_topic_confidence_update`` path with W2 store reads.
+the Phase1MinimalDeltaPolicy heuristic. This replaces the prior graph-coupled
+confidence-update path with W2 store reads.
 """
 
 from __future__ import annotations
@@ -44,8 +44,8 @@ class Phase1MinimalDeltaPolicy:
     """Phase-1 expedient confidence delta policy.
 
     NOT a real model of confidence change. Owned by FEAT-PH2-001 for replacement.
-    This policy was lifted from ``knowledge.queries`` to survive the FEAT-SMP-004
-    Graphiti teardown.
+    This policy was lifted from the prior graph query layer to survive the
+    FEAT-SMP-004 store teardown.
 
     Heuristic:
 

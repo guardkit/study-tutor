@@ -1039,14 +1039,14 @@ class TestVerifyToScorePipelineIntegration:
 
 
 @pytest.mark.seam
-@pytest.mark.integration_contract("GraphitiWriteHelper")
+@pytest.mark.integration_contract("StudentStore.record_misconception")
 class TestCoachEvaluatorSeam:
     """Seam: Coach evaluator dispatches misconceptions via the shared helper.
 
     Producer: TASK-GSM-004 (write helper).
     Contract: ``helper.write_misconception(student_id, payload)`` is the
     single dispatch surface for F1 writes (DDR-002). The Coach evaluator
-    MUST NOT call ``add_episode`` (or any other Graphiti write API) directly.
+    MUST NOT call the store write API directly.
     """
 
     @pytest.fixture

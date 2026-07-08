@@ -41,15 +41,15 @@ TASK-DTL-002 spec:
 
 :func:`evaluate_player_turn` is the thin pipeline that wires the three
 together. It calls ``coach.schedule_misconception_write`` for every
-observed misconception — the **single** Graphiti dispatch surface per
+observed misconception — the **single** misconception dispatch surface per
 DDR-002 / TASK-GSM-004 seam contract. The Coach evaluator never touches
-``add_episode`` or any other write API directly.
+the write helper or any other write API directly.
 
 Cross-references:
     - ASSUM-001 (acceptance threshold = 0.70 weighted)
     - ASSUM-006 (long Coach reasoning flagged, never inlined into Player)
     - ASSUM-007 (Coach-unreachable / unevaluated-turn fallback)
-    - DDR-002 (Coach AsyncSubAgent owns Graphiti misconception writes)
+    - DDR-002 (Coach AsyncSubAgent owns misconception writes)
     - FEAT-PH1-004 §4 (4-word minimum quote-span length)
     - .feature L442-447 (@edge-case @integration @quote-fidelity)
     - .feature L243-250 (@negative @rubric — malformed Coach output)
@@ -786,9 +786,9 @@ def evaluate_player_turn(
     TASK-DTL-003's surface.
 
     The misconception-write site is :meth:`Coach.schedule_misconception_write`
-    (the **only** Graphiti dispatch surface — DDR-002 / TASK-GSM-004 seam
+    (the **only** misconception dispatch surface — DDR-002 / TASK-GSM-004 seam
     contract). The Coach evaluator never reaches around the helper and never
-    calls ``add_episode`` / any other write API directly. The seam test in
+    calls any other write API directly. The seam test in
     the task spec asserts ``helper.write_misconception.await_count == 1``
     when one misconception is observed; that assertion is what this method
     promises.

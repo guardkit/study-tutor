@@ -1,10 +1,10 @@
-"""Store-backed read helpers (FEAT-SMP-002) — the replacement for the graphiti
-reads in ``knowledge.queries``.
+"""Store-backed read helpers (FEAT-SMP-002) — the replacement for the prior
+graph-backed reads.
 
-These are drop-ins for the two read surfaces the current graph path exposes:
+These are drop-ins for the two read surfaces the prior graph path exposed:
 
 - ``get_student_state`` — the aggregate snapshot the MCP/HTTP handlers read
-  (was ``queries.get_student_state`` → ``_read_student_partition`` over graphiti-core).
+  (was ``get_student_state`` → ``_read_student_partition`` over the graph backend).
 - ``load_planner_inputs`` — the **planner wiring**: the per-topic confidence
   entities + recent misconceptions the session planner ranks over
   (``PlannerContext.create(topic_confidences=…, misconceptions=…,

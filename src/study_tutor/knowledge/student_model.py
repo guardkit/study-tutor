@@ -1,9 +1,9 @@
-"""Pydantic entity and relationship schema for the Graphiti student model.
+"""Pydantic entity and relationship schema for the student model.
 
 FEAT-1773 / TASK-GSM-001 — declarative type definitions consumed by every
-downstream slice of the student model (episode types, async write helper,
-query helpers, seeding script). This module is intentionally stack-agnostic:
-it does **not** import ``graphiti-core``. It only defines the seven entity
+downstream slice of the student model (the Postgres store record types, read
+helpers, and planner wiring). This module is intentionally stack-agnostic:
+it imports **no** database driver. It only defines the seven entity
 classes, six relationship-name constants, three group-id constants, and the
 ``confidence_band_for`` helper.
 
@@ -27,16 +27,16 @@ Relationships (``Source RELATIONSHIP Target`` semantics):
 - ``Student HAS_CONFIDENCE TopicConfidence`` — carries percentage + band.
 
 Group-id conventions (per ``phase-1-scope.md §FEAT-PH1-001`` "Group IDs",
-adapted for graphiti-core 0.29's ``[A-Za-z0-9_-]``-only validator):
+adapted to a ``[A-Za-z0-9_-]``-only identifier convention):
 
-- ``student-<student_id>`` — student-specific episodes/entities.
+- ``student-<student_id>`` — student-specific records.
 - ``subject-<subject_slug>`` — curriculum-level (not per-student).
 - ``fleet-appmilla`` — fleet-wide knowledge scope (rare writes from tutor).
 
 Cross-repo divergence (per ASSUM-008):
     study-tutor's scope doc originally specified ``fleet:appmilla``
-    (colon-separated). graphiti-core 0.29's ``GroupIdValidationError``
-    rejects colons so the runtime constant migrated to
+    (colon-separated). The ``[A-Za-z0-9_-]``-only convention rejects colons
+    so the runtime constant migrated to
     ``fleet-appmilla``. The sibling specialist-agent repo uses
     ``appmilla-fleet`` (different word order). The split is intentional
     and documented here so future cross-repo features that share group
@@ -61,11 +61,11 @@ from pydantic import BaseModel, ConfigDict, Field
 # ---------------------------------------------------------------------------
 
 #: Prefix for per-student group identifiers, producing
-#: ``student-<student_id>``. graphiti-core 0.29's
-#: ``GroupIdValidationError`` rejects any character outside
-#: ``[A-Za-z0-9_-]``, so the original ``phase-1-scope.md`` ``student:``
-#: convention had to drop the colon at integration time. The dash form
-#: keeps the "namespace then payload" readability the colon gave us.
+#: ``student-<student_id>``. The identifier convention rejects any
+#: character outside ``[A-Za-z0-9_-]``, so the original
+#: ``phase-1-scope.md`` ``student:`` convention had to drop the colon at
+#: integration time. The dash form keeps the "namespace then payload"
+#: readability the colon gave us.
 STUDENT_GROUP_PREFIX: str = "student-"
 
 #: Prefix for per-subject (curriculum-level) group identifiers, producing
@@ -77,7 +77,7 @@ SUBJECT_GROUP_PREFIX: str = "subject-"
 #:
 #: NOTE — cross-repo divergence: specialist-agent uses ``appmilla-fleet``
 #: (no colon). study-tutor's ``phase-1-scope.md`` originally specified
-#: ``fleet:appmilla`` but graphiti-core 0.29's group-id validator rejects
+#: ``fleet:appmilla`` but the group-id convention rejects
 #: colons (``[A-Za-z0-9_-]`` only) so the runtime constant is the
 #: dash-form ``fleet-appmilla``. See the module docstring and ASSUM-008.
 FLEET_GROUP_ID: str = "fleet-appmilla"
@@ -185,9 +185,9 @@ TextKind = Literal["primary", "secondary", "context"]
 class _StudentModelBase(BaseModel):
     """Shared Pydantic configuration for all student-model entities.
 
-    Forbidding extras keeps Graphiti episode payloads strictly typed; mutating
+    Forbidding extras keeps store record payloads strictly typed; mutating
     instances after construction is fine for in-process aggregation but the
-    serialised form is what reaches Graphiti.
+    serialised form is what reaches the store.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=False)
