@@ -22,6 +22,11 @@ dependencies = [
     # mcp; pinned as direct deps so the served stack version is explicit.
     "starlette>=0.27",
     "uvicorn>=0.27",
+    # TASK-VOX-004 / FEAT-VOICE-001 (2026-07-08): python-multipart for in-memory
+    # multipart parsing. Previously transitive via mcp; pinned as direct dep to
+    # enforce the never-at-rest invariant (no disk spooling) in voice upload
+    # validation. See src/study_tutor/voice/validation.py.
+    "python-multipart>=0.0.6",
     # TASK-SMP-01 / FEAT-SMP-001 (2026-07-03): SQLAlchemy async + Alembic for
     # the Postgres StudentStore schema. asyncpg is the async driver; alembic
     # is the migration engine. Pinned to SQLAlchemy 2.0+ for async ORM support.

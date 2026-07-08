@@ -1,19 +1,23 @@
 ---
-id: TASK-VOX-002
-title: "voice/client.py — AudioClient with injectable transport + the multipart wire-seam pins"
-task_type: feature
-parent_review: TASK-REV-852B
-feature_id: FEAT-VOICE-001
-wave: 2
-implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-VOX-001]
 consumer_context:
-  - task: TASK-VOX-001
-    consumes: VoiceConfig
-    framework: "frozen dataclass, boot-time from_env"
-    driver: "stdlib dataclasses"
-    format_note: "stt_base_url/tts_base_url end in /v1; audio_timeout_seconds=10.0 governs every call"
+- consumes: VoiceConfig
+  driver: stdlib dataclasses
+  format_note: stt_base_url/tts_base_url end in /v1; audio_timeout_seconds=10.0 governs
+    every call
+  framework: frozen dataclass, boot-time from_env
+  task: TASK-VOX-001
+dependencies:
+- TASK-VOX-001
+feature_id: FEAT-VOICE-001
+id: TASK-VOX-002
+implementation_mode: task-work
+parent_review: TASK-REV-852B
+status: design_approved
+task_type: feature
+title: voice/client.py — AudioClient with injectable transport + the multipart wire-seam
+  pins
+wave: 2
 ---
 
 ## Description

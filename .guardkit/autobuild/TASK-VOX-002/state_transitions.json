@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VOX-002",
+    "pre_path": "tasks/backlog/TASK-VOX-002-audio-client-and-wire-seam-tests.md",
+    "post_path": "tasks/design_approved/TASK-VOX-002-audio-client-and-wire-seam-tests.md",
+    "timestamp": "2026-07-08T11:57:05.322874+00:00",
+    "kind": "design_approved_transition"
+  }
+]

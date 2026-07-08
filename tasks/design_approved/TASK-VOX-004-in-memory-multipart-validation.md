@@ -1,24 +1,29 @@
 ---
-id: TASK-VOX-004
-title: "voice/validation.py — in-memory multipart parse + order-pinned upload validation"
-task_type: feature
-parent_review: TASK-REV-852B
-feature_id: FEAT-VOICE-001
-wave: 2
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VOX-001, TASK-VOX-003]
 consumer_context:
-  - task: TASK-VOX-001
-    consumes: VoiceConfig
-    framework: "frozen dataclass"
-    driver: "stdlib dataclasses"
-    format_note: "max_recording_bytes=10MB, max_query_seconds=60, supported_base_mimetypes set"
-  - task: TASK-VOX-003
-    consumes: probe_duration_seconds
-    framework: "pure function"
-    driver: "stdlib"
-    format_note: "returns float | None; None means duration not derivable — only the byte cap applies"
+- consumes: VoiceConfig
+  driver: stdlib dataclasses
+  format_note: max_recording_bytes=10MB, max_query_seconds=60, supported_base_mimetypes
+    set
+  framework: frozen dataclass
+  task: TASK-VOX-001
+- consumes: probe_duration_seconds
+  driver: stdlib
+  format_note: returns float | None; None means duration not derivable — only the
+    byte cap applies
+  framework: pure function
+  task: TASK-VOX-003
+dependencies:
+- TASK-VOX-001
+- TASK-VOX-003
+feature_id: FEAT-VOICE-001
+id: TASK-VOX-004
+implementation_mode: task-work
+parent_review: TASK-REV-852B
+status: design_approved
+task_type: feature
+title: voice/validation.py — in-memory multipart parse + order-pinned upload validation
+wave: 2
 ---
 
 ## Description
