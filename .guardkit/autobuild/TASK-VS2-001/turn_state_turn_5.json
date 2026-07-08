@@ -1,0 +1,33 @@
+{
+  "id": "TURN-FEAT-VOICE-002-5",
+  "feature_id": "FEAT-VOICE-002",
+  "task_id": "TASK-VS2-001",
+  "turn_number": 5,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "continuing_work",
+  "blockers_found": [],
+  "progress_summary": "Turn 5: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    ".cov_output/coverage.json",
+    ".guardkit/bdd/TASK-VS2-001_junit.xml",
+    ".guardkit/bdd/TASK-VS2-002_junit.xml",
+    "src/study_tutor/llm/client.py",
+    "src/study_tutor/tutoring/adapters/llm_player_adapter.py",
+    "src/study_tutor/tutoring/sentence_chunker.py",
+    "tests/unit/llm/test_streaming.py",
+    "tests/unit/tutoring/test_sentence_chunker.py"
+  ],
+  "tests_passed": 18,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-08T15:28:51.619355",
+  "completed_at": "2026-07-08T15:28:51.619355",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}
