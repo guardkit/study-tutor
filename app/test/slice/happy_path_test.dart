@@ -44,7 +44,8 @@ void main() {
     // Navigate away — home re-lists and shows the resume affordance.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('maths'), findsOneWidget);
+    expect(find.text('english'), findsOneWidget,
+        reason: 'session lists under the default subject (ASSUM-001)');
     expect(find.text('2 turns'), findsOneWidget,
         reason: 'turn_count survives leaving the session');
     expect(find.widgetWithText(FilledButton, 'Start new session'),
