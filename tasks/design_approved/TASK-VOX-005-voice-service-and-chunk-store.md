@@ -1,24 +1,31 @@
 ---
-id: TASK-VOX-005
-title: "voice/service.py — voice-turn orchestration + in-memory TTL chunk store (ASSUM-005 half-failure)"
-task_type: feature
-parent_review: TASK-REV-852B
-feature_id: FEAT-VOICE-001
-wave: 3
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-VOX-002, TASK-VOX-004]
 consumer_context:
-  - task: TASK-VOX-002
-    consumes: AudioClient
-    framework: "httpx async, injectable transport"
-    driver: "httpx"
-    format_note: "transcribe(bytes, filename=, content_type=) -> str (verbatim, may be whitespace); synthesize(text, response_format='wav') -> bytes; only VoiceUnavailable escapes"
-  - task: TASK-VOX-004
-    consumes: parse_voice_upload
-    framework: "Starlette Request stream parsing"
-    driver: "python-multipart"
-    format_note: "returns ValidatedUpload(bytes, filename, content_type) already validated in the pinned order; raises the six voice exceptions"
+- consumes: AudioClient
+  driver: httpx
+  format_note: transcribe(bytes, filename=, content_type=) -> str (verbatim, may be
+    whitespace); synthesize(text, response_format='wav') -> bytes; only VoiceUnavailable
+    escapes
+  framework: httpx async, injectable transport
+  task: TASK-VOX-002
+- consumes: parse_voice_upload
+  driver: python-multipart
+  format_note: returns ValidatedUpload(bytes, filename, content_type) already validated
+    in the pinned order; raises the six voice exceptions
+  framework: Starlette Request stream parsing
+  task: TASK-VOX-004
+dependencies:
+- TASK-VOX-002
+- TASK-VOX-004
+feature_id: FEAT-VOICE-001
+id: TASK-VOX-005
+implementation_mode: task-work
+parent_review: TASK-REV-852B
+status: design_approved
+task_type: feature
+title: voice/service.py — voice-turn orchestration + in-memory TTL chunk store (ASSUM-005
+  half-failure)
+wave: 3
 ---
 
 ## Description

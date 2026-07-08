@@ -1,0 +1,149 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 92.32868628752674,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/voice/test_service.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_stt_unavailable_propagates_before_turn PASSED [ 78%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_assum_005_tts_failure_after_turn_returns_text_only PASSED [ 85%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_no_audio_bytes_in_logs PASSED [ 92%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_rejection_precedes_stt PASSED [100%]\n============================== 14 passed in 2.30s ==============================",
+    "duration_seconds": 2.6113057136535645,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001\nconfigfile: pyproject.toml\nplugins: anyio-4.13.0, cov-7.1.0, bdd-8.1.0, langsmith-0.7.37, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 14 items\n\ntests/unit/voice/test_service.py::TestChunkStore::test_put_returns_unguessable_chunk_id PASSED [  7%]\ntests/unit/voice/test_service.py::TestChunkStore::test_get_retrieves_stored_chunk PASSED [ 14%]\ntests/unit/voice/test_service.py::TestChunkStore::test_get_returns_none_for_wrong_session PASSED [ 21%]\ntests/unit/voice/test_service.py::TestChunkStore::test_get_returns_none_for_unknown_chunk_id PASSED [ 28%]\ntests/unit/voice/test_service.py::TestChunkStore::test_ttl_expiry_on_get PASSED [ 35%]\ntests/unit/voice/test_service.py::TestChunkStore::test_ttl_eviction_on_put PASSED [ 42%]\ntests/unit/voice/test_service.py::TestChunkStore::test_hard_cap_eviction_oldest_first PASSED [ 50%]\ntests/unit/voice/test_service.py::TestChunkStore::test_asyncio_lock_prevents_race_conditions PASSED [ 57%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_happy_path_returns_voice_turn_result PASSED [ 64%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_unintelligible_query_when_transcript_empty PASSED [ 71%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_stt_unavailable_propagates_before_turn PASSED [ 78%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_assum_005_tts_failure_after_turn_returns_text_only PASSED [ 85%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_no_audio_bytes_in_logs PASSED [ 92%]\ntests/unit/voice/test_service.py::TestVoiceTurnService::test_rejection_precedes_stt PASSED [100%]\n\n============================== 14 passed in 2.30s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Full happy path returns transcript + tutor_response + one audio ref; transcript persisted via the standard turn path (two rows, verifiable through `SessionService`)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented VoiceTurnService.voice_turn() which: (1) parses/validates upload via parse_voice_upload, (2) transcribes audio via AudioClient.transcribe, (3) calls SessionService.turn() with transcript as user_message passing reply_fn, (4) synthesizes response via AudioClient.synthesize, (5) stores in ChunkStore and returns VoiceTurnResult with transcript, tutor_response, and one AudioRef. Test test_happy_path_returns_voice_turn_result verifies all components and that SessionService.turn was called (which persists two rows per its contract)."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Validation/UnintelligibleQuery/STT-down paths add **no** turn; TTS-down-after-turn returns text-only result with the turn recorded exactly once (ASSUM-005)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented three failure paths: (1) Validation errors from parse_voice_upload propagate immediately before any STT call (test_rejection_precedes_stt verifies STT call count = 0 on RecordingTooLarge). (2) Empty/whitespace transcript raises UnintelligibleQuery before turn is recorded (test_unintelligible_query_when_transcript_empty verifies SessionService.turn not called). (3) STT VoiceUnavailable propagates before turn (test_stt_unavailable_propagates_before_turn verifies no turn). (4) ASSUM-005: TTS failure after turn is committed returns text-only result with audio=[] (test_assum_005_tts_failure_after_turn_returns_text_only verifies turn was recorded once and result has empty audio list)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "ChunkStore: TTL expiry \u2192 `get` returns None; cap eviction oldest-first; wrong session \u2192 None; chunk_ids unguessable and collision-free across rapid turns",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented ChunkStore with: (1) TTL expiry checked on get and put (_evict_expired method) - test_ttl_expiry_on_get and test_ttl_eviction_on_put verify TTL behavior. (2) Hard cap with oldest-first eviction (_evict_oldest method) - test_hard_cap_eviction_oldest_first verifies oldest entry evicted when max_entries exceeded. (3) Session-scoped keys (session_id, chunk_id) tuple - test_get_returns_none_for_wrong_session verifies cross-session isolation. (4) Unguessable IDs via secrets.token_urlsafe(16) - test_put_returns_unguessable_chunk_id verifies IDs are unique and non-trivial (>8 chars)."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "No audio bytes at rest: no disk/DB writes of audio anywhere in the module; no audio bytes in log records (test with a capturing log handler)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "ChunkStore uses in-memory dict only (self._store), never writes to disk or DB. VoiceTurnService discards audio bytes immediately after transcription (comment in code: 'Discard audio bytes immediately (ephemeral invariant)'). All logging uses chunk_id only, never audio bytes. test_no_audio_bytes_in_logs uses caplog fixture to verify no audio bytes (b'fake audio wav bytes' or b'wav audio bytes') appear in any log messages."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran 'python3 -m ruff check' and 'python3 -m ruff format' on both src/study_tutor/voice/service.py and tests/unit/voice/test_service.py. Fixed initial lint errors (removed unused imports, unused variables, extraneous f-string prefix). Re-ran checks - all passed with 'All checks passed!' and files are properly formatted."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": true,
+    "passed": true,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": null,
+    "output_tail": "...................................... [ 12%]\n........................................................................ [ 18%]\n........................................................................ [ 24%]\n........................................................................ [ 30%]\n........................................................................ [ 36%]\n........................................................................ [ 42%]\n........................................................................ [ 48%]\n........................................................................ [ 54%]\n........................................................................ [ 60%]\n..........s..................s.......................................... [ 66%]\n........................................................................ [ 72%]\n........................................................................ [ 78%]\n........................................................................ [ 84%]\n........................................................................ [ 90%]\n........................................................................ [ 96%]\n...............................................                          [100%]\n=============================== warnings summary ===============================\n.venv/lib/python3.11/site-packages/graphiti_core/driver/search_interface/search_interface.py:22\n  /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-001/.venv/lib/python3.11/site-packages/graphiti_core/driver/search_interface/search_interface.py:22: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/\n    class SearchInterface(BaseModel):\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1197 passed, 3 skipped, 1 warning in 22.68s"
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}
