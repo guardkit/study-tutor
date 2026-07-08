@@ -1,0 +1,253 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-VS2-002_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/llm/client.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/adapters/llm_player_adapter.py",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:316:!src/study_tutor/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "severity": "should_fix",
+        "ignore_rule": ".gitignore:316:!src/study_tutor/tutoring/adapters/*.py"
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/llm/test_streaming.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/tutoring/test_sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 6
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 92.46374741052932,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/llm/test_streaming.py tests/unit/tutoring/test_sentence_chunker.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/tutoring/test_sentence_chunker.py::test_chunk_size_approximately_fifteen_to_twenty_five_words PASSED [ 84%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunker_yields_verified_chunks_with_seq PASSED [ 89%]\ntests/unit/tutoring/test_sentence_chunker.py::test_empty_stream_yields_nothing PASSED [ 94%]\ntests/unit/tutoring/test_sentence_chunker.py::test_single_word_yields_single_chunk PASSED [100%]\n======================== 18 passed, 1 skipped in 0.05s =========================",
+    "duration_seconds": 0.4565098285675049,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-nzogfo9x\nconfigfile: pyproject.toml\nplugins: langsmith-0.10.0, anyio-4.14.1, cov-7.1.0, bdd-8.1.0, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 19 items\n\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_token_order_and_done PASSED [  5%]\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_handles_empty_delta PASSED [ 10%]\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_terminates_on_done PASSED [ 15%]\ntests/unit/llm/test_streaming.py::TestLLMClientGenerateStream::test_generate_stream_raises_on_http_error PASSED [ 21%]\ntests/unit/llm/test_streaming.py::TestLLMClientStreamingTimeout::test_continuous_stream_not_killed PASSED [ 26%]\ntests/unit/llm/test_streaming.py::TestLLMClientStreamingTimeout::test_silent_stream_raises_timeout SKIPPED [ 31%]\ntests/unit/llm/test_streaming.py::TestLLMPlayerAdapterRespondStream::test_respond_stream_yields_tokens_from_generate_stream PASSED [ 36%]\ntests/unit/llm/test_streaming.py::TestLLMPlayerAdapterRespondStream::test_respond_stream_strips_think_tokens PASSED [ 42%]\ntests/unit/tutoring/test_sentence_chunker.py::test_quote_straddling_chunk_boundary_defers_until_close PASSED [ 47%]\ntests/unit/tutoring/test_sentence_chunker.py::test_verifier_called_with_accumulated_not_chunk PASSED [ 52%]\ntests/unit/tutoring/test_sentence_chunker.py::test_previously_released_chunks_never_altered PASSED [ 57%]\ntests/unit/tutoring/test_sentence_chunker.py::test_verifier_exception_raises_instead_of_yielding PASSED [ 63%]\ntests/unit/tutoring/test_sentence_chunker.py::test_partial_verifier_exception_stops_mid_stream PASSED [ 68%]\ntests/unit/tutoring/test_sentence_chunker.py::test_short_answer_yields_single_chunk PASSED [ 73%]\ntests/unit/tutoring/test_sentence_chunker.py::test_long_answer_breaks_at_sentence_boundaries PASSED [ 78%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunk_size_approximately_fifteen_to_twenty_five_words PASSED [ 84%]\ntests/unit/tutoring/test_sentence_chunker.py::test_chunker_yields_verified_chunks_with_seq PASSED [ 89%]\ntests/unit/tutoring/test_sentence_chunker.py::test_empty_stream_yields_nothing PASSED [ 94%]\ntests/unit/tutoring/test_sentence_chunker.py::test_single_word_yields_single_chunk PASSED [100%]\n\n======================== 18 passed, 1 skipped in 0.05s =========================\n",
+    "signal_absent": false,
+    "tests_skipped": 1,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-002/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "Token stream with a quotation whose opening mark falls in the final words of a nominal chunk and closing mark in the next: chunk is NOT released until the quote closes and verification passes, and `apply_quote_verification` is invoked with accumulated text, not the isolated chunk substring",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation unchanged from Turn 1. Quote-aware boundary deferral at lines 71-75 checks odd quote count and defers. Verifier called with full accumulated_text at line 79. Tests pass: test_quote_straddling_chunk_boundary_defers_until_close() and test_verifier_called_with_accumulated_not_chunk()."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Idempotent-prefix test: previously-released chunk text is never retroactively altered by any later verification pass",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation unchanged from Turn 1. Idempotent-prefix via last_released_pos tracking (lines 41, 93). Test passes: test_previously_released_chunks_never_altered()."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Forcing `verifier_exception=True` on a mid-stream chunk makes the generator raise/stop rather than yield the unannotated chunk (ASSUM-007 fail-closed)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation unchanged from Turn 1. Fail-closed policy at lines 82-86 and 103-106 raises RuntimeError on verifier_exception=True. Tests pass: test_verifier_exception_raises_instead_of_yielding() and test_partial_verifier_exception_stops_mid_stream()."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Answer shorter than one chunk's worth of words yields exactly one chunk covering the whole answer (ASSUM-001); multi-sentence answers break only at sentence boundaries with each chunk roughly 15\u201325 words",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implementation unchanged from Turn 1. MIN_CHUNK_WORDS=15 at line 67, sentence boundary detection at lines 61-63. Tests pass: test_short_answer_yields_single_chunk(), test_long_answer_breaks_at_sentence_boundaries(), test_chunk_size_approximately_fifteen_to_twenty_five_words()."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Re-verified in Turn 2. Ran 'python3 -m ruff check' on implementation and test files. Output: 'All checks passed!' confirming zero lint errors."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": false,
+    "passed": false,
+    "command": "set -e\nuv run pytest tests/unit -x -q\n",
+    "exit_code": null,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": "parallel_wave",
+    "output_tail": null
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is on disk but matched a .gitignore rule, so the per-turn checkpoint commit silently dropped it. Player claimed file src/study_tutor/tutoring/adapters/llm_player_adapter.py. Path is on disk but matched a .gitignore rule (.gitignore:316:!src/study_tutor/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn. Hint: rebase the worktree onto main if the .gitignore was fixed there.",
+      "details": {
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/adapters/llm_player_adapter.py",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:316:!src/study_tutor/tutoring/adapters/*.py); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "ignore_rule": ".gitignore:316:!src/study_tutor/tutoring/adapters/*.py"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .guardkit/bdd/TASK-VS2-002_junit.xml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-VS2-002_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file src/study_tutor/llm/client.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/llm/client.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file src/study_tutor/tutoring/sentence_chunker.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/tutoring/sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/llm/test_streaming.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/llm/test_streaming.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/tutoring/test_sentence_chunker.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/tutoring/test_sentence_chunker.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}

@@ -5,5 +5,12 @@
     "post_path": "tasks/design_approved/TASK-VS2-001-llm-streaming-client.md",
     "timestamp": "2026-07-08T13:48:46.271847+00:00",
     "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-VS2-001",
+    "pre_path": "tasks/backlog/streaming-voice/TASK-VS2-001-llm-streaming-client.md",
+    "post_path": "tasks/design_approved/TASK-VS2-001-llm-streaming-client.md",
+    "timestamp": "2026-07-08T14:03:18.347870+00:00",
+    "kind": "design_approved_transition"
   }
 ]
