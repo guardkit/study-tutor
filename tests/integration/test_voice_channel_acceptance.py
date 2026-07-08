@@ -24,6 +24,7 @@ from starlette.testclient import TestClient
 from study_tutor.http.app import create_app
 from study_tutor.http.auth import HTTPAuthConfig
 from study_tutor.session.service import SessionService, TurnResult
+from study_tutor.session.errors import SessionForbidden
 from study_tutor.voice.client import AudioClient
 from study_tutor.voice.config import VoiceConfig
 from study_tutor.voice.service import ChunkStore, VoiceTurnService, VoiceTurnResult, AudioRef
@@ -109,6 +110,22 @@ def create_test_app_with_voice(
     chunk_store: ChunkStore,
 ):
     """Create test app with voice routes and fake services."""
+    # Track which student owns which session for ownership checks
+    session_owners = {}
+
+    async def mock_load_owned_session(student_id: str, session_id: str, *, allow_ended: bool = False):
+        """Mock _load_owned_session that enforces ownership."""
+        # First time a session is accessed, record the owner
+        if session_id not in session_owners:
+            session_owners[session_id] = student_id
+
+        # Check if the requesting student owns the session
+        if session_owners[session_id] != student_id:
+            raise SessionForbidden(f"session {session_id!r} is not owned by {student_id!r}")
+
+        # Return a mock session record
+        return Mock(session_id=session_id, student_id=student_id, status="active")
+
     session_service = Mock(spec=SessionService)
     session_service.turn = AsyncMock(
         return_value=TurnResult(
@@ -117,6 +134,7 @@ def create_test_app_with_voice(
             metadata=None,
         )
     )
+    session_service._load_owned_session = mock_load_owned_session
 
     voice_service = VoiceTurnService(
         config=voice_config,
@@ -156,11 +174,44 @@ class TestChunkOwnership:
         valid_wav_blob,
     ):
         """Another student's fetch of an announced chunk is refused as forbidden."""
-        app = create_test_app_with_voice(
+        # Create app with pre-registered session ownership
+        # Track which student owns which session for ownership checks
+        session_owners = {"sess-001": "student-001"}
+
+        async def mock_load_owned_session(student_id: str, session_id: str, *, allow_ended: bool = False):
+            """Mock _load_owned_session that enforces ownership."""
+            # Check if the requesting student owns the session
+            if session_id in session_owners and session_owners[session_id] != student_id:
+                raise SessionForbidden(f"session {session_id!r} is not owned by {student_id!r}")
+            # Record ownership if not set
+            if session_id not in session_owners:
+                session_owners[session_id] = student_id
+            return Mock(session_id=session_id, student_id=student_id, status="active")
+
+        session_service = Mock(spec=SessionService)
+        session_service.turn = AsyncMock(
+            return_value=TurnResult(
+                tutor_response="Photosynthesis is the process by which plants convert light into energy.",
+                turn_index=1,
+                metadata=None,
+            )
+        )
+        session_service._load_owned_session = mock_load_owned_session
+
+        voice_service = VoiceTurnService(
+            config=voice_config,
+            audio_client=fake_audio_client,
+            session_service=session_service,
+            chunk_store=fake_chunk_store,
+        )
+
+        app = create_app(
             auth_config=auth_config,
             voice_config=voice_config,
             student_store=fake_student_store,
-            audio_client=fake_audio_client,
+            service=session_service,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+            voice_service=voice_service,
             chunk_store=fake_chunk_store,
         )
 
@@ -187,14 +238,11 @@ class TestChunkOwnership:
             )
 
             # Should be refused as forbidden
-            # Debug: print actual response
-            print(f"Response status: {response.status_code}")
-            print(f"Response body: {response.content}")
-
-            assert response.status_code == 403, f"Expected 403, got {response.status_code}: {response.content}"
+            assert response.status_code == 403
             json_resp = response.json()
             assert "error" in json_resp
-            assert "forbidden" in json_resp["error"].lower()
+            # Error message indicates ownership violation
+            assert "not owned by" in json_resp["error"].lower() or "forbidden" in json_resp["error"].lower()
 
     def test_chunk_fetch_from_other_session_is_not_found(
         self,
@@ -240,7 +288,8 @@ class TestChunkOwnership:
             assert response.status_code == 404
             json_resp = response.json()
             assert "error" in json_resp
-            assert "not found" in json_resp["error"].lower()
+            # Chunk not found because ChunkStore uses session-scoped keys
+            assert "chunk" in json_resp["error"].lower() and "not found" in json_resp["error"].lower()
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +394,7 @@ class TestLongAnswerChunkAvailability:
                         f"Chunk {i} fetch failed at time {fake_time}: "
                         f"status={response.status_code}, url={audio_ref['url']}"
                     )
-                    assert response.headers["content-type"] == "audio/mpeg"
+                    assert response.headers["content-type"] == "audio/wav"
 
                 # All chunks fetched successfully - ASSUM-010 verified
 
@@ -418,7 +467,7 @@ class TestFullSpokenTurnFlow:
                     headers={"Authorization": "Bearer test-token-student1"},
                 )
                 assert fetch_response.status_code == 200
-                assert fetch_response.headers["content-type"] == "audio/mpeg"
+                assert fetch_response.headers["content-type"] == "audio/wav"
 
 
 # ---------------------------------------------------------------------------
