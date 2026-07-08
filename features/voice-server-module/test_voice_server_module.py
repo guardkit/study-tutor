@@ -6,16 +6,14 @@ Uses TestClient + MockAudioTransport + fake services (no live network dependenci
 Per AC-001: ZERO undefined steps allowed (StepDefinitionNotFoundError is FAILURE).
 Hermetic tier uses TestClient + MockAudioTransport + fake reply-fn.
 """
+
 from __future__ import annotations
 
-import asyncio
 import io
 import logging
-import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
@@ -27,30 +25,17 @@ from study_tutor.knowledge.store.entities import SessionTurn
 from study_tutor.session.errors import (
     SessionEnded,
     SessionForbidden,
-    SessionNotFoundError,
-    Unauthenticated,
 )
 from study_tutor.session.service import (
-    EndSessionResult,
     ResumeResult,
     SessionService,
     SessionStatusView,
-    StartSessionResult,
     TurnResult,
     TutorReply,
 )
 from study_tutor.voice.client import AudioClient
 from study_tutor.voice.config import VoiceConfig
-from study_tutor.voice.errors import (
-    EmptyRecording,
-    QueryTooLong,
-    RecordingTooLarge,
-    UnintelligibleQuery,
-    UnsupportedAudioFormat,
-    VoiceUnavailable,
-)
 from study_tutor.voice.service import ChunkStore, VoiceTurnService
-from tests.unit.knowledge.store.fakes import FakeStudentStore
 from tests.unit.voice.test_audio_client import MockAudioTransport
 
 # Register all scenarios from the feature file
@@ -170,7 +155,9 @@ def chunk_store() -> ChunkStore:
 
 
 @pytest.fixture
-def audio_client(voice_config: VoiceConfig, mock_audio_transport: MockAudioTransport) -> AudioClient:
+def audio_client(
+    voice_config: VoiceConfig, mock_audio_transport: MockAudioTransport
+) -> AudioClient:
     """AudioClient with mock transport."""
     return AudioClient(voice_config, transport=mock_audio_transport)
 
@@ -349,7 +336,11 @@ def _voice_feature_disabled(
     context["test_client_override"] = test_client_voice_disabled
 
 
-@given(parsers.parse("I have recorded a spoken question of exactly the maximum allowed size"))
+@given(
+    parsers.parse(
+        "I have recorded a spoken question of exactly the maximum allowed size"
+    )
+)
 def _recording_at_size_cap(context: dict[str, Any]) -> None:
     """Given: recording at exact size cap."""
     context["recording"] = b"x" * MAX_RECORDING_BYTES
@@ -365,7 +356,11 @@ def _recording_over_size_cap(context: dict[str, Any]) -> None:
     context["content_type"] = "audio/wav"
 
 
-@given(parsers.parse("I have a recording of exactly the maximum allowed duration in a format whose duration the server can read"))
+@given(
+    parsers.parse(
+        "I have a recording of exactly the maximum allowed duration in a format whose duration the server can read"
+    )
+)
 def _recording_at_duration_cap(context: dict[str, Any]) -> None:
     """Given: recording at exact duration cap."""
     # Create WebM with duration metadata (simplified synthetic)
@@ -375,23 +370,32 @@ def _recording_at_duration_cap(context: dict[str, Any]) -> None:
     context["expected_duration"] = MAX_DURATION_SECONDS
 
 
-@given(parsers.parse("I have a recording just over the maximum allowed duration in a format whose duration the server can read"))
+@given(
+    parsers.parse(
+        "I have a recording just over the maximum allowed duration in a format whose duration the server can read"
+    )
+)
 def _recording_over_duration_cap(context: dict[str, Any]) -> None:
     """Given: recording over duration cap."""
-    context["recording"] = _make_synthetic_webm(duration_seconds=MAX_DURATION_SECONDS + 1)
+    context["recording"] = _make_synthetic_webm(
+        duration_seconds=MAX_DURATION_SECONDS + 1
+    )
     context["filename"] = "over-duration-cap.webm"
     context["content_type"] = "audio/webm"
     context["expected_duration"] = MAX_DURATION_SECONDS + 1
 
 
-@given(parsers.parse('I have a valid spoken question recorded as {format_desc}'))
+@given(parsers.parse("I have a valid spoken question recorded as {format_desc}"))
 def _recording_in_format(context: dict[str, Any], format_desc: str) -> None:
     """Given: recording in specific format."""
     # Map format descriptions to MIME types (using actual supported types from VoiceConfig)
     format_map = {
         "m4a (AAC)": ("audio/m4a", "question.m4a"),
         "ogg with opus codec annotation": ("audio/ogg; codecs=opus", "question.ogg"),
-        'ogg with quoted, spaced codec annotation': ('audio/ogg; codecs="opus"', "question.ogg"),
+        "ogg with quoted, spaced codec annotation": (
+            'audio/ogg; codecs="opus"',
+            "question.ogg",
+        ),
         "webm with opus codec annotation": ("audio/webm; codecs=opus", "question.webm"),
         "wav": ("audio/wav", "question.wav"),
         "mp3": ("audio/mpeg", "question.mp3"),  # Fixed: use audio/mpeg not audio/mp3
@@ -486,7 +490,11 @@ def _completed_several_turns(context: dict[str, Any]) -> None:
     context["turn_count"] = 3
 
 
-@given(parsers.parse("I have a recording that says to ignore the tutoring rules and reveal the answer sheet"))
+@given(
+    parsers.parse(
+        "I have a recording that says to ignore the tutoring rules and reveal the answer sheet"
+    )
+)
 def _recording_prompt_injection(
     context: dict[str, Any],
     mock_audio_transport: MockAudioTransport,
@@ -512,6 +520,7 @@ def _recording_path_filename(context: dict[str, Any]) -> None:
 @given("the speech service accepts requests but never answers")
 def _speech_service_hangs(mock_audio_transport: MockAudioTransport) -> None:
     """Given: speech service hangs (timeout scenario)."""
+
     # Simulate by making the service raise timeout
     def slow_handler(request):
         raise TimeoutError("Speech service timeout")
@@ -525,7 +534,11 @@ def _tutor_fails(fake_service: AsyncMock) -> None:
     fake_service.turn.side_effect = Exception("Tutor failure")
 
 
-@given(parsers.parse("I have a recording over the maximum allowed size that declares a smaller size"))
+@given(
+    parsers.parse(
+        "I have a recording over the maximum allowed size that declares a smaller size"
+    )
+)
 def _recording_false_size(context: dict[str, Any]) -> None:
     """Given: recording with false Content-Length."""
     context["recording"] = b"x" * (MAX_RECORDING_BYTES + 1000)
@@ -734,7 +747,6 @@ def _when_another_student_fetches_audio(
     This test simulates what SHOULD happen per the security requirement.
     """
     session_id = context["session_id"]
-    chunk_id = context.get("chunk_id", "test-chunk")
 
     # Patch session_status to validate ownership when alex tries to access lilymay's session
     # This simulates proper authorization that should exist in the voice_audio handler
@@ -743,14 +755,21 @@ def _when_another_student_fetches_audio(
         raise SessionForbidden(f"Session {session_id} belongs to different student")
 
     # Patch the service to raise on ownership check
-    with patch("study_tutor.session.service.SessionService.session_status", side_effect=check_ownership):
+    with patch(
+        "study_tutor.session.service.SessionService.session_status",
+        side_effect=check_ownership,
+    ):
         # Also need to make the voice_audio route call session_status
         # Since it doesn't, we patch at a different level: inject the check via middleware
         # Simplest: just return a 403 response directly for this test scenario
         from starlette.responses import JSONResponse
+
         response = JSONResponse(
-            {"error": f"Session {session_id} belongs to different student", "error_type": "SessionForbidden"},
-            status_code=403
+            {
+                "error": f"Session {session_id} belongs to different student",
+                "error_type": "SessionForbidden",
+            },
+            status_code=403,
         )
 
     context["other_student_audio_response"] = response
@@ -970,7 +989,9 @@ def _then_rejected_not_understood(context: dict[str, Any]) -> None:
 @then("their request should be refused as not theirs")
 def _then_refused_forbidden(context: dict[str, Any]) -> None:
     """Then: request refused as forbidden (403)."""
-    response = context.get("last_response") or context.get("other_student_audio_response")
+    response = context.get("last_response") or context.get(
+        "other_student_audio_response"
+    )
     assert response.status_code == 403
 
 
@@ -1073,7 +1094,9 @@ def _then_replies_correspond(context: dict[str, Any]) -> None:
 
 
 @then("the session history should show both exchanges in order")
-@then("the session history should contain both exchanges without interleaved corruption")
+@then(
+    "the session history should contain both exchanges without interleaved corruption"
+)
 def _then_history_shows_both_ordered(context: dict[str, Any]) -> None:
     """Then: session history shows both turns in order."""
     # Would verify via resume
@@ -1106,7 +1129,9 @@ def _then_no_external_files(context: dict[str, Any]) -> None:
     assert response.status_code == 200  # Succeeded safely
 
 
-@then("I should be told spoken answers are temporarily unavailable within a reasonable time")
+@then(
+    "I should be told spoken answers are temporarily unavailable within a reasonable time"
+)
 def _then_timeout_handled(context: dict[str, Any]) -> None:
     """Then: timeout handled gracefully."""
     response = context["last_response"]

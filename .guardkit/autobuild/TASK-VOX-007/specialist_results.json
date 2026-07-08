@@ -1,18 +1,18 @@
 {
   "phase_4": {
-    "status": "passed",
-    "duration_seconds": 62.90044035599567,
-    "error": null,
-    "tests_run": 32,
+    "status": "failed",
+    "duration_seconds": 65.3581566499779,
+    "error": "SDKTimeoutError: Agent invocation exceeded 60s timeout",
+    "tests_run": 0,
     "tests_failed": 0,
-    "coverage_pct": 65.0,
-    "output_summary": "All 32 voice module tests passed with 65% coverage (321/494 lines covered)",
-    "quality_gates_passed": true
+    "coverage_pct": 0.0,
+    "output_summary": "",
+    "quality_gates_passed": false
   },
   "phase_5": {
-    "status": "passed",
-    "duration_seconds": 218.0620543389814,
-    "error": null,
+    "status": "skipped",
+    "duration_seconds": 0.0,
+    "error": "phase_4 status=failed",
     "issues": [],
     "quality_score": 0.0,
     "recommendations": [],
