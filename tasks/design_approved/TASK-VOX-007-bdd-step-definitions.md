@@ -1,13 +1,15 @@
 ---
-id: TASK-VOX-007
-title: "pytest-bdd step definitions — wire the 27-scenario voice feature file hermetically"
-task_type: testing
-parent_review: TASK-REV-852B
-feature_id: FEAT-VOICE-001
-wave: 5
-implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-VOX-006]
+dependencies:
+- TASK-VOX-006
+feature_id: FEAT-VOICE-001
+id: TASK-VOX-007
+implementation_mode: task-work
+parent_review: TASK-REV-852B
+status: design_approved
+task_type: testing
+title: pytest-bdd step definitions — wire the 27-scenario voice feature file hermetically
+wave: 5
 ---
 
 ## Description

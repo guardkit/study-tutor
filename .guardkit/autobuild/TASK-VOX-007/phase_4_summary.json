@@ -1,0 +1,7 @@
+{
+  "tests_run": 32,
+  "tests_failed": 3,
+  "coverage_pct": 15.12,
+  "output_summary": "32 tests: 29 passed, 3 failed (mp3 format support, expired audio fetch, forbidden access check)",
+  "quality_gates_passed": false
+}
