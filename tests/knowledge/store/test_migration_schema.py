@@ -62,16 +62,40 @@ def test_bare_postgresql_dsn_is_normalized_to_asyncpg() -> None:
 # ============================================================================
 
 
-@pytest.fixture(scope="module")
-def ephemeral_postgres_dsn() -> str | None:
-    """Provide DSN for ephemeral test Postgres, or skip if unavailable.
+#: Hosts a throwaway migration-test DB may live on. Anything else (e.g. the
+#: durable NAS store) is refused by default — see the safety guard below.
+_LOOPBACK_DB_HOSTS = {"localhost", "127.0.0.1", "::1", ""}
 
-    Returns the STUDY_TUTOR_PG_DSN if set (assumes it points to a throwaway
-    test database), otherwise returns None to skip migration tests.
+
+@pytest.fixture(scope="module")
+def ephemeral_postgres_dsn() -> str:
+    """Provide DSN for an *ephemeral, loopback* test Postgres, or skip.
+
+    Reads STUDY_TUTOR_PG_DSN. The tests in this module run
+    ``alembic upgrade head`` / ``alembic downgrade base``, and the downgrade
+    test DROPs every StudentStore table without restoring — so pointing this at
+    a durable store wipes it (this is how the NAS store was nuked 2026-07-09:
+    the suite ran with STUDY_TUTOR_PG_DSN set to the NAS).
+
+    Safety guard: refuse any non-loopback host unless
+    ``STUDY_TUTOR_ALLOW_DESTRUCTIVE_DB_TESTS=1`` is explicitly set. A throwaway
+    container always runs on localhost, so legitimate use is unaffected.
     """
     dsn = os.getenv("STUDY_TUTOR_PG_DSN")
     if not dsn:
         pytest.skip("STUDY_TUTOR_PG_DSN not set (ephemeral Postgres required)")
+
+    host = (make_url(dsn).host or "").lower()
+    if (
+        host not in _LOOPBACK_DB_HOSTS
+        and os.getenv("STUDY_TUTOR_ALLOW_DESTRUCTIVE_DB_TESTS") != "1"
+    ):
+        pytest.skip(
+            f"Refusing destructive migration tests against non-loopback host "
+            f"{host!r} (would DROP all tables). Point STUDY_TUTOR_PG_DSN at a "
+            "throwaway localhost DB, or set "
+            "STUDY_TUTOR_ALLOW_DESTRUCTIVE_DB_TESTS=1 to override."
+        )
     return dsn
 
 
