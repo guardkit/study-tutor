@@ -1,0 +1,31 @@
+{
+  "id": "TURN-FEAT-VOICE-003-1",
+  "feature_id": "FEAT-VOICE-003",
+  "task_id": "TASK-VC-007",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test/contract/voice_contract_test.dart",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test_live/voice_contract_test.dart",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test/contract/voice_contract_test.dart",
+    "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/app/test_live/voice_contract_test.dart",
+    "app/test/contract/voice_contract_test.dart",
+    "app/test_live/voice_contract_test.dart"
+  ],
+  "tests_passed": 222,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-09T00:23:59.246905",
+  "completed_at": "2026-07-09T00:23:59.246905",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

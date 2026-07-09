@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
+import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
 
 void main() {
@@ -11,8 +12,9 @@ void main() {
       (tester) async {
     final identity = FakeIdentityProvider();
     final sessionApi = FakeSessionApi(identity: identity);
+    final voiceApi = FakeVoiceApi();
     await tester.pumpWidget(
-        StudyTutorApp(identity: identity, sessionApi: sessionApi));
+        StudyTutorApp(identity: identity, sessionApi: sessionApi, voiceApi: voiceApi));
 
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
@@ -47,8 +49,9 @@ void main() {
       (tester) async {
     final identity = FakeIdentityProvider();
     final sessionApi = FakeSessionApi(identity: identity);
+    final voiceApi = FakeVoiceApi();
     await tester.pumpWidget(
-        StudyTutorApp(identity: identity, sessionApi: sessionApi));
+        StudyTutorApp(identity: identity, sessionApi: sessionApi, voiceApi: voiceApi));
 
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'adapters/http_session_api.dart';
+import 'adapters/http_voice_api.dart';
 import 'fakes/fake_identity_provider.dart';
 import 'fakes/fake_session_api.dart';
+import 'fakes/fake_voice_api.dart';
 import 'ports/session_api.dart';
+import 'ports/voice_api.dart';
 import 'ui/app.dart';
 
 // Composition root: adapters are constructed HERE and only here (scope §2).
@@ -23,10 +26,16 @@ SessionApi composeSessionApi(String baseUrl, FakeIdentityProvider identity) =>
         ? FakeSessionApi(identity: identity)
         : HttpSessionApi(baseUrl: baseUrl, identity: identity);
 
+VoiceApi composeVoiceApi(String baseUrl, FakeIdentityProvider identity) =>
+    baseUrl.isEmpty
+        ? FakeVoiceApi()
+        : HttpVoiceApi(baseUrl: baseUrl, identity: identity);
+
 void main() {
   final identity = FakeIdentityProvider();
   runApp(StudyTutorApp(
     identity: identity,
     sessionApi: composeSessionApi(apiBaseUrl, identity),
+    voiceApi: composeVoiceApi(apiBaseUrl, identity),
   ));
 }

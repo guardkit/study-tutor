@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/domain/session.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
+import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
 
 void main() {
@@ -15,8 +16,9 @@ void main() {
     final identity = FakeIdentityProvider();
     final store = InMemorySessionStore();
     final sessionApi = FakeSessionApi(identity: identity, store: store);
+    final voiceApi = FakeVoiceApi();
     await tester.pumpWidget(
-        StudyTutorApp(identity: identity, sessionApi: sessionApi));
+        StudyTutorApp(identity: identity, sessionApi: sessionApi, voiceApi: voiceApi));
 
     // Lilymay starts a session and goes back home, which lists it.
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));

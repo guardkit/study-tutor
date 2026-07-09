@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Main flavour network security config (TASK-VC-001): posture hygiene only.
+
+     This config documents the app's intended network security posture and
+     future-proofs any native-stack traffic (e.g., WebSocket plugins for voice).
+
+     Cleartext traffic is NOT permitted in production builds. The debug flavour
+     (src/debug/res/xml/network_security_config.xml) overrides this with a
+     scoped allowance for the GB10 dev adapter.
+
+     Note: As of 2026-07-05, this config governs only the Android platform
+     network stack (WebView, native plugins). The app's package:http traffic
+     rides dart:io, which does not consult network-security-config on current
+     Flutter engines. This config is maintained as hygiene and to ensure native
+     plugins (e.g., web_socket_channel) respect the intended security posture. -->
+<network-security-config>
+    <!-- Base config: cleartext NOT permitted (HTTPS only) -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificate authorities -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

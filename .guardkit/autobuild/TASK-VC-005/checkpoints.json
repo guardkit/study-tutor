@@ -1,0 +1,66 @@
+{
+  "task_id": "TASK-VC-005",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "cb277f00810071a80d104078383b0e1575e2e826",
+      "timestamp": "2026-07-08T21:16:47.151306",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 1,
+      "commit_hash": "d529d57d6423f4dcbbf506a7647048acc495f30e",
+      "timestamp": "2026-07-08T21:55:59.433654",
+      "tests_passed": null,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: unknown)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 5,
+      "commit_hash": "e216dea610f18336644a1b6c2e7880195b556634",
+      "timestamp": "2026-07-08T22:35:51.835426",
+      "tests_passed": null,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 5 complete (tests: unknown)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 6,
+      "commit_hash": "b0ff8d32c378afde97d46d1b7a4c254717e2f937",
+      "timestamp": "2026-07-08T22:56:20.717547",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 6 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 7,
+      "commit_hash": "6329feae9c1c177f50fd00e88661e0cfe9a02e3a",
+      "timestamp": "2026-07-08T23:11:11.204212",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 7 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 1,
+      "commit_hash": "acc7f3806dbaf96803f903a5c5a4de9b6e10e62c",
+      "timestamp": "2026-07-08T23:56:19.761851",
+      "tests_passed": true,
+      "test_count": 211,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    }
+  ],
+  "last_updated": "2026-07-08T23:56:19.762087"
+}

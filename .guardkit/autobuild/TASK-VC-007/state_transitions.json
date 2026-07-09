@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-VC-007",
+    "pre_path": "tasks/backlog/TASK-VC-007-dual-backend-and-live-tests.md",
+    "post_path": "tasks/design_approved/TASK-VC-007-dual-backend-and-live-tests.md",
+    "timestamp": "2026-07-08T23:13:10.718692+00:00",
+    "kind": "design_approved_transition"
+  }
+]

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../domain/errors.dart';
 import '../domain/session.dart';
+import '../fakes/fake_voice_api.dart';
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
+import '../ports/voice_api.dart';
 import 'error_handling.dart';
 import 'session_screen.dart';
 
@@ -21,10 +23,12 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.identity,
     required this.sessionApi,
+    required this.voiceApi,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
+  final VoiceApi voiceApi;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -53,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _active = active);
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(context, widget.identity, widget.sessionApi);
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
       // Stay put with whatever list we already had — "try again" is the
       // pull-to-refresh on this list once the connection returns.
@@ -81,12 +85,14 @@ class _HomeScreenState extends State<HomeScreen> {
       await _open(SessionScreen(
         identity: widget.identity,
         sessionApi: widget.sessionApi,
+        voiceApi: widget.voiceApi,
         sessionId: started.sessionId,
         initialTurns: started.turns ?? const [],
+        voiceRecorder: VoiceRecorder(),
       ));
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(context, widget.identity, widget.sessionApi);
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
       // Nothing was started — stay home; the button works again once
       // `_busy` resets in `finally`.
@@ -107,12 +113,14 @@ class _HomeScreenState extends State<HomeScreen> {
       await _open(SessionScreen(
         identity: widget.identity,
         sessionApi: widget.sessionApi,
+        voiceApi: widget.voiceApi,
         sessionId: resumed.sessionId,
         initialTurns: resumed.turns,
+        voiceRecorder: VoiceRecorder(),
       ));
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(context, widget.identity, widget.sessionApi);
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
       // Before the SessionApiException catch-all: a dead network is not
       // "can't open this session". The row stays (it may be perfectly

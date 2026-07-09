@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
+import '../ports/voice_api.dart';
 import 'home_screen.dart';
 
 class SignInScreen extends StatelessWidget {
@@ -9,18 +10,23 @@ class SignInScreen extends StatelessWidget {
     super.key,
     required this.identity,
     required this.sessionApi,
+    required this.voiceApi,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
+  final VoiceApi voiceApi;
 
   Future<void> _signIn(BuildContext context) async {
     await identity.signIn();
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            HomeScreen(identity: identity, sessionApi: sessionApi),
+        builder: (_) => HomeScreen(
+          identity: identity,
+          sessionApi: sessionApi,
+          voiceApi: voiceApi,
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
+import '../ports/voice_api.dart';
 import 'sign_in_screen.dart';
 
 /// Error surfaces shared by home and session screens. The closed error set
@@ -17,11 +18,15 @@ void routeToSignIn(
   BuildContext context,
   IdentityProvider identity,
   SessionApi sessionApi,
+  VoiceApi voiceApi,
 ) {
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute<void>(
-      builder: (_) =>
-          SignInScreen(identity: identity, sessionApi: sessionApi),
+      builder: (_) => SignInScreen(
+        identity: identity,
+        sessionApi: sessionApi,
+        voiceApi: voiceApi,
+      ),
     ),
     (route) => false,
   );

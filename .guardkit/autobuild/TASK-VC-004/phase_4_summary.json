@@ -1,0 +1,7 @@
+{
+  "tests_run": 224,
+  "tests_failed": 1,
+  "coverage_pct": 86.25,
+  "output_summary": "224 tests run, 1 failed (slice/happy_path_test.dart), 86.25% line coverage",
+  "quality_gates_passed": false
+}
