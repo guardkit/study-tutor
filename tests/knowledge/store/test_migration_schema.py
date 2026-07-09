@@ -9,8 +9,11 @@ Also includes DSN seam tests verifying the async engine configuration.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+import time
 from pathlib import Path
+from typing import Iterator
 
 import pytest
 from sqlalchemy import text
@@ -62,41 +65,73 @@ def test_bare_postgresql_dsn_is_normalized_to_asyncpg() -> None:
 # ============================================================================
 
 
-#: Hosts a throwaway migration-test DB may live on. Anything else (e.g. the
-#: durable NAS store) is refused by default — see the safety guard below.
-_LOOPBACK_DB_HOSTS = {"localhost", "127.0.0.1", "::1", ""}
+#: Dedicated container + port for this module's throwaway Postgres. The port is
+#: distinct from the integration suite's 55433 so both can run concurrently.
+_MIGRATION_TEST_CONTAINER = "study-tutor-migration-test-pg"
+_MIGRATION_TEST_PORT = 55434
 
 
 @pytest.fixture(scope="module")
-def ephemeral_postgres_dsn() -> str:
-    """Provide DSN for an *ephemeral, loopback* test Postgres, or skip.
+def ephemeral_postgres_dsn() -> Iterator[str]:
+    """Provision an OWN throwaway ``postgres:16`` for these destructive tests.
 
-    Reads STUDY_TUTOR_PG_DSN. The tests in this module run
-    ``alembic upgrade head`` / ``alembic downgrade base``, and the downgrade
-    test DROPs every StudentStore table without restoring — so pointing this at
-    a durable store wipes it (this is how the NAS store was nuked 2026-07-09:
-    the suite ran with STUDY_TUTOR_PG_DSN set to the NAS).
+    The tests in this module run ``alembic upgrade head`` / ``downgrade base``,
+    and the downgrade test DROPs every StudentStore table. To make that
+    impossible to aim at a durable store, this fixture starts its own empty,
+    localhost, ephemeral container (destroyed at module teardown) rather than
+    trusting ``STUDY_TUTOR_PG_DSN`` from the environment.
 
-    Safety guard: refuse any non-loopback host unless
-    ``STUDY_TUTOR_ALLOW_DESTRUCTIVE_DB_TESTS=1`` is explicitly set. A throwaway
-    container always runs on localhost, so legitimate use is unaffected.
+    (History: this fixture used to read ``STUDY_TUTOR_PG_DSN`` directly, which
+    wiped the durable NAS store when the suite ran with that var set —
+    2026-07-09. Self-provisioning removes that footgun entirely; the alembic
+    subprocesses below explicitly override the var to this throwaway DSN.)
+
+    Requires Docker; skips if unavailable. The tests share this one container
+    and run in definition order: ``upgrade`` (from empty) first, ``downgrade``
+    last.
     """
-    dsn = os.getenv("STUDY_TUTOR_PG_DSN")
-    if not dsn:
-        pytest.skip("STUDY_TUTOR_PG_DSN not set (ephemeral Postgres required)")
+    if shutil.which("docker") is None:
+        pytest.skip("docker unavailable — ephemeral Postgres required")
 
-    host = (make_url(dsn).host or "").lower()
-    if (
-        host not in _LOOPBACK_DB_HOSTS
-        and os.getenv("STUDY_TUTOR_ALLOW_DESTRUCTIVE_DB_TESTS") != "1"
-    ):
-        pytest.skip(
-            f"Refusing destructive migration tests against non-loopback host "
-            f"{host!r} (would DROP all tables). Point STUDY_TUTOR_PG_DSN at a "
-            "throwaway localhost DB, or set "
-            "STUDY_TUTOR_ALLOW_DESTRUCTIVE_DB_TESTS=1 to override."
+    dsn = (
+        f"postgresql://study_tutor:test@localhost:{_MIGRATION_TEST_PORT}/study_tutor"
+    )
+
+    subprocess.run(
+        ["docker", "rm", "-f", _MIGRATION_TEST_CONTAINER],
+        capture_output=True,
+        check=False,
+    )
+    subprocess.run(
+        [
+            "docker", "run", "-d", "--name", _MIGRATION_TEST_CONTAINER,
+            "-e", "POSTGRES_USER=study_tutor",
+            "-e", "POSTGRES_PASSWORD=test",
+            "-e", "POSTGRES_DB=study_tutor",
+            "-p", f"{_MIGRATION_TEST_PORT}:5432",
+            "postgres:16",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    try:
+        for _ in range(30):
+            ready = subprocess.run(
+                ["docker", "exec", _MIGRATION_TEST_CONTAINER, "pg_isready", "-U", "study_tutor"],
+                capture_output=True,
+            )
+            if ready.returncode == 0:
+                break
+            time.sleep(1)
+        else:
+            pytest.fail("ephemeral Postgres did not become ready within 30s")
+        yield dsn
+    finally:
+        subprocess.run(
+            ["docker", "rm", "-f", _MIGRATION_TEST_CONTAINER],
+            capture_output=True,
+            check=False,
         )
-    return dsn
 
 
 @pytest.fixture(scope="module")
