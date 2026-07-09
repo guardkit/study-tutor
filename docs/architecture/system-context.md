@@ -3,6 +3,7 @@
 **Status:** Phase 0 canonical.
 **Generated:** 2026-04-18 by `/system-arch`.
 **Revised:** 2026-07-03 by `/arch-refine` (ADR-ARCH-023) — Graphiti/FalkorDB student model → study-tutor-owned Postgres; mandatory C4 re-review gate approved.
+**Revised:** 2026-07-08 by `/arch-refine` (ADR-ARCH-028) — added the Keycloak IdP (NAS) trust boundary fronting the HTTP/WS API + the token-validation and Reachy device-grant edges; mandatory C4 re-review gate approved.
 **Approved by:** user, during interactive session.
 
 ---
@@ -39,6 +40,7 @@ C4Context
     System_Ext(litellm, "LiteLLM Proxy (GB10)", "OpenAI-compatible proxy routing Open WebUI → Bedrock when GB10 is training. [P0 validation]")
     System_Ext(claude, "Claude Desktop", "MCP stdio client — architecture-reveal demo + operator usage.")
     System_Ext(reachy, "Reachy Mini 'Scholar'", "Embodied companion — reads Postgres student-model state, narrates progress. [P2 stretch, gated 4 May]")
+    System_Ext(keycloak, "Keycloak IdP (NAS)", "Self-hosted OIDC — realm study-tutor on whitestocks; tailscale-cert https issuer :8443; tailnet-only, no WAN. Fronts the HTTP/WS API. [Auth/D9, ADR-ARCH-028]")
 
     Rel(student, openwebui, "Chats with", "HTTPS (LAN)")
     Rel(openwebui, ollama, "Calls", "Ollama API [P0]")
@@ -59,6 +61,9 @@ C4Context
 
     Rel(parent, reachy, "Asks about progress", "Voice [P2]")
     Rel(reachy, postgres, "Reads state from", "SQL [P2]")
+
+    Rel(studytutor, keycloak, "Validates bearer JWTs (JWKS)", "HTTPS/Tailscale; JWKS by tailnet IP, iss pinned to ts.net [Auth]")
+    Rel(reachy, keycloak, "Device-grant pairing; acts as student (D8)", "OAuth2 device grant [Auth/A4]")
 ```
 
 ## What to look for
@@ -81,13 +86,21 @@ C4Context
   annotation** where relevant. The node is informative for reading the
   Phase 0 state vs the target P1/P2 state.
 
+- **Keycloak IdP (NAS) is the new auth trust boundary.** Per **`ADR-ARCH-028`** it is
+  self-hosted on the NAS (never a cloud IdP — `ADR-ARCH-015`), tailnet-only, with a
+  `tailscale cert` https issuer. Study Tutor validates bearer JWTs against its JWKS
+  (fetched by tailnet IP, `iss` pinned to the ts.net name); Reachy pairs via the OAuth2
+  device grant and acts *as the student* (D8 same-subject resume). The Flutter mobile
+  client and the full HTTP/WS App Access surface are not yet drawn here — a known C4 debt
+  from the voice/cross-device work, not this ADR.
+
 ## Node count
 
-14 nodes (4 persons + 1 main system + 9 external) — well under the
+15 nodes (4 persons + 1 main system + 10 external) — well under the
 30-node threshold. No splitting required.
 
 ---
 
 *This file is the canonical C4 Level 1 artefact. Revisions require
 `/system-arch --mode=refine` or the `/arch-refine` mandatory C4 re-review
-gate (last: 2026-07-03, ADR-ARCH-023).*
+gate (last: 2026-07-08, ADR-ARCH-028).*

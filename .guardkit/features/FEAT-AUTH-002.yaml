@@ -1,0 +1,114 @@
+id: FEAT-AUTH-002
+name: Keycloak Server-Side Token Validation
+description: 'FEAT-AUTH-002 A2 server slice (KC-D6): TokenResolver seam so the HTTP/WS
+  server validates real Keycloak tokens and derives the student from a verified claim,
+  behind STUDY_TUTOR_AUTH_MODE=table|keycloak, without the frozen contract changing.
+  auth.py stays JWT-free; KeycloakTokenResolver lands in http/auth_keycloak.py. Default
+  table everywhere; KC-G2 live gate is operator_handoff.'
+created: '2026-07-08T21:20:29.976838'
+status: planned
+complexity: 7
+estimated_tasks: 7
+tasks:
+- id: TASK-KCA2-001
+  name: OIDC settings + PyJWT[crypto] dependency
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-001-oidc-config-and-dep.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-KCA2-002
+  name: TokenResolver protocol + TableTokenResolver refactor
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-002-tokenresolver-seam-refactor.md
+  complexity: 6
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-KCA2-003
+  name: KeycloakTokenResolver PyJWT + PyJWKClient
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-003-keycloak-token-resolver.md
+  complexity: 8
+  dependencies:
+  - TASK-KCA2-001
+  - TASK-KCA2-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 256
+- id: TASK-KCA2-004
+  name: Boot wiring mode-select + fail-fast
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-004-boot-wiring-mode-select-failfast.md
+  complexity: 5
+  dependencies:
+  - TASK-KCA2-001
+  - TASK-KCA2-002
+  - TASK-KCA2-003
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-KCA2-005
+  name: AC-005 tripwire re-scope + dev-reset guard
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-005-ac005-tripwire-rescope.md
+  complexity: 3
+  dependencies:
+  - TASK-KCA2-003
+  - TASK-KCA2-004
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-KCA2-006
+  name: Live-suite token harness
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-006-live-suite-token-harness.md
+  complexity: 5
+  dependencies:
+  - TASK-KCA2-003
+  - TASK-KCA2-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-KCA2-007
+  name: KC-G2 live gate
+  file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-007-kc-g2-live-gate.md
+  complexity: 5
+  dependencies:
+  - TASK-KCA2-006
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+orchestration:
+  parallel_groups:
+  - - TASK-KCA2-001
+    - TASK-KCA2-002
+  - - TASK-KCA2-003
+  - - TASK-KCA2-004
+  - - TASK-KCA2-005
+    - TASK-KCA2-006
+  - - TASK-KCA2-007
+  estimated_duration_minutes: 677
+  recommended_parallel: 2
+smoke_gates:
+  # Composition gate for the auth seam: after the resolver + boot wiring land
+  # (wave 3) and after the tripwire re-scope edits test_auth.py (wave 4), run the
+  # whole http unit suite so a broken table-mode parity or resolver/boot
+  # integration is caught between waves, not 30 tasks later. Path is a verified
+  # existing root (tests/unit/http); test_auth_keycloak.py is created in wave 2,
+  # so both after_wave values are temporally safe.
+  #
+  # Wave 5 (TASK-KCA2-007) is deliberately NOT gated: it is the KC-G2
+  # operator_handoff live gate — AutoBuild short-circuits it and lands no code,
+  # so wave 4 is the final code-bearing wave and the meaningful last gate. The
+  # feature-validate "does not cover the final wave" warning is expected here.
+  after_wave: [3, 4]
+  command: |
+    set -e
+    python -m pytest tests/unit/http -x -q
+  expected_exit: 0
+  timeout: 180

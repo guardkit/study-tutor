@@ -1,0 +1,80 @@
+id: FEAT-AUTH-001
+name: Keycloak IdP Standup on the NAS (A1)
+description: 'FEAT-AUTH-001 A1 standup: bring study_tutor_keycloak up on the NAS with
+  realm-as-code, tailnet TLS, co-located keycloak DB, and backups; pass gate KC-G1.
+  Runbook + committable artifacts; live standup is operator_handoff.'
+created: '2026-07-08T20:39:33.430048'
+status: planned
+complexity: 6
+estimated_tasks: 6
+tasks:
+- id: TASK-KC-001
+  name: study_tutor_keycloak compose + optimized build + env
+  file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-001-keycloak-compose-and-env.md
+  complexity: 5
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-KC-002
+  name: Realm-as-code (clients, roles, student_id mapper; no users/secrets/live-suite)
+  file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-002-realm-as-code.md
+  complexity: 6
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-KC-003
+  name: Co-located keycloak DB + least-privilege role bootstrap
+  file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-003-keycloak-db-and-role.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-KC-004
+  name: backup.sh second pg_dump -d keycloak, fail on either dump
+  file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-004-backup-keycloak-dump.md
+  complexity: 4
+  dependencies:
+  - TASK-KC-003
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-KC-005
+  name: Standup runbook with KC-G1 gate model
+  file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-005-standup-runbook.md
+  complexity: 5
+  dependencies:
+  - TASK-KC-001
+  - TASK-KC-002
+  - TASK-KC-003
+  - TASK-KC-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-KC-006
+  name: Live NAS standup + KC-G1 gate (operator_handoff)
+  file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-006-live-standup-kc-g1-gate.md
+  complexity: 5
+  dependencies:
+  - TASK-KC-005
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+orchestration:
+  parallel_groups:
+  - - TASK-KC-001
+    - TASK-KC-002
+    - TASK-KC-003
+  - - TASK-KC-004
+  - - TASK-KC-005
+  - - TASK-KC-006
+  estimated_duration_minutes: 438
+  recommended_parallel: 3

@@ -182,6 +182,8 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-025 | Flutter app lives at `app/` in the monorepo; contract-by-SHA coupling | Accepted |
 | ADR-ARCH-026 | Player-Coach: async Coach monitor (off the pre-send path), streaming-ready | Accepted (ratified 2026-07-05, G-RAT; extended by ADR-ARCH-027) |
 | ADR-ARCH-027 | Quote verification under streaming: verify at the sentence-chunk boundary | Accepted (extends ADR-ARCH-026 D3) |
+| ADR-ARCH-028 | Self-hosted Keycloak IdP on the NAS; tailscale-cert https issuer; tailnet-only (KC-D1/D2) | Accepted (ratified 2026-07-08, `/arch-refine`; new decision, supersedes none; phase-scoped by ADR-ARCH-029) |
+| ADR-ARCH-029 | Phased productionisation: local-first build (Phase 2), cloud-native AWS + data governance (Phase 3) | Accepted (2026-07-08; annotates ADR-ARCH-015/028 with the cloud trajectory + Phase-2 portability guardrails) |
 | ADR-TUTOR-MULTI-SUBJECT | Single fine-tune, multi-subject architecture | Accepted |
 
 ## 10. Assumptions
@@ -210,7 +212,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 - `system-context.md` — C4 Level 1 diagram
 - `container.md` — C4 Level 2 diagram
 - `assumptions.yaml` — 18 captured assumptions
-- `decisions/ADR-ARCH-*.md` — 28 ADRs (through ADR-ARCH-027 + ADR-TUTOR-MULTI-SUBJECT)
+- `decisions/ADR-ARCH-*.md` — 30 ADRs (through ADR-ARCH-029 + ADR-TUTOR-MULTI-SUBJECT)
 
 ---
 

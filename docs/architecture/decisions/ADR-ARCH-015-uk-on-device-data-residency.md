@@ -2,11 +2,16 @@
 
 ## Status
 
-Accepted
+Accepted — **phase-scoped (Phase 1–2).**
+
+> **Trajectory note (2026-07-08):** this on-device posture is the **Phase 1–2 default** and remains in
+> force for the local NAS/GB10 build. Per [ADR-ARCH-029](ADR-ARCH-029-phased-productionisation-local-first-cloud-native-target.md),
+> **Phase 3 revisits it toward a cloud-native AWS posture** (UK `eu-west-2` + a data-governance surface),
+> at which point a superseding ADR replaces this one. Not yet superseded — no change to current force.
 
 **Date:** 2026-04-18
 **Phase:** Phase 0
-**Related:** ADR-ARCH-007, DEC-02, DEC-08, ASSUM-013
+**Related:** ADR-ARCH-007, DEC-02, DEC-08, ASSUM-013, [ADR-ARCH-029](ADR-ARCH-029-phased-productionisation-local-first-cloud-native-target.md) (phasing toward cloud-native)
 
 ## Context
 

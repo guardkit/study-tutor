@@ -3,6 +3,7 @@
 **Status:** Phase 0 canonical.
 **Generated:** 2026-04-18 by `/system-arch`.
 **Revised:** 2026-07-03 by `/arch-refine` (ADR-ARCH-023) — Graphiti/FalkorDB student model → study-tutor-owned Postgres; synchronous session-end write; mandatory C4 re-review gate approved.
+**Revised:** 2026-07-08 by `/arch-refine` (ADR-ARCH-028) — added the Keycloak IdP (NAS) external system + the D9 HTTP/WS App Access adapter hosting the `TokenResolver` seam (previously absent from L2); mandatory C4 re-review gate approved.
 **Approved by:** user, during interactive session.
 
 ---
@@ -29,6 +30,7 @@ C4Container
         Container(wrapper, "Bash MCP Wrapper", "bash / scripts/mcp-wrapper.sh", "Absolute cd + env load + exec — SR-02. Launched by Claude Desktop.")
         Container(cli, "CLI Entrypoint", "Python / Click", "study-tutor serve --role tutor --transport stdio. Banner→stderr per SR-01.")
         Container(mcp, "MCP Adapter", "Python / mcp SDK", "Registers 4 tools, all sync per SR-07 (ADR-ARCH-017): tutor_start_session (sync; warm-up fire-and-forget), tutor_turn (sync; any mid-session student-model write is a ms-scale Postgres upsert), tutor_session_status (sync), tutor_session_end (sync; session-end write is one synchronous Postgres transaction per ADR-ARCH-023).")
+        Container(httpws, "HTTP/WS App Access Adapter", "Python / FastAPI", "D9 thin adapter over SessionService (ADR-FLEET-003). auth.py TokenResolver seam — STUDY_TUTOR_AUTH_MODE=table|keycloak (ADR-ARCH-028 / KC-D6); keycloak mode validates bearer JWTs against Keycloak JWKS in http/auth_keycloak.py. Process-level trust stays on the MCP surface (ADR-ARCH-008).")
         Container(session, "Tutor Session Manager", "Python / in-memory dict", "TutorSession aggregate. In-memory in P0; Postgres-backed P1+.")
         Container(llm, "LLM Client (Provider Factory)", "Python / langchain-*", "Resolves AGENT_MODELS__REASONING_MODEL at factory — SR-03. Routes local/bedrock/openai/anthropic/gemini.")
         ComponentDb(domain, "Domain Config", "Markdown + YAML", "domains/gcse-english/GOAL.md + roles/tutor/role.yaml + criteria/definitions.yaml. Shared-kernel taxonomy.")
@@ -54,12 +56,17 @@ C4Container
     System_Ext(postgres, "Postgres (study-tutor-owned)", "JSONB student store — own instance, port 5434, nightly pg_dump")
     System_Ext(embedder, "GB10 Embedder", "nomic-embed-text-v1.5")
     System_Ext(claude_desktop, "Claude Desktop", "MCP client")
+    System_Ext(keycloak, "Keycloak IdP (NAS)", "study_tutor_keycloak container; keycloak DB in study_tutor_postgres:5434; realm-as-code (users runbook-created, never in git); tailscale-cert https issuer :8443; tailnet-only [ADR-ARCH-028]")
 
     Rel(agent, claude_desktop, "Invokes")
     Rel(claude_desktop, wrapper, "Launches", "stdio + absolute CWD")
     Rel(wrapper, cli, "Execs", ".venv/bin/study-tutor")
     Rel(cli, mcp, "Starts")
     Rel(developer, cli, "Runs directly")
+
+    Rel(httpws, session, "Delegates to SessionService", "same SessionService as the MCP surface")
+    Rel(httpws, keycloak, "Validates JWTs (JWKS)", "HTTPS/Tailscale; extra_hosts tailnet IP, iss pinned to ts.net")
+    Rel(keycloak, postgres, "Persists realm/user state", "keycloak DB, same :5434 instance")
 
     Rel(mcp, session, "Creates / advances")
     Rel(session, llm, "Invokes (P0: single call per turn)")
@@ -120,13 +127,25 @@ C4Container
   Implements CC-11 (in-process event vocabulary); doesn't couple to
   Harness or Session internals.
 
+- **HTTP/WS App Access Adapter is the only auth-bearing surface.** Per
+  **`ADR-ARCH-028`** / KC-D6 its `TokenResolver` seam runs in `table` or
+  `keycloak` mode (`STUDY_TUTOR_AUTH_MODE`); in `keycloak` mode it validates
+  bearer JWTs against the **Keycloak IdP (NAS)** JWKS — fetched by tailnet IP
+  while `iss` stays pinned to the ts.net name. The **MCP surface keeps
+  process-level trust** (`ADR-ARCH-008`, unchanged) — no JWT on that path. The
+  adapter delegates to the *same* `SessionService` as MCP (ADR-FLEET-003).
+- **Keycloak's realm/user state co-locates in `study_tutor_postgres:5434`**
+  (the `keycloak` DB) — the ADR-ARCH-023 D4 rule separates projects, not a
+  project's own services. The Flutter client itself is not yet a node here
+  (pre-existing C4 debt, not this ADR).
+
 ## Node count
 
-23 nodes (15 internal + 5 external + 3 persons). Well under the 30-node
+25 nodes (16 internal + 6 external + 3 persons). Well under the 30-node
 threshold.
 
 ---
 
 *This file is the canonical C4 Level 2 artefact. Revisions require
 `/system-arch --mode=refine` or the `/arch-refine` mandatory C4 re-review
-gate (last: 2026-07-03, ADR-ARCH-023).*
+gate (last: 2026-07-08, ADR-ARCH-028).*

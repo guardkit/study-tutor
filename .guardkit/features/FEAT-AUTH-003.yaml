@@ -1,0 +1,121 @@
+id: FEAT-AUTH-003
+name: Flutter Keycloak Sign-In
+description: 'FEAT-AUTH-003 A3 app slice (KC-D7, gate KC-G3): a real KeycloakIdentityProvider
+  implementing the unchanged 3-member IdentityProvider port (sync currentPrincipal
+  kept; proactive background refresh; signIn silent-then-interactive). PKCE S256 public
+  client, custom-scheme redirect com.appmilla.studytutor:/oauth2redirect, offline_access
+  so the family device stays signed in. SignInScreen loading/failure/cancel + sign-out
+  affordance; composeSessionApi de-typed to the port (hermetic fake flavour keeps
+  the concrete fake). flutter_appauth + flutter_secure_storage added as a recorded
+  zero-added-deps DoD scope event. KC-G3 live gate is operator_handoff.'
+created: '2026-07-08T23:06:52.723652'
+status: planned
+complexity: 7
+estimated_tasks: 7
+tasks:
+- id: TASK-KCA3-001
+  name: flutter_appauth + flutter_secure_storage deps, native redirect config, KeycloakConfig
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-001-deps-native-redirect-config.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-KCA3-002
+  name: SecureSessionStore secure-storage token persistence
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-002-secure-session-store.md
+  complexity: 5
+  dependencies:
+  - TASK-KCA3-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-KCA3-005
+  name: Sign-out affordance home app-bar action
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-005-sign-out-affordance.md
+  complexity: 3
+  dependencies:
+  - TASK-KCA3-001
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-KCA3-003
+  name: KeycloakIdentityProvider silent-then-interactive PKCE adapter
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-003-keycloak-identity-provider.md
+  complexity: 8
+  dependencies:
+  - TASK-KCA3-001
+  - TASK-KCA3-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 256
+- id: TASK-KCA3-004
+  name: SignInScreen loading failure cancel states
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-004-sign-in-screen-states.md
+  complexity: 5
+  dependencies:
+  - TASK-KCA3-003
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-KCA3-006
+  name: Composition de-type to port and flavour wiring
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-006-composition-detype-and-wiring.md
+  complexity: 6
+  dependencies:
+  - TASK-KCA3-003
+  - TASK-KCA3-004
+  - TASK-KCA3-005
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-KCA3-007
+  name: KC-G3 live gate operator_handoff
+  file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-007-kc-g3-live-gate.md
+  complexity: 5
+  dependencies:
+  - TASK-KCA3-006
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+orchestration:
+  parallel_groups:
+  - - TASK-KCA3-001
+  - - TASK-KCA3-002
+    - TASK-KCA3-005
+  - - TASK-KCA3-003
+  - - TASK-KCA3-004
+  - - TASK-KCA3-006
+  - - TASK-KCA3-007
+  estimated_duration_minutes: 677
+  recommended_parallel: 2
+smoke_gates:
+  # Feature-level composition gate for the Flutter app slice. This is the
+  # FLUTTER track, not the Python server — the R3 nudge's pytest example does
+  # not apply; the project's per-wave green gate is `cd app && flutter test`
+  # (docs/runbooks/RUNBOOK-overnight-fable-flutter.md). Path is flutter's
+  # default discovery root app/test/ (verified to exist), so no explicit argv.
+  #
+  # after_wave 3: the KeycloakIdentityProvider (003) + SecureSessionStore (002)
+  #   unit suites land — a broken adapter/store is caught here, not 3 tasks later.
+  # after_wave 5: the composition de-type + error-routing regression (006) lands
+  #   — catches a de-type compile break or an Unauthenticated/TransportError
+  #   routing regression at the seam.
+  #
+  # Wave 6 (TASK-KCA3-007) is deliberately NOT gated: it is the KC-G3
+  # operator_handoff live gate — AutoBuild short-circuits it and lands no code,
+  # so wave 5 is the final code-bearing wave and the meaningful last gate. The
+  # feature-validate "does not cover the final wave" warning is expected here.
+  after_wave: [3, 5]
+  command: |
+    set -e
+    cd app && flutter analyze && flutter test
+  expected_exit: 0
+  timeout: 300

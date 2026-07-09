@@ -4098,6 +4098,605 @@ Worktree removed and branch `autobuild/FEAT-VOICE-002` deleted. (The `FEAT-39E1`
 
 ---
 
+## /feature-spec feat-auth-001-keycloak-standup-on-the-nas-per-design-kc-d1-d — 2026-07-08T19:14:37Z
+
+### Prompt
+
+```
+/feature-spec "FEAT-AUTH-001 Keycloak standup on the NAS per design KC-D1/D2/D3: study_tutor_keycloak container (quay.io/keycloak/keycloak 26.6.x pinned, start --optimized, 2GB memory limit), keycloak database+role in study_tutor_postgres :5434, realm-as-code import from deploy/keycloak/realm/ (realm study-tutor, clients study-tutor-app/reachy-robot/live-suite per KC-D4, roles student+parent, student_id attribute→claim protocol mapper — users runbook-created, never in git), tailscale cert for whitestocks.tailebf801.ts.net + https issuer, backup.sh second pg_dump line, executable standup runbook with KC-G1 gate incl. NAS RAM before/after" \
+  --context docs/design/keycloak-auth-user-management-design.md \
+  --context docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md \
+  --context deploy/postgres/backup.sh
+```
+
+### Assistant response
+
+I'll execute the `/feature-spec` command's six-phase Propose-Review methodology. Let me start with **Phase 1: Context Gathering** (silent, no interaction).
+
+Stack detected as Python. Let me read the postgres runbook context and examine existing conventions.
+
+Good context. Let me check an existing `.feature` file for local conventions and glance at the new ADR-ARCH-028.
+
+
+---
+
+## /feature-plan keycloak-idp-standup-on-the-nas-feat-auth-001-a1 — 2026-07-08T19:27:04Z
+
+### Prompt
+
+```
+/feature-plan "Keycloak IdP Standup on the NAS (FEAT-AUTH-001, A1)" \
+      --context features/keycloak-idp-standup/keycloak-idp-standup_summary.md
+```
+
+### Assistant response
+
+I'll execute the `/feature-plan` workflow for "Keycloak IdP Standup on the NAS". Let me first load the context file and understand the feature.
+
+Let me read the full feature file, assumptions, and the related design/ADR documents.
+
+This is a well-specified feature. Let me read the key design/architecture references to ground the plan in the actual codebase patterns.
+
+Now let me examine the existing deploy patterns this feature mirrors — the Postgres deploy runbook, backup.sh, and the deploy directory structure.
+
+Let me read the Postgres deploy runbook, its docker-compose, and backup.sh — the exact patterns this feature mirrors.
+
+I now have deep context: the feature spec (25 scenarios, 6 smoke), the design (KC-D1…D7), ADR-ARCH-028, and the concrete patterns this mirrors — the Postgres deploy runbook's G0–G7 gate model, [backup.sh](deploy/postgres/backup.sh) (atomic pg_dump + 14-day retention), and [docker-compose.yml](deploy/postgres/docker-compose.yml).
+
+A key observation: this is an **operator + agent standup** feature. The *deliverables* are largely committable artifacts (compose, realm-as-code JSON, backup.sh extension, the runbook), but the *gate verification* (KC-G1: device browser reaches https realm, RAM recorded before/after, cert renewal) is runtime-observed on live NAS hardware — textbook `operator_handoff` territory per this command's own detection rules.
+
+Before I run the review analysis, let me confirm scope and the two structural forks that shape the recommendation.
+
+All three recommendations accepted: **security+quality** review lens, **runbook + committable artifacts** (defer deploy.sh/smoke.sh), and **operator_handoff** for live tasks. Let me pull two last grounding artifacts — the lpa-poc validation reference (realm mapper mechanics) and a recent task-file format — then present the review.
+
+Let me grab one real task markdown file to match the repo's frontmatter/body convention exactly.
+
+I now have full grounding — the feature spec, design (KC-D1…D7), ADR-028, the lpa-poc reference (realm mapper + issuer-split mechanics), the exact task-file convention, and the Postgres deploy patterns this mirrors. Here is the review analysis.
+
+---
+
+## 🔍 FEATURE PLANNING: Keycloak IdP Standup on the NAS (FEAT-AUTH-001, A1)
+
+**Review task:** `TASK-REV-KCA1` · **Mode:** decision · **Depth:** standard · **Lens:** security + quality
+**Feature id:** `FEAT-AUTH-001` · **Aggregate complexity:** 6/10 (Medium) · **Risk:** Medium (single residual: DSM `tailscale cert` path)
+
+### What this slice is
+
+The **A1 standup slice only** — bring `study_tutor_keycloak` up on the NAS with realm-as-code, tailnet TLS, a co-located `keycloak` DB, and backups, passing gate **KC-G1**. It mirrors the proven [Postgres deploy runbook](docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md) G0–G7 gate model. Out of scope: A2 server `TokenResolver`, A3 app OIDC, A4 robot device-grant.
+
+### Architecture — ratified, not re-opened
+
+The load-bearing decisions are already ratified in [ADR-ARCH-028](docs/architecture/decisions/ADR-ARCH-028-keycloak-idp-nas-placement-tailnet-tls.md) and the [design](docs/design/keycloak-auth-user-management-design.md), so the review does **not** re-litigate them:
+
+- **Placement** (KC-D1): own `study_tutor_keycloak` container, `keycloak` DB co-located in `study_tutor_postgres` (D4 rule separates *projects*, not a project's own services). NAS RAM documented at 8 GB.
+- **TLS/issuer** (KC-D2): `tailscale cert` mount, issuer pinned to `https://whitestocks.tailebf801.ts.net:8443/realms/study-tutor`, with two ordered fallbacks (`tailscale serve` → GB10).
+- **PII posture** (KC-D3): realm/clients/roles/mappers in git; **users & secrets never in git**.
+
+### Technical options — the one genuine open fork
+
+Everything else is design-decided; the only real authoring choice is **how prod-vs-dev realm separation is committed** (the spec asserts both *"live-suite present"* and *"live-suite absent from the production realm"*):
+
+| Option | Approach | Assessment |
+|---|---|---|
+| **1 — Prod-safe base + runbook dev additions** ★ | Commit one prod-safe realm JSON (`study-tutor-app` + `reachy-robot` + roles + mapper; **no** live-suite, no users, no secrets). The dev-realm `live-suite` confidential client + Alex test user are runbook-created at dev standup only. | **Recommended.** Keeps the committed artifact prod-safe by construction — the "live-suite absent from prod" and "no secrets in git" negatives pass by *grep*, not by convention. Matches KC-D3 exactly. |
+| 2 — Two committed realm files | `study-tutor-realm.json` (prod) + `study-tutor-realm.dev.json` (adds live-suite). | More reproducible dev realm, but risks a confidential client's secret placeholder drifting into git; larger surface. |
+| 3 — One realm + prod-strip step | Commit realm *with* live-suite, strip at prod import. | Rejected — a strip step that can silently no-op is exactly the failure the negative scenario guards against. |
+
+### Recommended approach → 6 tasks, 4 waves
+
+Committable artifacts are autobuild-suitable; the **live standup + KC-G1 gate is `operator_handoff`** (per your choice — runtime-observed on live NAS/browser/RAM, which Coach cannot verify).
+
+| Task | Type | Wave | What |
+|---|---|---|---|
+| **TASK-KC-001** | scaffolding | 1 | `deploy/keycloak/` compose + `.env.deploy.example` — pinned `26.6.x`, `start --optimized`, 2 GB limit, cert-file mounts, `--import-realm`, `KC_DB` → keycloak DB, `extra_hosts`, bootstrap admin from env, healthcheck |
+| **TASK-KC-002** | declarative | 1 | `deploy/keycloak/realm/study-tutor-realm.json` — realm, clients, roles `student`+`parent`, `student_id` attribute→claim mapper, pinned ids, **no users/secrets/live-suite** |
+| **TASK-KC-003** | feature | 1 | keycloak DB + least-privilege non-superuser role bootstrap SQL (owns only `keycloak` DB; cannot read learner tables) |
+| **TASK-KC-004** | feature | 2 | `deploy/postgres/backup.sh` second `pg_dump -d keycloak` block — atomic, PGDMP-magic check, shared 14-day retention, **fails the run if *either* dump fails** |
+| **TASK-KC-005** | documentation | 3 | `RUNBOOK-study-tutor-keycloak-standup.md` — KC-G1 gate model, cert mint + ordered fallbacks, network posture, "what NOT to do" |
+| **TASK-KC-006** | **operator_handoff** | 4 | Live NAS standup + KC-G1 gate — cert mint, deploy, import-realm, user creation (never in git), RAM before/after, device browser reaches https realm |
+
+**§4 Integration Contracts** exist (KC-D3 keycloak DB → Keycloak JDBC consumer; realm JSON → `--import-realm` consumer), so the guide will pin the exact `jdbc:postgresql://study_tutor_postgres:5432/keycloak` form and mount path.
+
+### Risks
+- **DSM `tailscale cert`** — the single residual risk (ADR-028); mitigated by the runbook's `tailscale serve` fallback (spec edge scenario covers it).
+- **Deferred read path (not a bug):** the token-validation JWKS read is **A2 scope** — the data-flow diagram will mark it `NOT WIRED (deferred → A2/KC-G2)` with an explicit note, not a wiring task.
+
+**Implement** selected. Proceeding with Option 1 (prod-safe realm base), auto-detected waves, and standard testing depth. Creating the feature structure now — 6 task files, IMPLEMENTATION-GUIDE with mandatory diagrams, README, review record, and the feature YAML.
+
+Let me write the six task files.
+
+Now the IMPLEMENTATION-GUIDE with the mandatory Mermaid diagrams and §4 Integration Contracts, plus the README.
+
+Now the review-task provenance record and the feature YAML. Let me check whether the generator script exists first.
+
+Both tools are available. Let me write the review-provenance record, then run the generator with `--discover`.
+
+Feature YAML generated cleanly — waves match the plan, **0 unverifiable ACs**. Now the pre-flight validation (Step 8.5) and BDD scenario linking (Step 11).
+
+Feature validates clean. Now Step 11 — link the 25 Gherkin scenarios to tasks (`@task:` tags). Let me run the `prepare` subcommand.
+
+`ready` — 25 scenarios, 6 tasks. Let me read the request payload and invoke the `bdd-linker` subagent to map scenarios → tasks.
+
+Now I'll invoke the `bdd-linker` subagent to produce the scenario→task mapping (it must run synchronously — I need its output for `apply`).
+
+Strong mapping — all 25 scenarios above the 0.6 threshold. Let me write the response and run `apply`.
+
+All 25 scenarios tagged (R2 BDD oracle now active). Let me verify the tags landed and confirm the final artifact set.
+
+
+---
+
+## /feature-spec feat-auth-002-server-keycloak-validation-per-design-kc-d6-to — 2026-07-08T19:43:27Z
+
+### Prompt
+
+```
+/feature-spec "FEAT-AUTH-002 server Keycloak validation per design KC-D6: TokenResolver protocol (async resolve(token)->student_id raising Unauthenticated), TableTokenResolver preserving current auth.py behaviour byte-for-byte, KeycloakTokenResolver in new http/auth_keycloak.py (PyJWT+PyJWKClient, validate iss/aud/exp/signature, student_id claim per KC-D3, JWKS URL override for the extra_hosts gotcha), STUDY_TUTOR_AUTH_MODE=table|keycloak with boot fail-fast on incomplete OIDC config, AC-005 tripwire re-scoped to keep auth.py JWT-free, unseeded-guard and Bearer extraction unchanged (ASSUM-001, binding §3), WS upgrade path inherits automatically, live-suite token helper via the dev-realm live-suite client, hermetic tests stay on table mode" \
+  --context docs/design/keycloak-auth-user-management-design.md \
+  --context src/study_tutor/http/auth.py \
+  --context docs/design/contracts/API-session-http-binding.md
+```
+
+### Assistant response
+
+I'll execute the feature-spec workflow. Starting with Phase 1: silent context gathering.
+
+
+---
+
+## /feature-plan keycloak-server-side-token-validation — 2026-07-08T19:53:18Z
+
+### Prompt
+
+```
+/feature-plan "Keycloak Server-Side Token Validation" \
+  --context features/keycloak-server-token-validation/keycloak-server-token-validation_summary.md \
+  --context docs/design/keycloak-auth-user-management-design.md
+```
+
+### Assistant response
+
+I'll execute the `/feature-plan` workflow for "Keycloak Server-Side Token Validation". Let me start by reading the provided context files and understanding the existing conventions in this repo.
+
+Now let me read the full BDD feature spec, the assumptions, the sibling review task (for convention), and the actual `auth.py` seam being modified.
+
+Let me examine the actual code seam being modified and the sibling feature's IMPLEMENTATION-GUIDE for convention.
+
+Let me check the task-file convention (a sibling task + README) and how the auth config is wired into the app/WS composition.
+
+Let me see the app factory (where auth_config is built) and the CLI boot path, to place the mode-selection/fail-fast correctly.
+
+I now have a thorough understanding of the A2 slice: the `TokenResolver` seam (KC-D6), the `auth.py` code that keeps its outer contract, the new `auth_keycloak.py` sibling module, the env-driven mode selection with boot fail-fast, the AC-005 tripwire re-scope, and the WS/dev-reset/live-suite couplings. The design is ratified and the 25-scenario spec is operator-confirmed.
+
+Proceeding with the `/feature-plan` workflow. First, **Context A — Review Scope Clarification**.
+
+Context A recorded: **focus = security_quality**, **trade-off = quality** (matching the A1 slice). Let me verify the AutoBuild tooling is available and create the review task, then present the analysis.
+
+Tooling confirmed (`generate-feature-yaml`, `feature-plan-bdd-link`, `guardkit` CLI all present). Now presenting the decision review.
+
+---
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE PLANNING: Keycloak Server-Side Token Validation (FEAT-AUTH-002, A2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Review task: TASK-REV-KCA2  ·  Focus: security & correctness  ·  Trade-off: quality
+Depth: standard  ·  Context: A2 summary + design KC-D1…D7 + auth.py seam
+```
+
+## 🔍 Decision Review — the A2 server slice
+
+The architecture is **already ratified** (design KC-D6, operator-confirmed spec, ADR-ARCH-028). So this review is not choosing an architecture — it confirms the recommended **shape** and surfaces the genuine decision points, risks, and task breakdown through a security lens.
+
+### The seam (fixed by KC-D6)
+`resolve_student_from_token` in [auth.py](src/study_tutor/http/auth.py) keeps its **outer contract byte-for-byte** — (1) Bearer extraction, (3) unseeded-student guard — and delegates only **step 2** (the derivation source) to an injected `TokenResolver` (`async resolve(token) -> student_id`, raises `Unauthenticated`). `TableTokenResolver` stays in `auth.py`; `KeycloakTokenResolver` lands in a **new sibling** `http/auth_keycloak.py`. Both [app.py](src/study_tutor/http/app.py#L88) `_resolve_student_id` and [ws.py](src/study_tutor/http/ws.py#L140) already call the same function, so **WS inherits the resolver for free** (binding §2.1).
+
+### The one genuine design choice — how the resolver is threaded
+| Option | How | Verdict |
+|---|---|---|
+| **1. Resolver carried on `HTTPAuthConfig` (Recommended)** | Boot builds the selected resolver; `HTTPAuthConfig` gains a `resolver` field; `resolve_student_from_token(header, config, store)` signature **unchanged** — callsites in app.py/ws.py untouched | ✅ Zero change to the frozen callsites; delegation is internal; table mode stays byte-for-byte |
+| 2. Resolver on `app.state`, new param | Thread resolver as a new arg through `_resolve_student_id` | ⚠️ Changes two callsites + WS; widens the contract surface for no gain |
+| 3. Module-level mode switch inside `resolve_student_from_token` | `if AUTH_MODE == …` branch inline | ❌ Puts JWT concerns back in auth.py — violates the AC-005 tripwire |
+
+**Recommended: Option 1** — keeps `auth.py` JWT-free forever, keeps the frozen contract's function signature intact, isolates all Keycloak/PyJWT imports in the sibling module.
+
+### Security surface (the focus lens) — what the KeycloakTokenResolver must get right
+- **Signature** via `PyJWKClient` (cached, kid-rotation aware); **`iss`** pinned to the ts.net issuer even when JWKS is fetched by tailnet IP (KC-D2 `extra_hosts` gotcha); **`aud`** verified; **`exp`/`nbf`** with the operator-confirmed **60 s** leeway (ASSUM-001).
+- **Algorithm allowlist — asymmetric only (RS256).** The classic JWKS attack is alg-confusion (`alg: none` / HS256 signed with the public key). Must be an explicit allowlist, not a denylist.
+- **Fail-closed everywhere**: unknown-kid, unreachable JWKS, missing `student_id` claim, garbage Bearer → `Unauthenticated`, **never a 500** (a mis-provisioned attribute must be a clean 401 — KC-D3/ASSUM-001).
+- **Boot fail-fast (SystemExit)** on incomplete keycloak config (issuer+audience required — ASSUM-002/005) and on an **unknown `STUDY_TUTOR_AUTH_MODE`** value (ASSUM-007) — matching the DSN discipline at [cli/main.py:869](src/study_tutor/cli/main.py#L869).
+- **Tripwire re-scope**: `test_no_keycloak_jwt_imports` stays green for `auth.py`; the imports must now live **only** in `auth_keycloak.py`. Plus: `/__dev__/reset` and keycloak mode must never coexist.
+
+### Effort / complexity / risk
+- **Complexity: 8/10** (security-critical, driven by the JWKS validation core) · **Est. ~7–8 h** authorable + 1 operator gate
+- **Risk: Medium-High** — mitigated by hermetic RSA-minted-key tests (no live infra needed for the security scenarios) and a flag-gated default (`table` everywhere → **merging A2 changes nothing in prod**).
+- **Notable**: this slice **wires the JWKS read path that A1 deliberately left `NOT WIRED`** — no disconnected paths remain.
+
+### Proposed breakdown — 7 tasks, 5 waves
+
+```
+Wave 1  TASK-KCA2-001  PyJWT[crypto] dep + OIDCSettings (env surface, fail-fast helper)   declarative  c4
+        TASK-KCA2-002  TokenResolver protocol + TableTokenResolver refactor (auth.py)     refactor     c6
+Wave 2  TASK-KCA2-003  KeycloakTokenResolver in http/auth_keycloak.py + hermetic tests    feature      c8
+Wave 3  TASK-KCA2-004  Boot wiring: AUTH_MODE select + fail-fast + thread resolver         feature      c5
+Wave 4  TASK-KCA2-005  AC-005 tripwire re-scope + dev-reset/keycloak coexistence guard     testing      c3
+        TASK-KCA2-006  Live-suite token-minting harness (skips w/o live realm)             testing      c5
+Wave 5  TASK-KCA2-007  KC-G2 gate: live dev deploy, live-suite green, hermetic green       operator_handoff c5
+```
+**§4 contracts:** `OIDC_SETTINGS` (001→003,004), `TOKEN_RESOLVER` protocol (002→004). No intra-wave dependencies.
+
+---
+
+Now the decision checkpoint.
+
+Decision: **Implement** · Option 1 (resolver on `HTTPAuthConfig`) · detect waves · standard tests. Let me check the YAML generator's options (to pin `FEAT-AUTH-002`) and the BDD-linker's `prepare` contract.
+
+Decision recorded. Generating the full feature structure now. Let me start with the review task and the first three task files.
+
+Now the README and the IMPLEMENTATION-GUIDE with the mandatory Mermaid diagrams.
+
+All 10 files written. Now generating the structured `FEAT-AUTH-002` YAML with `--discover` (resolves `file_path` from the actual files on disk).
+
+YAML generated (7 tasks, 5 waves). AC-quality: **0 unverifiable**. The R3 smoke-gates nudge fired — given the quality trade-off, I'll add a between-wave smoke gate targeting the auth composition. Let me read the YAML and inject it.
+
+The YAML looks correct (7 tasks, 5 waves, no intra-wave deps). Now injecting the smoke gate. `tests/unit/http` exists on disk (spatially valid); `test_auth_keycloak.py` is created in wave 2, so firing after waves 3 & 4 is temporally safe.
+
+Now the pre-flight validations (step 8.5 feature validate + step 8.6 smoke-gate validator):
+
+Both validators pass. The `feature validate` warning notes wave 5 isn't gated — but wave 5 is the single `operator_handoff` KC-G2 task (no AutoBuild code lands there), so there's nothing to gate. Let me document that rationale in the YAML comment so the deliberate choice is clear.
+
+Now **Step 11 — BDD scenario linking**. Running `prepare` to build the matching request for the 25 scenarios.
+
+`prepare` is ready: 25 scenarios, 7 tasks, 0 already tagged. Now invoking the `bdd-linker` subagent to map scenarios → tasks (it reads the request file and returns `TaskMatch[]`).
+
+The `bdd-linker` returned matches for all 25 scenarios. Writing the response and running `apply` to tag the `.feature` file with `@task:` tags.
+
+The `apply` hit a JSON parse error ("Extra data (line 31 column 1)"). Let me inspect exactly what the parser sees.
+
+The Write leaked a literal `</content>` line into the file. Let me rewrite it cleanly via heredoc and re-run `apply`.
+
+Step 11 succeeded: **all 25 scenarios linked, 0 below threshold**. Let me verify the tags landed and confirm the final state of the generated artifacts.
+
+
+---
+
+## /feature-spec feat-auth-003-flutter-keycloak-sign-in-per-design-kc-d7-keyc — 2026-07-08T20:30:45Z
+
+### Prompt
+
+```
+/feature-spec "FEAT-AUTH-003 Flutter Keycloak sign-in per design KC-D7: KeycloakIdentityProvider behind the existing IdentityProvider port (sync currentPrincipal kept — background refresh, silent-then-interactive signIn), flutter_appauth + flutter_secure_storage deps (deliberate DoD zero-deps scope event), PKCE S256 public client with custom-scheme redirect, offline_access scope, SignInScreen loading/failure/cancel states + sign-out affordance, composeSessionApi de-typed to the port with FakeIdentityProvider kept for the hermetic flavour, Unauthenticated→routeToSignIn preserved as the hard fallback" \
+  --context docs/design/keycloak-auth-user-management-design.md \
+  --context app/lib/ports/identity_provider.dart \
+  --context app/README.md
+```
+
+### Assistant response
+
+I'll execute the `/feature-spec` command following the six-phase Propose-Review methodology. Let me start with Phase 1: Context Gathering.
+
+Now let me read the primary design document and related context in parallel.
+
+Let me examine the app's composition root, sign-in screen, Principal model, and the fake IdP to ground the spec in the actual seams.
+
+Let me read the current sign-in screen, the app shell, the fake IdP, and the error-handling surface to capture the existing behaviour precisely.
+
+Let me quickly check the home screen for the current Unauthenticated recovery wiring and any existing sign-out affordance.
+
+Context loaded: stack=flutter/dart (pubspec.yaml; `--stack` maps to `generic` in the table but the project is unambiguously Flutter/Dart — I'll treat it as such), 3 context files read, IdentityProvider port + Principal + composition root + all four UI screens + FakeIdentityProvider inspected, 18 existing `.feature` files found (FEAT-AUTH-001 `keycloak-idp-standup` and FEAT-AUTH-002 `keycloak-server-token-validation` are the sibling A1/A2 slices — conventions mirrored), design doc KC-D1…KC-D7 read (this feature = KC-D7 / rollout step A3).
+
+I have everything I need. Presenting the full proposal.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURE SPEC PROPOSAL: Flutter Keycloak Sign-In (FEAT-AUTH-003, A3)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Feature: Flutter Keycloak Sign-In
+  As a student signing in on the family device
+  I want the app to sign me in through the household identity provider and keep me signed in
+  So that I can start and resume tutoring sessions without repeatedly re-authenticating
+
+  Background:
+    Given the study-tutor app is installed on the family device
+    And the app is running against the household Keycloak identity provider
+
+━━ GROUP A: Key Examples (6 scenarios) ━━
+
+  # Why: Core path — a first-time sign-in through the browser flow lands the student on home
+  @key-example @smoke
+  Scenario: A first-time sign-in through the browser flow reaches the home screen
+    Given no one is signed in on the device
+    When I choose to sign in and complete authentication in the browser
+    Then I should be signed in
+    And I should land on the home screen ready to start a session
+
+  # Why: The family device must stay signed in across restarts via the persisted offline session
+  @key-example @smoke
+  Scenario: The device stays signed in across an app restart without a browser prompt
+    Given I signed in earlier and then closed the app
+    When I reopen the app
+    Then I should still be signed in without seeing the browser sign-in
+    And I should land on the home screen
+
+  # Why: signIn attempts a silent refresh of the stored session before ever opening the browser
+  @key-example
+  Scenario: Signing in reuses the stored session silently when it is still valid
+    Given I have a still-valid stored session
+    When I choose to sign in
+    Then I should be signed in without the browser opening
+
+  # Why: The new sign-out affordance clears the session and returns to sign-in
+  @key-example @smoke
+  Scenario: Signing out clears the session and returns to the sign-in screen
+    Given I am signed in on the home screen
+    When I sign out
+    Then I should no longer be signed in
+    And I should be returned to the sign-in screen
+
+  # Why: KC-G3 — a >5-minute idle must not interrupt an active session; background refresh keeps the token fresh
+  # [ASSUMPTION: confidence=high] The gate requires surviving an idle longer than 5 minutes (KC-G3)
+  @key-example @smoke
+  Scenario: An active session survives an idle period longer than the access-token lifetime
+    Given I am signed in with an active session
+    When the app sits idle for longer than the access-token lifetime and I then continue the session
+    Then the session should continue without a re-sign-in prompt
+
+  # Why: The composeSessionApi de-type to the port must not disturb the hermetic fake flavour
+  @key-example @smoke @regression
+  Scenario: The hermetic fake flavour still signs in with no browser and no network
+    Given the app is instead built in the hermetic fake flavour with no backend configured
+    When I sign in
+    Then I should be signed in against the in-process fake with no browser and no network call
+
+━━ GROUP B: Boundary Conditions (3 scenarios) ━━
+
+  # Why: Just-inside boundary — an idle shorter than the offline-session window still refreshes silently
+  # [ASSUMPTION: confidence=high] The offline-session idle limit is 30 days (KC-D4: refresh at least monthly)
+  @boundary
+  Scenario: A device idle just under the offline-session window refreshes without a browser
+    Given I have not opened the app for just under 30 days
+    When I reopen the app
+    Then I should still be signed in without the browser sign-in
+
+  # Why: Just-outside boundary — past the offline-session window the stored session is dead and the browser is required
+  @boundary @negative
+  Scenario: A device idle beyond the offline-session window requires an interactive sign-in
+    Given I have not opened the app for more than 30 days
+    When I reopen the app and choose to sign in
+    Then the silent refresh should fail and the browser sign-in should be required
+
+  # Why: Across the idle band below the offline limit, background refresh keeps the session usable
+  @boundary
+  Scenario Outline: Sessions remain usable across idle periods within the offline window
+    Given I am signed in and the app has been idle for <idle>
+    When I continue an active session
+    Then the session should continue without a re-sign-in prompt
+
+    Examples:
+      | idle       |
+      | 6 minutes  |
+      | 1 day      |
+      | 29 days    |
+
+━━ GROUP C: Negative Cases (4 scenarios) ━━
+
+  # Why: The cancel state — the student backs out of the browser without authenticating
+  @negative @smoke
+  Scenario: Cancelling the browser sign-in returns to the sign-in screen signed out
+    Given no one is signed in on the device
+    When I start signing in and cancel the browser without authenticating
+    Then I should remain signed out
+    And the sign-in screen should show that sign-in was cancelled
+
+  # Why: The failure state — the identity provider errors or is unreachable during sign-in
+  @negative @smoke
+  Scenario: A failed sign-in shows a failure state and lets me try again
+    Given the household identity provider cannot be reached
+    When I choose to sign in
+    Then the sign-in should fail
+    And the sign-in screen should show a failure state offering to try again
+
+  # Why: The preserved hard fallback — a backend-rejected token routes the student back to sign-in
+  @negative @smoke @regression
+  Scenario: A backend-rejected token routes the student back to sign-in
+    Given I am signed in and using the app
+    When the backend rejects my token as no longer valid
+    Then I should be returned to the sign-in screen to sign in again
+
+  # Why: A valid IdP login for an unprovisioned identity still cannot use the app — it lands back at sign-in
+  @negative
+  Scenario: Signing in as an identity with no provisioned student returns to sign-in
+    Given I can authenticate at the identity provider but my identity has no provisioned student
+    When I complete the browser sign-in and take my first action
+    Then that action should be rejected as unauthorised
+    And I should be returned to the sign-in screen
+
+━━ GROUP D: Edge Cases (6 scenarios) ━━
+
+  # Why: While the browser flow runs the screen shows loading and a second tap cannot start a duplicate flow
+  @edge-case
+  Scenario: A second sign-in tap during an in-progress sign-in is ignored
+    Given no one is signed in on the device
+    And a browser sign-in is already in progress showing the loading state
+    When I tap sign in again
+    Then only one sign-in flow should be running
+
+  # Why: The custom-scheme redirect must complete even though the browser backgrounded the app
+  @edge-case
+  Scenario: A sign-in completes after the browser redirects back into the app
+    Given I am authenticating in the external browser
+    When the browser redirects back to the app and the app returns to the foreground
+    Then the sign-in should complete and I should be signed in
+
+  # Why: The silent-then-interactive path lets the hard-fallback loop recover without a browser when the offline token is still good
+  @edge-case @regression
+  Scenario: Re-signing in after a rejected token recovers silently when the stored session is still refreshable
+    Given my token was rejected and I was returned to sign-in
+    And my stored offline session can still be refreshed
+    When I choose to sign in again
+    Then I should be signed back in without the browser opening
+
+  # Why: A failed background refresh must degrade gracefully to the sign-in fallback, never crash
+  @edge-case @negative
+  Scenario: A failed background refresh degrades to the sign-in fallback rather than crashing
+    Given I am signed in and the background refresh can no longer reach the identity provider
+    When the stored session can no longer be refreshed and I next use the app
+    Then I should be returned to the sign-in screen
+    And the app should not crash or hang
+
+  # Why: If the stored session cannot be read, the app must present sign-in, not fail to launch
+  @edge-case @negative
+  Scenario: An unreadable stored session is treated as signed out
+    Given the securely stored session cannot be read at launch
+    When I open the app
+    Then I should be shown the sign-in screen
+    And the app should start normally rather than fail to launch
+
+  # Why: The two new sign-in dependencies are a deliberate, recorded break from the zero-added-deps DoD
+  @edge-case @regression
+  Scenario: The new sign-in dependencies are recorded as a deliberate scope event
+    Given the app previously declared a zero-added-runtime-dependencies definition of done
+    When the sign-in feature adds its identity and secure-storage dependencies
+    Then exactly those two runtime dependencies should be added
+    And the addition should be recorded as a deliberate scope event
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total: 19 scenarios across 4 groups
+Inferred assumptions: 7 (will be resolved in Phase 5)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURATION: Review each group
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For each group, you may:
+
+  [A] Accept  — include all scenarios in this group as-is
+  [R] Reject  — exclude all scenarios in this group
+  [M] Modify  — accept but specify changes (provide inline)
+  [+] Add     — accept and add additional scenarios you describe
+  [?] Defer   — mark group for future specification; excluded from output
+
+Fast path: type "A A A A" to accept all four groups at once.
+
+GROUP A — Key Examples (6 scenarios): _
+GROUP B — Boundary Conditions (3 scenarios): _
+GROUP C — Negative Cases (4 scenarios): _
+GROUP D — Edge Cases (6 scenarios): _
+```
+
+A few things I want to flag before you curate, since they shape the spec:
+
+- **`@task:` tags** — I've left them off the proposal (FEAT-AUTH-001/002 carry them, but those were added by `/feature-plan` Step 11 after tasks existed). For FEAT-AUTH-003 the clean path is to add them via `/feature-plan` later. Say the word if you'd rather I hand-tag now.
+- **Group A scenario 6** (`hermetic fake flavour still signs in`) deliberately overrides the Background flavour with "instead built in the hermetic fake flavour" — it's the one scenario proving the `composeSessionApi` port de-type didn't leak Keycloak into the hermetic gate. If you'd rather that live as a separate Feature block, tell me under [M].
+- **Phase 4** will separately offer security/concurrency/integration scenarios (PKCE-S256 interception resistance, secure-store-at-rest, redirect-binding, sign-out-during-refresh, and the important **TransportError-vs-Unauthenticated** distinction — a dead GB10 must surface "connection problem", *not* route to sign-in). Hold your thoughts on those until then.
+
+Reply with your four group decisions (e.g. `A A A A`, or per-group with `M`/`+`/`?` notes).
+
+All four groups accepted. Let me quickly check the companion scope/build plan (you just opened it — it may pin down some of my assumptions) before presenting Phase 4.
+
+
+---
+
+## /feature-plan flutter-keycloak-sign-in-feat-auth-003-a3 — 2026-07-08T21:53:48Z
+
+### Prompt
+
+```
+/feature-plan "Flutter Keycloak Sign-In (FEAT-AUTH-003, A3)" \
+      --context features/flutter-keycloak-sign-in/flutter-keycloak-sign-in_summary.md
+```
+
+### Assistant response
+
+I'll start by reading the context file and exploring the existing Keycloak auth structure, since there's clearly related work in progress (FEAT-AUTH-001 and FEAT-AUTH-002 already exist).
+
+Let me read the full feature spec, assumptions, the design doc, and the sibling A2 feature YAML as a structural reference.
+
+Now let me ground the plan in the actual app codebase — the port, composition seam, and error handling referenced in the spec — plus the KC-D7 design section.
+
+Let me read the composition seam, sign-in screen, fake provider, and the KC-D7 design section to fully ground the task breakdown.
+
+Let me check the Flutter test structure and how the fake flavour/BDD wiring works on the app side.
+
+I have a thorough grounding now: the frozen KC-D7 design, the 3-member port, the composition seam, the existing error-handling split, and the A2 feature as a structural template. Let me verify the Flutter test tooling before finalizing the smoke gate.
+
+Flutter isn't on PATH — that affects whether a `flutter test` smoke gate is safe. Let me check for it under common install locations.
+
+I now have everything I need. Flutter 3.44.4 is the project toolchain (invoked as `cd app && flutter test` per the runbook — it's not on this shell's PATH but is present in the build env). Here's my analysis before the decision checkpoint.
+
+---
+
+## 🔍 Feature Planning: Flutter Keycloak Sign-In (FEAT-AUTH-003, A3)
+
+**Design is frozen (KC-D7, gate KC-G3)** — this isn't a "choose between 3 approaches" decision. The spec + design fix the technical path: a real `KeycloakIdentityProvider` behind the unchanged 3-member port, `flutter_appauth` + `flutter_secure_storage`, PKCE S256 public-client with a custom-scheme redirect and `offline_access`, silent-then-interactive `signIn()`, proactive background refresh, sync `currentPrincipal` retained. So the review value here is **decomposition + seam/contract correctness**, not option-picking.
+
+**Grounding confirmed in the codebase:**
+- Port [identity_provider.dart](app/lib/ports/identity_provider.dart) — 3 members, sync `currentPrincipal`. Adapter must satisfy it unchanged.
+- Composition seam [main.dart:21](app/lib/main.dart#L21) — `composeSessionApi(String, FakeIdentityProvider)`. A3 de-types the `identity` param to the port; hermetic fake flavour keeps the concrete `FakeIdentityProvider` for its `studentIdForToken` introspection hook.
+- [error_handling.dart](app/lib/ui/error_handling.dart) — `Unauthenticated → routeToSignIn` vs `TransportError → showConnectionProblem` already exist and are distinct. A3 **preserves** this; the two Group-E scenarios are regression guards, not new code.
+- Native config present: [AndroidManifest.xml](app/android/app/src/main/AndroidManifest.xml), [Info.plist](app/ios/Runner/Info.plist) — both need the redirect intent-filter / URL scheme.
+
+**Proposed decomposition — 7 tasks, 6 waves** (mirrors the A2 shape; wave 6 is the operator gate, no code):
+
+| Task | Type | Cx | Wave | Serves |
+|------|------|----|----|--------|
+| KCA3-001 deps + native redirect config + `KeycloakConfig` | scaffolding | 4 | 1 | scope-event, redirect config |
+| KCA3-002 `SecureSessionStore` (secure_storage, read/write/clear, unreadable→signed-out) | feature | 5 | 2 | secure-store + unreadable scenarios |
+| KCA3-005 sign-out affordance (home app-bar → signOut → routeToSignIn) | feature | 3 | 2 | sign-out scenario |
+| KCA3-003 `KeycloakIdentityProvider` (silent-then-interactive, PKCE, background refresh, single-flight, signOut-wins-refresh) | feature | 8 | 3 | Groups A/B/D + E-security |
+| KCA3-004 SignInScreen loading/failure/cancel + try-again (failure≠cancel) | feature | 5 | 4 | Group C + discovery scenario |
+| KCA3-006 composition de-type + real-flavour wiring; TransportError/Unauthenticated regression guard | refactor | 6 | 5 | hermetic-fake, both routing scenarios |
+| KCA3-007 KC-G3 live gate (real device, >5-min idle, restart) | **operator_handoff** | 5 | 6 | live end-to-end (AutoBuild skips) |
+
+**§4 Integration Contracts**: `REDIRECT_URI` (001→003,006), `OIDC_CLIENT_CONFIG` (001→003), `STORED_SESSION` (002→003), sign-in outcome types cancel≠failure (003→004).
+
+**Smoke gate**: `cd app && flutter test` after waves 3 and 5 (composition gate). Wave 6 is operator_handoff — not gated (the "final wave not covered" warning is expected, same as A2).
+
+**⚠️ One flagged operator gate (ASSUM-003, low-confidence, review-required):** the custom-scheme redirect `com.appmilla.studytutor:/oauth2redirect` must be **byte-identical** in three places (Keycloak `study-tutor-app` client, Android intent-filter, iOS `CFBundleURLSchemes`). The assumptions file already records a human override to this value — I need you to confirm it's final before I freeze it into KCA3-001.
+
+Two decisions before I generate the structure:
+
+All three on the recommended path — redirect URI confirmed, Standard testing, 7 tasks. Let me match the A1/A2 house style before generating, then create everything.
+
+Now I have the exact house style. Let me read the complex feature task and the operator_handoff task bodies to match them precisely.
+
+All three answers on the recommended path. I have the exact A2 template. Now generating the full FEAT-AUTH-003 structure — 7 task files, README, and the IMPLEMENTATION-GUIDE with the mandatory diagrams.
+
+Now the IMPLEMENTATION-GUIDE with the three mandatory diagrams and §4 contracts, then the README.
+
+All 9 files created. Now generate the structured YAML. Let me check the script's flags to pin the `FEAT-AUTH-003` id (the A1/A2 YAMLs use explicit IDs, not auto-generated).
+
+The dependency graph needs one alignment: I documented `wave 2 = {002, 005}`, but with `005` having no deps the generator would place it in wave 1. Making `005` depend on `001` (the feature foundation lands first) keeps waves clean and matches the docs. Let me fix `005`'s frontmatter and the §3 diagram edge.
+
+Now generate the structured YAML with `--discover` and the pinned `FEAT-AUTH-003` id:
+
+Waves match my design exactly, and AC-quality review is clean (0 unverifiable). The R3 nudge fired as expected (6 waves, no smoke gate) — note its example suggests `pytest` roots, but this is the **Flutter** slice, so the correct gate is `cd app && flutter test`. Let me add the `smoke_gates` block I documented, then read back the YAML.
+
+The YAML is well-formed. Now append the `smoke_gates` block (Flutter command, after waves 3 and 5, matching the IMPLEMENTATION-GUIDE):
+
+Now the pre-flight validations (feature validate + smoke-gate validate):
+
+✓ Feature valid. The lone warning ("does not cover the final wave 6") is the expected operator_handoff KC-G3 gate — documented in both the YAML and the guide, same as A2. Smoke-gate validation correctly skipped (Flutter, not pytest).
+
+Now **Step 11 — BDD scenario linking** (add `@task:` tags to the 25 scenarios). First, prepare the matching request:
+
+`status: ready` — 25 scenarios, 7 tasks. Now Step 11.2 — invoke the `bdd-linker` subagent with the request payload:
+
+Now I'll invoke the `bdd-linker` subagent to match scenarios → tasks (Step 11.2):
+
+All 25 scenarios matched above threshold, with sensible mappings (sign-out→005, hermetic-fake & routing→006, secure-store→002, scope-event→001, failure-state→004, adapter behaviours→003). Now write the response and apply the tags (Step 11.3):
+
+All 25 scenarios tagged. Let me verify the tags landed and do a final consistency check across the generated artifacts:
+
+Everything is consistent — 25 tags across the 6 code-bearing tasks (007 the operator gate correctly gets none), 9 files, correct `task_type` distribution, valid YAML with smoke gates. Let me clean up the temp request files.
+
+
+---
+
 ## /feature-complete FEAT-VOICE-003 — 2026-07-09T05:42:39Z
 
 ### Prompt

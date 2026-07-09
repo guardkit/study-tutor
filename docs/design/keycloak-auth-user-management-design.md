@@ -118,6 +118,13 @@ parent-facing scenarios.
 
 ### KC-D6 — Server validation architecture: TokenResolver seam, sibling module
 
+**Reference implementation:** the JWKS-validation core, the issuer-vs-internal-URL split (KC-D2
+gotcha), and the attribute→claim mapper (KC-D3) are already proven in the working
+`lpa-platform-poc` stack — see
+[references/keycloak-validation-reference-lpa-poc.md](references/keycloak-validation-reference-lpa-poc.md)
+for the copy-directly parts and the deliberate study-tutor divergences (PyJWT vs jose; stateless
+bearer vs session; `student_id` attribute vs a `keycloak_sub` column; `aud` verified; users not in git).
+
 Introduce `TokenResolver` protocol (`async resolve(token) -> student_id`, raises
 `Unauthenticated`); `resolve_student_from_token` keeps its outer contract (Bearer extraction +
 unseeded guard) and delegates step 2 to the injected resolver.
@@ -186,11 +193,17 @@ blocked by, this design** — the only shared artifact is FEAT-VOICE-004's token
 
 ## 5. Ratification checklist (before A1 builds)
 
-- [ ] KC-D1 placement + KC-D2 TLS story → `/arch-refine` (ADR-ARCH-028 candidate).
+- [x] KC-D1 placement + KC-D2 TLS story → `/arch-refine` **ratified 2026-07-08 as
+      [ADR-ARCH-028](../architecture/decisions/ADR-ARCH-028-keycloak-idp-nas-placement-tailnet-tls.md)**
+      (new decision; C4 L1/L2 re-review gate approved).
 - [ ] KC-D3 mapping + provisioning → closes contract §11 OQ1; fold the §11 text edit into the
       next coordinated `/design-refine` touch (doc-only, no wire change, no standalone freeze).
-- [ ] KC-D4 robot device-flow + KC-D5 parent deferral → owner sign-off (product-shaped).
-- [ ] NAS RAM op-check recorded (KC-D1 accepted-cost verification).
+- [x] KC-D4 robot device-flow + KC-D5 parent deferral → **owner sign-off 2026-07-08.** KC-D4: robot
+      shares the student's Keycloak subject via OAuth2 Device Authorization Grant (RFC 8628 — the
+      "sign-in-on-a-TV" pattern) with one-time parent approval; enables D8 same-subject resume. KC-D5:
+      `parent` realm role reserved only — no parent user/endpoints/UI this phase.
+- [x] NAS RAM op-check recorded (KC-D1 accepted-cost verification) — **Whitestocks DS918+ = 8192 MB
+      total (DSM 7.1.1), verified 2026-07-08; sufficient for a 1–2 GB Keycloak limit alongside Postgres.**
 
 ---
 
