@@ -44,8 +44,10 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
+from study_tutor.gamification import build_gamification_state
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
+    GamificationState,
     MisconceptionSnapshot,
     SessionRecord,
     SessionStatus,
@@ -521,6 +523,54 @@ class PostgresStudentStore:
                 recent_misconceptions=recent_misconceptions,
                 most_recent_session_id=most_recent_session_id,
             )
+
+    async def get_gamification_state(self, student_id: str) -> GamificationState:
+        """Read-side gamification snapshot (streak / level / XP) from Postgres.
+
+        Derives real streak / level / recent-XP from the student's ``ended``
+        sessions via ``study_tutor.gamification`` (a *minimal real* slice of the
+        gamification design; near-achievements/quests are Phase-2 FEAT-PO-007).
+
+        Returns ``GamificationState(exists=False)`` for an unknown student.
+        DB/connection errors propagate so callers degrade, as ``get_student_state``.
+        """
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        async with engine.connect() as conn:
+            # Student existence + display name (early return for unknown learner)
+            student_result = await conn.execute(
+                sql_text("SELECT name FROM student WHERE student_id = :sid"),
+                {"sid": student_id},
+            )
+            student_row = student_result.fetchone()
+            if student_row is None:
+                return GamificationState(exists=False)
+
+            # Completed sessions only — active/in-flight sessions do not yet
+            # bank XP or extend a streak (gamification §4.1).
+            session_result = await conn.execute(
+                sql_text(
+                    "SELECT started_at, last_activity "
+                    "FROM session "
+                    "WHERE student_id = :sid AND status = 'ended'"
+                ),
+                {"sid": student_id},
+            )
+            ended_sessions = [
+                (row[0], row[1]) for row in session_result.fetchall()
+            ]
+
+        student_name = student_row[0] or student_id
+        return build_gamification_state(
+            student_name=student_name,
+            ended_sessions=ended_sessions,
+            today=datetime.now(timezone.utc).date(),
+        )
 
     async def get_topic_confidences(self, student_id: str) -> list[TopicConfidence]:
         """Read per-topic confidence entities from Postgres (TASK-SMP2-01).

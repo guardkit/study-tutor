@@ -36,6 +36,7 @@ from typing import Protocol, runtime_checkable
 
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
+    GamificationState,
     SessionRecord,
     SessionStatus,
     SessionTurn,
@@ -86,6 +87,14 @@ class StudentStore(Protocol):
     ) -> list[Misconception]:
         """Misconceptions observed within ``window_days`` — feeds
         ``PlannerContext.misconceptions`` (rule-4)."""
+        ...
+
+    async def get_gamification_state(self, student_id: str) -> GamificationState:
+        """Read-side gamification snapshot (streak / level / XP) for the
+        student-model endpoint, derived from the student's ``ended`` sessions
+        (``study_tutor.gamification``). Returns ``GamificationState(exists=False)``
+        for an unknown student; never raises for the read path (graceful
+        degradation, as ``get_student_state``)."""
         ...
 
     # -- Learner-state writes (replace the prior write helper F1/F2/F3) -----

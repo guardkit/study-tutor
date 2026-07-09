@@ -7,6 +7,8 @@
 **Phase:** FEAT-APP-001 (HTTP/WS adapter for mobile+voice) → FEAT-VOICE-001…003 (voice phase)  
 **Generated:** 2026-07-05 · **Revision 1:** 2026-07-05
 
+**Addendum 2026-07-09 (FEAT-VOICE-004 R05):** additive read verb `GET /api/student-model` bound in §2.2. Additive only — the six session verbs, the voice Rev 1 routes, and their status codes are unchanged; the frozen voice `CONTRACT_SHA`/`BINDING_SHA` are **not** disturbed. This is a student-model read, not a session verb, so the transport-neutral session contract SHA is unaffected.
+
 ---
 
 ## 1. Purpose
@@ -31,6 +33,7 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 | `end_session` | POST | `/api/sessions/{session_id}/end` | Path param: `session_id` (contract §5) | `{ session_id, status:"ended" }` (contract §5) |
 | `voice_turn` *(Rev 1)* | POST | `/api/sessions/{session_id}/voice-turn` | **`multipart/form-data`**, file field **`audio`** (filename + full content-type incl. codec params forwarded); `stream` reserved-and-ignored on HTTP (whole-response variant, like `turn`) | `{ transcript, tutor_response, audio: [{seq, chunk_id, url}] }` (contract §5 Rev 1) |
 | `voice_audio` *(Rev 1)* | GET | `/api/sessions/{session_id}/voice-audio/{chunk_id}` | Path params: `session_id`, `chunk_id` | **`audio/wav`** bytes (binary response) |
+| `student_model` *(read, R05)* | GET | `/api/student-model` | Query params: `subject` (required), `student_name?` (hint, ignored) | `{ student_name, streak_days, level_name, recent_xp, near_achievements:[], topic_confidence:{topic:conf}, data_available }` (§2.2) |
 
 **Note:** Request and response JSON shapes are defined in contract §5. This binding table maps verbs to HTTP methods and paths; the payload semantics are unchanged from the contract.
 
@@ -46,6 +49,30 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 - **Auth:** the same `Authorization: Bearer <token>` header, presented on the upgrade request; `student_id` derivation and the session-ownership check run at upgrade time (403/401 close the socket with the error frame first where the handshake allows).
 - **Errors:** domain errors surface as `{type:"error", error, error_type}` frames (the §4.1 envelope in frame form), after which the server closes the socket for terminal errors.
 - The non-streaming HTTP `turn` and `voice_turn` remain available regardless — clients that don't stream never open the WS (contract §7).
+
+### 2.2 Student-Model Read Binding (additive — FEAT-VOICE-004 R05)
+
+**Endpoint:** `GET /api/student-model` (always mounted; bearer-authed like the six session verbs).
+
+Serves the Reachy robot's `query_student_model` tool (sibling `fleet-gateway`, FEAT-VOICE-004 R05) — the durable learner record previously read from the now-frozen Graphiti graph (recon D2). **Additive read verb:** it does not alter the six session verbs, the voice Rev 1 routes, or their status codes, and it does **not** disturb the frozen voice `CONTRACT_SHA`/`BINDING_SHA`.
+
+- **Query params:** `subject` (required — absent → 400), `student_name` (optional hint, **ignored**; identity is derived server-side from the token, never client-asserted).
+- **Auth:** the same `Authorization: Bearer <token>` → `_resolve_student_id`. Unseeded/invalid token → `Unauthenticated` (401), never 500 (§3, ASSUM-001).
+- **Response (200):**
+  ```json
+  {
+    "student_name": "lilymay",
+    "streak_days": 5,
+    "level_name": "Learner",
+    "recent_xp": 240,
+    "near_achievements": [],
+    "topic_confidence": {"macbeth": 0.7, "poetry": 0.55},
+    "data_available": true
+  }
+  ```
+- **Empty record:** a seeded student with no banked XP and no topic confidence returns 200 with `data_available: false` (never 500 for "nothing logged"). Consumers **gate on `data_available`**.
+- **Projection scope (minimal real slice):** `streak_days` / `level_name` / `recent_xp` are derived at read time from the student's `ended` sessions (`study_tutor.gamification` — an honest subset of gamification design §2.1 / §3.1 / §4.1). `near_achievements` is always `[]` until the Phase-2 gamification state engine (**FEAT-PO-007**; gamification design §12, ADR-ARCH-013) ships the §5 achievement catalog + near-miss tracking. `level_name` values are the design §3.1 tiers (Beginner…Grandmaster), not the stale graph-era labels.
+- **Consumer pin:** fleet-gateway pins the path via `common.tutor_client.STUDENT_MODEL_PATH` and maps any non-2xx (incl. a pre-ship 404) to a graceful "unavailable".
 
 ---
 

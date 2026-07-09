@@ -14,8 +14,9 @@ from typing import Any, Awaitable, Callable
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import BaseRoute, Route, WebSocketRoute
 
+from study_tutor.gamification import build_student_model_response
 from study_tutor.http.auth import HTTPAuthConfig, resolve_student_from_token
 from study_tutor.session.errors import (
     SessionNotFoundError,
@@ -382,6 +383,59 @@ async def end_session(request: Request) -> JSONResponse:
         return _map_error_to_response(e)
 
 
+async def student_model(request: Request) -> JSONResponse:
+    """GET /api/student-model — durable learner record (FEAT-VOICE-004 R05).
+
+    Serves the Reachy robot's ``query_student_model`` tool over the same
+    bearer-authenticated binding. Query params: ``subject`` (required),
+    ``student_name`` (optional hint, ignored — identity is derived server-side
+    from the token, never client-asserted).
+
+    Response mirrors the old ``GraphitiClient.search_student_progress`` shape:
+    ``{student_name, streak_days, level_name, recent_xp, near_achievements,
+    topic_confidence, data_available}``. streak/level/recent_xp are a *minimal
+    real* projection (``study_tutor.gamification``); ``near_achievements`` is
+    ``[]`` until the Phase-2 engine (FEAT-PO-007) ships.
+
+    Errors: unseeded/invalid token → 401 (never 500, ASSUM-001); a
+    seeded-but-empty record → 200 with ``data_available: false`` (never 500 for
+    "nothing logged"); malformed request (missing ``subject``) → 400 (no
+    error_type, §4.2).
+    """
+    try:
+        student_id = await _resolve_student_id(request)
+
+        # subject is required by the binding (§2.2). It is not yet used to filter
+        # server-side — the Phase-1 record is single-subject — but it is a hard
+        # contract param, so its absence is a 400, consistent with other verbs.
+        subject = request.query_params.get("subject")
+        if not subject:
+            raise ValueError("subject query parameter is required")
+
+        store = request.app.state.student_store
+        gamification = await store.get_gamification_state(student_id)
+        topic_confidences = await store.get_topic_confidences(student_id)
+
+        response_data = build_student_model_response(
+            gamification,
+            topic_confidences,
+            fallback_student_id=student_id,
+        )
+        return JSONResponse(response_data, status_code=200)
+
+    except Unauthenticated as e:
+        return _map_error_to_response(e)
+    except (ValueError, KeyError, TypeError) as e:
+        # Missing/malformed required param → 400 (no error_type, §4.2)
+        logger.warning("Validation error in student_model: %s", e)
+        return JSONResponse(
+            {"error": f"Validation failed: {e}"},
+            status_code=400,
+        )
+    except Exception as e:
+        return _map_error_to_response(e)
+
+
 async def healthz(request: Request) -> JSONResponse:
     """GET /healthz — READY health check (TASK-APP1-04 AC-001).
 
@@ -471,8 +525,10 @@ def create_app(
 
         def reply_fn_factory(**_context: str) -> ReplyFn:
             return _session_agnostic_reply
-    # Route table exactly per binding doc §2 (frozen contract)
-    routes = [
+    # Route table exactly per binding doc §2 (frozen contract). Typed as
+    # list[BaseRoute] so the conditional voice WebSocketRoute append typechecks
+    # alongside the Route entries (both subclass BaseRoute).
+    routes: list[BaseRoute] = [
         Route("/healthz", healthz, methods=["GET"]),  # TASK-APP1-04: READY health check
         Route("/api/sessions/start", start_session, methods=["POST"]),
         Route("/api/sessions", list_sessions, methods=["GET"]),
@@ -480,6 +536,11 @@ def create_app(
         Route("/api/sessions/{session_id:str}/turn", turn, methods=["POST"]),
         Route("/api/sessions/{session_id:str}/status", session_status, methods=["GET"]),
         Route("/api/sessions/{session_id:str}/end", end_session, methods=["POST"]),
+        # FEAT-VOICE-004 R05: additive read verb — durable student-model
+        # projection for the Reachy query_student_model tool. Always mounted and
+        # bearer-authed like the six session verbs (binding §2.2). Does NOT touch
+        # the frozen voice CONTRACT_SHA/BINDING_SHA.
+        Route("/api/student-model", student_model, methods=["GET"]),
     ]
 
     # TASK-APP1-05: Mount /__dev__/reset ONLY when dev_reset flag is set

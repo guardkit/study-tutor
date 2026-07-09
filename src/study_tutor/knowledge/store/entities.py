@@ -107,6 +107,25 @@ class StudentState(_Record):
     most_recent_session_id: str | None = None
 
 
+class GamificationState(_Record):
+    """Read-side gamification snapshot for the student-model endpoint.
+
+    A *minimal real* projection derived from the durable ``session`` rows at
+    read time (``study_tutor.gamification``), not the Phase-2 state engine
+    (``FEAT-PO-007``; gamification design §12). ``exists=False`` is the
+    "no such student" sentinel; for a seeded student the fields carry real
+    streak / level / XP, and ``total_xp == 0`` with no topic confidence means a
+    seeded-but-empty record (``data_available: false`` on the wire).
+    """
+
+    exists: bool
+    student_name: str | None = None
+    streak_days: int = Field(default=0, ge=0)
+    level_name: str | None = None
+    total_xp: int = Field(default=0, ge=0)
+    recent_xp: int = Field(default=0, ge=0)
+
+
 class TopicRecommendation(_Record):
     """A single ranked topic recommendation for the planner/handler."""
 
@@ -185,6 +204,7 @@ class Quest(_Record):
 __all__ = [
     "Achievement",
     "ConfidenceUpdate",
+    "GamificationState",
     "MisconceptionSnapshot",
     "Quest",
     "QuestStatus",

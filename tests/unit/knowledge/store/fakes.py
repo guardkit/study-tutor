@@ -12,8 +12,10 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
+from study_tutor.gamification import build_gamification_state
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
+    GamificationState,
     MisconceptionSnapshot,
     SessionRecord,
     SessionStatus,
@@ -79,6 +81,10 @@ class FakeStudentStore:
         """Return True if the store is reachable."""
         return self._reachable
 
+    async def student_exists(self, student_id: str) -> bool:
+        """Whether the student has an identity row (auth unseeded-guard)."""
+        return student_id in self._students
+
     # -- Reads (handler + planner) -----------------------------------------
 
     async def get_student_state(self, student_id: str) -> StudentState:
@@ -142,6 +148,27 @@ class FakeStudentStore:
             for key, conf in self._confidences.items()
             if key[0] == student_id
         ]
+
+    async def get_gamification_state(self, student_id: str) -> GamificationState:
+        """Read-side gamification snapshot from in-memory ended sessions.
+
+        Uses the same ``study_tutor.gamification`` builder as the Postgres store
+        so fake and real derive identical streak / level / XP.
+        """
+        student = self._students.get(student_id)
+        if not student:
+            return GamificationState(exists=False)
+
+        ended_sessions = [
+            (sess["started_at"], sess["last_activity"])
+            for sess in self._sessions.values()
+            if sess["student_id"] == student_id and sess["status"] == "ended"
+        ]
+        return build_gamification_state(
+            student_name=student.get("name") or student_id,
+            ended_sessions=ended_sessions,
+            today=datetime.now(timezone.utc).date(),
+        )
 
     async def get_recent_misconceptions(
         self,
@@ -504,6 +531,51 @@ class FakeStudentStore:
     def set_unreachable(self, unreachable: bool = True) -> None:
         """Helper for tests: simulate store unreachable."""
         self._reachable = not unreachable
+
+    def add_topic_confidence(
+        self,
+        student_id: str,
+        topic_name: str,
+        percentage: int,
+        *,
+        last_revised_at: datetime | None = None,
+    ) -> None:
+        """Helper for tests: seed one topic-confidence row (band derived)."""
+        self._confidences[(student_id, topic_name)] = {
+            "topic_name": topic_name,
+            "percentage": percentage,
+            "band": confidence_band_for(percentage),
+            "last_revised_at": last_revised_at or datetime.now(timezone.utc),
+        }
+
+    def add_ended_session(
+        self,
+        student_id: str,
+        *,
+        started_at: datetime,
+        last_activity: datetime,
+        subject: str = "english",
+        topic: str | None = None,
+    ) -> str:
+        """Helper for tests: add a completed (``ended``) session with explicit
+        timestamps, so gamification streak/XP arithmetic is deterministic.
+
+        Returns the generated session_id.
+        """
+        session_id = str(uuid4())
+        self._sessions[session_id] = {
+            "student_id": student_id,
+            "subject": subject,
+            "topic": topic,
+            "status": "ended",
+            "started_at": started_at,
+            "last_activity": last_activity,
+            "turn_count": 0,
+            "aos_scaffolded": [],
+            "summary": None,
+        }
+        self._turns[session_id] = []
+        return session_id
 
 
 __all__ = ["FakeStudentStore"]
