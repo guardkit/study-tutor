@@ -1,9 +1,0 @@
-[
-  {
-    "task_id": "TASK-VC-003",
-    "pre_path": "tasks/backlog/TASK-VC-003-httpvoiceapi-fidelity-pins.md",
-    "post_path": "tasks/design_approved/TASK-VC-003-httpvoiceapi-fidelity-pins.md",
-    "timestamp": "2026-07-08T19:31:28.510255+00:00",
-    "kind": "design_approved_transition"
-  }
-]

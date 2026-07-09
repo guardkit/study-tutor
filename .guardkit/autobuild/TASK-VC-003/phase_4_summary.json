@@ -1,7 +1,0 @@
-{
-  "tests_run": 193,
-  "tests_failed": 1,
-  "coverage_pct": 86.0,
-  "output_summary": "193 tests, 1 failure (slice/happy_path_test); 86% coverage",
-  "quality_gates_passed": false
-}
