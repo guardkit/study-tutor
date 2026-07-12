@@ -400,10 +400,18 @@ class SessionService:
         ``None`` when ``turn_count == 0``): transition only, no completion write.
         Event ``session.completed`` (design-review #5) is emitted by the transport
         with the pinned payload; see the module open-decisions.
+
+        W0 ordering (spec §1): the completion write **precedes** the status
+        transition. ``record_session_completion`` is gated on
+        ``ON CONFLICT … WHERE status != 'ended'``, so it must run while the
+        session is still ``active`` — otherwise ``store.end_session`` flips the
+        status to ``ended`` in its own committed transaction first and the gate
+        never fires, silently dropping the confidence/misconception children.
+        Phase E replaces this two-call sequence with a single ``finalize_session``
+        transaction (spec §4); until then, ordering is the fix.
         """
         await self._load_owned_session(student_id, session_id, allow_ended=False)
         store = self._resolve_store()
-        ended = await store.end_session(session_id)
         if completion is not None:
             await store.record_session_completion(
                 student_id=student_id,
@@ -414,6 +422,7 @@ class SessionService:
                 confidence_updates=completion.confidence_updates,
                 misconceptions=completion.misconceptions,
             )
+        ended = await store.end_session(session_id)
         return EndSessionResult(session_id=ended.session_id)
 
 
