@@ -64,6 +64,17 @@ from study_tutor.gamification.engine import (
     SettlementResult,
     decide,
 )
+from study_tutor.gamification.catalog_w2 import POETRY_PIONEER_SLUG
+from study_tutor.gamification.signals import (
+    DEVELOPING_FLOOR,
+    W2Signals,
+    any_six_ao_session,
+    compute_mastered_texts,
+    eras_covered,
+    genre_week_achieved,
+    max_confidence_gain_over_window,
+)
+from study_tutor.gamification.texts import UNSEEN_POETRY_SLUG
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
     GamificationState,
@@ -331,6 +342,125 @@ async def _engagement_facts(
     return (max_ts - min_ts).total_seconds(), max_ts, True
 
 
+async def _read_w2_facts(conn: AsyncConnection, student_id: str) -> W2Signals:
+    """Assemble the W2 capture-wave signals from the student's persisted state
+    (spec §2.3 note / scope §4).
+
+    Called *after* this session's confidence + quote + AO capture is persisted, so
+    the winner's snapshot and a later replay's snapshot (both reading the same
+    committed rows, including the settling session) reconstruct identical signals.
+    The heavy lifting — R1 text-mastery mean, R6 rolling-window gains, R7 genre
+    week, R9 six-AO session — lives in the pure ``gamification.signals`` helpers.
+    """
+    # -- Studied topics: latest confidence + the text each was studied under ----
+    # The text association comes from the confidence-history audit trail
+    # (session_id → session.text_name); the authoritative latest % is the current
+    # topic_confidence row.
+    topic_rows = (
+        await conn.execute(
+            sql_text(
+                "SELECT tc.topic_name, tc.percentage, ("
+                "  SELECT s.text_name FROM topic_confidence_history h "
+                "  JOIN session s ON h.session_id = s.session_id "
+                "  WHERE h.student_id = tc.student_id "
+                "    AND h.topic_name = tc.topic_name "
+                "    AND s.text_name IS NOT NULL "
+                "  ORDER BY h.recorded_at DESC LIMIT 1"
+                ") AS text_slug "
+                "FROM topic_confidence tc WHERE tc.student_id = :sid"
+            ),
+            {"sid": student_id},
+        )
+    ).fetchall()
+    studied_topic_count = len(topic_rows)
+    min_topic_confidence = (
+        min(int(r[1]) for r in topic_rows) if topic_rows else 0
+    )
+    topic_text_confidences = [
+        (r[0], r[2], int(r[1])) for r in topic_rows if r[2]
+    ]
+    mastered_texts = compute_mastered_texts(topic_text_confidences)
+    unseen_confidence = max(
+        (int(r[1]) for r in topic_rows if r[2] == UNSEEN_POETRY_SLUG),
+        default=0,
+    )
+
+    # -- Ended sessions: distinct texts, genre week, eras, Poetry-Pioneer count -
+    sess_rows = (
+        await conn.execute(
+            sql_text(
+                "SELECT text_name, last_activity FROM session "
+                "WHERE student_id = :sid AND status = 'ended'"
+            ),
+            {"sid": student_id},
+        )
+    ).fetchall()
+    distinct_texts = {r[0] for r in sess_rows if r[0]}
+    distinct_text_count = len(distinct_texts)
+    poetry_pioneer_sessions = sum(
+        1 for r in sess_rows if r[0] == POETRY_PIONEER_SLUG
+    )
+    genre_week = genre_week_achieved(
+        (london_date(r[1]), r[0]) for r in sess_rows if r[0]
+    )
+    eras = eras_covered(distinct_texts)
+
+    # -- Per-session observed AO sets (Six-AO Sampler, R9) ----------------------
+    ao_rows = (
+        await conn.execute(
+            sql_text(
+                "SELECT st.session_id, "
+                "       array_agg(DISTINCT st.ao_scaffolded) AS aos "
+                "FROM session_turn st JOIN session s "
+                "  ON st.session_id = s.session_id "
+                "WHERE s.student_id = :sid AND st.ao_scaffolded IS NOT NULL "
+                "GROUP BY st.session_id"
+            ),
+            {"sid": student_id},
+        )
+    ).fetchall()
+    six_ao = any_six_ao_session(list(r[1] or ()) for r in ao_rows)
+
+    # -- Cumulative embedded quotes (Quote Champion/Master, R8) -----------------
+    quotes_total = (
+        await conn.execute(
+            sql_text(
+                "SELECT COALESCE(SUM(quotes_embedded), 0) FROM session "
+                "WHERE student_id = :sid AND status = 'ended'"
+            ),
+            {"sid": student_id},
+        )
+    ).scalar()
+
+    # -- Rolling 7-day confidence gains (Climbing / Breakthrough, R6) -----------
+    history_rows = (
+        await conn.execute(
+            sql_text(
+                "SELECT topic_name, recorded_at, percentage "
+                "FROM topic_confidence_history WHERE student_id = :sid"
+            ),
+            {"sid": student_id},
+        )
+    ).fetchall()
+    max_gain = max_confidence_gain_over_window(
+        (r[0], london_date(r[1]), int(r[2])) for r in history_rows
+    )
+
+    return W2Signals(
+        mastered_texts=mastered_texts,
+        poetry_pioneer_sessions=poetry_pioneer_sessions,
+        unseen_confidence=unseen_confidence,
+        distinct_text_count=distinct_text_count,
+        genre_week_achieved=genre_week,
+        eras_covered=eras,
+        six_ao_session=six_ao,
+        max_confidence_gain_7d=max_gain,
+        total_quotes_embedded=int(quotes_total or 0),
+        studied_topic_count=studied_topic_count,
+        min_topic_confidence=min_topic_confidence,
+    )
+
+
 async def _bank_settlement(
     conn: AsyncConnection,
     *,
@@ -348,9 +478,32 @@ async def _bank_settlement(
     ADR-ARCH-030 D4), inserts achievement rows (``ON CONFLICT DO NOTHING``,
     carrying ``session_id`` for replay), appends ``topic_confidence_history``
     rows, and runs the confidence / misconception helpers.
+
+    Ordering (S-E4): the confidence upserts + history inserts happen FIRST so the
+    W2 signal read (:func:`_read_w2_facts`) sees this session's confidence, giving
+    the winner and a later replay the same W2 snapshot. Both stay inside the
+    savepoint, so a fault still rolls the whole settlement back.
     """
+    for update in confidence_updates:
+        await _upsert_confidence(conn, student_id, update)
+        await conn.execute(
+            sql_text(
+                "INSERT INTO topic_confidence_history "
+                "(student_id, topic_name, percentage, session_id, recorded_at, source) "
+                "VALUES (:sid, :topic, :pct, :session_id, :now, 'session')"
+            ),
+            {
+                "sid": student_id,
+                "topic": update.topic_name,
+                "pct": update.percentage,
+                "session_id": session_id,
+                "now": now,
+            },
+        )
+
+    w2 = await _read_w2_facts(conn, student_id)
     prior = await _read_prior_facts(conn, student_id, session_id)
-    decision = decide(prior, session_facts, now)
+    decision = decide(prior, session_facts, now, w2=w2)
 
     await conn.execute(
         sql_text(
@@ -374,23 +527,6 @@ async def _bank_settlement(
                 "now": now,
                 "xp": award.xp,
                 "session_id": session_id,
-            },
-        )
-
-    for update in confidence_updates:
-        await _upsert_confidence(conn, student_id, update)
-        await conn.execute(
-            sql_text(
-                "INSERT INTO topic_confidence_history "
-                "(student_id, topic_name, percentage, session_id, recorded_at, source) "
-                "VALUES (:sid, :topic, :pct, :session_id, :now, 'session')"
-            ),
-            {
-                "sid": student_id,
-                "topic": update.topic_name,
-                "pct": update.percentage,
-                "session_id": session_id,
-                "now": now,
             },
         )
 
@@ -1058,7 +1194,8 @@ class PostgresStudentStore:
                     sql_text(
                         "UPDATE session SET status = 'ended', last_activity = :now "
                         "WHERE session_id = :sid AND status = 'active' "
-                        "RETURNING started_at, subject, topic, aos_scaffolded"
+                        "RETURNING started_at, subject, topic, aos_scaffolded, "
+                        "text_name"
                     ),
                     {"now": now, "sid": session_id},
                 )
@@ -1069,7 +1206,8 @@ class PostgresStudentStore:
                 existing = (
                     await conn.execute(
                         sql_text(
-                            "SELECT started_at, subject, topic, aos_scaffolded "
+                            "SELECT started_at, subject, topic, aos_scaffolded, "
+                            "text_name "
                             "FROM session WHERE session_id = :sid"
                         ),
                         {"sid": session_id},
@@ -1081,7 +1219,7 @@ class PostgresStudentStore:
                     conn, student_id, session_id, existing, now
                 )
 
-            started_at, subject, sess_topic, aos_col = gate
+            started_at, subject, sess_topic, aos_col, _sess_text_name = gate
             engagement, last_turn_at, had_turns = await _engagement_facts(
                 conn, session_id
             )
@@ -1143,7 +1281,7 @@ class PostgresStudentStore:
         session's (immutable) engagement facts — deterministically identical to
         what the winner banked, without re-writing any row (exactly-once).
         """
-        started_at, subject, sess_topic, aos_col = existing_row
+        started_at, subject, sess_topic, aos_col, _sess_text_name = existing_row
         engagement, last_turn_at, had_turns = await _engagement_facts(
             conn, session_id
         )
@@ -1153,7 +1291,8 @@ class PostgresStudentStore:
             last_turn_at=last_turn_at,
         )
         prior = await _read_prior_facts(conn, student_id, session_id)
-        decision = decide(prior, session_facts, now)
+        w2 = await _read_w2_facts(conn, student_id)
+        decision = decide(prior, session_facts, now, w2=w2)
         return SettlementResult(
             decision=decision,
             settled=True,
@@ -1342,6 +1481,7 @@ class PostgresStudentStore:
         subject: str,
         topic: str | None = None,
         aos_scaffolded: list[str] | None = None,
+        text_name: str | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
         """Create a session, or resume the active one.
@@ -1350,7 +1490,9 @@ class PostgresStudentStore:
         ONE transaction (ASSUM-003): SELECT for resume check + INSERT if needed.
 
         S-R3 §2.1: ``aos_scaffolded`` persists the plan's ``focus_aos`` at
-        start-time onto the created row (``None`` → ``[]``). Resumes ignore it.
+        start-time onto the created row (``None`` → ``[]``). S-E4 / scope §4.2:
+        ``text_name`` persists the canonical set-text slug the plan resolved to
+        (``None`` when no known set text). Resumes ignore both.
         """
         # Plan facts persisted at start (S-R3 §2.1). Serialised to a JSON
         # array literal for the JSONB column, matching the existing "[]" write.
@@ -1373,7 +1515,8 @@ class PostgresStudentStore:
                 result = await conn.execute(
                     sql_text(
                         "SELECT session_id, student_id, subject, topic, status, "
-                        "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                        "started_at, last_activity, turn_count, aos_scaffolded, summary, "
+                        "text_name, quotes_embedded "
                         "FROM session "
                         "WHERE student_id = :sid AND subject = :subj AND status = 'active' "
                         "ORDER BY last_activity DESC LIMIT 1"
@@ -1396,6 +1539,8 @@ class PostgresStudentStore:
                             turn_count=row[7],
                             aos_scaffolded=row[8] if row[8] else [],
                             summary=row[9],
+                            text_name=row[10],
+                            quotes_embedded=row[11] if row[11] is not None else 0,
                         ),
                         False,  # Not created, resumed
                     )
@@ -1406,10 +1551,12 @@ class PostgresStudentStore:
                 sql_text(
                     "INSERT INTO session "
                     "(session_id, student_id, subject, topic, status, "
-                    "started_at, last_activity, turn_count, xp_awarded, aos_scaffolded, summary) "
+                    "started_at, last_activity, turn_count, xp_awarded, aos_scaffolded, "
+                    "text_name, quotes_embedded, summary) "
                     "VALUES "
                     "(:session_id, :student_id, :subject, :topic, :status, "
-                    ":started_at, :last_activity, :turn_count, :xp_awarded, :aos_scaffolded, :summary)"
+                    ":started_at, :last_activity, :turn_count, :xp_awarded, :aos_scaffolded, "
+                    ":text_name, :quotes_embedded, :summary)"
                 ),
                 {
                     "session_id": session_id,
@@ -1422,6 +1569,8 @@ class PostgresStudentStore:
                     "turn_count": 0,
                     "xp_awarded": 0,
                     "aos_scaffolded": json.dumps(planned_aos),
+                    "text_name": text_name,
+                    "quotes_embedded": 0,
                     "summary": None,
                 },
             )
@@ -1437,6 +1586,8 @@ class PostgresStudentStore:
                     last_activity=now,
                     turn_count=0,
                     aos_scaffolded=planned_aos,
+                    text_name=text_name,
+                    quotes_embedded=0,
                     summary=None,
                 ),
                 True,  # Created
@@ -1461,7 +1612,8 @@ class PostgresStudentStore:
             result = await conn.execute(
                 sql_text(
                     "SELECT session_id, student_id, subject, topic, status, "
-                    "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary, "
+                        "text_name, quotes_embedded "
                     "FROM session WHERE session_id = :sid"
                 ),
                 {"sid": session_id},
@@ -1482,6 +1634,8 @@ class PostgresStudentStore:
                 turn_count=row[7],
                 aos_scaffolded=row[8] if row[8] else [],
                 summary=row[9],
+                text_name=row[10],
+                quotes_embedded=row[11] if row[11] is not None else 0,
             )
 
     async def list_sessions(
@@ -1511,7 +1665,8 @@ class PostgresStudentStore:
             if status is not None:
                 query = sql_text(
                     "SELECT session_id, student_id, subject, topic, status, "
-                    "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary, "
+                        "text_name, quotes_embedded "
                     "FROM session "
                     "WHERE student_id = :sid AND status = :status "
                     "ORDER BY last_activity DESC LIMIT :limit"
@@ -1520,7 +1675,8 @@ class PostgresStudentStore:
             else:
                 query = sql_text(
                     "SELECT session_id, student_id, subject, topic, status, "
-                    "started_at, last_activity, turn_count, aos_scaffolded, summary "
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary, "
+                        "text_name, quotes_embedded "
                     "FROM session "
                     "WHERE student_id = :sid "
                     "ORDER BY last_activity DESC LIMIT :limit"
@@ -1543,6 +1699,8 @@ class PostgresStudentStore:
                     turn_count=row[7],
                     aos_scaffolded=row[8] if row[8] else [],
                     summary=row[9],
+                    text_name=row[10],
+                    quotes_embedded=row[11] if row[11] is not None else 0,
                 )
                 for row in rows
             ]
@@ -1556,6 +1714,7 @@ class PostgresStudentStore:
         role: TurnRole,
         content: str,
         ao_scaffolded: str | None = None,
+        quotes_embedded: int = 0,
     ) -> SessionTurn:
         """Append one turn, bumping turn_count + last_activity atomically.
 
@@ -1563,7 +1722,10 @@ class PostgresStudentStore:
             session_id: Target session UUID
             role: 'learner' or 'tutor'
             content: Turn content (message text)
-            ao_scaffolded: Optional AO scaffold type applied
+            ao_scaffolded: Optional Coach-observed AO scaffolded this turn (S-E4,
+                R9 — feeds Six-AO Sampler)
+            quotes_embedded: Corpus-hit quotations the verifier confirmed this
+                turn (S-E4 / scope §4.3, R8); added to session.quotes_embedded
 
         Returns:
             SessionTurn with the inserted turn (turn_index is 0-based, monotonic)
@@ -1620,14 +1782,16 @@ class PostgresStudentStore:
                 },
             )
 
-            # Update session: bump turn_count and last_activity
+            # Update session: bump turn_count + last_activity, and accumulate the
+            # per-turn corpus-hit quote count into the session counter (S-E4 §4.3).
             await conn.execute(
                 sql_text(
                     "UPDATE session "
-                    "SET turn_count = turn_count + 1, last_activity = :now "
+                    "SET turn_count = turn_count + 1, last_activity = :now, "
+                    "quotes_embedded = quotes_embedded + :quotes "
                     "WHERE session_id = :sid"
                 ),
-                {"now": now, "sid": session_id},
+                {"now": now, "sid": session_id, "quotes": max(0, int(quotes_embedded))},
             )
 
         # Return the SessionTurn
@@ -1717,7 +1881,8 @@ class PostgresStudentStore:
                     "SET status = 'ended', last_activity = :now "
                     "WHERE session_id = :sid "
                     "RETURNING session_id, student_id, subject, topic, status, "
-                    "started_at, last_activity, turn_count, aos_scaffolded, summary"
+                    "started_at, last_activity, turn_count, aos_scaffolded, summary, "
+                    "text_name, quotes_embedded"
                 ),
                 {"now": now, "sid": session_id},
             )
@@ -1739,6 +1904,8 @@ class PostgresStudentStore:
                 turn_count=row[7],
                 aos_scaffolded=row[8] if row[8] else [],
                 summary=row[9],
+                text_name=row[10],
+                quotes_embedded=row[11] if row[11] is not None else 0,
             )
 
 

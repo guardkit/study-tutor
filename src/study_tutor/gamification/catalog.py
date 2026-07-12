@@ -26,8 +26,10 @@ near-achievement projection needs no per-call branching.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+
+from study_tutor.gamification.signals import W2Signals
 
 
 class AchievementKind(str, Enum):
@@ -58,6 +60,9 @@ class AchievementContext:
     evening_count: int
     #: Count of qualifying (XP > 0) sessions overall — First Steps reads this.
     qualifying_sessions: int
+    #: The W2 capture-wave signals (spec §2.3 note); the W2 catalog reads these.
+    #: Defaults empty so a W1-only context fires no W2 achievement (vacuous-safe).
+    w2: W2Signals = field(default_factory=W2Signals)
 
 
 @dataclass(frozen=True)

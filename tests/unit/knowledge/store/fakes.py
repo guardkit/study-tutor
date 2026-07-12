@@ -24,12 +24,22 @@ from study_tutor.gamification.economy import (
     started_after_evening,
     started_before_morning,
 )
+from study_tutor.gamification.catalog_w2 import POETRY_PIONEER_SLUG
 from study_tutor.gamification.engine import (
     PriorFacts,
     SessionFacts,
     SettlementResult,
     decide,
 )
+from study_tutor.gamification.signals import (
+    W2Signals,
+    any_six_ao_session,
+    compute_mastered_texts,
+    eras_covered,
+    genre_week_achieved,
+    max_confidence_gain_over_window,
+)
+from study_tutor.gamification.texts import UNSEEN_POETRY_SLUG
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
     GamificationState,
@@ -366,31 +376,111 @@ class FakeStudentStore:
         stamps = [t["ts"] for t in turns]
         return (max(stamps) - min(stamps)).total_seconds(), max(stamps)
 
-    def _apply_settlement(
+    def _w2_signals(self, student_id: str) -> W2Signals:
+        """Assemble the W2 capture-wave signals from in-memory state (spec §2.3
+        note / scope §4) — mirrors ``postgres._read_w2_facts`` so fake and real
+        derive the identical W2 tranche."""
+        topics = {
+            topic: int(conf["percentage"])
+            for (sid, topic), conf in self._confidences.items()
+            if sid == student_id
+        }
+        studied_topic_count = len(topics)
+        min_topic_confidence = min(topics.values()) if topics else 0
+
+        # topic → text via the LATEST confidence-history row (session → text_name).
+        hist = sorted(
+            (h for h in self._confidence_history if h["student_id"] == student_id),
+            key=lambda h: h["recorded_at"],
+        )
+        topic_text: dict[str, str] = {}
+        for h in hist:
+            sess = self._sessions.get(h["session_id"])
+            text_name = sess.get("text_name") if sess else None
+            if text_name:
+                topic_text[h["topic_name"]] = text_name  # last wins (ascending)
+        topic_text_confidences = [
+            (topic, topic_text[topic], pct)
+            for topic, pct in topics.items()
+            if topic in topic_text
+        ]
+        mastered = compute_mastered_texts(topic_text_confidences)
+        unseen = max(
+            (
+                pct
+                for topic, pct in topics.items()
+                if topic_text.get(topic) == UNSEEN_POETRY_SLUG
+            ),
+            default=0,
+        )
+
+        ended = [
+            s
+            for s in self._sessions.values()
+            if s["student_id"] == student_id and s["status"] == "ended"
+        ]
+        distinct_texts = {s.get("text_name") for s in ended if s.get("text_name")}
+        poetry_pioneer = sum(
+            1 for s in ended if s.get("text_name") == POETRY_PIONEER_SLUG
+        )
+        genre_week = genre_week_achieved(
+            (london_date(s["last_activity"]), s.get("text_name"))
+            for s in ended
+            if s.get("text_name")
+        )
+        eras = eras_covered(distinct_texts)
+
+        session_ao_sets: list[set[str]] = []
+        for sid, turns in self._turns.items():
+            sess = self._sessions.get(sid)
+            if not sess or sess["student_id"] != student_id:
+                continue
+            aos = {t.get("ao_scaffolded") for t in turns if t.get("ao_scaffolded")}
+            if aos:
+                session_ao_sets.append(aos)
+        six_ao = any_six_ao_session(session_ao_sets)
+
+        quotes_total = sum(int(s.get("quotes_embedded", 0) or 0) for s in ended)
+        max_gain = max_confidence_gain_over_window(
+            (h["topic_name"], london_date(h["recorded_at"]), int(h["percentage"]))
+            for h in hist
+        )
+
+        return W2Signals(
+            mastered_texts=mastered,
+            poetry_pioneer_sessions=poetry_pioneer,
+            unseen_confidence=unseen,
+            distinct_text_count=len(distinct_texts),
+            genre_week_achieved=genre_week,
+            eras_covered=eras,
+            six_ao_session=six_ao,
+            max_confidence_gain_7d=max_gain,
+            total_quotes_embedded=quotes_total,
+            studied_topic_count=studied_topic_count,
+            min_topic_confidence=min_topic_confidence,
+        )
+
+    def _bank_settlement(
         self,
         *,
         student_id: str,
         session_id: str,
         now: datetime,
-        decision: Any,
+        session_facts: SessionFacts,
         confidence_updates: list[ConfidenceUpdate],
         misconceptions: list[Misconception],
-    ) -> None:
-        """Bank a decision (mirrors the Postgres savepoint body). Validates the
-        misconceptions FIRST so a poison child raises before any mutation, giving
-        the fake the all-or-nothing savepoint semantics the test relies on."""
+    ) -> Any:
+        """Run the engine and bank its result (mirrors ``postgres._bank_settlement``).
+
+        Validates the misconceptions FIRST so a poison child raises before any
+        mutation (the fake's all-or-nothing savepoint stand-in), then applies the
+        confidence writes BEFORE reading the W2 signals so the winner and a replay
+        see the same W2 snapshot, then decides + banks XP/achievements.
+        """
         for misc in misconceptions:
             if not misc.topic_ref or not _sanitise_misconception_text(misc.text).strip():
                 raise ValueError("Misconception must have topic_ref and non-blank text")
 
-        sess = self._sessions[session_id]
-        sess["xp_awarded"] = decision.xp_awarded
-        sess["settled_at"] = now
-        for award in decision.unlocked:
-            self._achievements.setdefault(
-                (student_id, award.id),
-                {"xp_awarded": award.xp, "unlocked_at": now, "session_id": session_id},
-            )
         for update in confidence_updates:
             self._confidences[(student_id, update.topic_name)] = {
                 "topic_name": update.topic_name,
@@ -408,6 +498,19 @@ class FakeStudentStore:
                     "source": "session",
                 }
             )
+
+        w2 = self._w2_signals(student_id)
+        prior = self._prior_facts(student_id, session_id)
+        decision = decide(prior, session_facts, now, w2=w2)
+
+        sess = self._sessions[session_id]
+        sess["xp_awarded"] = decision.xp_awarded
+        sess["settled_at"] = now
+        for award in decision.unlocked:
+            self._achievements.setdefault(
+                (student_id, award.id),
+                {"xp_awarded": award.xp, "unlocked_at": now, "session_id": session_id},
+            )
         for misc in misconceptions:
             self._misconceptions.append(
                 {
@@ -420,6 +523,7 @@ class FakeStudentStore:
                     ).get("band", "struggling"),
                 }
             )
+        return decision
 
     async def finalize_session(
         self,
@@ -452,7 +556,8 @@ class FakeStudentStore:
         if sess["status"] == "ended":
             # Replay: reconstruct the identical decision, write nothing (D6).
             prior = self._prior_facts(student_id, session_id)
-            decision = decide(prior, session_facts, now)
+            w2 = self._w2_signals(student_id)
+            decision = decide(prior, session_facts, now, w2=w2)
             return SettlementResult(
                 decision=decision,
                 settled=True,
@@ -469,15 +574,13 @@ class FakeStudentStore:
         # Winner: the status flip is the gate (outside the savepoint).
         sess["status"] = "ended"
         sess["last_activity"] = now
-        prior = self._prior_facts(student_id, session_id)
-        decision = decide(prior, session_facts, now)
         settled = True
         try:
-            self._apply_settlement(
+            decision = self._bank_settlement(
                 student_id=student_id,
                 session_id=session_id,
                 now=now,
-                decision=decision,
+                session_facts=session_facts,
                 confidence_updates=confidence_updates,
                 misconceptions=misconceptions,
             )
@@ -519,13 +622,11 @@ class FakeStudentStore:
             started_at=sess["started_at"],
             last_turn_at=last_turn_at,
         )
-        prior = self._prior_facts(student_id, session_id)
-        decision = decide(prior, session_facts, now)
-        self._apply_settlement(
+        decision = self._bank_settlement(
             student_id=student_id,
             session_id=session_id,
             now=now,
-            decision=decision,
+            session_facts=session_facts,
             confidence_updates=[],
             misconceptions=[],
         )
@@ -614,6 +715,23 @@ class FakeStudentStore:
 
     # -- Session persistence (cross-device contract §5) --------------------
 
+    def _to_record(self, session_id: str, sess: dict[str, Any]) -> SessionRecord:
+        """Map an in-memory session dict to a :class:`SessionRecord`."""
+        return SessionRecord(
+            session_id=session_id,
+            student_id=sess["student_id"],
+            subject=sess["subject"],
+            topic=sess.get("topic"),
+            status=sess["status"],
+            started_at=sess["started_at"],
+            last_activity=sess["last_activity"],
+            turn_count=sess["turn_count"],
+            aos_scaffolded=sess.get("aos_scaffolded", []),
+            text_name=sess.get("text_name"),
+            quotes_embedded=int(sess.get("quotes_embedded", 0) or 0),
+            summary=sess.get("summary"),
+        )
+
     async def create_session(
         self,
         *,
@@ -621,13 +739,15 @@ class FakeStudentStore:
         subject: str,
         topic: str | None = None,
         aos_scaffolded: list[str] | None = None,
+        text_name: str | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
         """Create a session, or resume the active one.
 
         Returns (record, created) - created=True for new, False for resumed.
         S-R3 §2.1: ``aos_scaffolded`` persists the plan's ``focus_aos`` at
-        start-time onto the created row (``None`` → ``[]``); resumes ignore it.
+        start-time onto the created row (``None`` → ``[]``). S-E4 / scope §4.2:
+        ``text_name`` persists the canonical set-text slug. Resumes ignore both.
         """
         planned_aos = list(aos_scaffolded) if aos_scaffolded else []
         # Check for existing active session if resume requested
@@ -638,21 +758,7 @@ class FakeStudentStore:
                     and sess["subject"] == subject
                     and sess["status"] == "active"
                 ):
-                    return (
-                        SessionRecord(
-                            session_id=sid,
-                            student_id=sess["student_id"],
-                            subject=sess["subject"],
-                            topic=sess.get("topic"),
-                            status=sess["status"],
-                            started_at=sess["started_at"],
-                            last_activity=sess["last_activity"],
-                            turn_count=sess["turn_count"],
-                            aos_scaffolded=sess.get("aos_scaffolded", []),
-                            summary=sess.get("summary"),
-                        ),
-                        False,  # Not created, resumed
-                    )
+                    return (self._to_record(sid, sess), False)
 
         # Create new session
         session_id = str(uuid4())
@@ -666,44 +772,20 @@ class FakeStudentStore:
             "last_activity": now,
             "turn_count": 0,
             "aos_scaffolded": list(planned_aos),
+            "text_name": text_name,
+            "quotes_embedded": 0,
             "summary": None,
         }
         self._turns[session_id] = []
 
-        return (
-            SessionRecord(
-                session_id=session_id,
-                student_id=student_id,
-                subject=subject,
-                topic=topic,
-                status="active",
-                started_at=now,
-                last_activity=now,
-                turn_count=0,
-                aos_scaffolded=planned_aos,
-                summary=None,
-            ),
-            True,  # Created
-        )
+        return (self._to_record(session_id, self._sessions[session_id]), True)
 
     async def get_session(self, session_id: str) -> SessionRecord | None:
         """Fetch a session, or None if unknown."""
         sess = self._sessions.get(session_id)
         if not sess:
             return None
-
-        return SessionRecord(
-            session_id=session_id,
-            student_id=sess["student_id"],
-            subject=sess["subject"],
-            topic=sess.get("topic"),
-            status=sess["status"],
-            started_at=sess["started_at"],
-            last_activity=sess["last_activity"],
-            turn_count=sess["turn_count"],
-            aos_scaffolded=sess.get("aos_scaffolded", []),
-            summary=sess.get("summary"),
-        )
+        return self._to_record(session_id, sess)
 
     async def list_sessions(
         self,
@@ -714,18 +796,7 @@ class FakeStudentStore:
     ) -> list[SessionRecord]:
         """Recent sessions for a student, newest last_activity first."""
         sessions = [
-            SessionRecord(
-                session_id=sid,
-                student_id=sess["student_id"],
-                subject=sess["subject"],
-                topic=sess.get("topic"),
-                status=sess["status"],
-                started_at=sess["started_at"],
-                last_activity=sess["last_activity"],
-                turn_count=sess["turn_count"],
-                aos_scaffolded=sess.get("aos_scaffolded", []),
-                summary=sess.get("summary"),
-            )
+            self._to_record(sid, sess)
             for sid, sess in self._sessions.items()
             if sess["student_id"] == student_id
             and (status is None or sess["status"] == status)
@@ -743,8 +814,10 @@ class FakeStudentStore:
         role: TurnRole,
         content: str,
         ao_scaffolded: str | None = None,
+        quotes_embedded: int = 0,
     ) -> SessionTurn:
-        """Append one turn, bumping turn_count + last_activity."""
+        """Append one turn, bumping turn_count + last_activity, accumulating the
+        per-turn corpus-hit quote count into the session counter (S-E4 §4.3)."""
         sess = self._sessions.get(session_id)
         if not sess:
             raise ValueError(f"Unknown session: {session_id}")
@@ -764,6 +837,9 @@ class FakeStudentStore:
         self._turns.setdefault(session_id, []).append(turn)
         sess["turn_count"] += 1
         sess["last_activity"] = now
+        sess["quotes_embedded"] = int(sess.get("quotes_embedded", 0) or 0) + max(
+            0, int(quotes_embedded)
+        )
 
         return SessionTurn(
             session_id=session_id,
@@ -798,18 +874,7 @@ class FakeStudentStore:
         sess["status"] = "ended"
         sess["last_activity"] = datetime.now(timezone.utc)
 
-        return SessionRecord(
-            session_id=session_id,
-            student_id=sess["student_id"],
-            subject=sess["subject"],
-            topic=sess.get("topic"),
-            status=sess["status"],
-            started_at=sess["started_at"],
-            last_activity=sess["last_activity"],
-            turn_count=sess["turn_count"],
-            aos_scaffolded=sess.get("aos_scaffolded", []),
-            summary=sess.get("summary"),
-        )
+        return self._to_record(session_id, sess)
 
     # -- Test helpers -------------------------------------------------------
 
@@ -862,6 +927,8 @@ class FakeStudentStore:
         subject: str = "english",
         topic: str | None = None,
         xp_awarded: int | None = None,
+        text_name: str | None = None,
+        quotes_embedded: int = 0,
     ) -> str:
         """Helper for tests: add a completed (``ended``) session with a **banked**
         ``xp_awarded`` so the banked-facts projection reads it directly (spec §5).
@@ -869,6 +936,7 @@ class FakeStudentStore:
         ``xp_awarded`` defaults to the engagement-band XP for the ``started_at →
         last_activity`` duration (``session_xp``), matching what settlement would
         have banked; pass an explicit value to stage a specific banked total.
+        ``text_name`` / ``quotes_embedded`` seed the W2 capture-wave signals.
 
         Returns the generated session_id.
         """
@@ -887,6 +955,8 @@ class FakeStudentStore:
             "last_activity": last_activity,
             "turn_count": 0,
             "aos_scaffolded": [],
+            "text_name": text_name,
+            "quotes_embedded": quotes_embedded,
             "summary": None,
             "xp_awarded": banked,
         }

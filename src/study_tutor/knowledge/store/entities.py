@@ -207,6 +207,12 @@ class SessionRecord(_Record):
     last_activity: datetime
     turn_count: int = Field(default=0, ge=0)
     aos_scaffolded: list[str] = Field(default_factory=list)
+    #: Canonical set-text slug captured at start (S-E4 / scope §4.2); ``None`` for
+    #: a free-topic session no known set text was recognised for.
+    text_name: str | None = None
+    #: Cumulative corpus-hit quotations embedded across this session's turns
+    #: (S-E4 / scope §4.3, R8); bumped per tutor turn by ``append_turn``.
+    quotes_embedded: int = Field(default=0, ge=0)
     summary: str | None = None
 
 

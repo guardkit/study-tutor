@@ -2,7 +2,7 @@
 --
 -- LIVING REFERENCE. This file is kept in sync by hand; `alembic upgrade head`
 -- is the source of truth for the schema (revisions 3c7cd4bca034 →
--- b7d1e4f92a3c). Do NOT apply by hand — the runbook's G7 gate runs
+-- b7d1e4f92a3c → c3f8a1b6d2e4). Do NOT apply by hand — the runbook's G7 gate runs
 -- `alembic upgrade head` (docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md).
 --
 -- JSONB is used only for genuinely flexible/nested fields (per-AO observations,
@@ -56,6 +56,7 @@ CREATE TABLE session (
     aos_scaffolded  JSONB NOT NULL DEFAULT '[]'::jsonb,
     text_name       TEXT,                             -- plan-fact captured at start (rev b7d1e4f92a3c, S-E4)
     settled_at      TIMESTAMPTZ,                      -- settlement work-queue marker (rev b7d1e4f92a3c); NULL until settled
+    quotes_embedded INTEGER NOT NULL DEFAULT 0 CHECK (quotes_embedded >= 0),  -- cumulative corpus-hit quotes (rev c3f8a1b6d2e4, S-E4 §4.3, R8); append_turn accumulates
     summary         TEXT
 );
 -- The "resume where you left off" query: active sessions for a student, newest first.

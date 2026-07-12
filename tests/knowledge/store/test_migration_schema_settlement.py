@@ -177,11 +177,15 @@ async def test_pre_existing_session_rows_get_null_settled_at(
                 )
             )
 
-        # 2. Upgrade to head (adds settled_at / text_name).
+        # 2. Upgrade to THIS revision (adds settled_at / text_name). Pinned to the
+        #    explicit revision, not "head", so a later revision (e.g. S-E4's
+        #    quotes_embedded) doesn't perturb this module's b7d1e4f92a3c assertions.
         result = _run_alembic(
-            alembic_project_root, ephemeral_postgres_dsn, "upgrade", "head"
+            alembic_project_root, ephemeral_postgres_dsn, "upgrade", _HEAD_REVISION
         )
-        assert result.returncode == 0, f"alembic upgrade head failed: {result.stderr}"
+        assert result.returncode == 0, (
+            f"alembic upgrade {_HEAD_REVISION} failed: {result.stderr}"
+        )
 
         # 3. The pre-existing row must have NULL settled_at AND NULL text_name.
         async with engine.connect() as conn:
@@ -206,7 +210,7 @@ async def test_current_revision_is_head(
     ephemeral_postgres_dsn: str,
     alembic_project_root: Path,
 ) -> None:
-    """After upgrade head, the DB reports revision b7d1e4f92a3c as current."""
+    """After upgrading to b7d1e4f92a3c, the DB reports it as the current revision."""
     result = _run_alembic(
         alembic_project_root, ephemeral_postgres_dsn, "current"
     )

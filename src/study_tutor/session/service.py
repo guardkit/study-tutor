@@ -67,6 +67,7 @@ from study_tutor.knowledge.store.port import (
 )
 from study_tutor.knowledge.store.provider import get_student_store
 from study_tutor.knowledge.student_model import Misconception
+from study_tutor.gamification.texts import derive_text_name
 from study_tutor.planner.pipeline import plan_session
 from study_tutor.planner.protocols import (
     SessionCompletion as PlannerSessionCompletion,
@@ -224,6 +225,32 @@ class TutorReply:
 
     response: str
     metadata: Mapping[str, object] | None = None
+
+
+#: Metadata keys the transport reply carries per-turn capture signals under
+#: (S-E4 / scope §4.3–§4.4): the Coach-observed AO scaffolded this turn (R9) and
+#: the count of verifier-confirmed corpus-hit quotations (R8). The service reads
+#: them generically off ``reply.metadata`` and forwards them to ``append_turn`` —
+#: it stays transport-neutral (the orchestrator/adapter populates the keys, D14).
+_AO_SCAFFOLDED_KEY = "ao_scaffolded"
+_QUOTES_EMBEDDED_KEY = "quotes_embedded"
+
+
+def _per_turn_signals(
+    metadata: Mapping[str, object] | None,
+) -> tuple[str | None, int]:
+    """Extract ``(ao_scaffolded, quotes_embedded)`` from a tutor reply's metadata.
+
+    Both default to "no signal" (``None`` / ``0``) so a reply that carries no
+    capture metadata (the streaming path, a legacy adapter) persists cleanly.
+    """
+    if not metadata:
+        return None, 0
+    ao_raw = metadata.get(_AO_SCAFFOLDED_KEY)
+    ao_scaffolded = ao_raw if isinstance(ao_raw, str) and ao_raw else None
+    quotes_raw = metadata.get(_QUOTES_EMBEDDED_KEY)
+    quotes_embedded = quotes_raw if isinstance(quotes_raw, int) else 0
+    return ao_scaffolded, max(0, quotes_embedded)
 
 
 #: The domain tutor/Coach loop, injected into :meth:`SessionService.turn`. Keeps
@@ -423,6 +450,14 @@ class SessionService:
             student_id=student_id, topic_override=topic
         )
 
+        # Canonical set-text capture at START (S-E4 / scope §4.2): resolve the
+        # plan's topic (and the learner override / subject) to a canonical text
+        # slug so the row carries a stable ``text_name`` the W2 Mastery /
+        # Exploration signals group by. ``None`` when no known set text.
+        text_name = derive_text_name(
+            topic=plan.topic_name, subject=subject, text_hint=topic
+        )
+
         # Persist the plan facts on the row at start (spec §2.1). On a resume the
         # store returns the existing row and ignores these; the freshly-computed
         # plan still rides back on the result for the start response.
@@ -431,6 +466,7 @@ class SessionService:
             subject=subject,
             topic=plan.topic_name,
             aos_scaffolded=list(plan.focus_aos),
+            text_name=text_name,
             resume_if_active=resume_if_active,
         )
         turns: tuple[SessionTurn, ...] | None = None
@@ -552,12 +588,24 @@ class SessionService:
         turn — two durable rows per §6 (lossless mid-session device switch)."""
         await self._load_owned_session(student_id, session_id, allow_ended=False)
         store = self._resolve_store()
+        # User turns scaffold nothing and embed no quotes — pass the capture
+        # kwargs explicitly (S-E4 item 3: all four append_turn sites pass them).
         await store.append_turn(
-            session_id=session_id, role="user", content=user_message
+            session_id=session_id,
+            role="user",
+            content=user_message,
+            ao_scaffolded=None,
+            quotes_embedded=0,
         )
         reply = await reply_fn(user_message)
+        # Per-turn capture signals ride the reply metadata (S-E4 §4.3/§4.4).
+        ao_scaffolded, quotes_embedded = _per_turn_signals(reply.metadata)
         tutor_turn = await store.append_turn(
-            session_id=session_id, role="tutor", content=reply.response
+            session_id=session_id,
+            role="tutor",
+            content=reply.response,
+            ao_scaffolded=ao_scaffolded,
+            quotes_embedded=quotes_embedded,
         )
         return TurnResult(
             tutor_response=reply.response,
@@ -589,9 +637,15 @@ class SessionService:
         await self._load_owned_session(student_id, session_id, allow_ended=False)
         store = self._resolve_store()
 
-        # Persist user turn before streaming
+        # Persist user turn before streaming (capture kwargs passed explicitly —
+        # S-E4 item 3: all four append_turn sites pass them; a user turn carries
+        # no AO / quote signal).
         await store.append_turn(
-            session_id=session_id, role="user", content=user_message
+            session_id=session_id,
+            role="user",
+            content=user_message,
+            ao_scaffolded=None,
+            quotes_embedded=0,
         )
 
         # Accumulate response while streaming tokens
@@ -615,11 +669,17 @@ class SessionService:
             # Don't persist tutor turn on failure
             return
 
-        # Generation succeeded - persist full response
+        # Generation succeeded - persist full response. The token stream carries
+        # no per-turn capture metadata, so the AO / quote signals are absent here
+        # (passed explicitly for the fourth append_turn site — S-E4 item 3).
         if not generation_failed:
             full_response = "".join(accumulated_response)
             tutor_turn = await store.append_turn(
-                session_id=session_id, role="tutor", content=full_response
+                session_id=session_id,
+                role="tutor",
+                content=full_response,
+                ao_scaffolded=None,
+                quotes_embedded=0,
             )
             yield TurnEvent(type="done", turn_index=tutor_turn.turn_index)
 
@@ -637,8 +697,8 @@ class SessionService:
 
         Reads, per turn:
 
-        * the persisted session row → ``topic`` + ``focus_aos`` plan facts
-          (``text_name`` stays ``None`` until Phase-E S-E4 persists it);
+        * the persisted session row → ``topic`` + ``focus_aos`` + ``text_name``
+          plan facts (``text_name`` captured at start, S-E4 / scope §4.2);
         * one student-state snapshot → confidence band for the topic, the
           weakest below-Mastered topics, recent misconceptions, grade target
           (GOAL.md §7 default Grade 6);
@@ -653,6 +713,9 @@ class SessionService:
         record = await store.get_session(session_id)
         topic = record.topic if record is not None else None
         focus_aos = tuple(record.aos_scaffolded) if record is not None else ()
+        # Canonical set-text slug captured at start (S-E4 / scope §4.2); reaches
+        # the Player + the retrieval/quote-verifier path via SessionState.
+        text_name = record.text_name if record is not None else None
 
         # Single student-state read for the four §2.5 context fields.
         state = await store.get_student_state(student_id)
@@ -670,7 +733,7 @@ class SessionService:
         return SessionState(
             session_id=session_id,
             student_id=student_id,
-            text_name=None,
+            text_name=text_name,
             topic=topic,
             focus_aos=focus_aos,
             mode="tutor",

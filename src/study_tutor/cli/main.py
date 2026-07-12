@@ -762,6 +762,14 @@ def _build_http_reply_fn_factory(
                 session_state=session_state,
                 learner_message=user_message,
             )
+            # Per-turn capture signals (S-E4 §4.3/§4.4): corpus-hit quotes from
+            # the deterministic verifier (R8) and the Coach-observed scaffolded AO
+            # (R9). The service reads these off the metadata and persists them.
+            from study_tutor.tutoring.turn_capture import (
+                embedded_quote_count,
+                observed_ao_scaffolded,
+            )
+
             return TutorReply(
                 response=turn_result.response,
                 metadata={
@@ -769,6 +777,13 @@ def _build_http_reply_fn_factory(
                     "attempts": turn_result.attempts,
                     "flagged_for_review": turn_result.flagged_for_review,
                     "duration_seconds": turn_result.duration_seconds,
+                    "quotes_embedded": embedded_quote_count(
+                        getattr(turn_result, "verifier_metadata", None)
+                    ),
+                    "ao_scaffolded": observed_ao_scaffolded(
+                        getattr(turn_result, "verdict", None),
+                        getattr(session_state, "focus_aos", ()),
+                    ),
                 },
             )
 

@@ -24,7 +24,14 @@ class FakeStore:
     async def get_session(self, session_id: str):
         return self.session_record
 
-    async def append_turn(self, session_id: str, role: str, content: str):
+    async def append_turn(
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        ao_scaffolded: str | None = None,
+        quotes_embedded: int = 0,
+    ):
         self.calls.append(f"append_turn({role})")
         return MagicMock(turn_index=len(self.calls))
 

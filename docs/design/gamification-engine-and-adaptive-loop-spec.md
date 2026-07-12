@@ -75,6 +75,33 @@ Order within one `engine.begin()`: **(1)** `UPDATE session SET status='ended', l
 ### §4.5 W1 achievement catalog (16 — computable from session rows alone)
 Consistency: `first_steps` +50 (first completed ≥2-min session — R4) · `three_day_run` +100 · `week_one` +200 · `fortnight_force` +400 · `thirty_days` +800 · `sixty_strong` +1200 · `century` +2000 (streak milestones) · `morning_star` +150 / `evening_scholar` +150 (5 sessions *started* before 09:00 / after 19:00 London; abandoned sessions don't count — R3). Milestone: `first_century` +50 (100 XP) · `kilo` +100 · `five_kilo` +250 · `ten_kilo` +500 · `scholar` +300 (L6) · `master` +700 (L10) · `grandmaster` +2000 (L15). IDs are stable snake_case strings; names/XP per design.md §5. `no_weak_spots` is **deferred to B4** with its ≥5-topics guard (R5). Near-achievement hints are static per-achievement strings with progress interpolation.
 
+> **Builder note — 2026-07-13 (S-E4, capture + W2 tranche).** The capture wave
+> and the 17-achievement W2 tranche (scope §3 W2 row; §4) landed thus: **(1)**
+> canonical `text_name` is captured at START from a real-but-modest set-text
+> taxonomy (`gamification/texts.py`, corpus-slug + genre/era) and persisted on the
+> session row (S-E1's `session.text_name`); `finalize_session`'s gate RETURNING now
+> reads it back per §4.2. **(2)** `quotes_embedded` needed a durable home the S-E1
+> migration did not provide, so **a third Alembic revision** `c3f8a1b6d2e4`
+> (`down_revision='b7d1e4f92a3c'`) adds `session.quotes_embedded INTEGER NOT NULL
+> DEFAULT 0 CHECK (>= 0)`, modeled on `xp_awarded`; `append_turn` accumulates the
+> per-turn verifier corpus-hit count (R8) into it. The migration-schema inventories
+> updated: the settlement module pins to its own revision (not `head`), and a NEW
+> module claims **port 55437** for the quotes revision. **(3)** per-turn AOs plumb
+> through all four `append_turn` sites via the reply metadata (R9); the production
+> source is `turn_capture.observed_ao_scaffolded` (the plan focus AO, credited only
+> when the Coach's `ao_alignment` criterion confirms it). **(4)** the confidence
+> bootstrap already wrote `topic_confidence_history` with `source='session'`
+> (S-E2) — verified, tested, unchanged. **(5)** the W2 tranche evaluates through the
+> SAME `decide()` cascade (a combined `FULL_CATALOG`), so a W2 unlock's XP re-checks
+> the W1 XP/level milestones to a fixed point (D7); the store assembles the W2
+> signals from persisted state AFTER the confidence write so winner and replay agree.
+> **Two W2 achievements ship gated OFF** (mechanism present, predicate never True,
+> no economy change): **Poetry Progenitor** is content-gated (R10 — the repo carries
+> no Power & Conflict 15-poem manifest; no content invented) and **Comparative
+> Climber** is signal-gated (no comparative-writing rating is captured this wave).
+> Both fire the day their gating fact is captured. `no_weak_spots` is now live with
+> its R5 ≥5-topics guard.
+
 ## §5 B3 — projection swap + API
 
 - `get_gamification_state` switches to banked reads: `total_xp = SUM(session.xp_awarded) + SUM(achievement.xp_awarded)`; streak/longest-streak derived from ended-session London dates (existing pure functions, re-based); `recent_xp` keeps its 7-day window. Duration-derivation is deleted; the port docstring (`port.py:92-97`) re-documented.

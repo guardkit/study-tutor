@@ -178,6 +178,7 @@ class StudentStore(Protocol):
         subject: str,
         topic: str | None = None,
         aos_scaffolded: list[str] | None = None,
+        text_name: str | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
         """Create a session, or resume the active one.
@@ -191,7 +192,9 @@ class StudentStore(Protocol):
 
         ``aos_scaffolded`` persists the plan's ``focus_aos`` at start-time
         (S-R3 §2.1 — the session's ``aos_scaffolded`` column carries the plan
-        facts from start; ``None`` defaults to ``[]``). It is only written on
+        facts from start; ``None`` defaults to ``[]``). ``text_name`` persists the
+        canonical set-text slug the planner topic resolved to (S-E4 / scope §4.2;
+        ``None`` when no known set text was recognised). Both are written only on
         the created branch; a resume returns the existing row untouched."""
         ...
 
@@ -217,9 +220,16 @@ class StudentStore(Protocol):
         role: TurnRole,
         content: str,
         ao_scaffolded: str | None = None,
+        quotes_embedded: int = 0,
     ) -> SessionTurn:
         """Durably append one turn (per-turn commit → lossless device switch),
-        bumping ``turn_count`` + ``last_activity`` in the same transaction."""
+        bumping ``turn_count`` + ``last_activity`` in the same transaction.
+
+        ``ao_scaffolded`` records the Coach-observed AO for this turn (S-E4 /
+        scope §4.4, R9 — feeds Six-AO Sampler). ``quotes_embedded`` is the count
+        of corpus-hit quotations the deterministic quote verifier confirmed in
+        this turn (scope §4.3, R8); it is added to the session's cumulative
+        ``quotes_embedded`` counter in the same transaction."""
         ...
 
     async def get_turns(self, session_id: str) -> list[SessionTurn]:

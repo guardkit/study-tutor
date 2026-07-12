@@ -33,9 +33,9 @@ from typing import Any
 from study_tutor.gamification.catalog import (
     CATALOG,
     CATALOG_BY_ID,
-    CATALOG_ORDER,
     AchievementContext,
 )
+from study_tutor.gamification.catalog_w2 import W2_CATALOG, W2_CATALOG_BY_ID
 from study_tutor.gamification.economy import (
     level_number_for_total_xp,
     level_title_for_total_xp,
@@ -44,6 +44,19 @@ from study_tutor.gamification.economy import (
     started_after_evening,
     started_before_morning,
 )
+from study_tutor.gamification.signals import W2Signals
+
+#: The full catalog the settlement cascade iterates: the W1 tranche (streak → XP
+#: milestones → level milestones, design §13.1 D7) followed by the W2 capture-wave
+#: tranche. Placing W2 after W1 and restarting the scan after every unlock keeps
+#: the fixed point deterministic — a W2 unlock's XP re-triggers the W1 XP/level
+#: milestones in the same settlement (D7).
+FULL_CATALOG = CATALOG + W2_CATALOG
+#: id → definition across both tranches (replay reads banked rows → name/xp).
+FULL_CATALOG_BY_ID = {**CATALOG_BY_ID, **W2_CATALOG_BY_ID}
+#: Catalog position by id — the deterministic sort key for the unlocked list and
+#: the near-achievement tie-break, across both tranches.
+FULL_CATALOG_ORDER = {a.id: i for i, a in enumerate(FULL_CATALOG)}
 
 
 # ---------------------------------------------------------------------------
@@ -149,19 +162,22 @@ def _cascade_unlocks(
     morning_count: int,
     evening_count: int,
     qualifying_sessions: int,
+    w2: W2Signals,
 ) -> tuple[list[AchievementAward], int]:
-    """Iterate the catalog to a fixed point, banking each unlock's XP (design
+    """Iterate the full catalog to a fixed point, banking each unlock's XP (design
     §13.1 D7). Returns ``(unlocked_in_catalog_order, total_xp_after)``.
 
     ``held`` is mutated to include the newly-unlocked ids. The scan restarts
     from the top after every unlock so an earlier-in-catalog achievement enabled
     by a later unlock's XP is still emitted in catalog order — making the live
-    order and the replay reconstruction identical.
+    order and the replay reconstruction identical. W2 achievements are
+    XP-independent (they read ``w2``), but their XP feeds the same fixed point so
+    a W2 unlock can push a W1 XP/level milestone in the same settlement.
     """
     unlocked: list[AchievementAward] = []
     while True:
         progressed = False
-        for ach in CATALOG:
+        for ach in FULL_CATALOG:
             if ach.id in held:
                 continue
             ctx = AchievementContext(
@@ -171,6 +187,7 @@ def _cascade_unlocks(
                 morning_count=morning_count,
                 evening_count=evening_count,
                 qualifying_sessions=qualifying_sessions,
+                w2=w2,
             )
             if ach.is_unlocked(ctx):
                 held.add(ach.id)
@@ -180,7 +197,7 @@ def _cascade_unlocks(
                 break
         if not progressed:
             break
-    unlocked.sort(key=lambda award: CATALOG_ORDER[award.id])
+    unlocked.sort(key=lambda award: FULL_CATALOG_ORDER[award.id])
     return unlocked, total_xp
 
 
@@ -193,13 +210,16 @@ def compute_near_achievements(
     morning_count: int,
     evening_count: int,
     qualifying_sessions: int,
+    w2: W2Signals | None = None,
 ) -> tuple[NearAchievement, ...]:
     """Un-held achievements with progress, closest-first (spec §4.1).
 
     Sorted by completion fraction descending, tie-broken by catalog order, so
     the projection can take the top N deterministically. Public so the read-side
     projection reconstructs the *same* near-miss ordering the settlement path
-    produces (single source of truth for near-achievement ranking).
+    produces (single source of truth for near-achievement ranking). ``w2``
+    defaults to empty signals, under which every W2 achievement reports progress 0
+    (filtered out by the read-side "genuinely in progress" rule).
     """
     ctx = AchievementContext(
         streak_days=streak_days,
@@ -208,9 +228,10 @@ def compute_near_achievements(
         morning_count=morning_count,
         evening_count=evening_count,
         qualifying_sessions=qualifying_sessions,
+        w2=w2 if w2 is not None else W2Signals(),
     )
     near: list[NearAchievement] = []
-    for ach in CATALOG:
+    for ach in FULL_CATALOG:
         if ach.id in held:
             continue
         near.append(
@@ -223,7 +244,10 @@ def compute_near_achievements(
             )
         )
     near.sort(
-        key=lambda n: (-(n.progress / n.target if n.target else 0.0), CATALOG_ORDER[n.id])
+        key=lambda n: (
+            -(n.progress / n.target if n.target else 0.0),
+            FULL_CATALOG_ORDER[n.id],
+        )
     )
     return tuple(near)
 
@@ -234,7 +258,11 @@ def compute_near_achievements(
 
 
 def decide(
-    prior: PriorFacts, session: SessionFacts, now: datetime
+    prior: PriorFacts,
+    session: SessionFacts,
+    now: datetime,
+    *,
+    w2: W2Signals | None = None,
 ) -> GamificationDecision:
     """Settle one session against banked prior facts (spec §4.1).
 
@@ -243,8 +271,15 @@ def decide(
     — resolve the same XP, level, streak, and unlock set. ``now`` is accepted for
     interface stability (ADR-ARCH-030 D1) but the outcome depends only on the
     banked facts and the session, never on the wall clock.
+
+    ``w2`` carries the capture-wave signals (spec §2.3 note) the W2 tranche reads;
+    it defaults to empty so a W1-only settlement (or a legacy caller) fires no W2
+    achievement. The store assembles ``w2`` from persisted capture state
+    (``text_name`` / quotes / per-turn AOs / confidence history) so the winner and
+    a later replay reconstruct the same signals.
     """
     del now  # decision is a pure function of prior + session facts
+    w2 = w2 if w2 is not None else W2Signals()
 
     xp_awarded = session_xp(session.engagement_seconds)
     qualifying = xp_awarded > 0
@@ -277,6 +312,7 @@ def decide(
         morning_count=morning_count,
         evening_count=evening_count,
         qualifying_sessions=qualifying_sessions,
+        w2=w2,
     )
 
     level_before = level_number_for_total_xp(prior.total_xp)
@@ -290,6 +326,7 @@ def decide(
         morning_count=morning_count,
         evening_count=evening_count,
         qualifying_sessions=qualifying_sessions,
+        w2=w2,
     )
 
     return GamificationDecision(
@@ -364,7 +401,7 @@ def award_from_banked(achievement_id: str, xp_awarded: int) -> AchievementAward:
     display name up in the catalog, so a legacy or unknown id degrades to its id
     as the name rather than raising.
     """
-    definition = CATALOG_BY_ID.get(achievement_id)
+    definition = FULL_CATALOG_BY_ID.get(achievement_id)
     name = definition.name if definition is not None else achievement_id
     return AchievementAward(id=achievement_id, name=name, xp=xp_awarded)
 
