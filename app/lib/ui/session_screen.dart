@@ -1,13 +1,19 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
+import '../adapters/audio_playback.dart';
+import '../adapters/voice_recorder.dart';
 import '../domain/errors.dart';
 import '../domain/session.dart';
-import '../fakes/fake_voice_api.dart';
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
 import '../ports/voice_api.dart';
 import 'error_handling.dart';
+import 'formatting.dart';
+import 'theme/motion.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({
@@ -16,60 +22,135 @@ class SessionScreen extends StatefulWidget {
     required this.sessionApi,
     required this.sessionId,
     required this.voiceApi,
+    this.subject,
     this.initialTurns = const [],
     this.voiceRecorder,
+    this.player,
+    this.clock,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
   final String sessionId;
   final VoiceApi voiceApi;
+
+  /// The session subject/topic — title-cased for the AppBar (spec §3). Null in
+  /// widget tests that inject the screen directly, falling back to 'Session'.
+  final String? subject;
+
   final VoiceRecorder? voiceRecorder;
+
+  /// Sequential TTS playback for spoken answers (spec §5.2). Null in the test
+  /// environment (just_audio needs platform channels) — playback is skipped.
+  final AudioPlayback? player;
 
   /// Pre-loaded transcript — empty for a new session; resume paths pass the
   /// ordered turns they fetched.
   final List<TurnEntry> initialTurns;
 
+  /// Injectable clock for the recording-elapsed label (tests drive it with a
+  /// fake clock). Defaults to [DateTime.now].
+  final DateTime Function()? clock;
+
   @override
   State<SessionScreen> createState() => _SessionScreenState();
 }
 
-class _SessionScreenState extends State<SessionScreen> {
+/// The optimistic user bubble shown the instant a turn is sent, before the
+/// reply arrives (spec §3/§4 — kills the 15–30 s frozen wall). For text turns
+/// it carries the typed message; for voice turns the transcript isn't known
+/// yet so it renders a neutral placeholder.
+class _Optimistic {
+  const _Optimistic({this.text, required this.isVoice});
+  final String? text;
+  final bool isVoice;
+}
+
+class _SessionScreenState extends State<SessionScreen>
+    with SingleTickerProviderStateMixin {
   late final List<TurnEntry> _turns = List.of(widget.initialTurns);
   final _input = TextEditingController();
   final _scroll = ScrollController();
   late final VoiceRecorder? _recorder = widget.voiceRecorder;
 
+  /// Confirmed-turn indices whose timestamp is revealed (long-press, spec §3).
+  final Set<int> _revealedTimestamps = {};
+
   bool _sending = false;
   bool _ended = false;
   bool _recording = false;
   bool _voiceUnavailable = false;
-  String? _voiceErrorMessage;
+  bool _playing = false;
+
+  /// The in-flight optimistic user bubble (null when none pending).
+  _Optimistic? _optimistic;
+
+  /// Whether to show the tutor "typing" indicator while awaiting a reply.
+  bool _awaiting = false;
+
+  /// Dismissible banner state (spec §3: themed MaterialBanner replaces the
+  /// hardcoded amber/red containers).
+  String? _bannerMessage;
+  bool _bannerIsError = false;
+
   DateTime? _recordingStartTime;
+  Timer? _elapsedTicker;
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: AppMotion.flamePulse,
+  );
 
   @override
   void initState() {
     super.initState();
-    // Resume paths arrive with a full transcript: open at the latest
-    // exchange, not the oldest message.
-    if (_turns.isNotEmpty) _showLatest();
+    // Resume paths arrive with a full transcript: open at the latest exchange,
+    // not the oldest message.
+    if (_turns.isNotEmpty) _scrollToBottom(animate: false);
   }
 
   @override
   void dispose() {
+    _elapsedTicker?.cancel();
+    _pulse.dispose();
     _recorder?.dispose();
+    widget.player?.dispose();
     _scroll.dispose();
     _input.dispose();
     super.dispose();
   }
 
-  /// ListView stays anchored to its current offset when items are appended,
-  /// so newly added turns end up below the fold once the transcript exceeds
-  /// the viewport. Jump after the frame in which the new items are laid out.
-  void _showLatest() {
+  /// The ListView stays anchored to its offset when items append, so new turns
+  /// fall below the fold. Scroll after the frame in which they are laid out —
+  /// [animate] `easeOutCubic` for sends, instant on first open.
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
-      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      final target = _scroll.position.maxScrollExtent;
+      if (animate) {
+        _scroll
+            .animateTo(
+              target,
+              duration: AppMotion.standard,
+              curve: AppMotion.standardCurve,
+            )
+            .then((_) {
+          // The estimated extent can grow as off-screen items lay in during
+          // the animation; snap to the true bottom on completion so the newest
+          // exchange is fully in view.
+          if (mounted && _scroll.hasClients) {
+            _scroll.jumpTo(_scroll.position.maxScrollExtent);
+          }
+        });
+      } else {
+        _scroll.jumpTo(target);
+      }
+    });
+  }
+
+  void _showBanner(String message, {bool isError = true}) {
+    setState(() {
+      _bannerMessage = message;
+      _bannerIsError = isError;
     });
   }
 
@@ -80,20 +161,14 @@ class _SessionScreenState extends State<SessionScreen> {
       // §4: ended is terminal — the screen goes read-only, no way back.
       setState(() => _ended = true);
     } on SessionEnded {
-      // Already ended elsewhere — same terminal state (scope §3).
       if (!mounted) return;
       setState(() => _ended = true);
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(
-        context,
-        widget.identity,
-        widget.sessionApi,
-        widget.voiceApi,
-      );
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
-      // The end never reached the backend: not ended, nothing lost — the
-      // End affordance stays and tapping it again is the retry.
+      // The end never reached the backend: not ended, nothing lost — the End
+      // affordance stays and tapping it again is the retry.
       if (!mounted) return;
       await showConnectionProblem(context);
     } on SessionApiException {
@@ -106,7 +181,15 @@ class _SessionScreenState extends State<SessionScreen> {
     final text = _input.text.trim();
     if (text.isEmpty || _sending || _ended) return;
 
-    setState(() => _sending = true);
+    // Optimistic: show the user bubble + typing indicator immediately.
+    setState(() {
+      _sending = true;
+      _optimistic = _Optimistic(text: text, isVoice: false);
+      _awaiting = true;
+      _input.clear();
+    });
+    _scrollToBottom();
+
     try {
       final result = await widget.sessionApi.turn(widget.sessionId, text);
       if (!mounted) return;
@@ -114,38 +197,45 @@ class _SessionScreenState extends State<SessionScreen> {
         final now = DateTime.now();
         _turns
           ..add(TurnEntry(role: TurnRole.user, content: text, ts: now))
-          ..add(
-            TurnEntry(
-              role: TurnRole.tutor,
-              content: result.tutorResponse,
-              ts: now,
-            ),
-          );
-        _input.clear();
+          ..add(TurnEntry(role: TurnRole.tutor, content: result.tutorResponse, ts: now));
+        _optimistic = null;
+        _awaiting = false;
       });
-      _showLatest();
+      _scrollToBottom();
     } on SessionEnded {
-      // Ended under us (e.g. another device): ended state, input disabled
-      // (scope §3) — the unsent message is dropped, not appended.
+      // Ended under us (e.g. another device): roll the optimistic bubble back,
+      // keep the unsent text in the (now disabled) field.
       if (!mounted) return;
-      setState(() => _ended = true);
+      setState(() {
+        _ended = true;
+        _optimistic = null;
+        _awaiting = false;
+        _input.text = text;
+      });
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(
-        context,
-        widget.identity,
-        widget.sessionApi,
-        widget.voiceApi,
-      );
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
-      // The turn may never have reached the backend. Nothing is appended and
-      // `_input` is NOT cleared (that only happens on success) — the unsent
-      // message survives in the field, so "try again" is tapping send again.
+      // The turn may never have reached the backend: roll back the optimistic
+      // bubble and restore the unsent text so the retry affordance (send again)
+      // resends the exact message — unchanged connection-problem behaviour.
       if (!mounted) return;
+      setState(() {
+        _optimistic = null;
+        _awaiting = false;
+        _input.text = text;
+      });
       await showConnectionProblem(context);
     } on SessionApiException {
       // SessionForbidden / SessionNotFoundError: shared surface, back home.
+      // Restore the unsent text (the turn never landed) — same as the other
+      // non-success paths.
       if (!mounted) return;
+      setState(() {
+        _optimistic = null;
+        _awaiting = false;
+        _input.text = text;
+      });
       await showCantOpenSession(context);
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -156,62 +246,81 @@ class _SessionScreenState extends State<SessionScreen> {
     if (_sending || _ended || _voiceUnavailable) return;
 
     if (!_recording) {
-      // Start recording
+      // Start recording.
       if (_recorder == null) {
-        // Test environment: simulate immediate recording
         if (!mounted) return;
-        setState(() {
-          _recording = true;
-          _recordingStartTime = DateTime.now();
-          _voiceErrorMessage = null;
-        });
+        _startRecordingUi();
         return;
       }
-
       try {
         await _recorder.start();
         if (!mounted) return;
-        setState(() {
-          _recording = true;
-          _recordingStartTime = DateTime.now();
-          _voiceErrorMessage = null;
-        });
-      } catch (e) {
-        // Microphone permission denied or unavailable
+        _startRecordingUi();
+      } catch (_) {
+        // Microphone permission denied or unavailable — mic stays enabled so
+        // the user can retry (spec §4: no permanently dead mic).
         if (!mounted) return;
-        setState(() {
-          _voiceErrorMessage =
-              "This app needs microphone access to record your questions";
-        });
+        _showBanner(
+          "This app needs microphone access to record your questions",
+        );
       }
-    } else {
-      // Stop recording and send
-      Uint8List? audio;
-      if (_recorder == null) {
-        // Test environment: use dummy audio
-        audio = Uint8List(100);
-      } else {
-        audio = await _recorder.stop();
-      }
-
-      if (!mounted) return;
-
-      if (audio == null || audio.isEmpty) {
-        setState(() {
-          _recording = false;
-          _recordingStartTime = null;
-        });
-        return;
-      }
-
-      setState(() {
-        _recording = false;
-        _recordingStartTime = null;
-        _sending = true;
-      });
-
-      await _sendVoiceTurn(audio);
+      return;
     }
+
+    // Stop recording and send.
+    Uint8List? audio;
+    try {
+      audio = _recorder == null ? Uint8List(100) : await _recorder.stop();
+    } on RecordingTooLarge {
+      if (!mounted) return;
+      _stopRecordingUi();
+      _showBanner(
+        "That recording is too large — keep your questions under a minute",
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    if (audio == null || audio.isEmpty) {
+      _stopRecordingUi();
+      return;
+    }
+
+    _stopRecordingUi();
+    setState(() {
+      _sending = true;
+      _optimistic = const _Optimistic(isVoice: true);
+      _awaiting = true;
+    });
+    _scrollToBottom();
+    await _sendVoiceTurn(audio);
+  }
+
+  DateTime _now() => (widget.clock ?? DateTime.now)();
+
+  void _startRecordingUi() {
+    setState(() {
+      _recording = true;
+      _recordingStartTime = _now();
+      _bannerMessage = null;
+    });
+    _pulse.repeat(reverse: true);
+    _elapsedTicker?.cancel();
+    _elapsedTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _stopRecordingUi() {
+    _elapsedTicker?.cancel();
+    _elapsedTicker = null;
+    _pulse.stop();
+    _pulse.value = 0;
+    setState(() {
+      _recording = false;
+      _recordingStartTime = null;
+    });
   }
 
   Future<void> _sendVoiceTurn(Uint8List audio) async {
@@ -221,10 +330,9 @@ class _SessionScreenState extends State<SessionScreen> {
         audio,
         contentType: 'audio/m4a',
       );
-
       if (!mounted) return;
 
-      // Extract answer text from answer parts (text parts only, in order)
+      // Answer text = text parts joined in order (as today).
       final answerText = result.answerParts
           .whereType<TextAnswerPart>()
           .map((part) => part.text)
@@ -232,110 +340,229 @@ class _SessionScreenState extends State<SessionScreen> {
 
       setState(() {
         final now = DateTime.now();
-        // Transcript appears first (exactly like typed turn)
-        _turns.add(
-          TurnEntry(role: TurnRole.user, content: result.transcript, ts: now),
-        );
-        // Then the tutor's spoken answer
-        _turns.add(
-          TurnEntry(role: TurnRole.tutor, content: answerText, ts: now),
-        );
+        _turns
+          ..add(TurnEntry(role: TurnRole.user, content: result.transcript, ts: now))
+          ..add(TurnEntry(role: TurnRole.tutor, content: answerText, ts: now));
+        _optimistic = null;
+        _awaiting = false;
       });
-      _showLatest();
+      _scrollToBottom();
+
+      // TTS: fetch + play the spoken answer sequentially (spec §5.2).
+      unawaited(_playAnswer(result));
     } on VoiceUnavailable {
-      // Voice backend unavailable — amber degradation, mic disabled
       if (!mounted) return;
-      setState(() {
-        _voiceUnavailable = true;
-        _voiceErrorMessage =
-            "Spoken answers aren't available right now — text still works";
-      });
+      _clearPending();
+      setState(() => _voiceUnavailable = true);
+      _showBanner(
+        "Spoken answers aren't available right now — text still works",
+        isError: false,
+      );
     } on UnsupportedAudioFormat {
-      if (!mounted) return;
-      setState(() {
-        _voiceErrorMessage =
-            "That audio format isn't supported — try recording again";
-      });
+      _voiceError("That audio format isn't supported — try recording again");
     } on EmptyRecording {
-      if (!mounted) return;
-      setState(() {
-        _voiceErrorMessage =
-            "That recording was too short — please speak your question clearly";
-      });
+      _voiceError(
+        "That recording was too short — please speak your question clearly",
+      );
     } on UnintelligibleQuery {
-      if (!mounted) return;
-      setState(() {
-        _voiceErrorMessage =
-            "I couldn't understand that — could you try again more clearly?";
-      });
+      _voiceError(
+        "I couldn't understand that — could you try again more clearly?",
+      );
     } on QueryTooLong {
-      if (!mounted) return;
-      setState(() {
-        _voiceErrorMessage =
-            "That question is too long — try breaking it into smaller parts";
-      });
+      _voiceError(
+        "That question is too long — try breaking it into smaller parts",
+      );
     } on RecordingTooLarge {
-      if (!mounted) return;
-      setState(() {
-        _voiceErrorMessage =
-            "That recording is too large — keep your questions under a minute";
-      });
+      _voiceError(
+        "That recording is too large — keep your questions under a minute",
+      );
     } on SessionEnded {
       if (!mounted) return;
+      _clearPending();
       setState(() => _ended = true);
     } on Unauthenticated {
       if (!mounted) return;
-      routeToSignIn(
-        context,
-        widget.identity,
-        widget.sessionApi,
-        widget.voiceApi,
-      );
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
-      // Recording preserved — "try again" is tapping mic again
       if (!mounted) return;
+      _clearPending();
       await showConnectionProblem(context);
     } on SessionApiException {
       if (!mounted) return;
+      _clearPending();
       await showCantOpenSession(context);
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
 
-  Widget _bubble(BuildContext context, TurnEntry turn) {
+  void _voiceError(String message) {
+    if (!mounted) return;
+    _clearPending();
+    _showBanner(message);
+  }
+
+  void _clearPending() {
+    setState(() {
+      _optimistic = null;
+      _awaiting = false;
+    });
+  }
+
+  Future<void> _playAnswer(VoiceTurnResult result) async {
+    final player = widget.player;
+    if (player == null) return;
+    final parts = result.answerParts.whereType<AudioAnswerPart>().toList()
+      ..sort((a, b) => a.seq.compareTo(b.seq));
+    if (parts.isEmpty) return;
+    try {
+      final chunks = <Uint8List>[];
+      for (final part in parts) {
+        chunks.add(
+          await widget.voiceApi.fetchAudioChunk(widget.sessionId, part.chunkId),
+        );
+      }
+      if (!mounted) return;
+      setState(() => _playing = true);
+      await player.playSequential(chunks);
+    } catch (_) {
+      // Playback failure must not break the turn — the text is already shown.
+    } finally {
+      if (mounted) setState(() => _playing = false);
+    }
+  }
+
+  Future<void> _stopPlayback() async {
+    await widget.player?.stop();
+    if (mounted) setState(() => _playing = false);
+  }
+
+  double _bubbleMaxWidth(BuildContext context) {
+    // Spec §4: 76% of screen width, capped at 560 (replaces the 320 hardcode).
+    return math.min(560.0, MediaQuery.of(context).size.width * 0.76);
+  }
+
+  Widget _bubble(BuildContext context, int index, TurnEntry turn) {
     final isUser = turn.role == TurnRole.user;
     final colors = Theme.of(context).colorScheme;
+    final revealed = _revealedTimestamps.contains(index);
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        constraints: const BoxConstraints(maxWidth: 320),
-        decoration: BoxDecoration(
-          color: isUser
-              ? colors.primaryContainer
-              : colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+      child: GestureDetector(
+        onLongPress: () => setState(() {
+          revealed
+              ? _revealedTimestamps.remove(index)
+              : _revealedTimestamps.add(index);
+        }),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(context)),
+          decoration: BoxDecoration(
+            color: isUser ? colors.primaryContainer : colors.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment:
+                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(turn.content),
+              if (revealed)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _formatClock(turn.ts),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+            ],
+          ),
         ),
-        child: Text(turn.content),
       ),
     );
   }
 
+  Widget _optimisticBubble(BuildContext context, _Optimistic pending) {
+    final colors = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(context)),
+        decoration: BoxDecoration(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: pending.isVoice
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.mic, size: 16, color: colors.onPrimaryContainer),
+                  const SizedBox(width: 6),
+                  const Text('Recording sent…'),
+                ],
+              )
+            : Text(pending.text ?? ''),
+      ),
+    );
+  }
+
+  Widget _typingIndicator(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Align(
+      key: const Key('typing-indicator'),
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < 3; i++)
+              Padding(
+                padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+                child: CircleAvatar(
+                  radius: 3,
+                  backgroundColor: colors.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatClock(DateTime ts) {
+    final local = ts.toLocal();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
   String _formatElapsed() {
-    if (_recordingStartTime == null) return '';
-    final elapsed = DateTime.now().difference(_recordingStartTime!);
-    final seconds = elapsed.inSeconds;
-    return '${seconds}s';
+    if (_recordingStartTime == null) return '0s';
+    return '${_now().difference(_recordingStartTime!).inSeconds}s';
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final pendingCount =
+        (_optimistic != null ? 1 : 0) + (_awaiting ? 1 : 0);
+    final itemCount = _turns.length + pendingCount;
+    final isEmpty = itemCount == 0;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Session'),
+        title: Text(titleCaseSubject(widget.subject)),
         actions: [
           if (!_ended)
             TextButton(
@@ -347,32 +574,55 @@ class _SessionScreenState extends State<SessionScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _turns.isEmpty
+            child: isEmpty
                 ? const Center(child: Text('No messages yet'))
                 : ListView.builder(
                     controller: _scroll,
-                    itemCount: _turns.length,
-                    itemBuilder: (context, i) => _bubble(context, _turns[i]),
+                    itemCount: itemCount,
+                    itemBuilder: (context, i) {
+                      if (i < _turns.length) return _bubble(context, i, _turns[i]);
+                      final offset = i - _turns.length;
+                      if (_optimistic != null && offset == 0) {
+                        return _optimisticBubble(context, _optimistic!);
+                      }
+                      return _typingIndicator(context);
+                    },
                   ),
           ),
-          if (_voiceUnavailable && _voiceErrorMessage != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              color: colors.tertiaryContainer,
-              child: Text(
-                _voiceErrorMessage!,
-                style: TextStyle(color: colors.onTertiaryContainer),
+          if (_bannerMessage != null)
+            MaterialBanner(
+              backgroundColor: _bannerIsError
+                  ? colors.errorContainer
+                  : colors.tertiaryContainer,
+              content: Text(
+                _bannerMessage!,
+                style: TextStyle(
+                  color: _bannerIsError
+                      ? colors.onErrorContainer
+                      : colors.onTertiaryContainer,
+                ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => setState(() => _bannerMessage = null),
+                  child: const Text('Dismiss'),
+                ),
+              ],
             ),
-          if (!_voiceUnavailable && _voiceErrorMessage != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              color: colors.errorContainer,
-              child: Text(
-                _voiceErrorMessage!,
-                style: TextStyle(color: colors.onErrorContainer),
+          if (_playing)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.volume_up, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Playing answer…'),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _stopPlayback,
+                    child: const Text('Stop'),
+                  ),
+                ],
               ),
             ),
           if (_ended)
@@ -385,15 +635,7 @@ class _SessionScreenState extends State<SessionScreen> {
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      _recording ? Icons.stop : Icons.mic,
-                      color: _recording ? colors.error : null,
-                    ),
-                    onPressed: (_sending || _ended || _voiceUnavailable)
-                        ? null
-                        : _toggleMic,
-                  ),
+                  _micButton(colors),
                   if (_recording)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
@@ -410,8 +652,7 @@ class _SessionScreenState extends State<SessionScreen> {
                     child: TextField(
                       controller: _input,
                       // Only the ended state disables the field. Disabling on
-                      // `_sending` would unfocus it and dismiss the keyboard
-                      // on every send once the port has real latency; the
+                      // `_sending` would dismiss the keyboard on every send; the
                       // `_send` guard + disabled send button already prevent
                       // double-send.
                       enabled: !_ended,
@@ -430,6 +671,38 @@ class _SessionScreenState extends State<SessionScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 56 dp FAB-style mic (spec §3): pulsing red while recording.
+  Widget _micButton(ColorScheme colors) {
+    final disabled = _sending || _ended || _voiceUnavailable;
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (context, child) {
+          final background = _recording
+              ? Color.lerp(colors.errorContainer, colors.error, _pulse.value)
+              : colors.surfaceContainerHighest;
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: disabled ? colors.surfaceContainerHigh : background,
+              shape: BoxShape.circle,
+            ),
+            child: child,
+          );
+        },
+        child: IconButton(
+          iconSize: 28,
+          icon: Icon(
+            _recording ? Icons.stop : Icons.mic,
+            color: _recording ? colors.onError : null,
+          ),
+          onPressed: disabled ? null : _toggleMic,
+        ),
       ),
     );
   }

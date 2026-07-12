@@ -16,3 +16,17 @@ abstract interface class IdentityProvider {
 
   Future<void> signOut();
 }
+
+/// Optional capability: a dev/test identity source that can enumerate and
+/// select among several principals (the fake has two). This is deliberately a
+/// *separate* interface — it does NOT change the [IdentityProvider] shape.
+/// Real IdPs (Keycloak) won't implement it, so the SignIn chooser only appears
+/// when the composed provider offers it (spec §3: "shows displayName choices
+/// if multiple principals exist").
+abstract interface class PrincipalChooser {
+  /// The principals a dev can sign in as.
+  List<Principal> get availablePrincipals;
+
+  /// Sign in as a specific [principal] (must be one of [availablePrincipals]).
+  Future<Principal> signInAs(Principal principal);
+}

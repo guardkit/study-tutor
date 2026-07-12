@@ -9,6 +9,7 @@ import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
 import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
+import 'package:study_tutor_app/ui/home_screen.dart';
 
 void main() {
   testWidgets('full slice: sign in → start → turns → away → resume → end',
@@ -22,7 +23,7 @@ void main() {
     // Sign in.
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
 
     // Start a session.
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
@@ -44,8 +45,8 @@ void main() {
     // Navigate away — home re-lists and shows the resume affordance.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('english'), findsOneWidget,
-        reason: 'session lists under the default subject (ASSUM-001)');
+    expect(find.text('English'), findsOneWidget,
+        reason: 'session lists under the default subject, title-cased (ASSUM-001)');
     expect(find.text('2 turns'), findsOneWidget,
         reason: 'turn_count survives leaving the session');
     expect(find.widgetWithText(FilledButton, 'Start new session'),
@@ -89,6 +90,6 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('Resume'), findsNothing);
-    expect(find.text('No active sessions'), findsOneWidget);
+    expect(find.text(homeEmptyState), findsOneWidget);
   });
 }

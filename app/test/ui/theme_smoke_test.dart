@@ -34,13 +34,13 @@ void main() {
 
   testWidgets('Home renders under ThemeMode.light', (tester) async {
     final bands = await pumpHome(tester, ThemeMode.light);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
     expect(bands.mastered, BandColors.light.mastered);
   });
 
   testWidgets('Home renders under ThemeMode.dark', (tester) async {
     final bands = await pumpHome(tester, ThemeMode.dark);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
     expect(bands.mastered, BandColors.dark.mastered);
   });
 }

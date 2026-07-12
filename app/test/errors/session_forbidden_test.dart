@@ -9,6 +9,7 @@ import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
 import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
+import 'package:study_tutor_app/ui/home_screen.dart';
 
 void main() {
   testWidgets('resuming a session owned by the second principal → shared '
@@ -50,8 +51,8 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('No active sessions'), findsOneWidget,
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
+    expect(find.text(homeEmptyState), findsOneWidget,
         reason: 're-list after the error: the foreign row is gone');
   });
 }

@@ -47,6 +47,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
-    expect(find.text('Session'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
   });
 }

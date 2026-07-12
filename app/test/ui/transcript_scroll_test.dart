@@ -70,8 +70,12 @@ void main() {
 
     expect(find.text('one more'), findsOneWidget,
         reason: 'the just-sent message is on screen, not below the fold');
-    // Turn index 10 → cannedReplies[10 % 4] == cannedReplies[2].
-    expect(find.text(FakeSessionApi.cannedReplies[2]), findsOneWidget,
+    // Turn index 10 → cannedReplies[10 % 4] == cannedReplies[2]. The canned
+    // replies cycle every 4 turns, so with the wider (spec §4: 76%/max-560)
+    // bubbles an earlier occurrence can share the viewport — assert the reply
+    // is on screen (>=1) rather than uniquely, the culling intent is carried by
+    // the seed-0 check below.
+    expect(find.text(FakeSessionApi.cannedReplies[2]), findsWidgets,
         reason: 'the tutor reply to the new message is on screen');
     expect(find.text('seed-0'), findsNothing,
         reason: 'old messages scrolled away above');

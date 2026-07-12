@@ -12,6 +12,7 @@ import 'package:study_tutor_app/fakes/fake_session_api.dart';
 import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
+import 'package:study_tutor_app/ui/home_screen.dart';
 
 /// Delegates to the wrapped fake, except that verbs named in [failing]
 /// throw TransportError — the hermetic stand-in for "the network died on
@@ -98,7 +99,7 @@ void main() {
 
     await dismissDialog(tester);
     // Still on the session screen, nothing appended, message still typed.
-    expect(find.text('Session'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
     expect(
       find.descendant(
           of: find.byType(ListView), matching: find.text('are you there?')),
@@ -164,11 +165,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await dismissDialog(tester);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Start new session'),
         findsOneWidget,
         reason: 'home is intact and usable behind the dismissed dialog');
-    expect(find.text('No active sessions'), findsOneWidget,
+    expect(find.text(homeEmptyState), findsOneWidget,
         reason: 'the failed refresh leaves the (stale) empty state');
 
     // The connection returns: pull-to-refresh is the retry gesture for the
@@ -189,15 +190,15 @@ void main() {
     await tester.pumpAndSettle();
 
     await dismissDialog(tester);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Session'), findsNothing,
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
+    expect(find.text('English'), findsNothing,
         reason: 'nothing was started — no session screen was pushed');
 
     // `_busy` must have been released for the retry to work at all.
     sessionApi.failing.remove('startSession');
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
-    expect(find.text('Session'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
   });
 
   testWidgets(
@@ -227,7 +228,7 @@ void main() {
     sessionApi.failing.remove('resumeSession');
     await tester.tap(find.text('Resume'));
     await tester.pumpAndSettle();
-    expect(find.text('Session'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
     expect(
       find.descendant(
           of: find.byType(ListView), matching: find.text('first question')),

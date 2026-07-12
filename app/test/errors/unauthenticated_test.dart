@@ -18,7 +18,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
 
     // The switch: the app still holds a principal, the backend rejects it.
     identity.invalidateCurrentToken();
@@ -31,17 +31,17 @@ void main() {
     // skipOffstage: false so this fails if Home is merely covered by a
     // pushed sign-in route instead of removed from the stack (a plain push
     // keeps it offstage in the tree, which the default finder skips).
-    expect(find.text('Home', skipOffstage: false), findsNothing,
+    expect(find.text('Hi, Lilymay', skipOffstage: false), findsNothing,
         reason: 'the stack is cleared — no back route into the app');
 
     // Recovery: re-signing in yields a valid credential again — the
     // Unauthenticated → sign-in → retry loop must not dead-end.
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
-    expect(find.text('Session'), findsOneWidget,
+    expect(find.text('English'), findsOneWidget,
         reason: 'after re-auth the app is usable, not looping to sign-in');
   });
 
@@ -65,7 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
-    expect(find.text('Session', skipOffstage: false), findsNothing,
+    expect(find.text('English', skipOffstage: false), findsNothing,
         reason: 'stack cleared — the session route is gone, not covered');
   });
 }
