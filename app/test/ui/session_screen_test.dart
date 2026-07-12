@@ -1,7 +1,6 @@
 // SessionScreen tap-to-talk UX + VoiceUnavailable degradation widget tests.
 // Covers AC-001 through AC-009 per TASK-VC-005.
 
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/domain/errors.dart';
@@ -10,48 +9,6 @@ import 'package:study_tutor_app/fakes/fake_session_api.dart';
 import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ports/voice_api.dart';
 import 'package:study_tutor_app/ui/session_screen.dart';
-
-/// Mock VoiceRecorder that simulates permission denial.
-class MockVoiceRecorder implements VoiceRecorder {
-  bool shouldDenyPermission = false;
-  bool _isRecording = false;
-
-  @override
-  AudioEncoder get encoder => AudioEncoder.aacLc;
-
-  @override
-  Duration get maxDuration => const Duration(seconds: 60);
-
-  @override
-  int get maxSizeBytes => 10 * 1024 * 1024;
-
-  @override
-  bool get isRecording => _isRecording;
-
-  @override
-  Future<void> start() async {
-    if (shouldDenyPermission) {
-      throw Exception('Microphone permission denied');
-    }
-    _isRecording = true;
-  }
-
-  @override
-  Future<Uint8List?> stop() async {
-    _isRecording = false;
-    return Uint8List(100);
-  }
-
-  @override
-  void cancel() {
-    _isRecording = false;
-  }
-
-  @override
-  void dispose() {
-    _isRecording = false;
-  }
-}
 
 void main() {
   late FakeIdentityProvider identity;
@@ -78,7 +35,9 @@ void main() {
         sessionApi: sessionApi,
         sessionId: sessionId ?? 'test-session',
         voiceApi: voice ?? voiceApi,
-        voiceRecorder: voiceRecorder,
+        // A real fake recorder is injected by default: production always injects
+        // one, and a null recorder now disables the mic (§5.1 follow-up).
+        voiceRecorder: voiceRecorder ?? FakeVoiceRecorder(),
       ),
     );
   }
@@ -371,10 +330,11 @@ void main() {
     testWidgets(
       'AC-005: mic permission denied shows explanation, typing still works',
       (tester) async {
-        final mockRecorder = MockVoiceRecorder();
-        mockRecorder.shouldDenyPermission = true;
+        final deniedRecorder = FakeVoiceRecorder(
+          throwOnStart: Exception('Microphone permission denied'),
+        );
 
-        await tester.pumpWidget(makeScreen(voiceRecorder: mockRecorder));
+        await tester.pumpWidget(makeScreen(voiceRecorder: deniedRecorder));
 
         // Try to start recording
         await tester.tap(find.widgetWithIcon(IconButton, Icons.mic));

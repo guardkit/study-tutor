@@ -121,6 +121,7 @@ void main() {
         sessionApi: FakeSessionApi(identity: identity),
         voiceApi: FakeVoiceApi(),
         sessionId: 'test-session',
+        voiceRecorder: FakeVoiceRecorder(),
         clock: () => now,
       ),
     ));
@@ -152,6 +153,7 @@ void main() {
         sessionApi: FakeSessionApi(identity: identity),
         voiceApi: flaky,
         sessionId: 'test-session',
+        voiceRecorder: FakeVoiceRecorder(),
       ),
     ));
 
@@ -188,11 +190,12 @@ void main() {
         sessionApi: FakeSessionApi(identity: identity),
         voiceApi: FakeVoiceApi(),
         sessionId: 'test-session',
+        voiceRecorder: FakeVoiceRecorder(),
         player: player,
       ),
     ));
 
-    // Do a voice turn (null recorder → dummy audio path).
+    // Do a voice turn: the fake recorder returns canned bytes on stop().
     await tester.tap(find.widgetWithIcon(IconButton, Icons.mic));
     await tester.pump();
     await tester.tap(find.widgetWithIcon(IconButton, Icons.stop));

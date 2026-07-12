@@ -243,17 +243,15 @@ class _SessionScreenState extends State<SessionScreen>
   }
 
   Future<void> _toggleMic() async {
-    if (_sending || _ended || _voiceUnavailable) return;
+    final recorder = _recorder;
+    // A null recorder means voice capture is unavailable, so the mic button is
+    // disabled to match (see [_micButton]) and recording is never attempted.
+    if (recorder == null || _sending || _ended || _voiceUnavailable) return;
 
     if (!_recording) {
       // Start recording.
-      if (_recorder == null) {
-        if (!mounted) return;
-        _startRecordingUi();
-        return;
-      }
       try {
-        await _recorder.start();
+        await recorder.start();
         if (!mounted) return;
         _startRecordingUi();
       } catch (_) {
@@ -270,7 +268,7 @@ class _SessionScreenState extends State<SessionScreen>
     // Stop recording and send.
     Uint8List? audio;
     try {
-      audio = _recorder == null ? Uint8List(100) : await _recorder.stop();
+      audio = await recorder.stop();
     } on RecordingTooLarge {
       if (!mounted) return;
       _stopRecordingUi();
@@ -677,7 +675,8 @@ class _SessionScreenState extends State<SessionScreen>
 
   /// 56 dp FAB-style mic (spec §3): pulsing red while recording.
   Widget _micButton(ColorScheme colors) {
-    final disabled = _sending || _ended || _voiceUnavailable;
+    final disabled =
+        _recorder == null || _sending || _ended || _voiceUnavailable;
     return SizedBox(
       width: 56,
       height: 56,
