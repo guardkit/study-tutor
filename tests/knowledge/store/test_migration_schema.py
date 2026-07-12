@@ -1,8 +1,12 @@
-"""Migration schema tests for TASK-SMP-02.
+"""Migration schema tests for the StudentStore Alembic chain.
 
-Tests that the first Alembic migration correctly creates the StudentStore schema
-with all tables, indexes, constraints, and foreign keys as specified in
-schema_reference.sql.
+Tests that ``alembic upgrade head`` builds the StudentStore schema with all
+tables, indexes, constraints, and foreign keys. ``schema_reference.sql`` is a
+living reference kept in sync by hand; ``alembic upgrade head`` is the source of
+truth. As of revision b7d1e4f92a3c (Phase E, S-E1) head is 8 tables — the
+initial 7 plus ``topic_confidence_history``; the settlement/plan-fact column
+additions and the second revision's own downgrade are covered in
+``test_migration_schema_settlement.py``.
 
 Also includes DSN seam tests verifying the async engine configuration.
 """
@@ -147,7 +151,7 @@ async def test_upgrade_head_creates_all_tables(
     ephemeral_postgres_dsn: str,
     alembic_project_root: Path,
 ) -> None:
-    """Verify that 'alembic upgrade head' creates all 7 StudentStore tables."""
+    """Verify that 'alembic upgrade head' creates all 8 StudentStore tables."""
     # Run alembic upgrade head using virtualenv python
     python_exe = alembic_project_root / ".venv" / "bin" / "python"
     result = subprocess.run(
@@ -159,7 +163,7 @@ async def test_upgrade_head_creates_all_tables(
     )
     assert result.returncode == 0, f"alembic upgrade failed: {result.stderr}"
 
-    # Verify all 7 tables exist
+    # Verify all 8 tables exist (head = revision b7d1e4f92a3c)
     expected_tables = {
         "student",
         "topic_confidence",
@@ -168,6 +172,7 @@ async def test_upgrade_head_creates_all_tables(
         "session_turn",
         "achievement",
         "quest",
+        "topic_confidence_history",
     }
 
     dsn = _normalize_dsn_to_asyncpg(ephemeral_postgres_dsn)
@@ -198,11 +203,12 @@ async def test_upgrade_head_creates_named_indexes(
     ephemeral_postgres_dsn: str,
     alembic_project_root: Path,
 ) -> None:
-    """Verify that all 3 named indexes are created."""
+    """Verify that all 4 named indexes are created."""
     expected_indexes = {
         "misconception_recent_idx",
         "session_resume_idx",
         "quest_active_idx",
+        "topic_confidence_history_recent_idx",
     }
 
     dsn = _normalize_dsn_to_asyncpg(ephemeral_postgres_dsn)
@@ -311,16 +317,24 @@ async def test_composite_primary_keys_exist(
 async def test_foreign_keys_have_cascade_delete(
     ephemeral_postgres_dsn: str,
 ) -> None:
-    """Verify that all child FKs have ON DELETE CASCADE."""
+    """Verify that all child→student FKs have ON DELETE CASCADE.
+
+    Keyed by constraint name, not table name: as of revision b7d1e4f92a3c the
+    ``achievement`` and ``topic_confidence_history`` tables carry more than one
+    FK (``achievement.session_id`` references ``session`` with NO ACTION — the
+    replay-support FK is deliberately non-cascading), so collapsing by table
+    name would be ambiguous. The child→student ownership FKs are the ones that
+    must cascade so deleting a student wipes their learner state.
+    """
     dsn = _normalize_dsn_to_asyncpg(ephemeral_postgres_dsn)
     engine = create_async_engine(dsn)
     async with engine.connect() as conn:
-        # Query all FK constraints
+        # Query all FK constraints, keyed by constraint name.
         result = await conn.execute(
             text(
                 """
                 SELECT
-                    tc.table_name,
+                    tc.constraint_name,
                     rc.delete_rule
                 FROM information_schema.table_constraints AS tc
                 JOIN information_schema.referential_constraints AS rc
@@ -334,18 +348,26 @@ async def test_foreign_keys_have_cascade_delete(
 
     await engine.dispose()
 
-    # All child tables should have CASCADE delete
-    expected_cascade_tables = {
-        "topic_confidence",
-        "misconception",
-        "session",
-        "session_turn",
-        "achievement",
-        "quest",
+    # Every child→student ownership FK must cascade on delete.
+    expected_cascade_fks = {
+        "topic_confidence_student_id_fkey",
+        "misconception_student_id_fkey",
+        "session_student_id_fkey",
+        "session_turn_session_id_fkey",
+        "achievement_student_id_fkey",
+        "quest_student_id_fkey",
+        "topic_confidence_history_student_id_fkey",
     }
-    for table in expected_cascade_tables:
-        assert table in fk_rules, f"FK constraint missing for {table}"
-        assert fk_rules[table] == "CASCADE", f"{table} FK should have ON DELETE CASCADE, got {fk_rules[table]}"
+    for constraint in expected_cascade_fks:
+        assert constraint in fk_rules, f"FK constraint missing: {constraint}"
+        assert fk_rules[constraint] == "CASCADE", (
+            f"{constraint} should have ON DELETE CASCADE, got {fk_rules[constraint]}"
+        )
+
+    # The replay-support FK is intentionally NON-cascading.
+    assert fk_rules.get("achievement_session_id_fkey") == "NO ACTION", (
+        "achievement.session_id FK must not cascade (replay support, D1)"
+    )
 
 
 @pytest.mark.asyncio
@@ -467,6 +489,7 @@ async def test_downgrade_base_removes_all_tables(
         "session_turn",
         "achievement",
         "quest",
+        "topic_confidence_history",
     }
 
     dsn = _normalize_dsn_to_asyncpg(ephemeral_postgres_dsn)

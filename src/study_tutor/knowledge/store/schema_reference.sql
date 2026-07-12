@@ -1,7 +1,8 @@
 -- Reference DDL for the study-tutor StudentStore (ADR-ARCH-023, gamification §11).
 --
--- REFERENCE ONLY. This is the shape FEAT-SMP-001 encodes as the first Alembic
--- migration. Do NOT apply by hand — the runbook's G7 gate runs
+-- LIVING REFERENCE. This file is kept in sync by hand; `alembic upgrade head`
+-- is the source of truth for the schema (revisions 3c7cd4bca034 →
+-- b7d1e4f92a3c). Do NOT apply by hand — the runbook's G7 gate runs
 -- `alembic upgrade head` (docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md).
 --
 -- JSONB is used only for genuinely flexible/nested fields (per-AO observations,
@@ -53,6 +54,8 @@ CREATE TABLE session (
     turn_count      INTEGER NOT NULL DEFAULT 0 CHECK (turn_count >= 0),
     xp_awarded      INTEGER NOT NULL DEFAULT 0 CHECK (xp_awarded >= 0),  -- per-session XP (gamification §11.1); record_session_completion persists it, idempotent on session_id
     aos_scaffolded  JSONB NOT NULL DEFAULT '[]'::jsonb,
+    text_name       TEXT,                             -- plan-fact captured at start (rev b7d1e4f92a3c, S-E4)
+    settled_at      TIMESTAMPTZ,                      -- settlement work-queue marker (rev b7d1e4f92a3c); NULL until settled
     summary         TEXT
 );
 -- The "resume where you left off" query: active sessions for a student, newest first.
@@ -75,8 +78,22 @@ CREATE TABLE achievement (
     achievement_id  TEXT NOT NULL,
     unlocked_at     TIMESTAMPTZ NOT NULL,
     xp_awarded      INTEGER NOT NULL CHECK (xp_awarded >= 0),
+    session_id      TEXT REFERENCES session(session_id),  -- replay support (rev b7d1e4f92a3c, D1)
     PRIMARY KEY (student_id, achievement_id)
 );
+
+-- Append-only confidence audit trail (rev b7d1e4f92a3c, spec §3). Modeled on
+-- misconception; written by settlement from day one (D2 — unbackfillable).
+CREATE TABLE topic_confidence_history (
+    id           BIGSERIAL PRIMARY KEY,
+    student_id   TEXT NOT NULL REFERENCES student(student_id) ON DELETE CASCADE,
+    topic_name   TEXT NOT NULL,
+    percentage   INTEGER NOT NULL CHECK (percentage BETWEEN 0 AND 100),
+    session_id   TEXT,
+    recorded_at  TIMESTAMPTZ NOT NULL,
+    source       TEXT NOT NULL
+);
+CREATE INDEX topic_confidence_history_recent_idx ON topic_confidence_history (student_id, recorded_at DESC);
 
 -- Active/historical quests (gamification §2.3).
 CREATE TABLE quest (
