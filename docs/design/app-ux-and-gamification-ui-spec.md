@@ -10,7 +10,7 @@
 
 - **Color**: Material 3, `ColorScheme.fromSeed`. Seed **`#324376`** (deep ink indigo); tertiary steered to warm gold **`#B98A2E`**-family. Both `light` and `dark` schemes from day one; `themeMode: ThemeMode.system`. No hardcoded `Colors.*` anywhere in `lib/ui` — everything through the scheme or the tokens below (the two existing hardcoded amber/red banners migrate).
 - **Semantic band tokens** (design.md §6.1, must read in both modes — light/dark pairs): `struggling` `#C4453C`/`#E58A82` · `developing` `#B98A2E`/`#E3B95C` · `secure` `#3E6FA3`/`#8FB8E0` · `mastered` `#3F8F5F`/`#7FC79B`. Exposed via a `BandColors` ThemeExtension.
-- **Typography**: body/UI = platform default (Roboto/SF). Display face for headings, level titles, and celebration numerals: **Lora** (OFL), bundled as an asset — no runtime font fetching. Type scale: display 28/24, title 18, body 15, label 12.
+- **Typography**: body/UI = platform default (Roboto/SF). Display face for headings, level titles, and celebration numerals: **Bricolage Grotesque** (OFL), bundled as an asset — no runtime font fetching (⏸A 2026-07-12: replaces Lora, which read too bookish for the Year 10/11 audience in review). Type scale: display 28/24, title 18, body 15, label 12; celebration XP numeral 36 (⏸A ruling — the one approved exception above display-28).
 - **Shape & space**: 4-pt grid; card radius 12; screen gutter 16; list item padding 12/16.
 - **Motion**: standard transitions 200–300 ms `easeOutCubic`; XP count-up 800 ms; celebration confetti burst ≤1.2 s used ONLY where design.md specifies celebration (achievement unlock, level-up; later daily-sweep) — never on routine actions. Streak flame gets a subtle idle pulse on the Home card only when the streak is alive today.
 - **Register**: engaging but not childish (Year 10/11). No mascots, no streak-shaming copy; empty states are warm and specific ("No sessions yet today — 20 minutes keeps your 6-day streak alive") not bare strings.
@@ -18,7 +18,7 @@
 ## §2 App architecture changes (minimal, no new packages)
 
 - **`AppScope`** InheritedWidget at the root composing the ports (`SessionApi`, `VoiceApi`, `IdentityProvider`, new `StudentModelApi`) — replaces constructor prop-drilling; screens read ports via `AppScope.of(context)`. Constructor injection stays available for widget tests (scope wraps, tests inject).
-- **`ProgressStore`** `ChangeNotifier` owning the student-model snapshot (fetch, cache, refresh-after-session-end); no provider/riverpod/bloc/go_router — pubspec gains ONLY the Lora font asset. Navigator 1.0 stays.
+- **`ProgressStore`** `ChangeNotifier` owning the student-model snapshot (fetch, cache, refresh-after-session-end); no provider/riverpod/bloc/go_router — pubspec gains ONLY the Bricolage Grotesque font asset. Navigator 1.0 stays.
 - New port triplet **`StudentModelApi`** (port + `HttpStudentModelApi` + `FakeStudentModelApi`) mirroring `composeSessionApi` (`main.dart:24-32`), composed against the **`IdentityProvider` interface** (KC-D7-proofing, D10).
 
 ## §3 Screen refits
@@ -61,3 +61,5 @@ Subject picker (v1 stays 'english', display-cased) · streaming token UI (TASK-S
 ---
 
 *Written 2026-07-12. Visual constants (§1) are Phase-A proposals — the attended mockup review (⏸, Rich) may adjust hue/type values; structural sections §2–§8 are binding as written. All rulings adopted at recommended values per the parent scope doc.*
+
+*⏸A attended review COMPLETE — 2026-07-12 (Rich + Fable, MacBook Pro; mockups adversarially fidelity-checked against this spec and design.md before review). Rulings: seed **#324376** and the `fromSeed` schemes approved as rendered (SchemeTonalSpot; light primary #4B5C92, dark primary #B4C5FF). Tertiary steered to gold — pinned roles (tertiary/onTertiary/tertiaryContainer/onTertiaryContainer, from the #B98A2E tonal palette at tones 40/100/90/10 light, 80/20/30/90 dark): light **#7D5800/#FFFFFF/#FFDEA9/#271900**, dark **#F3BE5D/#422C00/#5F4100/#FFDEA9**. Display face = **Bricolage Grotesque** (OFL), replacing Lora — Rich: Lora read "old skool… Times New Roman vibe" for teenagers, most visibly on the celebration sheet; §1 body updated in place. Motion values approved as written (800 ms count-up, ≤1.2 s confetti, 250 ms stagger, flame idle pulse). Celebration XP numeral **36** approved. Band tokens unchanged. **§1 is now FINAL.***
