@@ -9,6 +9,7 @@
 library;
 
 import '../domain/errors.dart';
+import '../domain/gamification.dart';
 import '../domain/session.dart';
 import '../ports/session_api.dart';
 import 'fake_identity_provider.dart';
@@ -225,13 +226,71 @@ class FakeSessionApi implements SessionApi {
     final session = _requireSession(sessionId);
     _requireOwner(session, studentId);
     _requireActive(session);
-    _store.sessions[session.id] = session.copyWith(
+    final ended = session.copyWith(
       status: SessionStatus.ended,
       lastActivity: _clock(),
     );
+    _store.sessions[session.id] = ended;
     return EndSessionResult(
       sessionId: session.id,
       status: SessionStatus.ended,
+      // §6.2: the fake models the nullable settlement block deterministically
+      // over the store (fixed XP per session shape) so contract tests pin
+      // exact values while live tests assert invariants.
+      gamification: _settle(studentId, ended),
+    );
+  }
+
+  /// Fixed XP per fake session shape (contract §5 Rev 2 `xp_awarded`): a
+  /// deterministic engagement-band base keyed off turn count.
+  static int _sessionXp(int turnCount) {
+    if (turnCount == 0) return 0; // settled but sub-engagement
+    if (turnCount < 3) return 60;
+    return 120;
+  }
+
+  /// Synthesise the settlement block from the store state after [ended] is
+  /// banked — pure and deterministic (contract §5 Rev 2 semantics):
+  /// `total_xp = SUM(session.xp) + SUM(achievement.xp)`, level derived from the
+  /// design §3.1 economy, First Steps (+50) unlocked on the student's first
+  /// scoring session.
+  SessionGamification _settle(String studentId, Session ended) {
+    final endedForStudent = _store.sessions.values
+        .where((s) =>
+            s.studentId == studentId && s.status == SessionStatus.ended)
+        .toList();
+
+    final xpAwarded = _sessionXp(ended.turnCount);
+    final sessionXpTotal = endedForStudent.fold<int>(
+        0, (sum, s) => sum + _sessionXp(s.turnCount));
+
+    // First Steps: banked once, on the first ended session that scores XP.
+    final scoringEndedCount =
+        endedForStudent.where((s) => _sessionXp(s.turnCount) > 0).length;
+    final newlyFirstSteps = xpAwarded > 0 && scoringEndedCount == 1;
+    final achievementsUnlocked = <UnlockedAchievement>[
+      if (newlyFirstSteps)
+        const UnlockedAchievement(id: 'first_steps', name: 'First Steps', xp: 50),
+    ];
+    final achievementXpAll = scoringEndedCount > 0 ? 50 : 0;
+
+    final totalXp = sessionXpTotal + achievementXpAll;
+    final priorXp =
+        totalXp - xpAwarded - (newlyFirstSteps ? 50 : 0);
+    final level = GamificationEconomy.levelForXp(totalXp);
+    final priorLevel = GamificationEconomy.levelForXp(priorXp);
+
+    return SessionGamification(
+      xpAwarded: xpAwarded,
+      totalXp: totalXp,
+      levelNumber: level.number,
+      levelName: level.name,
+      levelUp: level.number > priorLevel.number,
+      achievementsUnlocked: achievementsUnlocked,
+      // A deterministic streak proxy: the count of the student's ended
+      // sessions (the fake has no London calendar). Live asserts invariants.
+      streakDays: endedForStudent.length,
+      streakExtended: true,
     );
   }
 }

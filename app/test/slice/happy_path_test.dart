@@ -9,6 +9,7 @@ import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
 import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
+import 'package:study_tutor_app/ui/home_screen.dart';
 
 void main() {
   testWidgets('full slice: sign in → start → turns → away → resume → end',
@@ -22,12 +23,12 @@ void main() {
     // Sign in.
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
 
     // Start a session.
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.textContaining('Ask your first question'), findsOneWidget);
 
     // Two turns — transcript grows.
     await tester.enterText(find.byType(TextField), 'first question');
@@ -44,8 +45,8 @@ void main() {
     // Navigate away — home re-lists and shows the resume affordance.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('english'), findsOneWidget,
-        reason: 'session lists under the default subject (ASSUM-001)');
+    expect(find.text('English'), findsOneWidget,
+        reason: 'session lists under the default subject, title-cased (ASSUM-001)');
     expect(find.text('2 turns'), findsOneWidget,
         reason: 'turn_count survives leaving the session');
     expect(find.widgetWithText(FilledButton, 'Start new session'),
@@ -71,24 +72,23 @@ void main() {
     expect(find.text(FakeSessionApi.cannedReplies[2]), findsOneWidget,
         reason: 'reply index continues from the stored turn_count');
 
-    // End — terminal, input disabled.
+    // End — the settlement block fires the celebration sheet (§6.2), then the
+    // dismiss pops back to Home.
     await tester.tap(find.text('End session'));
     await tester.pumpAndSettle();
-    expect(find.text('Session ended'), findsOneWidget);
-    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
-    expect(
-      tester
-          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.send))
-          .onPressed,
-      isNull,
-    );
-    expect(find.text('End session'), findsNothing,
-        reason: 'no second end — ended is terminal');
+    expect(find.byKey(const Key('celebration-sheet')), findsOneWidget,
+        reason: 'a non-null gamification block celebrates on end');
+    expect(find.text('Nice work'), findsOneWidget);
 
-    // Back home: the ended session is gone from the resume list.
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    // Dismiss → pop to Home; the ended session is gone from the resume list.
+    await tester.tap(find.text('Nice work'));
+    // The Home flame idle-pulses once the streak is alive today, so a single
+    // perpetual animation is on screen — settle with bounded pumps, not
+    // pumpAndSettle.
+    await tester.pump(); // start the pop transition
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Resume'), findsNothing);
-    expect(find.text('No active sessions'), findsOneWidget);
+    expect(find.text(homeEmptyState), findsOneWidget);
   });
 }

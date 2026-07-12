@@ -67,6 +67,20 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Display face for headings and celebration numerals (spec §1, ⏸A-pinned:
+  # Bricolage Grotesque, OFL). Bundled as an asset — no runtime font fetching.
+  fonts:
+    - family: BricolageGrotesque
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/BricolageGrotesque-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/BricolageGrotesque-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

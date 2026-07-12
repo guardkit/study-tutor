@@ -1,5 +1,6 @@
 // p2-wave-3: HttpSessionApi happy paths against canned JSON fixtures derived
-// from the binding table (API-session-http-binding.md §2/§3 at BINDING_SHA).
+// from the binding table (API-session-http-binding.md §2/§3 at
+// BINDING_SHA=53f2fc51a35aa051c3dd899563a5cdbb7b620061 — Revision 2).
 // Each test pins BOTH directions of the wire: the outgoing request (method,
 // path, query, Authorization header, JSON body) and the JSON → domain
 // mapping. Hermetic: MockClient, no sockets.
@@ -314,7 +315,8 @@ void main() {
       expect(status.resumable, isFalse);
     });
 
-    test('end_session: {session_id, status:"ended"}', () async {
+    test('end_session: {session_id, status:"ended"} — no block (pre-settlement)',
+        () async {
       final api = apiWith((_) async =>
           jsonResponse({'session_id': 's-7', 'status': 'ended'}));
 
@@ -322,6 +324,40 @@ void main() {
 
       expect(ended.sessionId, 's-7');
       expect(ended.status, SessionStatus.ended);
+      expect(ended.gamification, isNull,
+          reason: 'absent block ⇒ not yet settled, never fabricated');
+    });
+
+    test('end_session: Rev 2 gamification block maps by wire name', () async {
+      final api = apiWith((_) async => jsonResponse({
+            'session_id': 's-7',
+            'status': 'ended',
+            'gamification': {
+              'xp_awarded': 120,
+              'total_xp': 640,
+              'level_number': 5,
+              'level_name': 'Learner',
+              'level_up': false,
+              'achievements_unlocked': [
+                {'id': 'first_steps', 'name': 'First Steps', 'xp': 50},
+              ],
+              'streak_days': 6,
+              'streak_extended': true,
+            },
+          }));
+
+      final ended = await api.endSession('s-7');
+      final g = ended.gamification;
+
+      expect(g, isNotNull);
+      expect(g!.xpAwarded, 120);
+      expect(g.totalXp, 640);
+      expect(g.levelNumber, 5);
+      expect(g.levelName, 'Learner');
+      expect(g.levelUp, isFalse);
+      expect(g.achievementsUnlocked.single.id, 'first_steps');
+      expect(g.streakDays, 6);
+      expect(g.streakExtended, isTrue);
     });
   });
 }

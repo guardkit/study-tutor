@@ -5,7 +5,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/fakes/fake_session_api.dart';
+import 'package:study_tutor_app/fakes/fake_student_model_api.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
+import 'package:study_tutor_app/ports/student_model_api.dart';
 
 import 'contract_backend.dart';
 
@@ -17,6 +19,7 @@ class FakeContractBackend implements ContractBackend {
   late FakeIdentityProvider _identity;
   late InMemorySessionStore _store;
   late FakeSessionApi _api;
+  late FakeStudentModelApi _studentModelApi;
   late DateTime _now;
 
   void _build() {
@@ -24,6 +27,7 @@ class FakeContractBackend implements ContractBackend {
     _store = InMemorySessionStore();
     _now = DateTime.utc(2026, 7, 4, 0, 0, 0);
     _api = FakeSessionApi(identity: _identity, store: _store, clock: _tick);
+    _studentModelApi = FakeStudentModelApi(identity: _identity);
   }
 
   /// Deterministic clock: every consult advances time by one second, so
@@ -35,6 +39,9 @@ class FakeContractBackend implements ContractBackend {
 
   @override
   SessionApi get api => _api;
+
+  @override
+  StudentModelApi get studentModelApi => _studentModelApi;
 
   @override
   String get defaultStudentId => 'lilymay';

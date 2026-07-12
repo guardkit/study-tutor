@@ -11,12 +11,16 @@ library;
 import '../domain/principal.dart';
 import '../ports/identity_provider.dart';
 
-class FakeIdentityProvider implements IdentityProvider {
+class FakeIdentityProvider implements IdentityProvider, PrincipalChooser {
   /// Default student — the contract §3 interim single-user mode.
   static const lilymay = Principal(token: 'token-lilymay', displayName: 'Lilymay');
 
   /// Second principal so ownership violations are constructible (scope §2.2).
   static const secondStudent = Principal(token: 'token-alex', displayName: 'Alex');
+
+  /// The dev principals surfaced by the SignIn chooser (spec §3).
+  @override
+  List<Principal> get availablePrincipals => const [lilymay, secondStudent];
 
   /// The fake auth server's token table (token → student_id).
   static const _studentIdByToken = <String, String>{
@@ -46,8 +50,9 @@ class FakeIdentityProvider implements IdentityProvider {
     _current = null;
   }
 
-  /// Test hook: sign in as a specific principal (e.g. [secondStudent] for
-  /// ownership tests). Not on the port — the v1 UI only ever [signIn]s.
+  /// Sign in as a specific principal (e.g. [secondStudent] for ownership
+  /// tests, or via the SignIn chooser). Satisfies [PrincipalChooser].
+  @override
   Future<Principal> signInAs(Principal principal) async {
     _invalidatedTokens.remove(principal.token);
     _current = principal;

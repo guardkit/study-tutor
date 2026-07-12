@@ -29,7 +29,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Start new session'),
         findsOneWidget);
     // skipOffstage: false so this fails if sign-in is merely covered (plain
@@ -39,12 +39,27 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
-    expect(find.text('Session'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.textContaining('Ask your first question'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
+  });
+
+  testWidgets('sign-in shows displayName choices and can pick the second '
+      'principal', (tester) async {
+    await tester.pumpWidget(makeApp());
+
+    // The fake exposes two principals → both are offered as choices.
+    expect(find.widgetWithText(OutlinedButton, 'Lilymay'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Alex'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Alex'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hi, Alex'), findsOneWidget,
+        reason: 'picking a principal signs in as them, not the default');
   });
 }

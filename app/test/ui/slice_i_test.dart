@@ -34,7 +34,7 @@ void main() {
 
     expect(identity.currentPrincipal, FakeIdentityProvider.lilymay,
         reason: 'the button must actually call the port');
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Lilymay'), findsOneWidget);
   });
 
   testWidgets('"Start new session" drives startSession and opens the '
@@ -45,8 +45,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Session'), findsOneWidget);
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+    expect(find.textContaining('Ask your first question'), findsOneWidget);
     expect(await sessionApi.listSessions(), hasLength(1),
         reason: 'a session must exist in the fake store');
   });
@@ -64,7 +64,7 @@ void main() {
 
     expect(find.text('what is a fraction?'), findsOneWidget);
     expect(find.text(FakeSessionApi.cannedReplies[0]), findsOneWidget);
-    expect(find.text('No messages yet'), findsNothing);
+    expect(find.textContaining('Ask your first question'), findsNothing);
 
     // Transcript grows: a second exchange appends, nothing is replaced.
     await tester.enterText(find.byType(TextField), 'a part of a whole?');

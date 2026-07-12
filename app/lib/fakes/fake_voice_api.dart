@@ -1,16 +1,22 @@
-/// FakeVoiceApi + FlakyVoiceApi decorator + VoiceRecorder wrapper.
+/// FakeVoiceApi + FlakyVoiceApi decorator + FakeVoiceRecorder mock.
 ///
 /// Hermetic test infrastructure for voice features (FEAT-VOICE-003):
 /// - FakeVoiceApi: canned transcript + tiny silent-WAV responses
 /// - FlakyVoiceApi: failure injection (mirrors FlakySessionApi pattern)
-/// - VoiceRecorder: record package wrapper with 60s hard stop + 10MB backstop
+/// - FakeVoiceRecorder: deterministic recorder mock (the real VoiceRecorder
+///   moved to `lib/adapters/voice_recorder.dart` in S-A2 §5.1)
+///
+/// `VoiceRecorder`/`AudioEncoder` are re-exported from the adapter so existing
+/// call sites and tests keep their `fakes/fake_voice_api.dart` import.
 library;
 
-import 'dart:async';
 import 'dart:typed_data';
-import 'package:record/record.dart' as record;
+
+import '../adapters/voice_recorder.dart';
 import '../domain/errors.dart';
 import '../ports/voice_api.dart';
+
+export '../adapters/voice_recorder.dart' show AudioEncoder, VoiceRecorder;
 
 /// Canned transcript responses cycled by call index.
 const _cannedTranscripts = [
@@ -203,122 +209,56 @@ class FlakyVoiceApi implements VoiceApi {
       );
 }
 
-/// Audio encoder selection for VoiceRecorder.
+/// Deterministic [VoiceRecorder] mock for hermetic tests — the fake that stays
+/// behind now that the real recorder lives in `lib/adapters/voice_recorder.dart`
+/// (S-A2 §5.1). `stop()` returns fixed canned bytes; no microphone, no files.
 ///
-/// Maps to the record package's AudioEncoder enum. Kept as a simple enum
-/// to avoid coupling test code directly to the record package's internal types.
-enum AudioEncoder {
-  /// AAC-LC (m4a container) — default, best iOS/Android compatibility.
-  aacLc,
-
-  /// Opus codec — fallback for platforms where AAC isn't available.
-  opus,
-}
-
-/// Wrapper around the record package with voice-specific constraints.
-///
-/// Enforces:
-/// - 60-second hard stop (client-side limit, see design §6.1/§6.3)
-/// - 10 MB byte backstop (safety limit)
-/// - Injectable encoder selection (m4a/AAC default, opus fallback)
-/// - Clean cancel/interruption handling
-///
-/// The recorder auto-stops at 60 seconds so a recording can never exceed the
-/// limit, even if the user forgets to tap stop. The encoder choice is injectable
-/// so the Phase-0 m4a-against-live-STT result can flip the default without
-/// touching fidelity assertions (ASSUM-006, blueprint §6/§8).
-class VoiceRecorder {
-  VoiceRecorder({
+/// Implements the [VoiceRecorder] interface so it drops into any call site that
+/// accepts one (the session screen constructor).
+class FakeVoiceRecorder implements VoiceRecorder {
+  FakeVoiceRecorder({
     this.encoder = AudioEncoder.aacLc,
     Duration? maxDuration,
     int? maxSizeBytes,
+    Uint8List? cannedBytes,
+    this.throwOnStart,
   })  : maxDuration = maxDuration ?? const Duration(seconds: 60),
         maxSizeBytes = maxSizeBytes ?? (10 * 1024 * 1024),
-        _record = record.AudioRecorder();
+        _cannedBytes = cannedBytes ?? Uint8List.fromList(List<int>.filled(64, 7));
 
+  @override
   final AudioEncoder encoder;
+  @override
   final Duration maxDuration;
+  @override
   final int maxSizeBytes;
-  final record.AudioRecorder _record;
+
+  final Uint8List _cannedBytes;
+
+  /// When set, [start] throws it — models a permission denial.
+  final Object? throwOnStart;
 
   bool _isRecording = false;
-  Timer? _autoStopTimer;
 
-  /// Whether a recording is currently in progress.
+  @override
   bool get isRecording => _isRecording;
 
-  /// Start recording with the configured encoder.
-  ///
-  /// Sets up auto-stop timer to enforce the 60-second limit. Throws if already
-  /// recording. The recording is saved to a temporary path and can be retrieved
-  /// via [stop].
+  @override
   Future<void> start() async {
-    if (_isRecording) {
-      throw StateError('Already recording');
-    }
-
-    final recordEncoder = encoder == AudioEncoder.aacLc
-        ? record.AudioEncoder.aacLc
-        : record.AudioEncoder.opus;
-
-    await _record.start(
-      record.RecordConfig(encoder: recordEncoder),
-      path: '', // empty path uses temp file
-    );
-
+    if (throwOnStart != null) throw throwOnStart!;
     _isRecording = true;
-
-    // Auto-stop timer: enforce 60-second hard limit
-    _autoStopTimer = Timer(maxDuration, () {
-      if (_isRecording) {
-        stop(); // Auto-stop at limit
-      }
-    });
   }
 
-  /// Stop recording and return the audio bytes.
-  ///
-  /// Returns null if no recording was in progress. Clears the auto-stop timer.
-  /// The returned bytes will be in the format specified by [encoder].
+  @override
   Future<Uint8List?> stop() async {
-    if (!_isRecording) {
-      return null;
-    }
-
-    _autoStopTimer?.cancel();
-    _autoStopTimer = null;
-
-    final path = await _record.stop();
+    if (!_isRecording) return null;
     _isRecording = false;
-
-    if (path == null) {
-      return null;
-    }
-
-    // For now, return empty bytes as placeholder
-    // In real implementation, would read file from path
-    // This is sufficient for the fake/test infrastructure
-    return Uint8List(100); // Placeholder: non-empty to pass tests
+    return _cannedBytes;
   }
 
-  /// Cancel the current recording without saving.
-  ///
-  /// Discards the recording and clears state. Safe to call even if not recording.
-  void cancel() {
-    if (!_isRecording) {
-      return;
-    }
+  @override
+  void cancel() => _isRecording = false;
 
-    _autoStopTimer?.cancel();
-    _autoStopTimer = null;
-
-    _record.stop();
-    _isRecording = false;
-  }
-
-  /// Dispose of resources.
-  void dispose() {
-    cancel();
-    _record.dispose();
-  }
+  @override
+  void dispose() => _isRecording = false;
 }

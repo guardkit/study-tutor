@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../adapters/audio_playback.dart';
+import '../adapters/voice_recorder.dart';
 import '../domain/errors.dart';
 import '../domain/session.dart';
-import '../fakes/fake_voice_api.dart';
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
 import '../ports/voice_api.dart';
+import 'app_scope.dart';
 import 'error_handling.dart';
+import 'formatting.dart';
+import 'gamification/progress_header_card.dart';
+import 'gamification/progress_screen.dart';
+import 'progress_store.dart';
 import 'session_screen.dart';
 
 /// Default subject for v1 — English (AQA 8700/8702), matching the tutor's
@@ -18,17 +24,27 @@ import 'session_screen.dart';
 /// behind it; reconciled to the English tutor 2026-07-07 (ASSUM-001).
 const defaultSubject = 'english';
 
+/// Warm, specific empty state (spec §1 register) — no fabricated streak data
+/// (gamification lands in S-A3), no bare string.
+const homeEmptyState =
+    "No sessions yet — start one below and it'll show up here.";
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.identity,
     required this.sessionApi,
     required this.voiceApi,
+    this.progressStore,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
   final VoiceApi voiceApi;
+
+  /// The app-wide student-model store (spec §2). Optional: resolved from the
+  /// ambient [AppScope] when absent so widget tests can inject it directly.
+  final ProgressStore? progressStore;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -36,6 +52,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<SessionSummary> _active = const [];
+  ProgressStore? _store;
 
   /// In-flight guard for Start/Resume (same reason as the session screen's
   /// `_sending`): a double-tap must not start two sessions or push two
@@ -47,6 +64,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Resolve the store once (constructor injection wins; else the AppScope),
+    // then kick the first load. Safe here — InheritedWidget lookups are allowed
+    // in didChangeDependencies, unlike initState.
+    _store ??= widget.progressStore ?? AppScope.maybeOf(context)?.progressStore;
+    final store = _store;
+    if (store != null && !store.hasLoaded) store.load();
+  }
+
+  void _openProgress(ProgressStore store) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ProgressScreen(store: store)),
+    );
   }
 
   Future<void> _refresh() async {
@@ -87,8 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
         sessionApi: widget.sessionApi,
         voiceApi: widget.voiceApi,
         sessionId: started.sessionId,
+        subject: defaultSubject,
         initialTurns: started.turns ?? const [],
         voiceRecorder: VoiceRecorder(),
+        player: JustAudioPlayback(),
+        progressStore: _store,
       ));
     } on Unauthenticated {
       if (!mounted) return;
@@ -115,8 +152,11 @@ class _HomeScreenState extends State<HomeScreen> {
         sessionApi: widget.sessionApi,
         voiceApi: widget.voiceApi,
         sessionId: resumed.sessionId,
+        subject: summary.subject,
         initialTurns: resumed.turns,
         voiceRecorder: VoiceRecorder(),
+        player: JustAudioPlayback(),
+        progressStore: _store,
       ));
     } on Unauthenticated {
       if (!mounted) return;
@@ -139,34 +179,57 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _signOut() async {
+    await widget.identity.signOut();
+    if (!mounted) return;
+    routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final displayName = widget.identity.currentPrincipal?.displayName;
+    final greeting = displayName == null ? 'Hi there' : 'Hi, $displayName';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
+      appBar: AppBar(
+        title: Text(greeting),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'sign_out') _signOut();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'sign_out',
+                child: Text('Sign out'),
+              ),
+            ],
+          ),
+        ],
+      ),
       // Pull-to-refresh is the retry gesture for a failed list call — without
-      // it a TransportError on the initial refresh dead-ends on a stale
-      // "No active sessions" until some other navigation re-lists.
+      // it a TransportError on the initial refresh dead-ends on a stale empty
+      // state until some other navigation re-lists.
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
-            for (final summary in _active)
-              Card(
-                child: ListTile(
-                  title: Text(summary.subject ?? 'Session'),
-                  subtitle: Text('${summary.turnCount} turns'),
-                  trailing: FilledButton.tonal(
-                    onPressed: _busy ? null : () => _resume(summary),
-                    child: const Text('Resume'),
+            if (_store != null) _progressHeader(_store!),
+            for (final summary in _active) _sessionCard(theme, summary),
+            if (_active.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text(
+                    homeEmptyState,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ),
-              ),
-            if (_active.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('No active sessions')),
               ),
             const SizedBox(height: 8),
             FilledButton(
@@ -174,6 +237,48 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('Start new session'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// The Progress header card (spec §6.1) — always shown, never hidden; it
+  /// rebuilds off the store and renders a warm zero-state when there is no
+  /// banked data yet.
+  Widget _progressHeader(ProgressStore store) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListenableBuilder(
+        listenable: store,
+        builder: (context, _) => ProgressHeaderCard(
+          model: store.model,
+          aliveToday: store.streakAliveToday,
+          onTap: () => _openProgress(store),
+        ),
+      ),
+    );
+  }
+
+  Widget _sessionCard(ThemeData theme, SessionSummary summary) {
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        title: Text(
+          titleCaseSubject(summary.subject),
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Row(
+          children: [
+            Text('${summary.turnCount} turns'),
+            Text(
+              '  ·  ${relativeTime(summary.lastActivity)}',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        trailing: FilledButton.tonal(
+          onPressed: _busy ? null : () => _resume(summary),
+          child: const Text('Resume'),
         ),
       ),
     );

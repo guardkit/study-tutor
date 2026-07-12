@@ -10,6 +10,7 @@
 // tests keep constructing fakes directly (build plan p2-wave-2).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
+import 'package:study_tutor_app/ports/student_model_api.dart';
 
 abstract interface class ContractBackend {
   /// The device-under-test client. Sign-in state changes ([signIn],
@@ -17,6 +18,11 @@ abstract interface class ContractBackend {
   /// calls through it — contract §3: the backend derives the caller from
   /// the token, never from a passed `student_id`.
   SessionApi get api;
+
+  /// The student-model read client (S-A3), bound to the same principal as
+  /// [api]. Fake: deterministic exact-value snapshot; live: real read, and the
+  /// live suite asserts invariants only.
+  StudentModelApi get studentModelApi;
 
   /// The `student_id` the backend derives from the default principal's
   /// token ('lilymay' in the fake; whatever the dev token table says live).

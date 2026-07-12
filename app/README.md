@@ -22,12 +22,31 @@ The app is built against the contract *at this SHA*; contract doubts go to
 ```bash
 cd app
 flutter analyze            # must be clean
-flutter test               # unit + contract + widget suites
+flutter test               # HERMETIC suite — unit + contract + widget (no network)
 flutter build apk --debug  # the G-F0 build gate
-flutter run                # attended: Android emulator/device
+flutter run                # attended: Android emulator/device (fake backend)
 ```
 
 Per-wave green gate = all three of analyze / test / apk-debug.
+
+### Hermetic vs live suites
+
+- **Hermetic** (`test/`) — the gate. Runs entirely against the in-process
+  fakes; no network, no GB10, no Keycloak. This is what `flutter test` and CI
+  run, and every stage commit must keep it green.
+- **Live** (`test_live/`) — the SAME contract-suite bodies run against the real
+  HTTP adapter on the GB10 deployment. It is opt-in and never part of the
+  hermetic gate: it requires the deployment and is invoked explicitly with a
+  base URL and single-threaded so runs don't race on shared server state:
+
+  ```bash
+  flutter test test_live \
+    --dart-define=API_BASE_URL=http://<gb10>:8100 \
+    --concurrency=1
+  ```
+
+  Without `API_BASE_URL` the live suite fails fast by design (see
+  `test_live/README.md`). Do not run it as part of local iteration.
 
 ## Phase-2 flavours (phase-2 scope §3.3)
 
@@ -77,8 +96,11 @@ lib/
   ports/         SessionApi (the six §5 verbs, 1:1, transport-neutral)
                  IdentityProvider (signIn/signOut/currentPrincipal)
   adapters/      HttpSessionApi — the real transport behind SessionApi
-                 (phase 2; binding table API-session-http-binding.md at the
-                 BINDING_SHA pinned in the phase-2 build plan header)
+                 (phase 2; binding table API-session-http-binding.md at
+                 BINDING_SHA 53f2fc5 — the S-R2 Revision-2 ratification commit,
+                 superseding the phase-2 pin 6eb7b88)
+                 HttpStudentModelApi — the real GET /api/student-model read
+                 (S-A3; binding §2.2/§2.2.1 at the same BINDING_SHA 53f2fc5)
   fakes/         FakeIdentityProvider — two principals (Lilymay default,
                  Alex for ownership tests), invalidate-token switch, and the
                  token → student_id introspection the fake backend trusts (§3)
@@ -92,6 +114,81 @@ lib/
 
 Session data is in-memory only; no telemetry, analytics, crash reporting, or
 network calls of any kind (ADR-ARCH-015; scope §5).
+
+## App shell, theming, voice & gamification (Lane A, S-A1–S-A4)
+
+The UX revamp (`docs/design/app-ux-and-gamification-ui-spec.md`) added the
+gamification surfaces and a small app shell on top of the v1 slice. No new
+runtime packages beyond the bundled display font — no provider/riverpod/bloc,
+Navigator 1.0 stays.
+
+### Composition & state
+
+- **`AppScope`** (`lib/ui/app_scope.dart`) — a root `InheritedWidget` that
+  composes the four ports (`SessionApi`, `VoiceApi`, `IdentityProvider`,
+  `StudentModelApi`) so screens read them via `AppScope.of(context)` instead of
+  constructor prop-drilling. Constructor injection stays available for widget
+  tests (the scope wraps; tests inject directly).
+- **`ProgressStore`** (`lib/ui/progress_store.dart`) — a `ChangeNotifier` owning
+  the student-model snapshot: fetch, cache, and refresh-after-session-end. A
+  failed refresh keeps the last good snapshot (the Home card is never blanked).
+  "Streak alive today" is app-local UX state (no wire field) — it flips true
+  only once a session-end block reports `streak_extended` during the app run.
+- **Port triplet** `StudentModelApi` — port (`lib/ports/student_model_api.dart`)
+  + `HttpStudentModelApi` adapter + `FakeStudentModelApi`, composed in
+  `main.dart` on the `API_BASE_URL` flavour switch exactly like `SessionApi`.
+  The `end_session` settlement is an additive optional `gamification` block on
+  `EndSessionResult`; absent means absent (a plain pop, never a fabricated
+  celebration).
+
+### Theming (`lib/ui/theme/`)
+
+- `AppTheme` builds **both** light and dark schemes from a single indigo seed
+  (`#324376`) with `ColorScheme.fromSeed`; `themeMode: ThemeMode.system`. The
+  tertiary role is steered to warm gold via `copyWith` (⏸A-pinned role values).
+- **`BandColors`** — a `ThemeExtension` carrying the four topic-mastery band
+  colours (struggling / developing / secure / mastered) in light and dark
+  pairs, read via `BandColors.of(context)`. No `Colors.*` literals live in
+  `lib/ui`; every colour resolves through the `ColorScheme` or `BandColors`.
+- **Display face** — Bricolage Grotesque (OFL), bundled at `assets/fonts/`
+  and declared in `pubspec.yaml` (weights 400/500/600/700). Applied to
+  headings, level titles, and the celebration XP numeral only; body/UI keep the
+  platform default (Roboto/SF). Motion constants live in `lib/ui/theme/motion.dart`
+  (`AppMotion`) so every animation shares one timing vocabulary.
+
+### Voice pipeline
+
+- **Recording** — `VoiceRecorder` (`lib/adapters/voice_recorder.dart`) captures
+  real microphone bytes (`record`), enforcing the 10 MB cap; the session screen
+  shows a 56 dp mic with a ticking elapsed label and a pulsing-red recording
+  state. `FakeVoiceRecorder` (in `lib/fakes/`) is the hermetic mock.
+- **TTS playback** — spoken-answer `AudioAnswerPart` chunks are fetched via the
+  voice adapter and played sequentially through `just_audio`
+  (`lib/adapters/audio_playback.dart`), with a stop control; answer text renders
+  alongside.
+- The WebSocket streaming client (`voiceTurnStream`) stays **unwired**
+  (TASK-STREAM-001) — the adapter and its tests are kept, not deleted.
+
+### Gamification surfaces (`lib/ui/gamification/`)
+
+- **Progress header card** (Home) — level title, `LevelProgressBar`,
+  `StreakBadge` (flame + count; "ends tonight" nudge when yesterday-anchored),
+  this-week XP; `data_available:false` renders a warm zero-state, never hidden.
+- **Session-end celebration sheet** — only on a non-null `gamification` block:
+  XP count-up, streak tick, staggered achievement-unlock cards, level-up
+  crossfade, and a confetti burst (achievement/level-up only). Dismiss pops to
+  Home and refreshes the store.
+- **Progress screen** — level + progress, streak current/longest, a
+  band-coloured mastery grid with a "how bands work" sheet, top-3 near-unlocks,
+  and recent achievements. Warm, specific empty states throughout.
+
+### Accessibility & resilience (S-A4)
+
+Every new component carries a `Semantics` label (header card reads as one
+button; badges, mastery/near/recent cells, celebration elements, and the
+mic/recording/typing states are all labelled). The Home header card and the
+celebration sheet are text-scale resilient at 1.3× (the sheet scrolls; wide
+rows flex) — pinned by widget tests in `test/ui/s_a4_hardening_test.dart`.
 
 ## Test map
 
