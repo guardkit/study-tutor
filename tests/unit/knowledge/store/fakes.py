@@ -214,13 +214,26 @@ class FakeStudentStore:
         """Session-end write: XP, confidence, misconceptions in one transaction.
 
         Idempotent on session_id - retried session-end does not double-award XP.
+
+        Idempotency is **status-based** to match Postgres (whose gate is
+        ``ON CONFLICT … WHERE status != 'ended'``): if the session row already
+        exists and is ``ended``, the children are dropped as a no-op. This makes
+        ``end_session`` *participate* in the gate (W0 spec §1) — calling
+        ``end_session`` before this write reproduces the drop the composed-service
+        path used to suffer, so fake and Postgres agree. When no session row
+        exists (callers that write completions directly, e.g. producer tests),
+        the phantom-row idempotency falls back to ``_completed_sessions``.
         """
         # Unknown learner rejection
         if student_id not in self._students:
             raise ValueError(f"Unknown learner: {student_id}")
 
-        # Idempotency check: if already completed, do nothing
-        if session_id in self._completed_sessions:
+        # Status-based idempotency gate (mirrors the Postgres WHERE status != 'ended'):
+        # an already-ended session — or a previously-recorded phantom — is a no-op.
+        session = self._sessions.get(session_id)
+        if session is not None and session["status"] == "ended":
+            return
+        if session is None and session_id in self._completed_sessions:
             return
 
         # Validate confidence updates
@@ -246,8 +259,17 @@ class FakeStudentStore:
                 text=misc.text,
             )
 
-        # Mark as completed (for idempotency)
-        self._completed_sessions.add(session_id)
+        # Transition the session to 'ended' (status-based idempotency, mirrors the
+        # Postgres upsert). For an existing row we flip status + bank topic/xp/aos;
+        # with no row we fall back to the phantom-completed set.
+        if session is not None:
+            session["status"] = "ended"
+            session["last_activity"] = datetime.now(timezone.utc)
+            session["topic"] = topic
+            session["xp_awarded"] = xp_awarded
+            session["aos_scaffolded"] = list(aos_scaffolded)
+        else:
+            self._completed_sessions.add(session_id)
 
         # Note: XP is not currently tracked in this fake (would be session record)
 

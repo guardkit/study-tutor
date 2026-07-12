@@ -4,6 +4,7 @@
 **Phase:** FEAT-SMP-003 (this cluster) → mobile+voice slice
 **Status:** **Accepted** — ratified 2026-07-03 via `/design-refine` (G-CON gate — [migration build plan §5a](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md)). Feeds the [FEAT-SMP-003 `/feature-spec`](../../research/ideas/student-model-postgres-migration-scope-and-build-plan.md) and the mobile [`/goal`](../../handoffs/study-tutor-mobile-voice-conversation-starter.md). §10's three accepted-contract changes are recorded: [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) partially superseded for app clients (ADR-FLEET-003); [API-tutoring.md §8](API-tutoring.md) "end-once/append-only" relaxed; API-tutoring §4 closed error set extended (`SessionForbidden` / `Unauthenticated`).
 **Revision 1 (2026-07-05)** — voice extension, ratified via `/design-refine` (G-CON gate — [voice build plan §5a](../../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md), [voice design §8](../voice-tutor-and-reachy-design.md)): §5 gains `voice_turn`/`voice_audio`, §7 gains the voice frame vocabulary, §9 gains six voice error types, §11 OQ3 resolved. **Additive only** — the six existing verbs, their shapes, and the four original error types are unchanged (§10 change 4).
+**Revision 2 (2026-07-12)** — gamification settlement, ratified via the Phase-R S-R2 docs stage (G-CON gate — [gamification engine + adaptive-loop spec §6](../gamification-engine-and-adaptive-loop-spec.md), [scope & build plan D9](../../research/ideas/gamification-engine-and-app-ux-scope-and-build-plan.md); [ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md)): §5 `end_session` **response gains a nullable `gamification` block** (§10 change 5). This is the **first-ever shape change to an original verb** — hence a formal contract revision, not an addendum. The block is **nullable**: pinned pre-Rev-2 clients and the hermetic fake stay valid because the field is absent until the engine settles the session. No input shape, no other verb, and no error type changes.
 **Generated:** 2026-07-02.
 **Related:** [ADR-ARCH-023](../../architecture/decisions/ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md) (Postgres StudentStore — sessions persist here), ADR-FLEET-003 (MCP for agent-hosts, HTTP/WS for app clients), [ADR-ARCH-008](../../architecture/decisions/ADR-ARCH-008-mcp-only-agent-access.md) (**partially superseded** for app clients — §10), [API-tutoring.md](API-tutoring.md) (the MCP verbs this mirrors), [mobile+voice handoff](../../handoffs/study-tutor-mobile-voice-conversation-starter.md) (D6–D9), [events-schema.yaml](../events-schema.yaml).
 
@@ -62,7 +63,30 @@ Shapes are transport-neutral; HTTP = request/response JSON, WS = the same messag
 | `resume_session` | `{ session_id }` | `{ session_id, status, turns:[{role,content,ts}], student_id }` | **New.** Loads the transcript for a device that didn't start the session. 403 if not owned by the caller's `student_id`. |
 | `turn` | `{ session_id, user_message, stream? }` | `{ tutor_response }` or a token stream (§7) | Same shape; now **persists the pair per-turn**. p95 < 10s budget unchanged. |
 | `session_status` | `{ session_id }` | `{ session_id, student_id, status, turn_count, started_at, last_activity, resumable }` | Adds `student_id`, `last_activity`, `resumable`. |
-| `end_session` | `{ session_id }` | `{ session_id, status:"ended" }` | Same. Triggers the synchronous StudentStore write (XP/streak/confidence/achievement — FEAT-SMP-001) and the `session.completed` event. |
+| `end_session` | `{ session_id }` | `{ session_id, status:"ended", gamification? }` | **Rev 2:** output gains a **nullable** `gamification` block (shape below). Triggers the synchronous StudentStore settlement (`finalize_session` — XP/streak/confidence/achievement in one transaction, [ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md)) and — after commit — the `session.completed` event. |
+
+**`end_session` `gamification` block (Rev 2 — nullable):** present once the engine settles the session; **absent (or `null`) until then**, so pre-Rev-2 clients and the hermetic fake are unaffected.
+
+```json
+{
+  "gamification": {
+    "xp_awarded": 120,
+    "total_xp": 640,
+    "level_number": 5,
+    "level_name": "Learner",
+    "level_up": false,
+    "achievements_unlocked": [
+      { "id": "first_steps", "name": "First Steps", "xp": 50 }
+    ],
+    "streak_days": 6,
+    "streak_extended": true
+  }
+}
+```
+
+- **Nullable-block rule:** the field is **absent until the engine settles the session** — a client MUST treat a missing/`null` `gamification` as "settlement not yet reflected", never as an error. Under [ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md) D4 settlement runs in a savepoint that can fail without blocking the end; a session ended-but-not-yet-settled (swept later) returns `end_session` with no block.
+- **Field semantics:** `xp_awarded` = XP banked for *this* session (engagement-band base per `design.md` §13.1 D5); `total_xp` = `SUM(session.xp_awarded)+SUM(achievement.xp_awarded)` after this settlement (D2); `level_number`/`level_name` = level after; `level_up` = crossed a threshold this settlement; `achievements_unlocked` = achievements newly banked this settlement (each `{id,name,xp}`, `xp` per `design.md` §5); `streak_days` = current consecutive-London-day streak (D6); `streak_extended` = this session advanced the streak.
+- **Replay:** a double-end / two-device race returns the **identical** block on the losing caller (banked replay, ADR-ARCH-030 D6).
 | `voice_turn` | `{ session_id, audio (binary upload: bytes + content_type + filename), stream? }` (student from auth) | `{ transcript, tutor_response, audio: [{seq, chunk_id, url}] }`, or streamed frames (§7) | **New (Rev 1).** Voice variant of `turn`: the server transcribes the clip (shared GB10 STT), runs the *identical* turn pipeline, and synthesizes the reply (TTS) as ordered wav chunks referenced by `audio[]`. The transcript persists as a typed user turn — per-turn durability, ownership, and lifecycle rules unchanged. Caps: 60 s (client-enforced primary, server best-effort) / 10 MB. Inbound audio is ephemeral: transcribed and discarded, never at rest ([ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) D3 + blueprint §5). |
 | `voice_audio` | `{ session_id, chunk_id }` | binary `audio/wav` | **New (Rev 1).** Fetches one synthesized reply chunk by reference. Chunks are held in memory only, TTL-bounded (≤120 s) — an expired/unknown `chunk_id` is a transport-level 404 (binding §4.2), and the client skips that chunk (best-effort playback). |
 
@@ -122,6 +146,8 @@ None of these change the MCP surface's existing behaviour; they *extend* it. Age
 
 4. **Revision 1 (2026-07-05, `/design-refine` G-CON — voice):** adds `voice_turn`/`voice_audio` (§5), the voice WS frame vocabulary (§7), and six voice error types (§9). **Additive only** — the six existing verbs, their wire shapes, the four original error types, and the MCP surface are byte-for-byte unchanged; existing clients pinned to the pre-Rev-1 SHAs keep working. Decisions consumed, not made, here: [ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) r1 (transport, pins, D3), [ADR-ARCH-026](../../architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md) (async Coach precondition), [ADR-ARCH-027](../../architecture/decisions/ADR-ARCH-027-streaming-quote-handover-chunk-boundary-verification.md) (chunk-boundary verification).
 
+5. **Revision 2 (2026-07-12, Phase-R S-R2 G-CON — gamification settlement):** the **first-ever shape change to an original verb** — `end_session`'s response gains the **nullable `gamification` block** (§5). This is why it is a *revision* and not an addendum: the six original verbs' shapes were previously frozen (change 4), so touching one requires re-pinning the binding's `CONTRACT_SHA` and recording a new `BINDING_SHA` (per [API-session-http-binding.md §7](API-session-http-binding.md)). **Nullability is the compatibility guarantee** — the block is absent until settlement, so pre-Rev-2 clients pinned to the earlier SHAs and the hermetic fake keep working. No input shape, no other verb, and no error type changes. The MCP transport gets the same block via its own addendum ([API-mcp-transport.md](API-mcp-transport.md), `tutor_session_end`). Decision consumed, not made, here: [ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md) (settlement architecture; supersedes ADR-ARCH-013); economy constants ratified in [`docs/gamification/design.md` §13.1](../../gamification/design.md).
+
 ## 11. Open questions
 
 1. **`sub → student_id` mapping** (handoff OQ4/D9) — where it lives (Keycloak attribute vs a `student` table lookup) and how a new student is provisioned.
@@ -131,4 +157,4 @@ None of these change the MCP surface's existing behaviour; they *extend* it. Age
 
 ---
 
-*Proposed 2026-07-02; **Accepted 2026-07-03** via `/design-refine` (§10 changes recorded). **Revision 1 (voice) 2026-07-05** via `/design-refine` (§10 change 4; G-CON, voice build plan §5a). Consumed by FEAT-SMP-003 (`/feature-spec`), the mobile `/goal` opener, and FEAT-VOICE-001…004.*
+*Proposed 2026-07-02; **Accepted 2026-07-03** via `/design-refine` (§10 changes recorded). **Revision 1 (voice) 2026-07-05** via `/design-refine` (§10 change 4; G-CON, voice build plan §5a). **Revision 2 (gamification settlement) 2026-07-12** via the Phase-R S-R2 docs stage (§10 change 5; G-CON, [spec §6](../gamification-engine-and-adaptive-loop-spec.md)) — the first original-verb shape change; re-pins the HTTP binding's `CONTRACT_SHA` to this ratification commit and records a new `BINDING_SHA`. Consumed by FEAT-SMP-003 (`/feature-spec`), the mobile `/goal` opener, FEAT-VOICE-001…004, and Phase-R Lane B (gamification engine).*

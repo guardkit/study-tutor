@@ -542,6 +542,111 @@ the same revision gate as GOAL.md (§10 of that file) because the Coach's
 assessment of session quality feeds directly into confidence updates and
 therefore into achievement unlocks.
 
+### 13.1 Phase-R ratification patch (2026-07-12)
+
+This subsection **ratifies and records** — it does not redesign. It fixes
+the exact operational rules the Phase-R gamification engine and adaptive
+loop are built against, so that live settlement and the historical backfill
+resolve identically. Every §5 achievement name/XP, the 15 level thresholds,
+and the six streak milestones are **unchanged** by this patch. Source:
+`docs/research/ideas/gamification-engine-and-app-ux-scope-and-build-plan.md`
+decisions D5–D7 and rulings R3/R4/R5/R11/R12/R13, all adopted at their
+recommended values in-session (Rich, 2026-07-12).
+
+**(D5) Session XP is on engagement seconds, in four bands.** The §2.1
+"~10/~20/~30–40 min" labels were prose sketches; the engine measures
+**engagement duration** = `max(ts) − min(ts)` over the session's
+`session_turn` rows (server-stamped TIMESTAMPTZ on every transport,
+including voice), never `last_activity` (which is re-stamped at end-call and
+would reward idle time). The ratified bands:
+
+| Engagement duration | Base XP |
+|---|---|
+| < 120 s (2 min) | **0** |
+| < 900 s (15 min) | **60** |
+| < 1500 s (25 min) | **120** |
+| ≥ 1500 s (25 min+) | **180** |
+
+The 60/120/180 values are the §2.1 economy verbatim; the band **cutoffs**
+(120/900/1500 s) were implementation-invented and are now ratified. A
+zero-turn or sub-2-min session settles at **0 XP** but is still settled
+(marker stamped) — including a legitimate single Q&A pair. This ratifies the
+§2.1 "abandoned < 2 min → 0" rule as a duration threshold. The §2.1 +30/+40
+bonuses and the ×1.25 Grade 8–9 multiplier are **out of Phase-R scope** (no
+per-turn signals yet); they remain in the economy unchanged for a later
+tranche.
+
+**(D6) Europe/London calendar for ALL day arithmetic.** Every day, week, and
+cutoff computation in the economy uses the **Europe/London** timezone
+(BST/GMT as the calendar dictates), never UTC. The **streak credit day** for
+a session is the **London-local date of that session's last turn**. The same
+London clock governs Morning Star / Evening Scholar's 09:00 / 19:00 cutoffs
+(§13.1 R3), the §6.3 3-day spacing and 4-day anti-repetition windows (R11),
+and all week windows. The historical backfill uses identical rules. This
+supersedes the §4.1 bare "midnight" wording, which is now read as
+London-local midnight.
+
+**(D7) Achievement-XP cascade order, iterated to a fixed point.** When a
+settlement unlocks achievements whose own XP awards push the student across
+a further milestone, the checks cascade in the **deterministic order
+streak → XP milestones → level milestones**, re-evaluated to a **fixed
+point** within the single settlement. Example: a settlement that lands the
+student at 100 total XP unlocks **First Century** (+50), and the resulting
+150 XP is re-checked against the same order — so live settlement and the
+sweep backfill resolve the same unlock set in the same sequence.
+
+**(R12) Confidence baseline for first-seen topics = 50.** A topic studied for
+the first time is created at **confidence 50** (mid-Developing, on the
+0–100 store scale / 0.50 on the §6.1 0–1 scale) **before** the session's
+Coach delta is applied. A new topic is therefore neither flagged Struggling
+nor near Mastered; the first real delta moves it honestly. This closes the
+gap where `topic_confidence` rows were only ever updated, never created (the
+table was empty in production), which also un-starves the §6.3 adaptive
+recommendations.
+
+**(R3) Morning Star / Evening Scholar — session STARTED before 09:00 / after
+19:00 London.** Both §5.1 achievements count a session by its **start** time
+in the London clock: Morning Star = started before 09:00; Evening Scholar =
+started after 19:00. **Abandoned sessions do not count** (a session must
+settle to be eligible). The "5 sessions" thresholds and +150 XP each are
+unchanged.
+
+**(R4) First Steps requires a completed session with ≥ 2 min engagement.**
+The §5.1 First Steps criterion ("Complete 1 session") is ratified as: the
+**first settled session with ≥ 120 s engagement duration** (the D5 lower
+band). This resolves the §2.1/§5.1 tension — a sub-2-min tap earns neither
+XP nor First Steps. +50 XP unchanged.
+
+**(R5) No Weak Spots requires ≥ 5 studied topics.** The §5.3 No Weak Spots
+achievement ("No topic below Developing … across all studied topics") only
+evaluates once the student has **≥ 5 distinct studied topics**, so it cannot
+award vacuously while `topic_confidence` is sparse. Criterion (all topics
+≥ 40% / Developing) and +600 XP unchanged. **Deferred to the W2 tranche**
+(needs the confidence-history capture); recorded here for completeness.
+
+**(R11) §6.3 adopted verbatim as the planner contract.** The shipped planner's
+interim rules are retired in favour of §6.3 exactly:
+- **Struggling-first:** any topic in the Struggling band (< 40) is
+  recommended next, regardless of recency.
+- **3-day spacing:** otherwise recommend the weakest topic below Mastered
+  **not studied in the last 3 days** — this **replaces the ASSUM-001 48-hour
+  cooldown**. Mastered-band topics are excluded.
+- **4-day anti-repetition:** never recommend the topic recommended on the
+  previous **4 consecutive London days**.
+All day arithmetic is London-local (D6).
+
+**(R13) Player transcript window = 12 turns.** In-session memory rehydrated
+into the Player's generation prompt is the **last 12 turns**, token-capped
+(oldest dropped first when the cap binds). This is a prompt-assembly
+constant, not an economy value; recorded here so the adaptive-loop and
+economy constants live in one ratified place.
+
+**Unchanged and re-affirmed by this patch:** the 15 level thresholds
+(0 / 100 / 300 / 600 / 1000 / 1500 / 2200 / 3100 / 4200 / 5600 / 7300 /
+9400 / 11900 / 14900 / 18500) and the streak milestones (3 / 7 / 14 / 30 /
+60 / 100). No §5 achievement name, XP value, or any other economy number is
+altered.
+
 ---
 
 ## 14. What this is NOT
