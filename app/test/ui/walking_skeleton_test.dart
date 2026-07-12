@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('English'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.textContaining('Ask your first question'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();

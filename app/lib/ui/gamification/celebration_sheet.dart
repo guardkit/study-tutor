@@ -75,8 +75,12 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
     final theme = Theme.of(context);
     final block = widget.block;
 
+    // Scrollable so a tall block at large text scales (a11y ≥1.3×) scrolls
+    // instead of overflowing the sheet; it shrink-wraps to content at normal
+    // scale, so short celebrations still size to their content.
     final content = SafeArea(
       top: false,
+      child: SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
@@ -108,6 +112,7 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
           ],
         ),
       ),
+      ),
     );
 
     // Confetti overlays the content, non-interactive, only when celebratory.
@@ -127,27 +132,45 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
   }
 
   Widget _xpCountUp(ThemeData theme) {
-    return AnimatedBuilder(
-      animation: _xp,
-      builder: (context, _) {
-        final shown = (widget.block.xpAwarded * _xp.value).round();
-        return Text(
-          '+$shown XP',
-          key: const Key('celebration-xp'),
-          textAlign: TextAlign.center,
-          style: AppTheme.celebrationXpNumeral
-              .copyWith(color: theme.colorScheme.tertiary),
-        );
-      },
+    // The visible numeral counts up; the semantic label states the settled
+    // total once, so a screen reader isn't spammed with every interim value.
+    return Semantics(
+      label: '${widget.block.xpAwarded} XP earned this session',
+      container: true,
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: _xp,
+        builder: (context, _) {
+          final shown = (widget.block.xpAwarded * _xp.value).round();
+          return Text(
+            '+$shown XP',
+            key: const Key('celebration-xp'),
+            textAlign: TextAlign.center,
+            style: AppTheme.celebrationXpNumeral
+                .copyWith(color: theme.colorScheme.tertiary),
+          );
+        },
+      ),
     );
   }
 
   Widget _streakRow(ThemeData theme) {
     final block = widget.block;
+    return Semantics(
+      label: block.streakExtended
+          ? '${block.streakDays} day streak, kept alive'
+          : '${block.streakDays} day streak',
+      container: true,
+      excludeSemantics: true,
+      child: _streakRowContent(theme, block),
+    );
+  }
+
+  Widget _streakRowContent(ThemeData theme, SessionGamification block) {
     return AnimatedBuilder(
       animation: _streakTick,
       builder: (context, child) {
-        final scale = 1 + 0.2 * Curves.easeOut.transform(
+        final scale = 1 + 0.2 * AppMotion.standardCurve.transform(
               _streakTick.value < 0.5
                   ? _streakTick.value * 2
                   : (1 - _streakTick.value) * 2,
@@ -163,11 +186,14 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
           Icon(Icons.local_fire_department,
               color: theme.colorScheme.tertiary, size: 22),
           const SizedBox(width: 6),
-          Text(
-            block.streakExtended
-                ? '${block.streakDays}-day streak — kept alive!'
-                : '${block.streakDays}-day streak',
-            style: theme.textTheme.titleMedium,
+          Flexible(
+            child: Text(
+              block.streakExtended
+                  ? '${block.streakDays}-day streak — kept alive!'
+                  : '${block.streakDays}-day streak',
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
@@ -182,7 +208,12 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
             block.levelNumber - 2 < GamificationEconomy.titles.length
         ? GamificationEconomy.titles[block.levelNumber - 2]
         : null;
-    return Column(
+    return Semantics(
+      label:
+          'Level up! You reached Level ${block.levelNumber}, ${block.levelName}',
+      container: true,
+      excludeSemantics: true,
+      child: Column(
       children: [
         Text('Level up!',
             style: theme.textTheme.labelLarge
@@ -204,6 +235,7 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
       ],
+      ),
     );
   }
 
@@ -228,21 +260,27 @@ class _CelebrationSheetState extends State<_CelebrationSheet>
           },
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Card(
-              color: theme.colorScheme.tertiaryContainer,
-              margin: EdgeInsets.zero,
-              child: ListTile(
-                leading: Icon(Icons.emoji_events,
-                    color: theme.colorScheme.onTertiaryContainer),
-                title: Text(
-                  unlocked[i].name,
-                  style: theme.textTheme.titleMedium?.copyWith(
+            child: Semantics(
+              label: 'Achievement unlocked: ${unlocked[i].name}, '
+                  'plus ${unlocked[i].xp} XP',
+              container: true,
+              excludeSemantics: true,
+              child: Card(
+                color: theme.colorScheme.tertiaryContainer,
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  leading: Icon(Icons.emoji_events,
                       color: theme.colorScheme.onTertiaryContainer),
-                ),
-                subtitle: Text(
-                  'Achievement unlocked · +${unlocked[i].xp} XP',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onTertiaryContainer),
+                  title: Text(
+                    unlocked[i].name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onTertiaryContainer),
+                  ),
+                  subtitle: Text(
+                    'Achievement unlocked · +${unlocked[i].xp} XP',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onTertiaryContainer),
+                  ),
                 ),
               ),
             ),

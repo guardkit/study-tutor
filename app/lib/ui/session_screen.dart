@@ -533,7 +533,10 @@ class _SessionScreenState extends State<SessionScreen>
 
   Widget _typingIndicator(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Align(
+    return Semantics(
+      label: 'Tutor is typing',
+      liveRegion: true,
+      child: Align(
       key: const Key('typing-indicator'),
       alignment: Alignment.centerLeft,
       child: Container(
@@ -556,6 +559,7 @@ class _SessionScreenState extends State<SessionScreen>
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -595,7 +599,16 @@ class _SessionScreenState extends State<SessionScreen>
         children: [
           Expanded(
             child: isEmpty
-                ? const Center(child: Text('No messages yet'))
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'Ask your first question below — type it or tap the '
+                        'mic to speak.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
                 : ListView.builder(
                     controller: _scroll,
                     itemCount: itemCount,
@@ -614,12 +627,15 @@ class _SessionScreenState extends State<SessionScreen>
               backgroundColor: _bannerIsError
                   ? colors.errorContainer
                   : colors.tertiaryContainer,
-              content: Text(
-                _bannerMessage!,
-                style: TextStyle(
-                  color: _bannerIsError
-                      ? colors.onErrorContainer
-                      : colors.onTertiaryContainer,
+              content: Semantics(
+                liveRegion: true,
+                child: Text(
+                  _bannerMessage!,
+                  style: TextStyle(
+                    color: _bannerIsError
+                        ? colors.onErrorContainer
+                        : colors.onTertiaryContainer,
+                  ),
                 ),
               ),
               actions: [
@@ -659,11 +675,16 @@ class _SessionScreenState extends State<SessionScreen>
                   if (_recording)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
-                      child: Text(
-                        _formatElapsed(),
-                        style: TextStyle(
-                          color: colors.error,
-                          fontWeight: FontWeight.bold,
+                      child: Semantics(
+                        label: 'Recording, ${_formatElapsed()}',
+                        container: true,
+                        excludeSemantics: true,
+                        child: Text(
+                          _formatElapsed(),
+                          style: TextStyle(
+                            color: colors.error,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -721,6 +742,9 @@ class _SessionScreenState extends State<SessionScreen>
           icon: Icon(
             _recording ? Icons.stop : Icons.mic,
             color: _recording ? colors.onError : null,
+            semanticLabel: _voiceUnavailable
+                ? 'Voice input unavailable'
+                : (_recording ? 'Stop recording' : 'Record a question'),
           ),
           onPressed: disabled ? null : _toggleMic,
         ),

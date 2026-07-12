@@ -19,16 +19,19 @@ class ConfettiBurst extends StatefulWidget {
 }
 
 class _ConfettiParticle {
-  _ConfettiParticle(math.Random rng, List<Color> palette)
+  _ConfettiParticle(math.Random rng, int paletteSize)
       : angle = rng.nextDouble() * 2 * math.pi,
         speed = 0.5 + rng.nextDouble() * 0.5,
-        color = palette[rng.nextInt(palette.length)],
+        colorIndex = rng.nextInt(paletteSize),
         size = 4 + rng.nextDouble() * 4,
         spin = (rng.nextDouble() - 0.5) * 6;
 
   final double angle;
   final double speed;
-  final Color color;
+
+  /// Index into the theme palette, resolved at paint time — the concrete
+  /// colours aren't known at construction (no theme yet) and never hardcoded.
+  final int colorIndex;
   final double size;
   final double spin;
 }
@@ -41,19 +44,25 @@ class _ConfettiBurstState extends State<ConfettiBurst>
   );
   late final List<_ConfettiParticle> _particles;
 
+  /// The theme palette has three roles (tertiary/primary/secondary), assembled
+  /// in [build]; particles pick an index against this count at construction.
+  static const int _paletteSize = 3;
+
   @override
   void initState() {
     super.initState();
     final rng = math.Random(7); // deterministic layout for stable tests
     _particles = List.generate(
       widget.particleCount,
-      (_) => _ConfettiParticle(rng, _palette),
+      (_) => _ConfettiParticle(rng, _paletteSize),
     );
     _controller.forward();
   }
 
-  // Filled in with the theme palette on first build.
-  List<Color> _palette = const [Colors.transparent];
+  // Filled in with the theme palette on first build (always assigned in
+  // [build] before [_ConfettiPainter] can read it, so no seed colour is needed
+  // — keeps lib/ui free of hardcoded `Colors.*`).
+  late List<Color> _palette;
 
   @override
   void dispose() {
@@ -97,8 +106,9 @@ class _ConfettiPainter extends CustomPainter {
       final dx = math.cos(p.angle) * distance;
       final dy = math.sin(p.angle) * distance + gravity;
       final center = origin + Offset(dx, dy);
+      final color = palette[p.colorIndex % palette.length];
       final paint = Paint()
-        ..color = p.color.withValues(alpha: opacity)
+        ..color = color.withValues(alpha: opacity)
         ..style = PaintingStyle.fill;
       canvas.save();
       canvas.translate(center.dx, center.dy);

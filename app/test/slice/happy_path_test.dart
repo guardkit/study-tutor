@@ -28,7 +28,7 @@ void main() {
     // Start a session.
     await tester.tap(find.widgetWithText(FilledButton, 'Start new session'));
     await tester.pumpAndSettle();
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.textContaining('Ask your first question'), findsOneWidget);
 
     // Two turns — transcript grows.
     await tester.enterText(find.byType(TextField), 'first question');

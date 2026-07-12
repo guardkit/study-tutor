@@ -30,18 +30,41 @@ class ProgressHeaderCard extends StatelessWidget {
     final snapshot = model;
     final isZeroState = snapshot == null || !snapshot.dataAvailable;
 
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: isZeroState
-              ? _zeroState(theme)
-              : _populated(theme, snapshot),
+    // Read the whole card as one button with a composite label + a "double tap
+    // to open" affordance (the inner Texts/badge are excluded so a screen
+    // reader hears one coherent sentence, not a stream of fragments).
+    return Semantics(
+      button: true,
+      label: _semanticLabel(snapshot, isZeroState),
+      hint: 'Opens your progress',
+      onTap: onTap,
+      child: Card(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: ExcludeSemantics(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: isZeroState
+                  ? _zeroState(theme)
+                  : _populated(theme, snapshot),
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  String _semanticLabel(StudentModel? m, bool isZeroState) {
+    if (isZeroState || m == null) {
+      return 'Your progress. Finish your first session to earn XP and start a '
+          'streak.';
+    }
+    final level = m.levelNumber == null
+        ? m.levelName
+        : 'Level ${m.levelNumber}, ${m.levelName}';
+    return 'Your progress. $level. ${m.recentXp} XP this week. '
+        '${streakSemanticLabel(m.streakDays, aliveToday)}.';
   }
 
   Widget _zeroState(ThemeData theme) {

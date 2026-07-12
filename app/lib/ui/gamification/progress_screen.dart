@@ -201,7 +201,11 @@ class ProgressScreen extends StatelessWidget {
       ConfidenceBand.secure => bands.secure,
       ConfidenceBand.mastered => bands.mastered,
     };
-    return Container(
+    return Semantics(
+      label: '${titleCaseSubject(topic)}: ${band.label}, ${band.phrasing}',
+      container: true,
+      excludeSemantics: true,
+      child: Container(
       width: 150,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -232,6 +236,7 @@ class ProgressScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -322,7 +327,11 @@ class ProgressScreen extends StatelessWidget {
           )
         else
           for (final n in near)
-            Card(
+            Semantics(
+              label: 'Almost there: ${n.name}. ${n.hint}',
+              container: true,
+              excludeSemantics: true,
+              child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -354,6 +363,7 @@ class ProgressScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              ),
             ),
       ],
     );
@@ -375,17 +385,23 @@ class ProgressScreen extends StatelessWidget {
           )
         else
           for (final a in recent)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.emoji_events,
-                color: theme.colorScheme.tertiary,
-              ),
-              title: Text(a.name, style: theme.textTheme.titleMedium),
-              subtitle: Text(relativeTime(a.unlockedAt)),
-              trailing: Text(
-                '+${a.xpAwarded} XP',
-                style: theme.textTheme.labelLarge,
+            Semantics(
+              label: '${a.name}, ${relativeTime(a.unlockedAt)}, '
+                  'plus ${a.xpAwarded} XP',
+              container: true,
+              excludeSemantics: true,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.emoji_events,
+                  color: theme.colorScheme.tertiary,
+                ),
+                title: Text(a.name, style: theme.textTheme.titleMedium),
+                subtitle: Text(relativeTime(a.unlockedAt)),
+                trailing: Text(
+                  '+${a.xpAwarded} XP',
+                  style: theme.textTheme.labelLarge,
+                ),
               ),
             ),
       ],

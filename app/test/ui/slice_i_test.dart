@@ -46,7 +46,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('English'), findsOneWidget);
-    expect(find.text('No messages yet'), findsOneWidget);
+    expect(find.textContaining('Ask your first question'), findsOneWidget);
     expect(await sessionApi.listSessions(), hasLength(1),
         reason: 'a session must exist in the fake store');
   });
@@ -64,7 +64,7 @@ void main() {
 
     expect(find.text('what is a fraction?'), findsOneWidget);
     expect(find.text(FakeSessionApi.cannedReplies[0]), findsOneWidget);
-    expect(find.text('No messages yet'), findsNothing);
+    expect(find.textContaining('Ask your first question'), findsNothing);
 
     // Transcript grows: a second exchange appends, nothing is replaced.
     await tester.enterText(find.byType(TextField), 'a part of a whole?');

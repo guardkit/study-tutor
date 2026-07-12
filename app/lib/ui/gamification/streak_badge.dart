@@ -78,41 +78,54 @@ class _StreakBadgeState extends State<StreakBadge>
       fontWeight: FontWeight.w600,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedBuilder(
-              animation: _pulse,
-              builder: (context, child) {
-                final scale = alive ? 1 + 0.12 * _pulse.value : 1.0;
-                return Transform.scale(scale: scale, child: child);
-              },
-              child: Icon(
-                Icons.local_fire_department,
-                color: flameColor,
-                size: 22,
+    return Semantics(
+      label: streakSemanticLabel(widget.streakDays, widget.aliveToday),
+      container: true,
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _pulse,
+                builder: (context, child) {
+                  final scale = alive ? 1 + 0.12 * _pulse.value : 1.0;
+                  return Transform.scale(scale: scale, child: child);
+                },
+                child: Icon(
+                  Icons.local_fire_department,
+                  color: flameColor,
+                  size: 22,
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Text('${widget.streakDays}', style: countStyle),
-          ],
-        ),
-        Text(
-          hasStreak ? 'day streak' : 'no streak yet',
-          style: theme.textTheme.labelMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        if (hasStreak && !widget.aliveToday)
+              const SizedBox(width: 4),
+              Text('${widget.streakDays}', style: countStyle),
+            ],
+          ),
           Text(
-            'ends tonight',
+            hasStreak ? 'day streak' : 'no streak yet',
             style: theme.textTheme.labelMedium
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
-      ],
+          if (hasStreak && !widget.aliveToday)
+            Text(
+              'ends tonight',
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+        ],
+      ),
     );
   }
+}
+
+/// A screen-reader phrase for a streak state, shared by the badge and the Home
+/// header card's composite label. Warm, never shaming (spec §1 register).
+String streakSemanticLabel(int streakDays, bool aliveToday) {
+  if (streakDays <= 0) return 'No streak yet';
+  if (aliveToday) return '$streakDays day streak, kept alive today';
+  return '$streakDays day streak, ends tonight';
 }
