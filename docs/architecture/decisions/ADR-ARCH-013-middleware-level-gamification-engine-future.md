@@ -2,11 +2,23 @@
 
 ## Status
 
-Proposed (future direction; not committed for Phase 0/1)
+**Superseded** by [ADR-ARCH-030](ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md)
+(2026-07-12) — the middleware/event-subscriber direction noted below is
+**rejected**. ADR-ARCH-030 makes the FEAT-PO-007 runtime-shape call this ADR
+deferred: the engine is a **pure `decide()` function invoked inside one
+`finalize_session` transaction** (the "standalone module" alternative kept open
+below), not a deepagents `GamificationMiddleware`. Rationale: the event bus has
+zero subscribers and its one emitter violated the schema, the HTTP/WS/voice
+transports have no bus at all, and an async fan-out contradicts
+`docs/gamification/design.md` §11.2's requirement that session-end state changes
+be one synchronous Postgres transaction. This ADR is retained for provenance.
 
-**Date:** 2026-04-18
+_Originally: Proposed (future direction; not committed for Phase 0/1), 2026-04-18._
+
+**Date:** 2026-04-18 · **Superseded:** 2026-07-12
 **Phase:** P2 consideration
-**Related:** ADR-ARCH-012, ADR-ARCH-001 (Gamification context)
+**Related:** ADR-ARCH-012, ADR-ARCH-001 (Gamification context),
+[ADR-ARCH-030](ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md) (supersedes this)
 
 ## Context
 

@@ -148,3 +148,33 @@ scope-guard test (no `whitestocks`/`5434` in test config) applies.
 - `pytest tests/unit/ -q` green + the new boot smoke with DSN exported.
 - Verify `cli/main.py` diff is additive (new subcommand + shared-helper
   extraction only; `serve`/`_build_nats_runtime` call sites unchanged).
+
+---
+
+## Closing note — `completion=None` bypass absorbed (2026-07-12, Phase-R S-R2)
+
+**Status of the bypass: closed / superseded.** This task's HTTP wiring passed
+`completion=None` into `SessionService.end_session` (`http/app.py`), so HTTP
+session-ends never assembled a session completion — completion assembly lived
+only in the MCP adapter. That was an accepted interim at the time (the adapter
+owned `build_session_completion`), but it left the HTTP/Flutter path unable to
+write learner state at session end.
+
+Phase R closes it, per the ratified plan (scope & build plan **D4/D14**,
+[gamification engine + adaptive-loop spec §2.4](../../../docs/design/gamification-engine-and-adaptive-loop-spec.md)
+and [ADR-ARCH-030](../../../docs/architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md) D7):
+
+- **`build_session_completion` moves into `SessionService.end_session`** for
+  ALL transports; the MCP adapter passes only its topic hint. The
+  `completion=None` bypass in `http/app.py` is **deleted**.
+- Phase-R B2's **`finalize_session`** (single transaction, ADR-ARCH-030 D3)
+  later subsumes that call site entirely — settlement and completion become one
+  synchronous unit, so the HTTP path writes confidence/misconception/XP exactly
+  like every other transport.
+- The **D14 fence** forbids the adapter from holding any completion/settlement
+  logic the HTTP path lacks — the very asymmetry this bypass created.
+
+**This is a docs-only closing note (S-R2 stage records the decision); the code
+change lands in the next Phase-R stage (B0), not here.** No re-open of this
+completed task — the note documents that the bypass is retired by the Phase-R
+lane and points to where the deletion happens.

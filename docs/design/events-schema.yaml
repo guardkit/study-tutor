@@ -7,6 +7,23 @@
 ##   ADR-ARCH-019 every-write-point fire-and-forget; cross-reference DDR-003
 ##   (session.completed emits on state transition, not on Graphiti write success).
 ##
+## Honesty pass: 2026-07-12 (Phase-R S-R2; docs precede Phase-E code). Three
+##   corrections to reality/intent — see ADR-ARCH-030 (settlement architecture):
+##   (1) session.completed is emitted POST-COMMIT at settlement (after
+##       finalize_session commits), NOT decoupled-from-write / emit-on-transition.
+##       This supersedes DDR-003's emit-before/decoupled posture and the
+##       ADR-ARCH-019 fire-and-forget framing (both Graphiti-era; the store is
+##       now Postgres and settlement is one synchronous transaction, ADR-ARCH-023).
+##   (2) subject_slug semantics fixed: the field carries the ACTUAL SUBJECT
+##       (e.g. "english-literature"), NOT the student id. The shipped MCP-only
+##       emitter mislabelled the student id as subject_slug — a known defect the
+##       Phase-E emit fixes; this schema documents the correct intent.
+##   (3) Gamification events (achievement.unlocked / quest.* / boss_battle.*) are
+##       DERIVED AT SETTLEMENT and DELIVERED VIA API RESPONSES (enriched
+##       GET /api/student-model, the end_session gamification block); BUS EMISSION
+##       is DEFERRED until a real subscriber exists. The bus is notification-only,
+##       never state-bearing (ADR-ARCH-030 D8).
+##
 ## Delivery: in-process only (no NATS, no external broker). Subscribers MUST
 ## use the deepagents 0.5.3 AsyncSubAgent boundary or equivalent async hook
 ## (CC-12); synchronous fan-out into tutor_turn return is forbidden.
@@ -24,11 +41,17 @@ producers:
       - session.turn_completed
       - session.completed
   Gamification:
+    # HONESTY NOTE (2026-07-12, ADR-ARCH-030 D8): none of these are emitted on
+    # the bus today. Achievement unlocks are derived at settlement and delivered
+    # via API responses (end_session gamification block, enriched
+    # GET /api/student-model). quest.* / boss_battle.* are out of Phase-R scope
+    # (no quest/boss-battle engine built). Schemas below are frozen shapes for
+    # future emission; the bus is notification-only, never state-bearing.
     emits:
-      - achievement.unlocked
-      - quest.completed
-      - quest.expired
-      - boss_battle.completed
+      - achievement.unlocked   # derived-at-settlement; API-delivered; bus emission deferred
+      - quest.completed        # not built (out of Phase-R scope)
+      - quest.expired          # not built (out of Phase-R scope)
+      - boss_battle.completed  # not built (out of Phase-R scope)
 
 consumers:
   StudentModel:
@@ -90,17 +113,43 @@ events:
 
   session.completed:
     description: |
-      Emitted by Tutoring on transition to "ended" state. Triggers Student
-      Model rollup (TopicConfidence delta capped ±0.1, AssessmentObjectiveProgress
-      update) and Gamification XP/streak/achievement evaluation.
-      Per gamification/design.md §2.1, sessions abandoned before any tutor
-      turn (turn_count < 2) MUST NOT emit this event.
+      Emitted by Tutoring AFTER the finalize_session transaction commits
+      (POST-COMMIT at settlement — ADR-ARCH-030 D8), NOT decoupled-from-write.
+      A delivered event therefore always corresponds to durable, settled state.
+      This supersedes DDR-003's emit-on-transition/decoupled posture and the
+      ADR-ARCH-019 fire-and-forget framing (both Graphiti-era; settlement is now
+      one synchronous Postgres transaction, ADR-ARCH-023).
+      Consumers (none today — bus is notification-only, ADR-ARCH-030 D8) would
+      see it after Student Model rollup (TopicConfidence delta capped ±0.1,
+      AssessmentObjectiveProgress update) and Gamification settlement have
+      already been written in-transaction. Gamification results reach product
+      surfaces via API responses (enriched GET /api/student-model, the
+      end_session gamification block), NOT via this event.
+      Per gamification/design.md §2.1/§13.1, a session with < 120 s engagement
+      (or zero turns) settles at 0 XP but IS settled; historically the "abandoned
+      before any tutor turn" rule was framed as turn_count < 2 — the ratified
+      rule (§13.1 D5) is the 120 s engagement-duration floor.
     phase_live: P1
     payload:
       type: object
       properties:
         session_id: { type: string, format: uuid }
-        duration_seconds: { type: integer, minimum: 0 }
+        subject:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+          description: |
+            The ACTUAL subject (e.g. "english-literature"), derived from the
+            session at settlement. HONESTY NOTE (2026-07-12): the shipped
+            MCP-only emitter mislabelled the STUDENT ID as `subject_slug`; the
+            Phase-E post-commit emit carries the real subject in this field.
+            `subject` (not `subject_slug`) is the corrected field name.
+        duration_seconds:
+          type: integer
+          minimum: 0
+          description: |
+            Engagement duration = max(session_turn.ts) − min(session_turn.ts)
+            (ADR-ARCH-030 D3; design §13.1 D5), NOT last_activity − started_at.
         topic:
           oneOf:
             - { type: string }
@@ -119,11 +168,18 @@ events:
 
   achievement.unlocked:
     description: |
-      Emitted by Gamification when a Student crosses an achievement criterion.
-      Producer: Gamification context only — Tutoring does not emit this.
-      Consumers: Student Model (XP/level rollup), Reachy (P2 celebration trigger).
-      Achievements are sticky (once unlocked, always unlocked) per gamification/design.md §5.
-    phase_live: P2
+      HONESTY NOTE (2026-07-12, ADR-ARCH-030 D8): achievement unlocks are
+      DERIVED AT SETTLEMENT inside finalize_session and DELIVERED VIA API
+      RESPONSES (the end_session `gamification.achievements_unlocked` block and
+      the enriched GET /api/student-model `recent_achievements`). BUS EMISSION
+      of this event is DEFERRED until a real subscriber exists — the bus is
+      notification-only, never state-bearing. The schema below is the frozen
+      shape for that future emission; nothing emits it today.
+      Producer (future): Gamification context only — Tutoring does not emit this.
+      Consumers (future): Reachy (celebration trigger). Achievements are sticky
+      (once unlocked, always unlocked) per gamification/design.md §5; unlock XP
+      cascades to a fixed point per design §13.1 D7.
+    phase_live: deferred (derived-at-settlement; API-delivered; bus emission deferred)
     payload:
       type: object
       properties:
@@ -185,8 +241,38 @@ delivery_semantics:
   durability: at-most-once
   retry: none
   dead_letter: none
-  emit_decoupled_from_graphiti_write: true
+  emit_after_commit: true              # 2026-07-12: replaces emit_decoupled_from_graphiti_write
+  emit_decoupled_from_graphiti_write: false  # DEPRECATED (Graphiti-era); store is now Postgres
+  bus_state_bearing: false             # notification-only; no consumer correctness depends on delivery
   rationale: |
+    REWRITTEN 2026-07-12 (Phase-R S-R2 honesty pass; ADR-ARCH-030 D8). The
+    Graphiti-era rationale below the line no longer holds: the student store is
+    Postgres (ADR-ARCH-023), and session-end state (XP + streak + per-topic
+    confidence + achievements) is settled in ONE synchronous transaction
+    (finalize_session, ADR-ARCH-030), not fire-and-forget per write point.
+
+    Current posture:
+    - The bus is NOTIFICATION-ONLY and NEVER state-bearing. No consumer's
+      correctness may depend on a delivered event; settlement never awaits one.
+      There are ZERO subscribers today.
+    - session.{started, turn_completed, completed} emit AFTER the relevant
+      Postgres commit (emit-after-commit), so a delivered event always implies
+      durable state. For session.completed this is post-finalize_session-commit
+      (ADR-ARCH-030 D8) — this SUPERSEDES DDR-003's emit-on-transition /
+      decoupled-from-write posture and the ADR-ARCH-019 fire-and-forget framing.
+      With a millisecond Postgres commit there is no latency reason to emit
+      before the write (unlike the 78.98s Graphiti add_episode that justified
+      decoupling — that constraint is gone).
+    - Gamification results (XP, level, streak, achievements, near-misses) are
+      DELIVERED VIA API RESPONSES (the end_session gamification block and the
+      enriched GET /api/student-model), NOT via the bus. achievement.unlocked /
+      quest.* / boss_battle.* bus emission is DEFERRED until a real subscriber
+      exists; the schemas above are frozen shapes for that future.
+    - A consumer crash on a delivered event is an observable defect, not silent
+      data loss — but since state is committed before emit and read back via the
+      store/API, a lost event costs a notification, never durable state.
+
+    --- SUPERSEDED (Graphiti-era, retained for provenance) ---
     Single-user posture (ADR-ARCH-014) plus async Graphiti write-back at
     every write point (ADR-ARCH-019, supersedes session-end-only ADR-ARCH-003;
     CC-13 in ARCH-018) make heavy delivery guarantees unnecessary. Per
@@ -197,12 +283,8 @@ delivery_semantics:
     failures are log-only. The events bus is the consumer-facing source of
     truth; the SessionEpisode in Graphiti is a secondary persistence
     artefact whose absence is observable on the next session-status read
-    but does not block the event bus.
-
-    A consumer crash on session.completed is an observable defect, not a
-    silent data-loss event. Likewise, a Graphiti add_episode failure is
-    logged structurally but does not retry on the caller path and does not
-    surface to the MCP handler — the 27 Apr 2026 latency spike measured
-    add_episode median 78.98s, making any synchronous wait on the caller
-    path infeasible (~15× the 5s SR-08 threshold and ~39× the
+    but does not block the event bus. A Graphiti add_episode failure is
+    logged structurally but does not retry on the caller path — the 27 Apr 2026
+    latency spike measured add_episode median 78.98s, making any synchronous
+    wait on the caller path infeasible (~15× the 5s SR-08 threshold and ~39× the
     tutor_session_end 2s budget).

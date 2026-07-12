@@ -2,12 +2,16 @@
 
 **⚠️ FROZEN CONTRACT — changes after push require coordination with the app side.**
 
-**Transport binding for:** [API-session-cross-device.md](API-session-cross-device.md) at `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a` (contract Revision 1 — voice)  
-**Status:** Active — **Revision 1 (2026-07-05)**: voice routes + WS binding added (`/design-refine` G-CON, [voice build plan §5a](../../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md)). Additive only: the six original verbs, their routes, and status codes are unchanged — clients pinned at `BINDING_SHA=6eb7b88c…` keep working.  
-**Phase:** FEAT-APP-001 (HTTP/WS adapter for mobile+voice) → FEAT-VOICE-001…003 (voice phase)  
-**Generated:** 2026-07-05 · **Revision 1:** 2026-07-05
+**Transport binding for:** [API-session-cross-device.md](API-session-cross-device.md) at `CONTRACT_SHA=<S-R2 ratification commit — Revision 2; pin on push, see Revision 2 note>` (contract **Revision 2** — gamification settlement; supersedes the Rev 1 pin `574615e916bfacafd014b2a0027b47cdf20d8f4a`)  
+**Status:** Active — **Revision 2 (2026-07-12)**: `end_session`'s response gains the **nullable `gamification` block** (§2 binding table + contract §5 Rev 2) — the first re-pin of `CONTRACT_SHA` since the freeze. New `BINDING_SHA` = the S-R2 ratification commit (recorded on push, per the Rev-1 external-recording precedent). **Nullable ⇒ additive-safe:** clients pinned at the prior `BINDING_SHA=6eb7b88c…` / `CONTRACT_SHA=574615e…` keep working (the block is absent until settlement). **Revision 1 (2026-07-05)**: voice routes + WS binding added (`/design-refine` G-CON, [voice build plan §5a](../../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md)); those routes and status codes are unchanged by Rev 2.  
+**Phase:** FEAT-APP-001 (HTTP/WS adapter for mobile+voice) → FEAT-VOICE-001…003 (voice phase) → Phase-R Lane B (gamification settlement)  
+**Generated:** 2026-07-05 · **Revision 1:** 2026-07-05 · **Revision 2:** 2026-07-12
+
+**Revision 2 note (2026-07-12, Phase-R S-R2) — `CONTRACT_SHA`/`BINDING_SHA` re-pin discipline:** contract [Revision 2](API-session-cross-device.md) is the first shape change to an *original* verb, so per §7 the binding must re-pin `CONTRACT_SHA` (to the commit that lands cross-device Revision 2) and record a new `BINDING_SHA` (this binding revision's commit). The S-R2 docs stage lands **both** the contract Revision 2 and this binding re-pin in **one commit**, so `CONTRACT_SHA` and `BINDING_SHA` **both resolve to that single S-R2 ratification commit**. A commit cannot cite its own hash, so — exactly as the Rev-1 `BINDING_SHA` was recorded externally (voice scope & build plan §0) — the concrete 40-char SHA is **pinned on push**: Rich records `git rev-parse HEAD` of the pushed S-R2 commit into both fields and the app-config pin. The app side bumps its `BINDING_SHA` to that value. Until then the placeholder above stands for "the S-R2 ratification commit". This re-pin is scoped to `end_session`; the six-verb-freeze (§7) otherwise holds.
 
 **Addendum 2026-07-09 (FEAT-VOICE-004 R05):** additive read verb `GET /api/student-model` bound in §2.2. Additive only — the six session verbs, the voice Rev 1 routes, and their status codes are unchanged; the frozen voice `CONTRACT_SHA`/`BINDING_SHA` are **not** disturbed. This is a student-model read, not a session verb, so the transport-neutral session contract SHA is unaffected.
+
+**Addendum 2026-07-12 (Phase-R S-R2):** additive **enrichment** of `GET /api/student-model` (§2.2) and additive **start_session response fields** (§2.1) — both additive, so **no `CONTRACT_SHA`/`BINDING_SHA` re-pin for these two** (only the `end_session` gamification block, being an original-verb shape change, drives the Revision 2 re-pin above). Every pre-existing field keeps its exact name and semantics; `data_available` unchanged.
 
 ---
 
@@ -15,7 +19,7 @@
 
 This document binds the transport-neutral [API-session-cross-device.md](API-session-cross-device.md) contract to the HTTP wire format. It defines the HTTP method, path, request/response JSON shapes, and status codes for each of the six session verbs. This binding is **frozen once pushed**: the Flutter app build consumes it at a pinned SHA (`BINDING_SHA`), making every route, method, and status code a hard commitment.
 
-The contract (at `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a`, Revision 1) defines the transport-neutral semantics; this document provides the HTTP-specific details.
+The contract (at the Revision 2 `CONTRACT_SHA` pinned in the header — superseding the Rev 1 pin `574615e916bfacafd014b2a0027b47cdf20d8f4a`) defines the transport-neutral semantics; this document provides the HTTP-specific details.
 
 ---
 
@@ -25,12 +29,12 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 
 | Verb | HTTP Method | Path | Request Shape (reference to contract §5) | Response Shape (reference to contract §5) |
 |---|---|---|---|---|
-| `start_session` | POST | `/api/sessions/start` | `{ subject?, topic?, resume_if_active? }` (contract §5) | `{ session_id, student_id, resumed: bool, turns? }` (contract §5) |
+| `start_session` | POST | `/api/sessions/start` | `{ subject?, topic?, resume_if_active? }` (contract §5) | `{ session_id, student_id, resumed: bool, turns?, topic?, opening_prompt?, focus_aos? }` (contract §5; the last three **additive** per §2.3, S-R2) |
 | `list_sessions` | GET | `/api/sessions` | Query params: `status?`, `limit?` (contract §5) | `[{ session_id, subject, topic, status, started_at, last_activity, turn_count }]` (contract §5) |
 | `resume_session` | GET | `/api/sessions/{session_id}/resume` | Path param: `session_id` (contract §5) | `{ session_id, status, turns:[{role,content,ts}], student_id }` (contract §5) |
 | `turn` | POST | `/api/sessions/{session_id}/turn` | `{ user_message, stream? }` (contract §5); path param: `session_id` | `{ tutor_response }` (contract §5) or token stream (WS only, contract §7) |
 | `session_status` | GET | `/api/sessions/{session_id}/status` | Path param: `session_id` (contract §5) | `{ session_id, student_id, status, turn_count, started_at, last_activity, resumable }` (contract §5) |
-| `end_session` | POST | `/api/sessions/{session_id}/end` | Path param: `session_id` (contract §5) | `{ session_id, status:"ended" }` (contract §5) |
+| `end_session` | POST | `/api/sessions/{session_id}/end` | Path param: `session_id` (contract §5) | `{ session_id, status:"ended", gamification? }` (contract §5 **Rev 2** — `gamification` is the nullable settlement block; absent until the engine settles the session) |
 | `voice_turn` *(Rev 1)* | POST | `/api/sessions/{session_id}/voice-turn` | **`multipart/form-data`**, file field **`audio`** (filename + full content-type incl. codec params forwarded); `stream` reserved-and-ignored on HTTP (whole-response variant, like `turn`) | `{ transcript, tutor_response, audio: [{seq, chunk_id, url}] }` (contract §5 Rev 1) |
 | `voice_audio` *(Rev 1)* | GET | `/api/sessions/{session_id}/voice-audio/{chunk_id}` | Path params: `session_id`, `chunk_id` | **`audio/wav`** bytes (binary response) |
 | `student_model` *(read, R05)* | GET | `/api/student-model` | Query params: `subject` (required), `student_name?` (hint, ignored) | `{ student_name, streak_days, level_name, recent_xp, near_achievements:[], topic_confidence:{topic:conf}, data_available }` (§2.2) |
@@ -73,6 +77,61 @@ Serves the Reachy robot's `query_student_model` tool (sibling `fleet-gateway`, F
 - **Empty record:** a seeded student with no banked XP and no topic confidence returns 200 with `data_available: false` (never 500 for "nothing logged"). Consumers **gate on `data_available`**.
 - **Projection scope (minimal real slice):** `streak_days` / `level_name` / `recent_xp` are derived at read time from the student's `ended` sessions (`study_tutor.gamification` — an honest subset of gamification design §2.1 / §3.1 / §4.1). `near_achievements` is always `[]` until the Phase-2 gamification state engine (**FEAT-PO-007**; gamification design §12, ADR-ARCH-013) ships the §5 achievement catalog + near-miss tracking. `level_name` values are the design §3.1 tiers (Beginner…Grandmaster), not the stale graph-era labels.
 - **Consumer pin:** fleet-gateway pins the path via `common.tutor_client.STUDENT_MODEL_PATH` and maps any non-2xx (incl. a pre-ship 404) to a graceful "unavailable".
+
+#### 2.2.1 Enrichment (additive — Phase-R S-R2, 2026-07-12)
+
+Once the Phase-R gamification engine ([ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md)) settles sessions and `get_gamification_state` reads banked facts, `GET /api/student-model` gains the following fields. **Additive only** — every field in the R05 response above keeps its **exact name and semantics**, `data_available` is unchanged, and the read stays a student-model read (no `CONTRACT_SHA`/`BINDING_SHA` re-pin, per the header S-R2 addendum). Fleet-gateway passes the dict opaquely and gates on `data_available`, so the enrichment is safe for the live Reachy consumer.
+
+New fields:
+
+- `total_xp` (int) — `SUM(session.xp_awarded) + SUM(achievement.xp_awarded)` (ADR-ARCH-030 D2).
+- `level_number` (int, 1–15) — the level for `total_xp` (design §3.1 thresholds).
+- `xp_into_level` (int) — XP accumulated **within** the current level.
+- `xp_to_next_level` (int) — XP remaining to the next threshold (0 at Level 15, terminal).
+- `longest_streak` (int) — longest consecutive-London-day streak ever (design §4.1; London calendar per design §13.1 D6).
+- `recent_achievements` (array, **last 5** by unlock time, newest first) — `[{id, name, unlocked_at, xp_awarded}]`.
+- `near_achievements` — **shape change** from the R05 hardwired `[]` to **top-3 objects** `[{id, name, description, progress, target, hint}]`, where `progress`/`target` are integers on the same scale (e.g. `{progress: 4, target: 5}` for Morning Star) and `hint` is a static per-achievement "what gets you there" string with progress interpolated. Empty array while nothing is close.
+- `next_unlock` — `{level, feature}`: the next level-gated feature (design §3.2 unlock gates), e.g. `{level: 6, feature: "Exam-style practice questions"}`.
+
+Enriched response (200), additive over the R05 shape:
+
+```json
+{
+  "student_name": "lilymay",
+  "streak_days": 6,
+  "level_name": "Learner",
+  "recent_xp": 240,
+  "topic_confidence": {"macbeth": 0.7, "poetry": 0.55},
+  "data_available": true,
+
+  "total_xp": 640,
+  "level_number": 5,
+  "xp_into_level": 40,
+  "xp_to_next_level": 460,
+  "longest_streak": 8,
+  "recent_achievements": [
+    {"id": "three_day_run", "name": "Three Day Run", "unlocked_at": "2026-07-11T18:20:00+01:00", "xp_awarded": 100}
+  ],
+  "near_achievements": [
+    {"id": "morning_star", "name": "Morning Star", "description": "5 sessions started before 09:00", "progress": 4, "target": 5, "hint": "One more early-morning session (4/5)."}
+  ],
+  "next_unlock": {"level": 6, "feature": "Exam-style practice questions"}
+}
+```
+
+> **Courtesy note to the fleet-gateway team (Phase-R S-R2 — no code change required here; Rich delivers this).** `near_achievements` changes from the R05 hardwired `[]` to an array of **objects** `[{id, name, description, progress, target, hint}]`. fleet-gateway passes the student-model dict opaquely and gates only on `data_available`, so nothing breaks. But the Scholar narration prompt now has real material: it may want to read `progress`/`target` (e.g. *"two sessions away from Poetry Pioneer"* — design §9.1) and the ready-made `hint` string, rather than treating `near_achievements` as always-empty. `recent_achievements` (last 5, with `unlocked_at`) similarly feeds the "celebration"/"what she just earned" narration. This is an **additive** enrichment: no field is renamed or removed. Rich hands this note to the fleet-gateway lane; **no edits are made outside the study-tutor repo by this stage.**
+
+---
+
+### 2.3 `start_session` Response Enrichment (additive — Phase-R S-R2)
+
+When planning moves into `SessionService.start_session` (spec §2.1, [ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md) D7 hook), the `POST /api/sessions/start` response gains three **additive** fields. **No `CONTRACT_SHA`/`BINDING_SHA` re-pin** (additive addendum, not an original-verb shape change): the existing `{session_id, student_id, resumed, turns?}` fields keep their exact names and semantics; pinned clients that ignore unknown fields are unaffected.
+
+- `topic` (string|null) — the planned topic for the session (the session's persisted `topic`).
+- `opening_prompt` (string|null) — the planner's opening prompt for the first turn. **Not persisted** on the session row (spec §2.1); returned in the start response only.
+- `focus_aos` (array of AO strings, e.g. `["AO2","AO3"]`) — the assessment objectives the plan focuses on (from the persisted plan facts). Empty array when the planner produced none / degraded to baseline.
+
+The MCP `tutor_start_session` keeps its existing `plan_summary` shape, now sourced from the same service-side plan (spec §2.1); this HTTP enrichment is the transport-neutral plan surfaced on the HTTP verb.
 
 ---
 
