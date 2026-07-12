@@ -7,8 +7,12 @@ import '../domain/session.dart';
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
 import '../ports/voice_api.dart';
+import 'app_scope.dart';
 import 'error_handling.dart';
 import 'formatting.dart';
+import 'gamification/progress_header_card.dart';
+import 'gamification/progress_screen.dart';
+import 'progress_store.dart';
 import 'session_screen.dart';
 
 /// Default subject for v1 — English (AQA 8700/8702), matching the tutor's
@@ -31,11 +35,16 @@ class HomeScreen extends StatefulWidget {
     required this.identity,
     required this.sessionApi,
     required this.voiceApi,
+    this.progressStore,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
   final VoiceApi voiceApi;
+
+  /// The app-wide student-model store (spec §2). Optional: resolved from the
+  /// ambient [AppScope] when absent so widget tests can inject it directly.
+  final ProgressStore? progressStore;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -43,6 +52,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<SessionSummary> _active = const [];
+  ProgressStore? _store;
 
   /// In-flight guard for Start/Resume (same reason as the session screen's
   /// `_sending`): a double-tap must not start two sessions or push two
@@ -54,6 +64,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Resolve the store once (constructor injection wins; else the AppScope),
+    // then kick the first load. Safe here — InheritedWidget lookups are allowed
+    // in didChangeDependencies, unlike initState.
+    _store ??= widget.progressStore ?? AppScope.maybeOf(context)?.progressStore;
+    final store = _store;
+    if (store != null && !store.hasLoaded) store.load();
+  }
+
+  void _openProgress(ProgressStore store) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ProgressScreen(store: store)),
+    );
   }
 
   Future<void> _refresh() async {
@@ -98,6 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
         initialTurns: started.turns ?? const [],
         voiceRecorder: VoiceRecorder(),
         player: JustAudioPlayback(),
+        progressStore: _store,
       ));
     } on Unauthenticated {
       if (!mounted) return;
@@ -128,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
         initialTurns: resumed.turns,
         voiceRecorder: VoiceRecorder(),
         player: JustAudioPlayback(),
+        progressStore: _store,
       ));
     } on Unauthenticated {
       if (!mounted) return;
@@ -188,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
+            if (_store != null) _progressHeader(_store!),
             for (final summary in _active) _sessionCard(theme, summary),
             if (_active.isEmpty)
               Padding(
@@ -207,6 +237,23 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('Start new session'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// The Progress header card (spec §6.1) — always shown, never hidden; it
+  /// rebuilds off the store and renders a warm zero-state when there is no
+  /// banked data yet.
+  Widget _progressHeader(ProgressStore store) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListenableBuilder(
+        listenable: store,
+        builder: (context, _) => ProgressHeaderCard(
+          model: store.model,
+          aliveToday: store.streakAliveToday,
+          onTap: () => _openProgress(store),
         ),
       ),
     );

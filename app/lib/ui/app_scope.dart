@@ -2,7 +2,9 @@ import 'package:flutter/widgets.dart';
 
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
+import '../ports/student_model_api.dart';
 import '../ports/voice_api.dart';
+import 'progress_store.dart';
 
 /// Root [InheritedWidget] composing the app's ports (spec §2) so screens read
 /// them via `AppScope.of(context)` instead of constructor prop-drilling. The
@@ -10,19 +12,24 @@ import '../ports/voice_api.dart';
 /// them here; constructor injection on the screens stays available so widget
 /// tests can inject fakes directly without an ambient scope.
 ///
-/// `StudentModelApi` joins this triplet in S-A3 — not composed yet.
+/// S-A3 adds the `StudentModelApi` port and the app-wide [ProgressStore]
+/// (owning the student-model snapshot) to the scope.
 class AppScope extends InheritedWidget {
   const AppScope({
     super.key,
     required this.identity,
     required this.sessionApi,
     required this.voiceApi,
+    required this.studentModelApi,
+    required this.progressStore,
     required super.child,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
   final VoiceApi voiceApi;
+  final StudentModelApi studentModelApi;
+  final ProgressStore progressStore;
 
   /// The nearest enclosing scope. Throws if none is present — screens that
   /// opt into scope reading must live under an [AppScope].
@@ -41,5 +48,7 @@ class AppScope extends InheritedWidget {
   bool updateShouldNotify(AppScope oldWidget) =>
       identity != oldWidget.identity ||
       sessionApi != oldWidget.sessionApi ||
-      voiceApi != oldWidget.voiceApi;
+      voiceApi != oldWidget.voiceApi ||
+      studentModelApi != oldWidget.studentModelApi ||
+      progressStore != oldWidget.progressStore;
 }

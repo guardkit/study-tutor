@@ -7,8 +7,9 @@ hermetic gate never runs it, and its code lands green without a server.
 
 ## Requirements
 
-- The GB10 adapter deployed in **dev config** on `:8100` (binding doc at the
-  BINDING_SHA pinned in the phase-2 build plan header): dev token table
+- The GB10 adapter deployed in **dev config** on `:8100` (binding doc at
+  BINDING_SHA `53f2fc5` — the S-R2 Revision-2 ratification commit, superseding
+  the phase-2 pin `6eb7b88`): dev token table
   (`token-lilymay` / `token-alex`) and the `POST /__dev__/reset` route
   enabled. **Never point this suite at a prod config** — every test starts
   by truncating session state.

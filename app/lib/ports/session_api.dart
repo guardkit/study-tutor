@@ -9,6 +9,7 @@
 /// callers are identified by their token (§3), never by passing `student_id`.
 library;
 
+import '../domain/gamification.dart';
 import '../domain/session.dart';
 
 /// §5 `start_session` output: `{session_id, student_id, resumed, turns?}`.
@@ -79,12 +80,25 @@ class SessionStatusResult {
   final bool resumable;
 }
 
-/// §5 `end_session` output: `{session_id, status: "ended"}`.
+/// §5 `end_session` output: `{session_id, status: "ended", gamification?}`.
+///
+/// Revision 2 (S-A3): the response gains the OPTIONAL, nullable [gamification]
+/// settlement block (contract §5 Rev 2). Additive — nothing else on this type
+/// changes. `null` ⇒ the engine has not settled the session yet; a client MUST
+/// treat that as "settlement not reflected", never as an error, and never
+/// fabricate a celebration.
 class EndSessionResult {
-  const EndSessionResult({required this.sessionId, required this.status});
+  const EndSessionResult({
+    required this.sessionId,
+    required this.status,
+    this.gamification,
+  });
 
   final String sessionId;
   final SessionStatus status;
+
+  /// The nullable settlement block — present only once the engine settles.
+  final SessionGamification? gamification;
 }
 
 abstract interface class SessionApi {

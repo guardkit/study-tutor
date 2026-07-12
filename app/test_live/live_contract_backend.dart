@@ -11,10 +11,12 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:study_tutor_app/adapters/http_session_api.dart';
+import 'package:study_tutor_app/adapters/http_student_model_api.dart';
 import 'package:study_tutor_app/domain/principal.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/ports/identity_provider.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
+import 'package:study_tutor_app/ports/student_model_api.dart';
 
 import '../test/contract/contract_backend.dart';
 
@@ -96,13 +98,19 @@ class LiveContractBackend implements ContractBackend {
       identity: _identity,
       turnDeadline: _liveTurnDeadline,
     );
+    _studentModelApi =
+        HttpStudentModelApi(baseUrl: _apiBaseUrl, identity: _identity);
   }
 
   final _identity = _DevTableIdentity();
   late final HttpSessionApi _api;
+  late final HttpStudentModelApi _studentModelApi;
 
   @override
   SessionApi get api => _api;
+
+  @override
+  StudentModelApi get studentModelApi => _studentModelApi;
 
   /// Dev table entry #1 (binding §5.1).
   @override

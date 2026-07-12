@@ -1,11 +1,14 @@
 /// HttpSessionApi — the real transport adapter behind the `SessionApi` port.
 ///
-/// Binding: API-session-http-binding.md, consumed at the BINDING_SHA pinned
-/// in the phase-2 build plan header — six verbs under
+/// Binding: API-session-http-binding.md (Revision 2), consumed at
+/// `BINDING_SHA=53f2fc51a35aa051c3dd899563a5cdbb7b620061` (the S-R2
+/// ratification commit — supersedes the phase-2 pin `6eb7b88`, per the binding
+/// doc's Revision-2 re-pin note) — six verbs under
 /// `Authorization: Bearer <token>` (§3), JSON shapes per contract §5, wire
-/// enum values = the domain enum names. The binding doc is frozen: if the
-/// wire disagrees with it, that is a backend/binding bug to raise, never
-/// something to adapt to silently here.
+/// enum values = the domain enum names. Revision 2 adds `end_session`'s
+/// nullable `gamification` settlement block (§5 Rev 2). The binding doc is
+/// frozen: if the wire disagrees with it, that is a backend/binding bug to
+/// raise, never something to adapt to silently here.
 ///
 /// Error posture (p2-wave-4, binding §4): a non-2xx carrying the §9 envelope
 /// (`{error, error_type}`) maps 1:1 onto the typed exceptions —
@@ -21,6 +24,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../domain/errors.dart';
+import '../domain/gamification.dart';
 import '../domain/session.dart';
 import '../ports/identity_provider.dart';
 import '../ports/session_api.dart';
@@ -272,9 +276,15 @@ class HttpSessionApi implements SessionApi {
         );
       }, (json) {
         final m = json as Map<String, dynamic>;
+        // Rev 2 (contract §5): the nullable `gamification` settlement block.
+        // Absent/null ⇒ not yet settled — parse only when present, never invent.
+        final gamification = m['gamification'] as Map<String, dynamic>?;
         return EndSessionResult(
           sessionId: m['session_id'] as String,
           status: SessionStatus.values.byName(m['status'] as String),
+          gamification: gamification == null
+              ? null
+              : SessionGamification.fromJson(gamification),
         );
       });
 }

@@ -13,6 +13,8 @@ import '../ports/session_api.dart';
 import '../ports/voice_api.dart';
 import 'error_handling.dart';
 import 'formatting.dart';
+import 'gamification/celebration_sheet.dart';
+import 'progress_store.dart';
 import 'theme/motion.dart';
 
 class SessionScreen extends StatefulWidget {
@@ -27,12 +29,18 @@ class SessionScreen extends StatefulWidget {
     this.voiceRecorder,
     this.player,
     this.clock,
+    this.progressStore,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
   final String sessionId;
   final VoiceApi voiceApi;
+
+  /// The app-wide student-model store (spec §6.2). Refreshed after a settled
+  /// end so the Home header/Progress screen reflect the new totals. Null in
+  /// widget tests that inject the screen without a store.
+  final ProgressStore? progressStore;
 
   /// The session subject/topic — title-cased for the AppBar (spec §3). Null in
   /// widget tests that inject the screen directly, falling back to 'Session'.
@@ -156,10 +164,24 @@ class _SessionScreenState extends State<SessionScreen>
 
   Future<void> _endSession() async {
     try {
-      await widget.sessionApi.endSession(widget.sessionId);
+      final result = await widget.sessionApi.endSession(widget.sessionId);
       if (!mounted) return;
-      // §4: ended is terminal — the screen goes read-only, no way back.
+      // §4: ended is terminal — the screen goes read-only immediately.
       setState(() => _ended = true);
+
+      // §6.2: a non-null settlement block celebrates, then returns to Home and
+      // refreshes progress. A null block is the plain end path — NO celebration
+      // chrome, ever. The block is nullable: absent means absent.
+      final gamification = result.gamification;
+      if (gamification != null) {
+        await showCelebrationSheet(context, gamification);
+        if (!mounted) return;
+        widget.progressStore
+            ?.refresh(streakExtended: gamification.streakExtended);
+        // Return to Home (only when there is somewhere to pop to — a widget
+        // test may inject this screen as the root route).
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+      }
     } on SessionEnded {
       if (!mounted) return;
       setState(() => _ended = true);

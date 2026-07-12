@@ -77,8 +77,11 @@ lib/
   ports/         SessionApi (the six §5 verbs, 1:1, transport-neutral)
                  IdentityProvider (signIn/signOut/currentPrincipal)
   adapters/      HttpSessionApi — the real transport behind SessionApi
-                 (phase 2; binding table API-session-http-binding.md at the
-                 BINDING_SHA pinned in the phase-2 build plan header)
+                 (phase 2; binding table API-session-http-binding.md at
+                 BINDING_SHA 53f2fc5 — the S-R2 Revision-2 ratification commit,
+                 superseding the phase-2 pin 6eb7b88)
+                 HttpStudentModelApi — the real GET /api/student-model read
+                 (S-A3; binding §2.2/§2.2.1 at the same BINDING_SHA 53f2fc5)
   fakes/         FakeIdentityProvider — two principals (Lilymay default,
                  Alex for ownership tests), invalidate-token switch, and the
                  token → student_id introspection the fake backend trusts (§3)
