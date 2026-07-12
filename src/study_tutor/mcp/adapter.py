@@ -38,8 +38,6 @@ import asyncio
 import logging
 from typing import Any
 
-from datetime import datetime, timezone
-
 from study_tutor.llm.client import LLMClient, _default_player_model
 from study_tutor.planner.types import SessionPlan
 from study_tutor.roles.loader import RoleConfig
@@ -52,7 +50,7 @@ from study_tutor.session.provider import get_session_service
 from study_tutor.session.service import SessionService, TutorReply
 from study_tutor.session.wiring import resolve_student_id
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
-from study_tutor.tutoring.session_end import EventBus, SESSION_COMPLETED_EVENT
+from study_tutor.tutoring.session_end import EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +114,13 @@ class MCPAdapter:
         # TASK-SMP3-06: EventBus for session.completed emission.
         # Defaults to a fresh empty bus so existing tests continue to work.
         self._event_bus = event_bus if event_bus is not None else EventBus()
+        # Spec §4.2(5) / D14: the post-commit ``session.completed`` emit lives in
+        # SessionService.end_session (emit-after-commit, D8), NOT in this adapter.
+        # Share this adapter's bus into the service so the service's emit reaches
+        # this adapter's subscribers; the MCP adapter holds no emit logic the HTTP
+        # path lacks.
+        if self._session_service._event_bus is None:
+            self._session_service._event_bus = self._event_bus
 
         # TASK-LCA-004 — boot-time smoke check (AC-LCA-02 / AC-LCA-08).
         #
@@ -340,24 +345,22 @@ class MCPAdapter:
         }
 
     async def tutor_session_end(self, session_id: str) -> dict[str, Any]:
-        """Mark the session ended (TASK-SMP3-06; S-R3 §2.4 cutover).
+        """Mark the session ended (spec §4.2 / D14 cutover).
 
-        Completion **assembly now lives in** ``SessionService.end_session``
-        (D14) — the adapter no longer builds a ``SessionCompletion`` and holds no
-        plan cache. It reads the persisted session row for the event payload,
-        emits ``session.completed`` (DDR-003 emit-before-write, unchanged this
-        stage), then delegates to the service, passing only its topic hint (the
-        subject slug). ``topics_covered`` / ``aos_exercised`` are sourced from
-        the persisted plan facts (``topic`` + ``aos_scaffolded``).
+        A thin tool-shape skin: it resolves the ownership identity, short-circuits
+        an unknown session to ``SessionNotFoundError`` (defence-in-depth), and
+        delegates to ``SessionService.end_session`` — which runs the single
+        ``finalize_session`` settlement transaction, then emits the post-commit
+        ``session.completed`` (spec §4.2(5) / D8). The adapter holds **no**
+        settlement or emit logic the HTTP path lacks (D14). It passes only its
+        topic hint (the subject slug) as the weak fallback for a plan-less row.
 
-        I-T6 zero-turn invariant preserved: a session ended before any tutor turn
-        flips status to ``"ended"`` but does NOT emit ``session.completed`` and
-        writes no learner-state deltas (the service skips the completion for
-        ``turn_count == 0``).
+        I-T6 zero-turn invariant preserved by the service: a session ended before
+        any tutor turn still settles (at 0 XP) but emits no ``session.completed``.
         """
         identity = resolve_student_id()
 
-        # Load the persisted session row (turn count + plan facts for the event).
+        # Defence-in-depth: an unknown session must not reach the service.
         record = await self._student_store.get_session(session_id)
         if record is None:
             return _session_not_found(session_id)
@@ -367,30 +370,6 @@ class MCPAdapter:
                 "error_type": "SessionForbidden",
             }
 
-        topic = record.topic or record.subject
-        aos_exercised = list(record.aos_scaffolded)
-
-        # I-T6 zero-turn invariant: sessions with no turns do NOT emit
-        # session.completed. The service independently skips the completion
-        # write for zero-turn sessions.
-        if record.turn_count > 0:
-            # DDR-003: emit session.completed BEFORE the SessionService write.
-            ended_at = datetime.now(timezone.utc)
-            payload: dict[str, Any] = {
-                "session_id": session_id,
-                "student_id": identity,
-                "subject_slug": record.subject,
-                "topics_covered": [topic],
-                "aos_exercised": aos_exercised,
-                "turn_count": record.turn_count,
-                "narrative_summary": "",  # Not produced by this cutover
-                "started_at": record.started_at.isoformat(),
-                "ended_at": ended_at.isoformat(),
-            }
-            await self._event_bus.emit(SESSION_COMPLETED_EVENT, payload)
-
-        # Delegate: the service assembles + writes the completion from the
-        # persisted row (D14). MCP passes only its topic hint (the subject).
         try:
             await self._session_service.end_session(
                 student_id=identity,

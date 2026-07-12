@@ -51,7 +51,7 @@ import logging
 import os
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import AsyncIterator, Literal
 
 from study_tutor.knowledge.store.entities import (
@@ -85,6 +85,10 @@ from study_tutor.session.errors import (
 from study_tutor.tutoring.adapters.session_state import (
     SessionState,
     TranscriptTurn,
+)
+from study_tutor.tutoring.session_end import (
+    SESSION_COMPLETED_EVENT,
+    EventBus,
 )
 
 logger = logging.getLogger(__name__)
@@ -334,9 +338,23 @@ class SessionService:
     """Composes the ``StudentStore`` session methods with the ownership/status
     guards and event responsibilities the App Access layer owns."""
 
-    def __init__(self, *, store: StudentStore | None = None) -> None:
-        """Hold an explicit store (tests) or resolve the wired one per call."""
+    def __init__(
+        self,
+        *,
+        store: StudentStore | None = None,
+        event_bus: EventBus | None = None,
+    ) -> None:
+        """Hold an explicit store (tests) or resolve the wired one per call.
+
+        ``event_bus`` (optional) is where :meth:`end_session` emits the
+        post-commit ``session.completed`` notification (spec §4.2(5) / D8 —
+        emit-after-commit, notification-only). Populated once, in the core, so
+        both transports emit identically (D14); ``None`` ⇒ no emission (the bus
+        has zero subscribers today). The MCP adapter shares its bus into the
+        service at construction so its subscribers still see the event.
+        """
         self._store = store
+        self._event_bus = event_bus
 
     def _resolve_store(self) -> StudentStore:
         store = self._store if self._store is not None else get_student_store()
@@ -686,64 +704,92 @@ class SessionService:
         """Transition ``active → ended`` and commit the learner-state deltas —
         awaited inline (ADR-ARCH-023 D2).
 
-        S-R3 §2.4 / D14: **completion assembly lives here**, for ALL transports.
-        When ``completion`` is not supplied (the transport path — both HTTP and
-        MCP), the service assembles it from the **persisted** session row
-        (``topic`` + ``aos_scaffolded`` plan facts) plus store reads, so the two
-        transports produce byte-identical writes. The MCP adapter passes only a
-        ``topic_hint`` (a weak fallback if the row has no ``topic``); HTTP passes
-        neither. An explicit ``completion`` is honoured as-is (the store-ordering
-        regression pin and future ``finalize_session`` seam).
+        Spec §4.2 / ADR-ARCH-030 / D14: settlement is ONE ``store.finalize_session``
+        transaction — the status UPDATE is the sole gate, the pure engine computes
+        XP + achievements, and everything banks in a single savepoint (a fault
+        leaves ``settled_at`` NULL for the sweep). This **replaces** the S-R3
+        two-call ``record_session_completion`` + ``end_session`` sequence.
 
-        I-T6 zero-turn rule: a session with no turns settles status only — no
-        completion write (``build_session_completion`` is skipped for
-        ``turn_count == 0``). Event ``session.completed`` is still emitted by the
-        transport with the pinned payload; see the module open-decisions.
+        Completion assembly still lives here, for ALL transports: the confidence
+        and misconception deltas are derived from the **persisted** row plus store
+        reads (HTTP and MCP produce byte-identical writes) and handed to
+        ``finalize_session``, which writes them inside the settlement transaction.
+        The MCP adapter passes only a ``topic_hint`` (a weak fallback if the row
+        has no ``topic``); HTTP passes neither. An explicit ``completion`` is
+        honoured for its confidence/misconception/aos/topic content (the
+        store-ordering regression pin); XP is always engine-derived now.
 
-        W0 ordering (spec §1): the completion write **precedes** the status
-        transition. ``record_session_completion`` is gated on
-        ``ON CONFLICT … WHERE status != 'ended'``, so it must run while the
-        session is still ``active`` — otherwise ``store.end_session`` flips the
-        status to ``ended`` in its own committed transaction first and the gate
-        never fires, silently dropping the confidence/misconception children.
-        Phase E replaces this two-call sequence with a single ``finalize_session``
-        transaction (spec §4); until then, ordering is the fix.
+        I-T6 zero-turn rule: a session with no turns still settles (at 0 XP) but
+        assembles no completion and emits no ``session.completed`` event.
+
+        §4.2(5) / D8: after ``finalize_session`` commits, the service emits the
+        ``events-schema.yaml``-conforming ``session.completed`` (emit-after-commit,
+        ``subject`` carries the actual subject) — never before the write, never
+        from a transport adapter (D14).
         """
         record = await self._load_owned_session(
             student_id, session_id, allow_ended=False
         )
         store = self._resolve_store()
+        now = datetime.now(timezone.utc)
 
-        # Assemble the completion in the core when the transport didn't hand one
-        # in (spec §2.4). Derived purely from the persisted row + store reads so
-        # HTTP and MCP write identically. I-T6: skip for zero-turn sessions.
-        if completion is None and record.turn_count > 0:
+        # Assemble the completion deltas in the core (spec §2.4). Explicit
+        # completion wins its confidence/misconception content; otherwise derive
+        # from the persisted row + store reads. I-T6: skip for zero-turn sessions.
+        confidence_updates: list[ConfidenceUpdate] = []
+        misconceptions: list[Misconception] = []
+        aos_scaffolded = list(record.aos_scaffolded)
+        topic = record.topic or topic_hint or record.subject
+
+        if completion is not None:
+            confidence_updates = list(completion.confidence_updates)
+            misconceptions = list(completion.misconceptions)
+            aos_scaffolded = list(completion.aos_scaffolded)
+            topic = completion.topic
+        elif record.turn_count > 0:
             # Local import avoids the completion↔service module import cycle.
             from study_tutor.session.completion import build_session_completion
 
-            topic = record.topic or topic_hint or record.subject
-            completion = await build_session_completion(
+            assembled = await build_session_completion(
                 store=store,
                 student_id=student_id,
                 topic=topic,
                 # Store rows are (user, tutor) turns; student turns are half.
                 student_turn_count=record.turn_count // 2,
-                aos_scaffolded=list(record.aos_scaffolded),
+                aos_scaffolded=aos_scaffolded,
                 misconceptions_per_topic={},
             )
+            confidence_updates = list(assembled.confidence_updates)
+            misconceptions = list(assembled.misconceptions)
+            aos_scaffolded = list(assembled.aos_scaffolded)
+            topic = assembled.topic
 
-        if completion is not None:
-            await store.record_session_completion(
-                student_id=student_id,
-                session_id=session_id,
-                topic=completion.topic,
-                aos_scaffolded=completion.aos_scaffolded,
-                xp_awarded=completion.xp_awarded,
-                confidence_updates=completion.confidence_updates,
-                misconceptions=completion.misconceptions,
+        result = await store.finalize_session(
+            student_id=student_id,
+            session_id=session_id,
+            now=now,
+            confidence_updates=confidence_updates,
+            misconceptions=misconceptions,
+            aos_scaffolded=aos_scaffolded,
+            topic=topic,
+        )
+
+        # Emit-after-commit (D8). Zero-turn sessions settle but do not emit.
+        if self._event_bus is not None and result.had_turns:
+            await self._event_bus.emit(
+                SESSION_COMPLETED_EVENT,
+                {
+                    "session_id": result.session_id,
+                    "subject": result.subject,
+                    "duration_seconds": result.duration_seconds,
+                    "topic": result.topic,
+                    "aos_touched": list(result.aos_touched),
+                    "quality_score": None,
+                    "ended_at": result.ended_at.isoformat(),
+                },
             )
-        ended = await store.end_session(session_id)
-        return EndSessionResult(session_id=ended.session_id)
+
+        return EndSessionResult(session_id=result.session_id)
 
 
 __all__ = [

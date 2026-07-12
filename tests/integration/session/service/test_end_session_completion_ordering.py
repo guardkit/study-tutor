@@ -91,7 +91,12 @@ class TestEndSessionCompletionOrdering:
         assert session_row is not None
         assert session_row[0] == "ended"
         assert session_row[1] == "Quadratic Equations"
-        assert session_row[2] == 120
+        # Spec §4.2: XP is engine-derived from engagement duration now, NOT the
+        # explicit completion's xp_awarded. The two turns are stamped in the same
+        # instant (engagement ≈ 0 s < 120 s), so this settles at 0 XP. The point
+        # of this pin is that the confidence/misconception children still land in
+        # the single finalize_session transaction (asserted below).
+        assert session_row[2] == 0
 
         # The confidence child actually landed (this is what the bug dropped).
         async with pg_engine.connect() as conn:

@@ -27,6 +27,7 @@ Design intent the build should honour:
 from __future__ import annotations
 
 import json
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -46,6 +47,19 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
 from study_tutor.gamification import build_gamification_state
+from study_tutor.gamification.economy import (
+    MIN_SESSION_SECONDS,
+    london_date,
+    started_after_evening,
+    started_before_morning,
+)
+from study_tutor.gamification.engine import (
+    GamificationDecision,
+    PriorFacts,
+    SessionFacts,
+    SettlementResult,
+    decide,
+)
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
     GamificationState,
@@ -66,6 +80,8 @@ from study_tutor.knowledge.student_model import (
     TopicConfidence,
     confidence_band_for,
 )
+
+logger = logging.getLogger(__name__)
 
 _NOT_IMPLEMENTED = "PostgresStudentStore is a FEAT-SMP-001 skeleton"
 
@@ -203,6 +219,181 @@ async def _insert_misconception(
             "observed_at": observed_at,
         },
     )
+
+
+async def _read_prior_facts(
+    conn: AsyncConnection, student_id: str, exclude_session_id: str
+) -> PriorFacts:
+    """Assemble :class:`PriorFacts` for settlement, EXCLUDING the session under
+    settlement (spec §4.2 / ADR-ARCH-030 D6).
+
+    Excluding ``exclude_session_id`` from every aggregate is what makes the
+    winner's ``decide()`` inputs and a later replay's inputs identical: the
+    winner reads prior-without-self *before* banking self, the replay reads
+    prior-without-self *after* self is banked, and both see the same "other
+    rows" state. All day/window arithmetic is Europe/London (design §13.1 D6).
+    """
+    params = {"sid": student_id, "ex": exclude_session_id}
+
+    total_row = (
+        await conn.execute(
+            sql_text(
+                "SELECT "
+                "COALESCE((SELECT SUM(xp_awarded) FROM session "
+                "  WHERE student_id = :sid AND session_id <> :ex), 0) "
+                "+ COALESCE((SELECT SUM(xp_awarded) FROM achievement "
+                "  WHERE student_id = :sid "
+                "  AND session_id IS DISTINCT FROM :ex), 0)"
+            ),
+            params,
+        )
+    ).fetchone()
+    total_xp = int(total_row[0] or 0)
+
+    held_rows = (
+        await conn.execute(
+            sql_text(
+                "SELECT achievement_id FROM achievement "
+                "WHERE student_id = :sid AND session_id IS DISTINCT FROM :ex"
+            ),
+            params,
+        )
+    ).fetchall()
+    held = frozenset(row[0] for row in held_rows)
+
+    # Every OTHER ended session with its turn min/max — qualifying (≥120 s)
+    # sessions contribute a streak credit day and the start-window counts.
+    sess_rows = (
+        await conn.execute(
+            sql_text(
+                "SELECT s.started_at, t.min_ts, t.max_ts, t.cnt "
+                "FROM session s "
+                "LEFT JOIN ("
+                "  SELECT session_id, min(ts) AS min_ts, max(ts) AS max_ts, "
+                "         count(*) AS cnt "
+                "  FROM session_turn GROUP BY session_id"
+                ") t ON t.session_id = s.session_id "
+                "WHERE s.student_id = :sid AND s.status = 'ended' "
+                "AND s.session_id <> :ex"
+            ),
+            params,
+        )
+    ).fetchall()
+
+    credit_days: set = set()
+    morning = 0
+    evening = 0
+    qualifying = 0
+    for started_at, min_ts, max_ts, cnt in sess_rows:
+        if not cnt or min_ts is None or max_ts is None:
+            continue  # zero-turn / unstamped → 0 engagement → not qualifying
+        engagement = (max_ts - min_ts).total_seconds()
+        if engagement < MIN_SESSION_SECONDS:
+            continue
+        qualifying += 1
+        credit_days.add(london_date(max_ts))
+        if started_before_morning(started_at):
+            morning += 1
+        if started_after_evening(started_at):
+            evening += 1
+
+    return PriorFacts(
+        total_xp=total_xp,
+        streak_credit_days=frozenset(credit_days),
+        held_achievement_ids=held,
+        morning_qualifying_count=morning,
+        evening_qualifying_count=evening,
+        qualifying_session_count=qualifying,
+    )
+
+
+async def _engagement_facts(
+    conn: AsyncConnection, session_id: str
+) -> tuple[float, datetime | None, bool]:
+    """Return ``(engagement_seconds, last_turn_at, had_turns)`` from the session's
+    turns (spec §4.2 step 3). Zero rows → ``(0.0, None, False)``."""
+    row = (
+        await conn.execute(
+            sql_text(
+                "SELECT min(ts), max(ts), count(*) "
+                "FROM session_turn WHERE session_id = :sid"
+            ),
+            {"sid": session_id},
+        )
+    ).fetchone()
+    min_ts, max_ts, cnt = row
+    if not cnt or min_ts is None or max_ts is None:
+        return 0.0, None, False
+    return (max_ts - min_ts).total_seconds(), max_ts, True
+
+
+async def _bank_settlement(
+    conn: AsyncConnection,
+    *,
+    student_id: str,
+    session_id: str,
+    now: datetime,
+    session_facts: SessionFacts,
+    confidence_updates: list[ConfidenceUpdate],
+    misconceptions: list[Misconception],
+) -> GamificationDecision:
+    """Run the engine and bank its result inside the caller's savepoint.
+
+    Writes ``session.xp_awarded`` + ``settled_at`` (both stamped here so a fault
+    that rolls back this savepoint leaves ``settled_at`` NULL for the sweep,
+    ADR-ARCH-030 D4), inserts achievement rows (``ON CONFLICT DO NOTHING``,
+    carrying ``session_id`` for replay), appends ``topic_confidence_history``
+    rows, and runs the confidence / misconception helpers.
+    """
+    prior = await _read_prior_facts(conn, student_id, session_id)
+    decision = decide(prior, session_facts, now)
+
+    await conn.execute(
+        sql_text(
+            "UPDATE session SET xp_awarded = :xp, settled_at = :now "
+            "WHERE session_id = :sid"
+        ),
+        {"xp": decision.xp_awarded, "now": now, "sid": session_id},
+    )
+
+    for award in decision.unlocked:
+        await conn.execute(
+            sql_text(
+                "INSERT INTO achievement "
+                "(student_id, achievement_id, unlocked_at, xp_awarded, session_id) "
+                "VALUES (:sid, :aid, :now, :xp, :session_id) "
+                "ON CONFLICT (student_id, achievement_id) DO NOTHING"
+            ),
+            {
+                "sid": student_id,
+                "aid": award.id,
+                "now": now,
+                "xp": award.xp,
+                "session_id": session_id,
+            },
+        )
+
+    for update in confidence_updates:
+        await _upsert_confidence(conn, student_id, update)
+        await conn.execute(
+            sql_text(
+                "INSERT INTO topic_confidence_history "
+                "(student_id, topic_name, percentage, session_id, recorded_at, source) "
+                "VALUES (:sid, :topic, :pct, :session_id, :now, 'session')"
+            ),
+            {
+                "sid": student_id,
+                "topic": update.topic_name,
+                "pct": update.percentage,
+                "session_id": session_id,
+                "now": now,
+            },
+        )
+
+    for misc in misconceptions:
+        await _insert_misconception(conn, student_id, misc.topic_ref, misc.text)
+
+    return decision
 
 
 class PostgresStudentStore:
@@ -806,6 +997,254 @@ class PostgresStudentStore:
                     await _insert_misconception(
                         conn, student_id, misc.topic_ref, misc.text
                     )
+
+    async def finalize_session(
+        self,
+        *,
+        student_id: str,
+        session_id: str,
+        now: datetime,
+        confidence_updates: list[ConfidenceUpdate],
+        misconceptions: list[Misconception],
+        aos_scaffolded: list[str],
+        topic: str | None,
+    ) -> SettlementResult:
+        """Settle a session in ONE transaction (spec §4.2 / ADR-ARCH-030 D3).
+
+        The status UPDATE (``WHERE status='active'``) is the sole gate: the
+        caller that flips ``active → ended`` settles inside a savepoint; a
+        non-matching UPDATE means already-ended → the replay path returns the
+        identical decision from prior-facts-excluding-self (D6). An unknown
+        session raises ``SessionNotFoundError``. A settlement fault rolls back
+        the savepoint, commits the end, and leaves ``settled_at`` NULL (D4).
+        """
+        from study_tutor.session.errors import SessionNotFoundError
+
+        engine = self._require_engine()
+
+        async with engine.begin() as conn:
+            gate = (
+                await conn.execute(
+                    sql_text(
+                        "UPDATE session SET status = 'ended', last_activity = :now "
+                        "WHERE session_id = :sid AND status = 'active' "
+                        "RETURNING started_at, subject, topic, aos_scaffolded"
+                    ),
+                    {"now": now, "sid": session_id},
+                )
+            ).fetchone()
+
+            if gate is None:
+                # Not active: either already-ended (replay) or unknown (error).
+                existing = (
+                    await conn.execute(
+                        sql_text(
+                            "SELECT started_at, subject, topic, aos_scaffolded "
+                            "FROM session WHERE session_id = :sid"
+                        ),
+                        {"sid": session_id},
+                    )
+                ).fetchone()
+                if existing is None:
+                    raise SessionNotFoundError(f"Session not found: {session_id}")
+                return await self._replay_settlement(
+                    conn, student_id, session_id, existing, now
+                )
+
+            started_at, subject, sess_topic, aos_col = gate
+            engagement, last_turn_at, had_turns = await _engagement_facts(
+                conn, session_id
+            )
+            session_facts = SessionFacts(
+                engagement_seconds=engagement,
+                started_at=started_at,
+                last_turn_at=last_turn_at,
+            )
+
+            decision: GamificationDecision | None
+            settled = True
+            try:
+                async with conn.begin_nested():
+                    decision = await _bank_settlement(
+                        conn,
+                        student_id=student_id,
+                        session_id=session_id,
+                        now=now,
+                        session_facts=session_facts,
+                        confidence_updates=confidence_updates,
+                        misconceptions=misconceptions,
+                    )
+            except Exception:  # noqa: BLE001 — settlement is best-effort (D4)
+                logger.error(
+                    "event=settlement_fault session_id=%s student_id=%s "
+                    "— session ended, settled_at left NULL for the sweep",
+                    session_id,
+                    student_id,
+                    exc_info=True,
+                )
+                decision = None
+                settled = False
+
+        aos_touched = tuple(aos_scaffolded or (aos_col or []))
+        return SettlementResult(
+            decision=decision,
+            settled=settled,
+            replayed=False,
+            session_id=session_id,
+            subject=subject,
+            topic=topic if topic is not None else sess_topic,
+            aos_touched=aos_touched,
+            duration_seconds=int(engagement),
+            ended_at=now,
+            had_turns=had_turns,
+        )
+
+    async def _replay_settlement(
+        self,
+        conn: AsyncConnection,
+        student_id: str,
+        session_id: str,
+        existing_row: Any,
+        now: datetime,
+    ) -> SettlementResult:
+        """Reconstruct the identical decision for an already-ended session (D6).
+
+        Recomputes ``decide()`` from prior-facts-excluding-self plus this
+        session's (immutable) engagement facts — deterministically identical to
+        what the winner banked, without re-writing any row (exactly-once).
+        """
+        started_at, subject, sess_topic, aos_col = existing_row
+        engagement, last_turn_at, had_turns = await _engagement_facts(
+            conn, session_id
+        )
+        session_facts = SessionFacts(
+            engagement_seconds=engagement,
+            started_at=started_at,
+            last_turn_at=last_turn_at,
+        )
+        prior = await _read_prior_facts(conn, student_id, session_id)
+        decision = decide(prior, session_facts, now)
+        return SettlementResult(
+            decision=decision,
+            settled=True,
+            replayed=True,
+            session_id=session_id,
+            subject=subject,
+            topic=sess_topic,
+            aos_touched=tuple(aos_col or []),
+            duration_seconds=int(engagement),
+            ended_at=now,
+            had_turns=had_turns,
+        )
+
+    async def sweep_settle_session(
+        self, *, session_id: str, now: datetime
+    ) -> SettlementResult | None:
+        """Settle one ``status='ended' AND settled_at IS NULL`` session (spec §4.3).
+
+        The recovery + historical-backfill path. Claims the row atomically
+        (``settled_at`` is stamped only inside the savepoint, so a fault leaves
+        it NULL for a retry), runs the SAME ``decide()`` the live path uses, and
+        banks XP + achievements. Idempotent: a row that is not ended-and-unsettled
+        returns ``None`` (already swept, or still active). Gamification-only — it
+        does not synthesise confidence/misconception deltas (none exist at sweep
+        time); engagement falls back to ``last_activity − started_at`` for a
+        turn-less session.
+        """
+        engine = self._require_engine()
+
+        async with engine.begin() as conn:
+            # Claim via row lock (single attended sweep; no settled_at yet).
+            row = (
+                await conn.execute(
+                    sql_text(
+                        "SELECT student_id, started_at, last_activity, subject, "
+                        "topic, aos_scaffolded "
+                        "FROM session "
+                        "WHERE session_id = :sid AND status = 'ended' "
+                        "AND settled_at IS NULL FOR UPDATE"
+                    ),
+                    {"sid": session_id},
+                )
+            ).fetchone()
+            if row is None:
+                return None
+
+            student_id, started_at, last_activity, subject, topic, aos_col = row
+            engagement, last_turn_at, had_turns = await _engagement_facts(
+                conn, session_id
+            )
+            if not had_turns:
+                # Spec §4.3 fallback: derive engagement from the session bounds.
+                engagement = max(
+                    0.0, (last_activity - started_at).total_seconds()
+                )
+                last_turn_at = last_activity
+            session_facts = SessionFacts(
+                engagement_seconds=engagement,
+                started_at=started_at,
+                last_turn_at=last_turn_at,
+            )
+
+            decision: GamificationDecision | None = None
+            settled = True
+            try:
+                async with conn.begin_nested():
+                    decision = await _bank_settlement(
+                        conn,
+                        student_id=student_id,
+                        session_id=session_id,
+                        now=now,
+                        session_facts=session_facts,
+                        confidence_updates=[],
+                        misconceptions=[],
+                    )
+            except Exception:  # noqa: BLE001 — leave NULL for the next sweep (D4)
+                logger.error(
+                    "event=sweep_settlement_fault session_id=%s student_id=%s",
+                    session_id,
+                    student_id,
+                    exc_info=True,
+                )
+                decision = None
+                settled = False
+
+        return SettlementResult(
+            decision=decision,
+            settled=settled,
+            replayed=False,
+            session_id=session_id,
+            subject=subject,
+            topic=topic,
+            aos_touched=tuple(aos_col or []),
+            duration_seconds=int(engagement),
+            ended_at=now,
+            had_turns=had_turns,
+        )
+
+    async def list_unsettled_ended_sessions(self) -> list[str]:
+        """Session ids of every ``status='ended' AND settled_at IS NULL`` row —
+        the sweep's work queue (spec §4.3), oldest first."""
+        engine = self._require_engine()
+        async with engine.connect() as conn:
+            rows = (
+                await conn.execute(
+                    sql_text(
+                        "SELECT session_id FROM session "
+                        "WHERE status = 'ended' AND settled_at IS NULL "
+                        "ORDER BY last_activity ASC"
+                    )
+                )
+            ).fetchall()
+        return [row[0] for row in rows]
+
+    def _require_engine(self) -> Any:
+        """Return the injected pool or the built engine, or raise."""
+        if self._pool is not None:
+            return self._pool
+        if self._engine is not None:
+            return self._engine
+        raise RuntimeError("No engine or pool configured")
 
     async def record_misconception(
         self, *, student_id: str, topic_name: str, text: str

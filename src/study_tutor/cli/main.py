@@ -1166,5 +1166,101 @@ def seed_students(student_ids: str | None, log_level: str) -> None:
     )
 
 
+@cli.command("settle-sessions")
+@click.option(
+    "--log-level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
+    default="INFO",
+    show_default=True,
+)
+def settle_sessions(log_level: str) -> None:
+    """Settle every ended-but-unsettled session through the engine (spec §4.3).
+
+    The recovery path (rows a settlement fault left ``settled_at`` NULL) AND the
+    one-time historical backfill. Each ``status='ended' AND settled_at IS NULL``
+    session is settled through the SAME pure ``decide()`` the live
+    ``finalize_session`` uses, so live settlement and this sweep cannot diverge
+    (ADR-ARCH-030 D5). Idempotent: a row that is not ended-and-unsettled is
+    skipped, so re-running is safe. Engagement falls back to
+    ``last_activity − started_at`` for a session with no turns.
+
+    \b
+    Environment variables:
+      STUDY_TUTOR_PG_DSN   Required. PostgreSQL connection string.
+
+    Running this against the live NAS store is an ATTENDED operation
+    (ADR-ARCH-030 D5) — never an unattended stage.
+    """
+    import asyncio
+    from datetime import datetime, timezone
+
+    logging.basicConfig(
+        level=log_level.upper(),
+        stream=sys.stderr,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    dsn = os.environ.get("STUDY_TUTOR_PG_DSN")
+    if not dsn:
+        click.echo(
+            "[study-tutor] Error: STUDY_TUTOR_PG_DSN environment variable is "
+            "required for settle-sessions. Set the connection string first.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    try:
+        build_student_store()
+        logger.info("event=student_store_wired path=settle")
+    except Exception as exc:
+        click.echo(
+            f"[study-tutor] Error: Failed to connect to Postgres store: {exc}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    from study_tutor.knowledge.store.provider import get_student_store
+
+    store = get_student_store()
+    if store is None:
+        click.echo(
+            "[study-tutor] Error: Student store not available after wiring.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    async def _settle_all() -> tuple[int, int, int]:
+        """Settle each unsettled ended session; return (settled, faulted, skipped)."""
+        session_ids = await store.list_unsettled_ended_sessions()
+        settled = faulted = skipped = 0
+        for session_id in session_ids:
+            result = await store.sweep_settle_session(
+                session_id=session_id, now=datetime.now(timezone.utc)
+            )
+            if result is None:
+                skipped += 1
+                logger.info("event=sweep_skipped session_id=%s", session_id)
+            elif result.settled and result.decision is not None:
+                settled += 1
+                logger.info(
+                    "event=sweep_settled session_id=%s xp=%d unlocked=%s",
+                    session_id,
+                    result.decision.xp_awarded,
+                    [award.id for award in result.decision.unlocked],
+                )
+            else:
+                faulted += 1
+                logger.error("event=sweep_fault session_id=%s", session_id)
+        return settled, faulted, skipped
+
+    settled_count, faulted_count, skipped_count = asyncio.run(_settle_all())
+
+    click.echo(
+        f"[study-tutor] Settled {settled_count} sessions, "
+        f"{faulted_count} faulted, {skipped_count} skipped (idempotent).",
+        err=True,
+    )
+
+
 if __name__ == "__main__":
     cli()

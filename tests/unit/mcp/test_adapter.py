@@ -137,12 +137,13 @@ async def test_server_registers_four_tools(
 async def test_session_end_delegates_to_session_service(
     role_config: RoleConfig
 ) -> None:
-    """``tutor_session_end`` must delegate to ``SessionService.end_session``.
+    """``tutor_session_end`` delegates to ``SessionService.end_session`` and the
+    service emits the post-commit ``session.completed`` (spec §4.2(5) / D8 / D14).
 
-    TASK-SMP3-06 contract check: the adapter must (1) resolve the session,
-    (2) extract topics_covered/aos_exercised from the cached SessionPlan,
-    (3) emit session.completed event, and (4) delegate to
-    SessionService.end_session with a SessionCompletion.
+    The adapter shares its EventBus into the service, so the service's
+    emit-after-commit reaches this adapter's subscriber. The payload is the
+    ``events-schema.yaml``-conforming shape (``subject`` carries the actual
+    subject; the old MCP-only ``subject_slug=student_id`` defect is fixed).
     """
     from study_tutor.session.service import SessionService
     from study_tutor.tutoring.session_end import EventBus
@@ -190,16 +191,19 @@ async def test_session_end_delegates_to_session_service(
     # Verify return shape.
     assert result == {"session_id": session_id, "status": "ended"}
 
-    # Verify session.completed was emitted.
+    # Verify session.completed was emitted post-commit with the conforming shape.
     assert len(captured_events) == 1
     event_name, payload = captured_events[0]
     assert event_name == "session.completed"
     assert payload["session_id"] == session_id
-    assert payload["student_id"] == "lilymay"
-    assert "topics_covered" in payload
-    assert "aos_exercised" in payload
-    assert "started_at" in payload
+    # events-schema.yaml required fields (subject is the actual subject slug).
+    assert payload["subject"] == "lilymay"
+    assert "duration_seconds" in payload
+    assert "aos_touched" in payload
     assert "ended_at" in payload
+    # The old MCP-only defect (student id mislabelled as subject_slug) is gone.
+    assert "subject_slug" not in payload
+    assert "student_id" not in payload
 
     # Verify the session is marked ended in the store.
     status_view = await session_service.session_status(

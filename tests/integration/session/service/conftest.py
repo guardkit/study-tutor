@@ -108,6 +108,10 @@ async def pg_store(session_service_pg_container):
         dsn.replace("postgresql://", "postgresql+asyncpg://")
     )
     async with engine.begin() as conn:
+        # FK-safe order: settlement children (achievement references session via
+        # RESTRICT, history references student) before their parents.
+        await conn.execute(text("DELETE FROM achievement"))
+        await conn.execute(text("DELETE FROM topic_confidence_history"))
         await conn.execute(text("DELETE FROM session_turn"))
         await conn.execute(text("DELETE FROM session"))
         await conn.execute(text("DELETE FROM misconception"))

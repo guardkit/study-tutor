@@ -32,8 +32,10 @@ Status: scaffolding for FEAT-SMP-001's ``/feature-spec`` to react to.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Protocol, runtime_checkable
 
+from study_tutor.gamification.engine import SettlementResult
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
     GamificationState,
@@ -114,6 +116,31 @@ class StudentStore(Protocol):
         committed in **one transaction** on the ``active → ended`` boundary
         (ADR-ARCH-023 D2). Idempotent on the ``session_id`` so a retried
         session-end does not double-award XP."""
+        ...
+
+    async def finalize_session(
+        self,
+        *,
+        student_id: str,
+        session_id: str,
+        now: datetime,
+        confidence_updates: list[ConfidenceUpdate],
+        misconceptions: list[Misconception],
+        aos_scaffolded: list[str],
+        topic: str | None,
+    ) -> SettlementResult:
+        """Settle a session in ONE transaction (spec §4.2 / ADR-ARCH-030 D3).
+
+        Replaces the two-call ``record_session_completion`` + ``end_session``
+        sequence. The status UPDATE (``WHERE status='active'``) is the sole
+        idempotency gate: the caller that flips ``active → ended`` settles
+        (running the pure engine, banking ``xp_awarded`` + ``settled_at`` +
+        achievement rows + ``topic_confidence_history`` + the confidence /
+        misconception children inside a savepoint); a non-matching UPDATE means
+        an already-ended session → the replay path returns the identical
+        decision from banked facts (D6). An unknown ``session_id`` raises
+        ``SessionNotFoundError``. A settlement fault rolls back the savepoint,
+        commits the end, and leaves ``settled_at`` NULL for the sweep (D4)."""
         ...
 
     async def record_misconception(

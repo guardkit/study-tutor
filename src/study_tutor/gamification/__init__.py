@@ -15,12 +15,18 @@ defensible subset of ``docs/gamification/design.md``:
   standard "alive until midnight" grace (a run ending *yesterday* still counts
   until today's midnight; a gap of a full day resets it to 0).
 
-**What this is NOT.** This is a read-time derivation, not the Phase-2 gamification
-*state engine* (``FEAT-PO-007``; design §12, ADR-ARCH-013). It writes nothing,
-banks nothing, and models no achievements/quests/daily-challenges — so
-``near_achievements`` is always ``[]`` here. When FEAT-PO-007 ships the real
-engine (persisted total_xp/streak, the §5 achievement catalog, near-miss
-tracking), it supersedes this module and the endpoint's projection swaps to it.
+**What this is NOT.** This is a read-time derivation of streak/level/recent-XP,
+not the Phase-E gamification *engine* (``study_tutor.gamification.engine`` /
+``finalize_session``; spec §4, ADR-ARCH-030). It banks nothing and models no
+achievements — so ``near_achievements`` is always ``[]`` here. The banked-facts
+projection swap (spec §5 / B3) supersedes the duration-derivation below; until
+then this remains the ``GET /api/student-model`` read.
+
+**Superseded numbers moved out.** The XP bands, the 15 level thresholds, and the
+level-title helper now live in :mod:`study_tutor.gamification.economy` (the
+single ratified source of truth, spec §4.4); this module **re-exports** them for
+its existing callers rather than redefining them. The bands are numerically
+identical to what lived here (design §13.1 D5: 120/900/1500 s → 0/60/120/180).
 
 Everything here is a pure function of its inputs (``today`` is injected, never
 read from the clock) so the arithmetic is exhaustively unit-testable without a
@@ -30,81 +36,22 @@ database or a wall clock.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import Iterable, Sequence
+from typing import Iterable
 
 from study_tutor.gamification.constants import (
     CONFIDENCE_BASELINE_PERCENTAGE,
     LONDON_TZ,
     london_date,
 )
+from study_tutor.gamification.economy import (
+    LEVEL_THRESHOLDS,
+    MIN_SESSION_SECONDS,
+    RECENT_XP_WINDOW_DAYS,
+    level_title_for_total_xp,
+    session_xp,
+)
 from study_tutor.knowledge.store.entities import GamificationState
 from study_tutor.knowledge.student_model import TopicConfidence
-
-# -- Session XP (design §2.1 — base duration bands only) --------------------
-
-#: A session shorter than this is "abandoned" — 0 XP and it does not extend a
-#: streak (design §2.1 "< 2 min → 0"; §4.1 "not an abandoned one").
-MIN_SESSION_SECONDS: int = 2 * 60
-#: Upper bound (exclusive) of a "short ~10 min" session → +60 XP.
-SHORT_SESSION_SECONDS: int = 15 * 60
-#: Upper bound (exclusive) of a "standard ~20 min" session → +120 XP.
-STANDARD_SESSION_SECONDS: int = 25 * 60
-
-SHORT_SESSION_XP: int = 60
-STANDARD_SESSION_XP: int = 120
-LONG_SESSION_XP: int = 180
-
-#: Window (days, inclusive of today) over which ``recent_xp`` is summed —
-#: design §9.1's "XP earned this week".
-RECENT_XP_WINDOW_DAYS: int = 7
-
-#: (minimum total XP to reach, title) for the 15 tiers of design §3.1, ascending.
-LEVEL_THRESHOLDS: Sequence[tuple[int, str]] = (
-    (0, "Beginner"),
-    (100, "Novice"),
-    (300, "Apprentice"),
-    (600, "Student"),
-    (1000, "Learner"),
-    (1500, "Scholar"),
-    (2200, "Academic"),
-    (3100, "Intellectual"),
-    (4200, "Expert"),
-    (5600, "Master"),
-    (7300, "Sage"),
-    (9400, "Virtuoso"),
-    (11900, "Luminary"),
-    (14900, "Prodigy"),
-    (18500, "Grandmaster"),
-)
-
-
-def session_xp(duration_seconds: float) -> int:
-    """XP for one completed session by duration (design §2.1 base bands).
-
-    Returns 0 for an abandoned (< 2 min) session so it neither banks XP nor
-    counts toward a streak.
-    """
-    if duration_seconds < MIN_SESSION_SECONDS:
-        return 0
-    if duration_seconds < SHORT_SESSION_SECONDS:
-        return SHORT_SESSION_XP
-    if duration_seconds < STANDARD_SESSION_SECONDS:
-        return STANDARD_SESSION_XP
-    return LONG_SESSION_XP
-
-
-def level_title_for_total_xp(total_xp: int) -> str:
-    """The named tier for a cumulative XP total (design §3.1).
-
-    Returns the highest tier whose threshold is met; ``Beginner`` at 0 XP.
-    """
-    title = LEVEL_THRESHOLDS[0][1]
-    for threshold, name in LEVEL_THRESHOLDS:
-        if total_xp >= threshold:
-            title = name
-        else:
-            break
-    return title
 
 
 def compute_streak_days(completion_dates: Iterable[date], today: date) -> int:
