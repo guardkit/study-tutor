@@ -332,6 +332,7 @@ class _SessionScreenState extends State<SessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Session'),
@@ -358,20 +359,20 @@ class _SessionScreenState extends State<SessionScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              color: Colors.amber.shade100,
+              color: colors.tertiaryContainer,
               child: Text(
                 _voiceErrorMessage!,
-                style: TextStyle(color: Colors.amber.shade900),
+                style: TextStyle(color: colors.onTertiaryContainer),
               ),
             ),
           if (!_voiceUnavailable && _voiceErrorMessage != null)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              color: Colors.red.shade100,
+              color: colors.errorContainer,
               child: Text(
                 _voiceErrorMessage!,
-                style: TextStyle(color: Colors.red.shade900),
+                style: TextStyle(color: colors.onErrorContainer),
               ),
             ),
           if (_ended)
@@ -387,7 +388,7 @@ class _SessionScreenState extends State<SessionScreen> {
                   IconButton(
                     icon: Icon(
                       _recording ? Icons.stop : Icons.mic,
-                      color: _recording ? Colors.red : null,
+                      color: _recording ? colors.error : null,
                     ),
                     onPressed: (_sending || _ended || _voiceUnavailable)
                         ? null
@@ -398,8 +399,8 @@ class _SessionScreenState extends State<SessionScreen> {
                       padding: const EdgeInsets.only(left: 4),
                       child: Text(
                         _formatElapsed(),
-                        style: const TextStyle(
-                          color: Colors.red,
+                        style: TextStyle(
+                          color: colors.error,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
