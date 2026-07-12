@@ -510,6 +510,7 @@ def create_app(
     auth_config: HTTPAuthConfig,
     student_store: Any,
     reply_fn_factory: ReplyFnFactory | None = None,
+    reply_stream_fn_factory: Callable[..., Any] | None = None,
     voice_config: Any | None = None,
     voice_service: Any | None = None,
     chunk_store: Any | None = None,
@@ -526,6 +527,10 @@ def create_app(
             session_id/student_id (production — threads the typed
             SessionState into the tutor loop). Exactly one of reply_fn /
             reply_fn_factory is required.
+        reply_stream_fn_factory: Per-request streaming reply builder for the
+            WS turn path (S-R4 §2.7 — an async-iterator ``ReplyStreamFn``).
+            When omitted, a default adapts the non-streaming reply into a
+            single-chunk stream so the WS route stays functional.
         voice_config: Optional VoiceConfig (TASK-VOX-006). When enabled, voice routes
             are mounted.
         voice_service: Optional VoiceTurnService for voice routes.
@@ -543,6 +548,25 @@ def create_app(
 
         def reply_fn_factory(**_context: str) -> ReplyFn:
             return _session_agnostic_reply
+
+    # S-R4 §2.7: the WS turn path needs a streaming ReplyStreamFn factory.
+    # When production wires a real one (serve-http), use it; otherwise adapt
+    # the non-streaming reply into a single-chunk stream so the WS route
+    # (and its tests) stay functional.
+    if reply_stream_fn_factory is None:
+        _resolved_reply_fn_factory = reply_fn_factory
+
+        def reply_stream_fn_factory(**context: str) -> Any:
+            _reply_fn = _resolved_reply_fn_factory(**context)
+
+            async def _single_chunk_stream(user_message: str) -> Any:
+                reply = await _reply_fn(user_message)
+                text = getattr(reply, "response", "") or ""
+                if text:
+                    yield text
+
+            return _single_chunk_stream
+
     # Route table exactly per binding doc §2 (frozen contract). Typed as
     # list[BaseRoute] so the conditional voice WebSocketRoute append typechecks
     # alongside the Route entries (both subclass BaseRoute).
@@ -591,6 +615,7 @@ def create_app(
     app.state.service = service
     app.state.reply_fn = reply_fn
     app.state.reply_fn_factory = reply_fn_factory
+    app.state.reply_stream_fn_factory = reply_stream_fn_factory
     app.state.auth_config = auth_config
     app.state.student_store = student_store
 

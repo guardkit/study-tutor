@@ -267,3 +267,34 @@ class TestOrchestratorStreaming:
         # Should accumulate all tokens
         assert result.response == "Hello world!"
         assert fake_player.respond_stream_called
+
+    async def test_run_turn_stream_tokens_yields_player_tokens_in_order(self):
+        """S-R4 §2.7: run_turn_stream_tokens YIELDS each Player token (unlike
+        run_turn_stream, which accumulates and returns a TurnResult) and then
+        dispatches the async Coach on the full text."""
+        fake_player = FakePlayer(["Hel", "lo", " world"])
+        fake_coach = MagicMock()
+        fake_coach.evaluate = AsyncMock(
+            return_value=CoachVerdict(
+                decision="accept", weighted_total=0.9, rubric_feedback=[]
+            )
+        )
+        orchestrator = PlayerCoachOrchestrator(
+            player=fake_player,
+            coach=fake_coach,
+            coach_evaluation="async",
+        )
+
+        session_state = MagicMock()
+        tokens = [
+            token
+            async for token in orchestrator.run_turn_stream_tokens(
+                session_state=session_state, learner_message="test"
+            )
+        ]
+
+        assert tokens == ["Hel", "lo", " world"]
+        assert fake_player.respond_stream_called
+        # Give the fire-and-forget Coach monitor a chance to run.
+        await asyncio.sleep(0)
+        fake_coach.evaluate.assert_awaited_once()

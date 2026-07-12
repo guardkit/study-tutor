@@ -51,7 +51,6 @@ from study_tutor.session.errors import (
 from study_tutor.session.provider import get_session_service
 from study_tutor.session.service import SessionService, TutorReply
 from study_tutor.session.wiring import resolve_student_id
-from study_tutor.tutoring.adapters.session_state import SessionState
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
 from study_tutor.tutoring.session_end import EventBus, SESSION_COMPLETED_EVENT
 
@@ -249,24 +248,17 @@ class MCPAdapter:
             # TASK-DTL-003: route through PlayerCoachOrchestrator when a
             # factory is wired (production Phase 1 path).
             if self._orchestrator_factory is not None:
-                # S-R3 §2.1 / D14: build the typed SessionState boundary from the
-                # PERSISTED session row (the plan facts ``topic`` + persisted
-                # ``aos_scaffolded`` focus AOs), not a per-adapter plan cache.
-                # ``text_name`` is not yet persisted (Phase E S-E4) so it stays
-                # ``None`` (ASSUM-LCA-007). A record read failure degrades to a
-                # bare SessionState rather than blocking the turn.
-                record = await self._student_store.get_session(session_id)
-                topic_value = record.topic if record is not None else None
-                focus_aos_value = (
-                    tuple(record.aos_scaffolded) if record is not None else ()
-                )
-                session_state = SessionState(
-                    session_id=session_id,
-                    student_id=identity,
-                    text_name=None,
-                    topic=topic_value,
-                    focus_aos=focus_aos_value,
-                    mode="tutor",
+                # S-R4 §2.5/§2.6 / D14: the typed SessionState boundary — plan
+                # facts, player-context fields and the in-session transcript
+                # window — is assembled in the core
+                # (``SessionService.build_turn_session_state``), NOT here, so
+                # MCP and HTTP feed the Player byte-identical context. The
+                # adapter stays a thin tool-shape skin.
+                session_state = (
+                    await self._session_service.build_turn_session_state(
+                        student_id=identity,
+                        session_id=session_id,
+                    )
                 )
                 orchestrator: PlayerCoachOrchestrator = self._orchestrator_factory()
                 turn_result = await orchestrator.run_turn(

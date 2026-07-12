@@ -187,7 +187,10 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         student_id=student_id,
                         session_id=session_id,
                         user_message=user_message,
-                        reply_stream_fn=websocket.app.state.reply_fn_factory(
+                        # S-R4 §2.7: the real streaming ReplyStreamFn factory
+                        # (async-iterator product), not the non-streaming
+                        # ReplyFn this line wrongly passed before.
+                        reply_stream_fn=websocket.app.state.reply_stream_fn_factory(
                             session_id=session_id, student_id=student_id
                         ),
                     ):

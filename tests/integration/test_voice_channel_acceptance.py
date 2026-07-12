@@ -140,6 +140,7 @@ def create_test_app_with_voice(
         config=voice_config,
         audio_client=audio_client,
         session_service=session_service,
+        reply_fn_factory=lambda **kwargs: AsyncMock(),
         chunk_store=chunk_store,
     )
 
@@ -202,6 +203,7 @@ class TestChunkOwnership:
             config=voice_config,
             audio_client=fake_audio_client,
             session_service=session_service,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
             chunk_store=fake_chunk_store,
         )
 
@@ -344,6 +346,7 @@ class TestLongAnswerChunkAvailability:
             config=voice_config,
             audio_client=audio_client,
             session_service=session_service,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
             chunk_store=test_chunk_store,
         )
 

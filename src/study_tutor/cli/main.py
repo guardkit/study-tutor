@@ -730,12 +730,19 @@ def serve_nats(nats_url: str | None, agent_id: str, log_level: str) -> None:
     )
 
 
-def _build_http_reply_fn_factory(orchestrator_factory: Any) -> Any:
+def _build_http_reply_fn_factory(
+    orchestrator_factory: Any, service: Any
+) -> Any:
     """Per-request tutor reply factory for the HTTP adapter.
 
-    Mirrors the MCP adapter's turn path: builds the typed
+    Mirrors the MCP adapter's turn path: the typed
     :class:`~study_tutor.tutoring.adapters.session_state.SessionState`
-    boundary object and drives ``PlayerCoachOrchestrator.run_turn``.
+    boundary object — plan facts, player-context fields and the §2.6
+    in-session transcript window — is assembled in the core
+    (``SessionService.build_turn_session_state``, S-R4 §2.5/§2.6/D14), then
+    handed to ``PlayerCoachOrchestrator.run_turn``. The transport reads no
+    store state for context itself.
+
     Module-level (not a ``serve-http`` closure) so a wiring test can hold
     it to the real orchestrator API — the original closure called a
     nonexistent ``orchestrate`` and no injected-stub unit test could see it
@@ -745,14 +752,10 @@ def _build_http_reply_fn_factory(orchestrator_factory: Any) -> Any:
     def factory(*, session_id: str, student_id: str) -> Any:
         async def reply_fn(user_message: str) -> Any:
             from study_tutor.session.service import TutorReply
-            from study_tutor.tutoring.adapters.session_state import (
-                SessionState,
-            )
 
-            session_state = SessionState(
-                session_id=session_id,
+            session_state = await service.build_turn_session_state(
                 student_id=student_id,
-                mode="tutor",
+                session_id=session_id,
             )
             orchestrator = orchestrator_factory()
             turn_result = await orchestrator.run_turn(
@@ -770,6 +773,38 @@ def _build_http_reply_fn_factory(orchestrator_factory: Any) -> Any:
             )
 
         return reply_fn
+
+    return factory
+
+
+def _build_http_reply_stream_fn_factory(
+    orchestrator_factory: Any, service: Any
+) -> Any:
+    """Per-request streaming reply factory for the WS turn path (S-R4 §2.7).
+
+    Produces a :data:`~study_tutor.session.service.ReplyStreamFn` — an
+    async-iterator of tutor tokens — where ``http/ws.py`` previously (and
+    wrongly) passed the non-streaming ``ReplyFn``. The same context the
+    non-streaming path uses is assembled in the core
+    (``build_turn_session_state``); tokens are streamed from a fresh
+    orchestrator's Player via ``run_turn_stream_tokens`` so the async
+    Coach still runs (ADR-ARCH-026 D1) without blocking the token stream.
+    """
+
+    def factory(*, session_id: str, student_id: str) -> Any:
+        async def reply_stream_fn(user_message: str) -> Any:
+            session_state = await service.build_turn_session_state(
+                student_id=student_id,
+                session_id=session_id,
+            )
+            orchestrator = orchestrator_factory()
+            async for token in orchestrator.run_turn_stream_tokens(
+                session_state=session_state,
+                learner_message=user_message,
+            ):
+                yield token
+
+        return reply_stream_fn
 
     return factory
 
@@ -861,8 +896,16 @@ def serve_http(port: int, host: str, log_level: str) -> None:
     _event_bus = EventBus()  # noqa: F841 - Reserved for future wiring
 
     # Per-request tutor reply factory — mirrors the MCP adapter's turn path
-    # (SessionState boundary object + PlayerCoachOrchestrator.run_turn).
-    reply_fn_factory = _build_http_reply_fn_factory(orchestrator_factory)
+    # (core-built SessionState boundary + PlayerCoachOrchestrator.run_turn).
+    reply_fn_factory = _build_http_reply_fn_factory(
+        orchestrator_factory, get_session_service()
+    )
+    # Per-request streaming reply factory for the WS turn path (S-R4 §2.7) —
+    # the real async-iterator product ws.py drives, replacing the
+    # non-streaming ReplyFn it wrongly passed before.
+    reply_stream_fn_factory = _build_http_reply_stream_fn_factory(
+        orchestrator_factory, get_session_service()
+    )
 
     # Wire HTTP auth config
     from study_tutor.http.auth import HTTPAuthConfig
@@ -944,12 +987,16 @@ def serve_http(port: int, host: str, log_level: str) -> None:
             max_entries=1000,  # Hard cap per spec
         )
 
-        # Build VoiceTurnService with all dependencies
+        # Build VoiceTurnService with all dependencies. S-R4 §2.7: the REST
+        # voice turn now drives the real orchestrator via the same
+        # per-request reply factory the JSON turn path uses — the placeholder
+        # echo is gone.
         voice_service = VoiceTurnService(
             config=voice_config,
             audio_client=audio_client,
             session_service=get_session_service(),
             chunk_store=chunk_store,
+            reply_fn_factory=reply_fn_factory,
         )
 
         logger.info("event=voice_services_wired enabled=true")
@@ -960,6 +1007,7 @@ def serve_http(port: int, host: str, log_level: str) -> None:
     app = create_app(
         service=get_session_service(),
         reply_fn_factory=reply_fn_factory,
+        reply_stream_fn_factory=reply_stream_fn_factory,
         auth_config=auth_config,
         student_store=student_store,
         voice_config=voice_config,

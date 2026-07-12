@@ -19,15 +19,22 @@ import time
 from dataclasses import dataclass
 from typing import Dict, Tuple
 
+from typing import Callable
+
 from starlette.requests import Request
 
-from study_tutor.session.service import ReplyFn, SessionService, TutorReply
+from study_tutor.session.service import ReplyFn, SessionService
 from study_tutor.voice.client import AudioClient
 from study_tutor.voice.config import VoiceConfig
 from study_tutor.voice.errors import UnintelligibleQuery, VoiceUnavailable
 from study_tutor.voice.validation import ValidatedUpload, parse_voice_upload
 
 logger = logging.getLogger(__name__)
+
+#: Per-request reply builder: ``(session_id=, student_id=) → ReplyFn``. The
+#: real orchestrator-backed factory the HTTP JSON turn path uses; injected so
+#: the voice turn drives the same tutor loop (S-R4 §2.7 — no placeholder echo).
+ReplyFnFactory = Callable[..., ReplyFn]
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +208,9 @@ class VoiceTurnService:
         chunk_store: Audio chunk storage.
 
     Examples:
-        >>> service = VoiceTurnService(config, audio_client, session_service, chunk_store)
+        >>> service = VoiceTurnService(
+        ...     config, audio_client, session_service, chunk_store, reply_fn_factory
+        ... )
         >>> result = await service.voice_turn("sess123", "student1", request)
     """
 
@@ -211,6 +220,7 @@ class VoiceTurnService:
         audio_client: AudioClient,
         session_service: SessionService,
         chunk_store: ChunkStore,
+        reply_fn_factory: ReplyFnFactory,
     ) -> None:
         """Initialize VoiceTurnService.
 
@@ -219,11 +229,16 @@ class VoiceTurnService:
             audio_client: Audio transcription/synthesis client.
             session_service: Session management service.
             chunk_store: Audio chunk storage.
+            reply_fn_factory: Per-request orchestrator-backed reply builder
+                (S-R4 §2.7). The REST voice turn drives the same real tutor
+                loop as the JSON turn path — the Phase-1.2 placeholder echo
+                is gone.
         """
         self._config = config
         self._audio_client = audio_client
         self._session_service = session_service
         self._chunk_store = chunk_store
+        self._reply_fn_factory = reply_fn_factory
 
     async def voice_turn(
         self,
@@ -287,7 +302,9 @@ class VoiceTurnService:
             student_id=student_id,
             session_id=session_id,
             user_message=transcript,
-            reply_fn=self._create_reply_fn(session_id, student_id),
+            reply_fn=self._reply_fn_factory(
+                session_id=session_id, student_id=student_id
+            ),
         )
 
         tutor_response = turn_result.tutor_response
@@ -324,28 +341,3 @@ class VoiceTurnService:
             tutor_response=tutor_response,
             audio=audio_refs,
         )
-
-    def _create_reply_fn(self, session_id: str, student_id: str) -> ReplyFn:
-        """Create reply function for SessionService.turn.
-
-        This would normally be injected from app state (like in http/app.py),
-        but for this task we're implementing a minimal version that returns
-        a simple reply. The real implementation would use the tutoring orchestrator.
-
-        Args:
-            session_id: Session identifier.
-            student_id: Student identifier.
-
-        Returns:
-            Reply function that takes user message and returns TutorReply.
-        """
-
-        async def reply_fn(user_message: str) -> TutorReply:
-            # Placeholder: real implementation would call tutoring orchestrator
-            # For now, return a simple acknowledgment
-            return TutorReply(
-                response=f"I understand your question: {user_message}",
-                metadata=None,
-            )
-
-        return reply_fn

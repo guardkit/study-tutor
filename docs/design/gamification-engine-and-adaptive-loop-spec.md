@@ -45,6 +45,8 @@ Player generation includes a transcript window: last **12 turns**, token-capped 
 - WS streaming: provide a real `ReplyStreamFn` factory (async-iterator product) where `ws.py:190-192` currently passes the non-streaming `ReplyFn`; add a test that drives one WS turn end-to-end against the fake LLM.
 - If runtime verification on the GB10 shows different wiring than `main` (deployment drift), file a dated note and build against `main`.
 
+> **Builder note — 2026-07-12 (S-R4, box verification).** Read-only `docker exec cat` on `study_tutor_http` (`/workspace/study-tutor/src/study_tutor`) confirms the deployed wiring **matches `main`** — no drift: `voice/service.py` still holds the placeholder echo `_create_reply_fn` ("I understand your question: …") at the turn seam, and `http/ws.py` still passes `app.state.reply_fn_factory` (the non-streaming `ReplyFn`) into `turn_stream`'s `reply_stream_fn` slot. S-R4 therefore built against `main`. S-R4 wiring: REST voice turn now drives the real orchestrator via an injected `reply_fn_factory` (echo deleted); WS streaming gets a real `ReplyStreamFn` factory (`_build_http_reply_stream_fn_factory` → `SessionService.build_turn_session_state` → `PlayerCoachOrchestrator.run_turn_stream_tokens`, a new token-yielding seam). Player context (§2.5) and the in-session memory window (§2.6) are assembled once in `SessionService.build_turn_session_state` and consumed by both transports (D14) — never in an adapter.
+
 ## §3 B1 — migration (second Alembic revision ever; `down_revision='3c7cd4bca034'`)
 
 Adds, following the initial revision's conventions exactly (TIMESTAMPTZ via `sa.TIMESTAMP(timezone=True)`, `<table>_<col>_check` / `_fkey` / `_pkey` names, `<table>_<purpose>_idx`):

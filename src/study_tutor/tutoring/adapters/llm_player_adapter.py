@@ -56,6 +56,136 @@ _REVISE_PROMPT_HEADER = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Session-context block + in-session-memory window (spec §2.5 / §2.6 / R13)
+# ---------------------------------------------------------------------------
+
+#: §2.6 in-session-memory window: the maximum number of prior transcript
+#: turns folded into the Player generation prompt. Oldest turns are dropped
+#: first (both when the window exceeds this count and when the token cap
+#: below is exceeded).
+_TRANSCRIPT_WINDOW_TURNS: int = 12
+
+#: §2.6 token budget for the transcript window. We cannot tokenise cheaply on
+#: the hot path, so we approximate one token ≈ 4 characters (the usual English
+#: heuristic) and cap the summed content length. Oldest turns are dropped
+#: first until the window fits. The cap lives here, beside the prompt
+#: assembly, per R13.
+_TRANSCRIPT_WINDOW_TOKEN_CAP: int = 1500
+_APPROX_CHARS_PER_TOKEN: int = 4
+
+#: design.md §6.1 Reachy phrasing for each confidence band. Keyed by the
+#: ``ConfidenceBand`` literal carried on ``SessionState.topic_confidence_band``.
+_BAND_PHRASING: dict[str, str] = {
+    "struggling": "needs more work",
+    "developing": "coming along",
+    "secure": "feeling confident",
+    "mastered": "really strong",
+}
+
+#: GOAL.md §7 grade-target register: a one-line calibration cue per grade band
+#: so the Player pitches its scaffolding depth and expected output to the
+#: learner's target. Grades outside the table fall back to the Grade-6 cue
+#: (GOAL.md §7 default midpoint).
+_GRADE_REGISTER: dict[str, str] = {
+    "1": "comprehension and basic answer structure; one technique at a time",
+    "2": "comprehension and basic answer structure; one technique at a time",
+    "3": "comprehension and basic answer structure; one technique at a time",
+    "4": "comprehension and basic answer structure; one technique at a time",
+    "5": "comprehension and basic answer structure; one technique at a time",
+    "6": "the what-how-why chain; expect embedded quotation and effect",
+    "7": "the what-how-why chain; expect embedded quotation and effect",
+    "8": "conceptual thinking across the whole text; layered interpretation",
+    "9": "conceptual thinking across the whole text; layered interpretation",
+}
+_DEFAULT_GRADE_REGISTER: str = _GRADE_REGISTER["6"]
+
+
+def _assemble_session_context_block(session_state: SessionState) -> str:
+    """Build the compact ``Session context`` block from typed fields only.
+
+    Spec §2.5: weave topic, text, confidence-band phrasing (design §6.1),
+    misconceptions-to-revisit and the grade-target register (GOAL.md §7)
+    into a ≤ ~120-word block. Assembled **exclusively** from the typed
+    :class:`SessionState` fields the service populated — never free-form
+    store text — so the prose-injection boundary stays closed.
+
+    Returns ``""`` when no context fields are set (e.g. a bare
+    ``SessionState``), so the caller can preserve the exact single-message
+    prompt for context-free turns.
+    """
+    lines: list[str] = []
+
+    topic = session_state.topic
+    text_name = session_state.text_name
+    if topic and text_name:
+        lines.append(f"- Topic: {topic} (text: {text_name})")
+    elif topic:
+        lines.append(f"- Topic: {topic}")
+    elif text_name:
+        lines.append(f"- Text: {text_name}")
+
+    band = session_state.topic_confidence_band
+    if band:
+        phrasing = _BAND_PHRASING.get(band, band)
+        lines.append(f"- Confidence on this topic: {phrasing}")
+
+    if session_state.weakest_topics:
+        lines.append(
+            "- Weak spots to strengthen: "
+            + ", ".join(session_state.weakest_topics)
+        )
+
+    if session_state.recent_misconceptions:
+        lines.append(
+            "- Misconceptions to revisit: "
+            + "; ".join(session_state.recent_misconceptions)
+        )
+
+    grade = session_state.grade_target
+    if grade:
+        register = _GRADE_REGISTER.get(grade, _DEFAULT_GRADE_REGISTER)
+        lines.append(f"- Grade {grade} target: {register}")
+
+    if not lines:
+        return ""
+    return "Session context:\n" + "\n".join(lines)
+
+
+def _build_transcript_history(
+    session_state: SessionState,
+) -> list[dict[str, str]]:
+    """Build the messages-list history window for ``LLMClient.generate``.
+
+    Spec §2.6 / R13: take the last :data:`_TRANSCRIPT_WINDOW_TURNS` prior
+    turns, then enforce :data:`_TRANSCRIPT_WINDOW_TOKEN_CAP` by dropping the
+    **oldest** turns first until the window fits. Store roles map to the
+    chat vocabulary (``tutor`` → ``assistant``). Returns ``[]`` when the
+    session carries no prior transcript.
+    """
+    turns = list(session_state.transcript)
+    if not turns:
+        return []
+
+    # Keep only the most recent window of turns (oldest dropped first).
+    windowed = turns[-_TRANSCRIPT_WINDOW_TURNS:]
+
+    # Enforce the token cap by dropping oldest turns until the approximate
+    # token budget is satisfied. A single over-budget final turn is kept
+    # (truncating it would corrupt the most recent context).
+    char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN
+    total = sum(len(turn.content) for turn in windowed)
+    while len(windowed) > 1 and total > char_cap:
+        dropped = windowed.pop(0)
+        total -= len(dropped.content)
+
+    history: list[dict[str, str]] = []
+    for turn in windowed:
+        role = "assistant" if turn.role == "tutor" else "user"
+        history.append({"role": role, "content": turn.content})
+    return history
+
+
 # Matches well-formed ``<think>...</think>`` blocks. ``re.DOTALL`` so the
 # inner ``.`` matches newlines (the model emits multi-line reasoning);
 # ``re.IGNORECASE`` is cheap insurance against capitalisation drift
@@ -146,23 +276,44 @@ class LLMPlayerAdapter:
     ) -> str:
         """Generate a first-attempt Player response for ``learner_message``.
 
-        ``session_state`` is accepted for Protocol parity but its fields
-        are not yet woven into the prompt — Phase-1 wiring keeps the
-        prompt scope narrow (player system prompt + raw learner message)
-        per the architecture in IMPLEMENTATION-GUIDE.md §2. The argument
-        is read here purely so a future enhancement can route session
-        context (text_name, focus_aos) without changing the call shape.
+        Spec §2.5/§2.6: the typed ``session_state`` context the service
+        populated is woven into the generation here — a compact
+        ``Session context`` block prefixes the current turn, and the
+        prior-transcript window rides as the ``LLMClient.generate``
+        messages-list history. Both are assembled from typed fields only
+        (:func:`_assemble_session_context_block` /
+        :func:`_build_transcript_history`); when the session carries no
+        context (a bare ``SessionState``), the prompt is the raw learner
+        message and no history is sent — byte-identical to the prior
+        single-message call.
         """
-        # Touch the typed session_state so the parameter is observably
-        # consumed (mypy/pyright noise control); we deliberately do not
-        # subscript it — attribute access is the §4 contract.
-        _ = session_state.session_id
+        prompt = self._weave_context_prompt(session_state, learner_message)
+        history = _build_transcript_history(session_state)
         provider = _default_player_model()
         client = LLMClient(provider=provider)
-        raw = await asyncio.to_thread(
-            client.generate, learner_message, self._player_prompt
-        )
+        if history:
+            raw = await asyncio.to_thread(
+                client.generate, prompt, self._player_prompt, history
+            )
+        else:
+            raw = await asyncio.to_thread(
+                client.generate, prompt, self._player_prompt
+            )
         return _strip_think_tokens(raw)
+
+    @staticmethod
+    def _weave_context_prompt(
+        session_state: SessionState, learner_message: str
+    ) -> str:
+        """Prefix the ``Session context`` block onto the learner message.
+
+        The reserved §2.5 seam: returns ``learner_message`` unchanged when
+        no context block is produced, otherwise ``"<block>\\n\\n<message>"``.
+        """
+        block = _assemble_session_context_block(session_state)
+        if not block:
+            return learner_message
+        return f"{block}\n\n{learner_message}"
 
     async def respond_stream(
         self,
@@ -173,7 +324,9 @@ class LLMPlayerAdapter:
         """Stream a first-attempt Player response for ``learner_message``.
 
         Yields tokens as they arrive from the LLM. Prompt assembly matches
-        ``respond()`` — player system prompt + raw learner message.
+        ``respond()`` — the §2.5 ``Session context`` block prefixes the
+        current turn and the §2.6 transcript window rides as generate-stream
+        history (both from typed ``session_state`` fields only).
 
         This is natively async (no ``asyncio.to_thread`` bridge) because
         ``LLMClient.generate_stream`` is already async. Used by
@@ -192,14 +345,15 @@ class LLMPlayerAdapter:
         Yields:
             Token strings with <think> blocks stripped
         """
-        _ = session_state.session_id
+        prompt = self._weave_context_prompt(session_state, learner_message)
+        history = _build_transcript_history(session_state)
         provider = _default_player_model()
         client = LLMClient(provider=provider)
 
         # Buffer the complete response to apply think-token stripping correctly
         raw_tokens: list[str] = []
         async for token in client.generate_stream(
-            learner_message, self._player_prompt
+            prompt, self._player_prompt, history
         ):
             raw_tokens.append(token)
 

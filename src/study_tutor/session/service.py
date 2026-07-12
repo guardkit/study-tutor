@@ -59,6 +59,7 @@ from study_tutor.knowledge.store.entities import (
     SessionRecord,
     SessionStatus,
     SessionTurn,
+    StudentState,
 )
 from study_tutor.knowledge.store.port import (
     DEFAULT_SESSION_LIST_LIMIT,
@@ -80,6 +81,10 @@ from study_tutor.session.errors import (
     SessionEnded,
     SessionForbidden,
     SessionNotFoundError,
+)
+from study_tutor.tutoring.adapters.session_state import (
+    SessionState,
+    TranscriptTurn,
 )
 
 logger = logging.getLogger(__name__)
@@ -146,6 +151,62 @@ def _curriculum_ao_mapping() -> dict[str, list[AssessmentObjectiveCode]]:
         for entry in entries
         if entry.get("topic_name")
     }
+
+
+# ---------------------------------------------------------------------------
+# Player-context assembly (spec §2.5 / §2.6 — populated ONCE, in the service)
+# ---------------------------------------------------------------------------
+
+#: GOAL.md §7 default grade target when the student profile has none set.
+DEFAULT_GRADE_TARGET: str = "6"
+
+#: design §6.1: Mastered is 80–100; a topic below this counts as "not yet
+#: mastered" for weakest-topic selection.
+_MASTERED_THRESHOLD: int = 80
+
+#: Caps on the compact typed context lists threaded to the Player (spec §2.5).
+_MAX_WEAKEST_TOPICS: int = 3
+_MAX_RECENT_MISCONCEPTIONS: int = 3
+
+
+def _band_for_topic(state: StudentState, topic: str | None) -> str | None:
+    """The confidence band for ``topic`` from the student-state snapshot.
+
+    Returns ``None`` when no topic is set or the topic has no confidence row.
+    """
+    if not topic:
+        return None
+    for conf in state.topic_confidences:
+        if conf.topic_name == topic:
+            return conf.band
+    return None
+
+
+def _weakest_topics(state: StudentState) -> tuple[str, ...]:
+    """Up to 3 weakest below-Mastered topics (ascending confidence)."""
+    below = [
+        conf
+        for conf in state.topic_confidences
+        if conf.percentage < _MASTERED_THRESHOLD
+    ]
+    below.sort(key=lambda conf: conf.percentage)
+    return tuple(conf.topic_name for conf in below[:_MAX_WEAKEST_TOPICS])
+
+
+def _recent_misconception_texts(
+    state: StudentState, topic: str | None
+) -> tuple[str, ...]:
+    """Up to 3 recent misconception texts, session-topic matches leading.
+
+    Ordered most-recent-first; a stable second sort floats the current
+    session topic's misconceptions to the front of the (≤3) window without
+    disturbing recency order within each group.
+    """
+    miscs = list(state.recent_misconceptions)
+    miscs.sort(key=lambda misc: misc.observed_at, reverse=True)
+    if topic:
+        miscs.sort(key=lambda misc: misc.topic_name != topic)
+    return tuple(misc.text for misc in miscs[:_MAX_RECENT_MISCONCEPTIONS])
 
 
 # ---------------------------------------------------------------------------
@@ -537,6 +598,64 @@ class SessionService:
                 session_id=session_id, role="tutor", content=full_response
             )
             yield TurnEvent(type="done", turn_index=tutor_turn.turn_index)
+
+    async def build_turn_session_state(
+        self, *, student_id: str, session_id: str
+    ) -> SessionState:
+        """Assemble the per-turn :class:`SessionState` the Player reads.
+
+        Spec §2.5/§2.6 / D14: the player-context fields and the in-session
+        memory window are populated **here, in the core** — never in a
+        transport adapter — so HTTP, MCP and the voice/WS paths all feed the
+        Player identical context. Both transports call this and hand the
+        result straight to the orchestrator; neither reads the store for
+        context itself.
+
+        Reads, per turn:
+
+        * the persisted session row → ``topic`` + ``focus_aos`` plan facts
+          (``text_name`` stays ``None`` until Phase-E S-E4 persists it);
+        * one student-state snapshot → confidence band for the topic, the
+          weakest below-Mastered topics, recent misconceptions, grade target
+          (GOAL.md §7 default Grade 6);
+        * the durable transcript → the prior-turn window (§2.6). The current
+          user turn has already been persisted by ``turn`` / ``turn_stream``
+          before the reply loop runs, so the trailing ``user`` row is the
+          message being answered and is dropped from the *prior* window (the
+          Player receives it as ``learner_message``).
+        """
+        store = self._resolve_store()
+
+        record = await store.get_session(session_id)
+        topic = record.topic if record is not None else None
+        focus_aos = tuple(record.aos_scaffolded) if record is not None else ()
+
+        # Single student-state read for the four §2.5 context fields.
+        state = await store.get_student_state(student_id)
+
+        # Transcript rehydration (§2.6). Drop the trailing current user turn.
+        turns = await store.get_turns(session_id)
+        prior = turns[:-1] if (turns and turns[-1].role == "user") else turns
+        transcript = tuple(
+            TranscriptTurn(role=turn.role, content=turn.content)
+            for turn in prior
+        )
+
+        grade_target = state.target_grade or DEFAULT_GRADE_TARGET
+
+        return SessionState(
+            session_id=session_id,
+            student_id=student_id,
+            text_name=None,
+            topic=topic,
+            focus_aos=focus_aos,
+            mode="tutor",
+            topic_confidence_band=_band_for_topic(state, topic),
+            weakest_topics=_weakest_topics(state),
+            recent_misconceptions=_recent_misconception_texts(state, topic),
+            grade_target=grade_target,
+            transcript=transcript,
+        )
 
     async def session_status(
         self, *, student_id: str, session_id: str

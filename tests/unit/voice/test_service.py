@@ -227,6 +227,7 @@ class TestVoiceTurnService:
             audio_client=mock_audio_client,
             session_service=mock_session_service,
             chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
         )
 
         request = mock_request_factory(b"fake audio wav bytes")
@@ -259,6 +260,65 @@ class TestVoiceTurnService:
         mock_session_service.turn.assert_awaited_once()
 
     @pytest.mark.asyncio
+    async def test_voice_turn_uses_injected_reply_factory_not_echo(
+        self,
+        voice_config: VoiceConfig,
+        chunk_store: ChunkStore,
+        mock_audio_client: AudioClient,
+        mock_request_factory: Any,
+    ) -> None:
+        """S-R4 §2.7: the REST voice turn drives the injected orchestrator
+        reply factory — the Phase-1.2 placeholder echo ("I understand your
+        question: ...") is gone. The reply the learner hears is the factory's
+        output, proving the real tutor loop is wired.
+        """
+        # A session service whose turn() actually invokes the reply_fn, so we
+        # observe which reply factory the voice service used.
+        session_service = Mock(spec=SessionService)
+
+        async def turn_invoking_reply_fn(
+            *, student_id: str, session_id: str, user_message: str, reply_fn: Any
+        ) -> Any:
+            reply = await reply_fn(user_message)
+            return Mock(
+                tutor_response=reply.response, turn_index=1, metadata=None
+            )
+
+        session_service.turn = AsyncMock(side_effect=turn_invoking_reply_fn)
+
+        seen: dict[str, Any] = {}
+
+        def reply_fn_factory(*, session_id: str, student_id: str) -> Any:
+            seen["session_id"] = session_id
+            seen["student_id"] = student_id
+
+            async def reply_fn(user_message: str) -> Any:
+                return Mock(
+                    response="Consider Macbeth's ambition as the engine.",
+                    metadata=None,
+                )
+
+            return reply_fn
+
+        service = VoiceTurnService(
+            config=voice_config,
+            audio_client=mock_audio_client,
+            session_service=session_service,
+            chunk_store=chunk_store,
+            reply_fn_factory=reply_fn_factory,
+        )
+
+        request = mock_request_factory(b"fake audio wav bytes")
+        result = await service.voice_turn(
+            session_id="sess123", student_id="student1", request=request
+        )
+
+        assert result.tutor_response == "Consider Macbeth's ambition as the engine."
+        assert "I understand your question" not in result.tutor_response
+        # The factory was keyed by the turn's identity.
+        assert seen == {"session_id": "sess123", "student_id": "student1"}
+
+    @pytest.mark.asyncio
     async def test_unintelligible_query_when_transcript_empty(
         self,
         voice_config: VoiceConfig,
@@ -276,6 +336,7 @@ class TestVoiceTurnService:
             audio_client=mock_audio_client,
             session_service=mock_session_service,
             chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
         )
 
         request = mock_request_factory(b"fake audio bytes")
@@ -306,6 +367,7 @@ class TestVoiceTurnService:
             audio_client=mock_audio_client,
             session_service=mock_session_service,
             chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
         )
 
         request = mock_request_factory(b"fake audio bytes")
@@ -337,6 +399,7 @@ class TestVoiceTurnService:
             audio_client=mock_audio_client,
             session_service=mock_session_service,
             chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
         )
 
         request = mock_request_factory(b"fake audio bytes")
@@ -369,6 +432,7 @@ class TestVoiceTurnService:
             audio_client=mock_audio_client,
             session_service=mock_session_service,
             chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
         )
 
         request = mock_request_factory(b"fake audio wav bytes")
@@ -428,6 +492,7 @@ class TestVoiceTurnService:
             audio_client=mock_audio_client,
             session_service=mock_session_service,
             chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
         )
 
         # Should raise validation error before STT
