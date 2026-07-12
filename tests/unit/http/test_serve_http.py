@@ -332,7 +332,20 @@ def test_http_reply_fn_factory_drives_run_turn_with_session_state() -> None:
             seen["learner_message"] = learner_message
             return _FakeTurnResult()
 
-    factory = _build_http_reply_fn_factory(lambda: _FakeOrchestrator())
+    # S-R4 §2.5/§2.6/D14: the SessionState boundary is assembled in the core
+    # (SessionService.build_turn_session_state), not the transport — the
+    # factory delegates to it. A fake service stands in for that read.
+    from study_tutor.tutoring.adapters.session_state import SessionState
+
+    class _FakeService:
+        async def build_turn_session_state(self, *, student_id, session_id):
+            return SessionState(
+                session_id=session_id, student_id=student_id, mode="tutor"
+            )
+
+    factory = _build_http_reply_fn_factory(
+        lambda: _FakeOrchestrator(), _FakeService()
+    )
     reply_fn = factory(session_id="sess-1", student_id="lilymay")
     reply = asyncio.run(reply_fn("What does the dagger symbolise?"))
 

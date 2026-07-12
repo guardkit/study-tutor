@@ -142,6 +142,7 @@ class StudentStore(Protocol):
         student_id: str,
         subject: str,
         topic: str | None = None,
+        aos_scaffolded: list[str] | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
         """Create a session, or resume the active one.
@@ -151,7 +152,12 @@ class StudentStore(Protocol):
         ``active`` session for ``(student_id, subject)`` and that one is
         returned instead. The boolean is a transient signal (not a column on
         ``SessionRecord``) so the service populates the contract's ``resumed``
-        field without a race-prone list-then-create pre-check."""
+        field without a race-prone list-then-create pre-check.
+
+        ``aos_scaffolded`` persists the plan's ``focus_aos`` at start-time
+        (S-R3 §2.1 — the session's ``aos_scaffolded`` column carries the plan
+        facts from start; ``None`` defaults to ``[]``). It is only written on
+        the created branch; a resume returns the existing row untouched."""
         ...
 
     async def get_session(self, session_id: str) -> SessionRecord | None:

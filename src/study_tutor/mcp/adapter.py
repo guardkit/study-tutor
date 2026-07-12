@@ -27,27 +27,22 @@ SR-07: ``tutor_session_end`` description is *only* ``"marks session ended"``.
 The store write happens inside ``SessionService.end_session`` as a synchronous
 transactional Postgres write — not user-facing text.
 
-Concurrency note (TASK-DSP-006): the per-instance ``_plan_sessions`` dict
-is keyed by ``session.session_id``. UUID4 collision probability is
-effectively zero, and :class:`SessionPlan` is ``frozen=True``, so no
-explicit lock is required — concurrent ``tutor_start_session`` invocations
-for the same learner produce two distinct UUIDs and cannot overwrite each
-other's plan.
+S-R3 §2.1 / D14: planning and completion assembly moved into the core
+(``SessionService`` / the session row). The adapter no longer holds a per-adapter
+plan cache — ``tutor_turn`` / ``tutor_session_end`` read the persisted session
+record — so it carries no planning state the HTTP path lacks.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from typing import Any
 
 from datetime import datetime, timezone
 
 from study_tutor.llm.client import LLMClient, _default_player_model
-from study_tutor.planner.pipeline import plan_session
-from study_tutor.planner.types import SessionPlan, _baseline_plan
+from study_tutor.planner.types import SessionPlan
 from study_tutor.roles.loader import RoleConfig
-from study_tutor.session.completion import build_session_completion
 from study_tutor.session.errors import (
     SessionEnded,
     SessionForbidden,
@@ -56,49 +51,10 @@ from study_tutor.session.errors import (
 from study_tutor.session.provider import get_session_service
 from study_tutor.session.service import SessionService, TutorReply
 from study_tutor.session.wiring import resolve_student_id
-from study_tutor.tutoring.adapters.session_state import SessionState
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
 from study_tutor.tutoring.session_end import EventBus, SESSION_COMPLETED_EVENT
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Outer-guard configuration (ASSUM-006)
-# ---------------------------------------------------------------------------
-
-#: TASK-DSP-006 — env var that controls the *outer* MCP-handler budget
-#: (ASSUM-006, signed off 2026-04-29). Default 2.0s. Independently
-#: configurable from the inner read timeout
-#: (``STUDENT_MODEL_READ_TIMEOUT_SEC``, ASSUM-007) so tests can patch one
-#: boundary without affecting the other. The outer guard is the binding
-#: constraint in the default configuration.
-_PLANNER_HANDLER_BUDGET_ENV: str = "PLANNER_HANDLER_BUDGET_SEC"
-_PLANNER_HANDLER_BUDGET_DEFAULT: float = 2.0
-
-
-def _planner_handler_budget_sec() -> float:
-    """Return the outer ``plan_session`` budget for ``tutor_start_session``.
-
-    Reads :data:`_PLANNER_HANDLER_BUDGET_ENV` from the environment at
-    *call* time so test patching of ``os.environ`` flows through without
-    a process restart. Falls back to
-    :data:`_PLANNER_HANDLER_BUDGET_DEFAULT` when the var is unset or
-    unparseable.
-    """
-    raw = os.environ.get(_PLANNER_HANDLER_BUDGET_ENV)
-    if raw is None:
-        return _PLANNER_HANDLER_BUDGET_DEFAULT
-    try:
-        return float(raw)
-    except ValueError:
-        logger.warning(
-            "ignoring unparseable %s=%r; using default %.1fs",
-            _PLANNER_HANDLER_BUDGET_ENV,
-            raw,
-            _PLANNER_HANDLER_BUDGET_DEFAULT,
-        )
-        return _PLANNER_HANDLER_BUDGET_DEFAULT
 
 
 def _plan_summary(plan: SessionPlan) -> dict[str, Any]:
@@ -145,10 +101,11 @@ class MCPAdapter:
         self._player_prompt = role_config.load_player_prompt()
         # Track warm-up task so pytest/GC don't complain about orphans.
         self._warmup_tasks: set[asyncio.Task[Any]] = set()
-        # Per-instance plan store (TASK-DSP-006). Keyed by session_id;
-        # holds the immutable :class:`SessionPlan` produced by
-        # :func:`plan_session` for subsequent ``tutor_turn`` consumption.
-        self._plan_sessions: dict[str, SessionPlan] = {}
+        # S-R3 §2.1 / D14: planning + its plan facts live in the core
+        # (SessionService / the session row), NOT in a per-adapter cache. The
+        # former ``self._plan_sessions`` dict is deleted — ``tutor_turn`` /
+        # ``tutor_session_end`` read the persisted session record instead, so
+        # the MCP adapter holds no planning state the HTTP path lacks.
         # TASK-DTL-003: optional per-turn orchestrator factory. When
         # supplied, ``tutor_turn`` builds a fresh
         # :class:`PlayerCoachOrchestrator` per call (per-session
@@ -243,8 +200,12 @@ class MCPAdapter:
         # slug (ASSUM-001).
         identity = resolve_student_id()
 
-        # Mint session_id *before* the planner is invoked (AC-002).
-        # SessionService.start_session creates the durable session.
+        # S-R3 §2.1 / D14: planning now lives in SessionService.start_session
+        # (under the 2.0s budget/degrade boundary, keyed by the ownership
+        # identity). The adapter is a thin skin: it delegates and projects the
+        # service's plan into the MCP ``plan_summary`` shape. ``student_id`` (the
+        # tool arg / subject slug) is passed as ``topic``-less ``subject``; the
+        # learner override rides on ``topic``.
         result = await self._session_service.start_session(
             student_id=identity,
             subject=student_id,
@@ -253,8 +214,7 @@ class MCPAdapter:
         session_id = result.session_id
 
         # Fire-and-forget LLM warm-up so the first ``tutor_turn`` doesn't
-        # pay cold-start latency. Independent of the planner so a planner
-        # timeout doesn't cancel the warm-up.
+        # pay cold-start latency.
         provider = player_model or _default_player_model()
         warmup = asyncio.create_task(
             self._warm_up(provider), name=f"warmup-{session_id}"
@@ -262,44 +222,11 @@ class MCPAdapter:
         self._warmup_tasks.add(warmup)
         warmup.add_done_callback(self._warmup_tasks.discard)
 
-        budget = _planner_handler_budget_sec()
-        try:
-            plan = await asyncio.wait_for(
-                plan_session(student_id, topic_override),
-                timeout=budget,
-            )
-        except asyncio.TimeoutError:
-            logger.warning(
-                "planner exceeded %.2fs handler budget — degrading to "
-                "baseline plan",
-                budget,
-                extra={
-                    "event": "planner_handler_budget_exceeded",
-                    "student_id": student_id,
-                    "session_id": session_id,
-                    "budget_sec": budget,
-                },
-            )
-            plan = _baseline_plan(learner_state_available=False)
-        except Exception as exc:  # noqa: BLE001 — boundary catch
-            # Any non-timeout failure mode: log with traceback (so
-            # observability captures the root cause) and degrade. Never
-            # re-raise — the MCP contract is "always return a plan".
-            logger.exception(
-                "planner internal error — degrading to baseline plan",
-                extra={
-                    "event": "planner_internal_error",
-                    "student_id": student_id,
-                    "session_id": session_id,
-                    "error": str(exc),
-                },
-            )
-            plan = _baseline_plan(learner_state_available=False)
-
-        self._plan_sessions[session_id] = plan
         return {
             "session_id": session_id,
-            "plan_summary": _plan_summary(plan),
+            "plan_summary": _plan_summary(result.plan)
+            if result.plan is not None
+            else {},
         }
 
     async def tutor_turn(
@@ -318,24 +245,20 @@ class MCPAdapter:
         # Build the reply_fn that wraps the orchestrator/Phase-0 loop.
         # SessionService.turn will call this after persisting the user turn.
         async def reply_fn(msg: str) -> TutorReply:
-            plan = self._plan_sessions.get(session_id)
             # TASK-DTL-003: route through PlayerCoachOrchestrator when a
             # factory is wired (production Phase 1 path).
             if self._orchestrator_factory is not None:
-                # TASK-LCA-003: build the typed SessionState boundary object
-                # from the cached SessionPlan. Optional fields default to
-                # ``None`` / ``()`` so a baseline-degraded plan still yields
-                # a valid construction (ASSUM-LCA-007).
-                text_name_value = (
-                    getattr(plan, "text_name", None) if plan is not None else None
-                )
-                session_state = SessionState(
-                    session_id=session_id,
-                    student_id=identity,
-                    text_name=text_name_value if text_name_value else None,
-                    topic=plan.topic_name if plan is not None else None,
-                    focus_aos=tuple(plan.focus_aos) if plan is not None else (),
-                    mode="tutor",
+                # S-R4 §2.5/§2.6 / D14: the typed SessionState boundary — plan
+                # facts, player-context fields and the in-session transcript
+                # window — is assembled in the core
+                # (``SessionService.build_turn_session_state``), NOT here, so
+                # MCP and HTTP feed the Player byte-identical context. The
+                # adapter stays a thin tool-shape skin.
+                session_state = (
+                    await self._session_service.build_turn_session_state(
+                        student_id=identity,
+                        session_id=session_id,
+                    )
                 )
                 orchestrator: PlayerCoachOrchestrator = self._orchestrator_factory()
                 turn_result = await orchestrator.run_turn(
@@ -417,89 +340,62 @@ class MCPAdapter:
         }
 
     async def tutor_session_end(self, session_id: str) -> dict[str, Any]:
-        """Mark the session ended (TASK-SMP3-06).
+        """Mark the session ended (TASK-SMP3-06; S-R3 §2.4 cutover).
 
-        Now delegates to SessionService.end_session with a durable
-        completion payload. The I-T6 zero-turn invariant is preserved:
-        sessions ended before any tutor turn flip status to ``"ended"``
-        but do NOT emit ``session.completed`` and do NOT write learner-state
-        deltas (``completion=None``).
+        Completion **assembly now lives in** ``SessionService.end_session``
+        (D14) — the adapter no longer builds a ``SessionCompletion`` and holds no
+        plan cache. It reads the persisted session row for the event payload,
+        emits ``session.completed`` (DDR-003 emit-before-write, unchanged this
+        stage), then delegates to the service, passing only its topic hint (the
+        subject slug). ``topics_covered`` / ``aos_exercised`` are sourced from
+        the persisted plan facts (``topic`` + ``aos_scaffolded``).
 
-        DDR-003 ordering: ``session.completed`` is emitted BEFORE
-        SessionService.end_session persists the completion (emit-before-write).
-
-        ``topics_covered`` and ``aos_exercised`` are sourced from the
-        cached :class:`SessionPlan` for ``session_id``. If no plan is
-        cached, both default to empty.
+        I-T6 zero-turn invariant preserved: a session ended before any tutor turn
+        flips status to ``"ended"`` but does NOT emit ``session.completed`` and
+        writes no learner-state deltas (the service skips the completion for
+        ``turn_count == 0``).
         """
         identity = resolve_student_id()
 
-        # Load the session to check turn count and get session data.
-        try:
-            status = await self._session_service.session_status(
-                student_id=identity,
-                session_id=session_id,
-            )
-        except SessionNotFoundError:
+        # Load the persisted session row (turn count + plan facts for the event).
+        record = await self._student_store.get_session(session_id)
+        if record is None:
             return _session_not_found(session_id)
-        except SessionForbidden as exc:
+        if record.student_id != identity:
             return {
-                "error": str(exc),
+                "error": f"session {session_id!r} is not owned by {identity!r}",
                 "error_type": "SessionForbidden",
             }
 
-        # Extract plan data for topics_covered and aos_exercised.
-        plan = self._plan_sessions.get(session_id)
-        if plan is not None:
-            topic = plan.topic_name
-            aos_exercised = list(plan.focus_aos)
-        else:
-            # Stale-lookup fallback: a tutor_session_end called for a
-            # session_id never seen by this process's tutor_start_session
-            # (e.g. server restart between the two endpoints) is still a
-            # valid graceful path. Use empty defaults.
-            topic = status.student_id  # Fallback to subject
-            aos_exercised = []
+        topic = record.topic or record.subject
+        aos_exercised = list(record.aos_scaffolded)
 
         # I-T6 zero-turn invariant: sessions with no turns do NOT emit
-        # session.completed and do NOT write learner-state deltas.
-        completion = None
-        if status.turn_count > 0:
-            # Build the SessionCompletion via the pure store-backed producer.
-            # Assumes all turns are (user, tutor) pairs; student_turn_count
-            # is half the total.
-            student_turn_count = status.turn_count // 2
-            completion = await build_session_completion(
-                store=self._student_store,
-                student_id=identity,
-                topic=topic,
-                student_turn_count=student_turn_count,
-                aos_scaffolded=aos_exercised,
-                misconceptions_per_topic={},  # ASSUM-007 placeholder
-            )
-
+        # session.completed. The service independently skips the completion
+        # write for zero-turn sessions.
+        if record.turn_count > 0:
             # DDR-003: emit session.completed BEFORE the SessionService write.
-            # Preserve the exact payload shape from session_end.py:440-450.
             ended_at = datetime.now(timezone.utc)
             payload: dict[str, Any] = {
                 "session_id": session_id,
                 "student_id": identity,
-                "subject_slug": status.student_id,
+                "subject_slug": record.subject,
                 "topics_covered": [topic],
                 "aos_exercised": aos_exercised,
-                "turn_count": status.turn_count,
+                "turn_count": record.turn_count,
                 "narrative_summary": "",  # Not produced by this cutover
-                "started_at": status.started_at.isoformat(),
+                "started_at": record.started_at.isoformat(),
                 "ended_at": ended_at.isoformat(),
             }
             await self._event_bus.emit(SESSION_COMPLETED_EVENT, payload)
 
-        # Delegate to SessionService.end_session with the completion.
+        # Delegate: the service assembles + writes the completion from the
+        # persisted row (D14). MCP passes only its topic hint (the subject).
         try:
             await self._session_service.end_session(
                 student_id=identity,
                 session_id=session_id,
-                completion=completion,
+                topic_hint=record.subject,
             )
         except SessionNotFoundError:
             return _session_not_found(session_id)

@@ -52,7 +52,7 @@ from study_tutor.planner.protocols import (
 from study_tutor.planner.rules import (
     Rule1LearnerOverride,
     Rule2ActiveQuestStub,
-    Rule3WeakestStaleTopic,
+    Rule3AdaptiveTopic,
     Rule4UnrevisitedMisconception,
     Rule5AchievementNearUnlockStub,
 )
@@ -217,7 +217,7 @@ def run_rule_pipeline(
     rules: list[Rule] = [
         Rule1LearnerOverride(),
         Rule2ActiveQuestStub(),
-        Rule3WeakestStaleTopic(),
+        Rule3AdaptiveTopic(),
         Rule4UnrevisitedMisconception(
             clock=context.clock,
             session_completions=completions,
@@ -237,8 +237,15 @@ def run_rule_pipeline(
 
     # Rule 6: random selection from developing band, sorted alphabetically
     # before sampling so a seeded ``random.Random`` is reproducible across
-    # CPython versions (AC-006, AC-007).
-    developing = context.topics_in_band("developing")
+    # CPython versions (AC-006, AC-007). §6.3(c) R11: topics blocked by the
+    # 4-day London anti-repetition window are excluded from the random pool
+    # so exploration keeps rotating.
+    blocked = context.anti_repetition_blocked()
+    developing = [
+        tc
+        for tc in context.topics_in_band("developing")
+        if tc.topic_ref not in blocked
+    ]
     if developing:
         developing_sorted = sorted(developing, key=lambda tc: tc.topic_ref)
         chosen = context.rng.choice(developing_sorted)
@@ -284,6 +291,7 @@ async def _build_planner_context(
     topic_override: str | None,
     client: Any | None = None,
     ao_mapping: Mapping[str, list[AOCode]] | None = None,
+    recent_recommendations: tuple[tuple[str, datetime], ...] = (),
 ) -> PlannerContext:
     """Read student state and build a :class:`PlannerContext`.
 
@@ -341,6 +349,7 @@ async def _build_planner_context(
         clock=clock,
         rng=rng,
         learner_state_available=inputs.learner_state_available,
+        recent_recommendations=recent_recommendations,
     )
 
 
@@ -353,6 +362,7 @@ async def plan_session(
     client: Any | None = None,
     ao_mapping: Mapping[str, list[AOCode]] | None = None,
     session_completions: list[SessionCompletion] | None = None,
+    recent_recommendations: tuple[tuple[str, datetime], ...] = (),
 ) -> SessionPlan:
     """Plan a session for ``student_id`` via the deterministic pipeline.
 
@@ -392,6 +402,7 @@ async def plan_session(
         topic_override=topic_override,
         client=client,
         ao_mapping=ao_mapping,
+        recent_recommendations=recent_recommendations,
     )
 
     return run_rule_pipeline(context, session_completions=session_completions)

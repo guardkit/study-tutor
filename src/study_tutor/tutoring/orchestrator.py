@@ -27,7 +27,15 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Literal, Protocol, runtime_checkable
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Literal,
+    Protocol,
+    runtime_checkable,
+)
 
 from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.tutoring.coach import CoachVerdict, RubricFeedback
@@ -761,6 +769,47 @@ class PlayerCoachOrchestrator:
             attempts=1,
             start=start,
             flag_reason=None,
+            verifier_metadata=metadata,
+        )
+
+    async def run_turn_stream_tokens(
+        self,
+        session_state: Any,
+        learner_message: str,
+    ) -> AsyncIterator[str]:
+        """Yield Player tokens for the WS turn path, then run the async Coach.
+
+        The async-iterator product the WS ``ReplyStreamFn`` factory drives
+        (S-R4 §2.7): unlike :meth:`run_turn_stream` (which accumulates and
+        returns a :class:`TurnResult`), this **yields** each Player token as
+        it arrives so ``SessionService.turn_stream`` can emit ``token``
+        frames and persist the full reply. After the stream drains, the
+        coach-handover runs on the complete text (ADR-ARCH-026 D3) and the
+        async Coach monitor is dispatched (D1) — no pre-send gate (D4).
+
+        Args:
+            session_state: The typed per-turn context (built by the core).
+            learner_message: The learner's input for this turn.
+
+        Yields:
+            Player response tokens, in order.
+        """
+        accumulated: list[str] = []
+        async for token in self._player.respond_stream(  # type: ignore[attr-defined]
+            session_state=session_state,
+            learner_message=learner_message,
+        ):
+            accumulated.append(token)
+            yield token
+
+        raw_response = "".join(accumulated)
+        verified_response, metadata = self._apply_coach_handover(
+            raw_response, learner_message, session_state
+        )
+        self._dispatch_async_coach(
+            session_state=session_state,
+            learner_message=learner_message,
+            player_response=verified_response,
             verifier_metadata=metadata,
         )
 

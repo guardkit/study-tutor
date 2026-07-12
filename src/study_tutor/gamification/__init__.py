@@ -32,6 +32,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Iterable, Sequence
 
+from study_tutor.gamification.constants import (
+    CONFIDENCE_BASELINE_PERCENTAGE,
+    LONDON_TZ,
+    london_date,
+)
 from study_tutor.knowledge.store.entities import GamificationState
 from study_tutor.knowledge.student_model import TopicConfidence
 
@@ -207,10 +212,13 @@ def build_student_model_response(
 
 
 __all__ = [
+    "CONFIDENCE_BASELINE_PERCENTAGE",
     "LEVEL_THRESHOLDS",
+    "LONDON_TZ",
     "MIN_SESSION_SECONDS",
     "RECENT_XP_WINDOW_DAYS",
     "build_gamification_state",
+    "london_date",
     "build_student_model_response",
     "compute_streak_days",
     "level_title_for_total_xp",

@@ -224,10 +224,9 @@ async def test_tutor_turn_passes_session_state_to_orchestrator(
     session_id = started["session_id"]
     await _drain_warmups(adapter)
 
-    # Sanity-check the cached plan exists so the construction-site path
-    # runs against a real SessionPlan rather than the ``plan is None``
-    # branch.
-    assert session_id in adapter._plan_sessions
+    # S-R3 §2.1 / D14: the plan facts are persisted on the session row (no
+    # per-adapter cache). ``tutor_turn`` builds SessionState from that record —
+    # here the override "Macbeth" (Rule 1) is the persisted topic.
 
     result = await adapter.tutor_turn(
         session_id=session_id, user_message="Tell me about Act 1"

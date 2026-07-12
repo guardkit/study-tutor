@@ -112,10 +112,14 @@ class TestRespond:
     async def test_respond_calls_llm_client_with_player_prompt_and_returns_string(
         self, role_config: RoleConfig, session_state: SessionState
     ) -> None:
-        """``respond`` builds an ``LLMClient`` and calls ``generate``
-        with the learner message as the prompt and the cached player
-        prompt as the system message; the returned string is forwarded
-        verbatim.
+        """``respond`` builds an ``LLMClient`` and calls ``generate`` with the
+        cached player prompt as the system message; the returned string is
+        forwarded verbatim.
+
+        S-R4 §2.5: with typed context on the ``session_state`` (topic + text)
+        the prompt carries a compact ``Session context`` block ahead of the
+        learner message. No transcript on this state ⇒ no history arg (the
+        call stays a two-positional ``generate(prompt, system)``).
         """
         adapter = LLMPlayerAdapter(role_config=role_config)
 
@@ -132,6 +136,7 @@ class TestRespond:
 
         assert result == "Macbeth's ambition drives the plot."
         instance.generate.assert_called_once_with(
+            "Session context:\n- Topic: Themes (text: Macbeth)\n\n"
             "Why does Macbeth murder Duncan?",
             "You are a GCSE tutor. Answer in markdown.",
         )

@@ -26,6 +26,7 @@ Design intent the build should honour:
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -871,13 +872,20 @@ class PostgresStudentStore:
         student_id: str,
         subject: str,
         topic: str | None = None,
+        aos_scaffolded: list[str] | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
         """Create a session, or resume the active one.
 
         Returns (record, created) - created=True for new, False for resumed.
         ONE transaction (ASSUM-003): SELECT for resume check + INSERT if needed.
+
+        S-R3 §2.1: ``aos_scaffolded`` persists the plan's ``focus_aos`` at
+        start-time onto the created row (``None`` → ``[]``). Resumes ignore it.
         """
+        # Plan facts persisted at start (S-R3 §2.1). Serialised to a JSON
+        # array literal for the JSONB column, matching the existing "[]" write.
+        planned_aos = list(aos_scaffolded) if aos_scaffolded else []
         # Get engine/pool
         if self._pool is not None:
             engine = self._pool
@@ -944,7 +952,7 @@ class PostgresStudentStore:
                     "last_activity": now,
                     "turn_count": 0,
                     "xp_awarded": 0,
-                    "aos_scaffolded": "[]",
+                    "aos_scaffolded": json.dumps(planned_aos),
                     "summary": None,
                 },
             )
@@ -959,7 +967,7 @@ class PostgresStudentStore:
                     started_at=now,
                     last_activity=now,
                     turn_count=0,
-                    aos_scaffolded=[],
+                    aos_scaffolded=planned_aos,
                     summary=None,
                 ),
                 True,  # Created

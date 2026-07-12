@@ -28,10 +28,10 @@ from study_tutor.planner.protocols import (
     SessionCompletion,
 )
 from study_tutor.planner.rules import (
-    COOLDOWN_HOURS,
+    SPACING_DAYS,
     Rule1LearnerOverride,
     Rule2ActiveQuestStub,
-    Rule3WeakestStaleTopic,
+    Rule3AdaptiveTopic,
     Rule4UnrevisitedMisconception,
     Rule5AchievementNearUnlockStub,
 )
@@ -84,6 +84,7 @@ def _build_context(
     topic_confidences: list[TopicConfidence] | None = None,
     misconceptions: list[Misconception] | None = None,
     clock_at: datetime | None = None,
+    recent_recommendations: tuple[tuple[str, datetime], ...] = (),
 ) -> PlannerContext:
     return PlannerContext.create(
         student_id="student-1",
@@ -95,6 +96,7 @@ def _build_context(
             clock_at or datetime(2026, 4, 29, 12, 0, 0, tzinfo=timezone.utc)
         ),
         rng=random.Random(42),
+        recent_recommendations=recent_recommendations,
     )
 
 
@@ -227,205 +229,255 @@ class TestRule1LearnerOverride:
 # ---------------------------------------------------------------------------
 
 
-class TestRule3WeakestStaleTopic:
-    """Behavioural contract for Rule 3 (`@rule-3`)."""
+class TestRule3AdaptiveTopic:
+    """Behavioural contract for Rule 3 — design.md §6.3 verbatim (R11).
+
+    ``@rule-3`` — struggling-first, then weakest-below-Mastered with 3-day
+    London spacing, with 4-day anti-repetition exclusion.
+    """
 
     NOW = datetime(2026, 4, 29, 12, 0, 0, tzinfo=timezone.utc)
 
+    def _topic_band(
+        self,
+        name: str,
+        *,
+        percentage: int,
+        band: str,
+        days_ago: int = 10,
+    ) -> TopicConfidence:
+        return _topic(
+            name,
+            percentage=percentage,
+            band=band,
+            last_revised_at=self.NOW - timedelta(days=days_ago),
+        )
+
     def test_conforms_to_rule_protocol(self) -> None:
-        assert isinstance(Rule3WeakestStaleTopic(), Rule)
+        assert isinstance(Rule3AdaptiveTopic(), Rule)
 
     def test_no_topics_returns_none(self) -> None:
-        """AC-007 partial: empty topic_confidences ⇒ no candidate."""
+        """Empty topic_confidences ⇒ no candidate."""
         ctx = _build_context(clock_at=self.NOW)
-        assert Rule3WeakestStaleTopic()(ctx) is None
+        assert Rule3AdaptiveTopic()(ctx) is None
 
-    def test_all_topics_inside_cooldown_returns_none(self) -> None:
-        """AC-007: every topic still cooling down ⇒ no candidate."""
-        recent = self.NOW - timedelta(hours=10)
+    # -- (a) Struggling-first, regardless of recency ----------------------
+
+    def test_struggling_topic_recommended_regardless_of_recency(self) -> None:
+        """§6.3(a): a Struggling-band topic studied *today* is still picked."""
         ctx = _build_context(
             clock_at=self.NOW,
             topic_confidences=[
-                _topic("alpha", percentage=10, last_revised_at=recent),
-                _topic("beta", percentage=20, last_revised_at=recent),
-            ],
-        )
-        assert Rule3WeakestStaleTopic()(ctx) is None
-
-    def test_just_inside_cooldown_excluded(self) -> None:
-        """AC-005: topic at 47:59:59 must NOT be eligible."""
-        just_inside = self.NOW - timedelta(
-            hours=COOLDOWN_HOURS - 1, minutes=59, seconds=59
-        )
-        ctx = _build_context(
-            clock_at=self.NOW,
-            topic_confidences=[
-                _topic(
-                    "borderline",
-                    percentage=10,
-                    last_revised_at=just_inside,
+                # Struggling, studied moments ago — recency does NOT exclude it.
+                self._topic_band(
+                    "struggle", percentage=25, band="struggling", days_ago=0
                 ),
-            ],
-        )
-        assert Rule3WeakestStaleTopic()(ctx) is None
-
-    def test_exactly_48h_boundary_included(self) -> None:
-        """AC-005: topic at exactly 48:00:00 IS eligible (inclusive)."""
-        on_boundary = self.NOW - timedelta(hours=COOLDOWN_HOURS)
-        ctx = _build_context(
-            clock_at=self.NOW,
-            topic_confidences=[
-                _topic(
-                    "boundary",
-                    percentage=42,
-                    last_revised_at=on_boundary,
+                # A stale developing topic that (b) would otherwise pick.
+                self._topic_band(
+                    "develop", percentage=45, band="developing", days_ago=10
                 ),
             ],
         )
 
-        result = Rule3WeakestStaleTopic()(ctx)
+        result = Rule3AdaptiveTopic()(ctx)
+        assert result is not None
+        assert result.topic_name == "struggle"
+        assert result.rule_source == "rule-3"
+        assert "Struggling" in result.rationale_fragment
 
-        assert isinstance(result, Candidate)
-        assert result.topic_name == "boundary"
-        assert result.confidence_percentage == 42.0
+    def test_struggling_first_picks_weakest_struggling(self) -> None:
+        """§6.3(a): among Struggling topics, weakest confidence wins."""
+        ctx = _build_context(
+            clock_at=self.NOW,
+            topic_confidences=[
+                self._topic_band("less", percentage=35, band="struggling"),
+                self._topic_band("more", percentage=10, band="struggling"),
+            ],
+        )
+        result = Rule3AdaptiveTopic()(ctx)
+        assert result is not None
+        assert result.topic_name == "more"
+
+    # -- (b) Weakest below Mastered, 3-day spacing ------------------------
+
+    def test_spacing_boundary_day_three_excluded_day_four_eligible(
+        self,
+    ) -> None:
+        """§6.3(b) 3-day rule: a topic last studied 3 London days ago is still
+        too recent (excluded); 4 London days ago is eligible.
+
+        The named day-3-vs-day-4 boundary: eligible iff the London-day gap
+        **exceeds** ``SPACING_DAYS`` (=3).
+        """
+        assert SPACING_DAYS == 3
+
+        # Studied exactly 3 London days ago → within the window → excluded.
+        ctx_day3 = _build_context(
+            clock_at=self.NOW,
+            topic_confidences=[
+                self._topic_band(
+                    "topic", percentage=45, band="developing", days_ago=3
+                ),
+            ],
+        )
+        assert Rule3AdaptiveTopic()(ctx_day3) is None
+
+        # Studied 4 London days ago → gap exceeds 3 → eligible.
+        ctx_day4 = _build_context(
+            clock_at=self.NOW,
+            topic_confidences=[
+                self._topic_band(
+                    "topic", percentage=45, band="developing", days_ago=4
+                ),
+            ],
+        )
+        result = Rule3AdaptiveTopic()(ctx_day4)
+        assert result is not None
+        assert result.topic_name == "topic"
         assert result.rule_source == "rule-3"
 
-    def test_picks_lowest_confidence_among_eligible(self) -> None:
-        """Weakest-first: lowest percentage wins."""
-        old = self.NOW - timedelta(days=10)
+    def test_mastered_band_excluded_from_weakest_selection(self) -> None:
+        """§6.3(b): Mastered-band topics are never surfaced by sub-rule (b),
+        even when stale and (numerically) the lowest below the rest."""
         ctx = _build_context(
             clock_at=self.NOW,
             topic_confidences=[
-                _topic("strong", percentage=65, last_revised_at=old),
-                _topic("weak", percentage=22, last_revised_at=old),
-                _topic("middle", percentage=40, last_revised_at=old),
+                # Mastered, stale — must be excluded despite being eligible-stale.
+                self._topic_band(
+                    "mastered_topic", percentage=90, band="mastered"
+                ),
+                # Developing, stale — the legitimate (b) pick.
+                self._topic_band(
+                    "developing_topic", percentage=55, band="developing"
+                ),
             ],
         )
-
-        result = Rule3WeakestStaleTopic()(ctx)
-
+        result = Rule3AdaptiveTopic()(ctx)
         assert result is not None
-        assert result.topic_name == "weak"
-        assert result.confidence_percentage == 22.0
+        assert result.topic_name == "developing_topic"
 
-    def test_skips_topics_in_cooldown_picks_eligible_weakest(self) -> None:
-        """Cooldown filter applies before weakest-first ranking."""
-        old = self.NOW - timedelta(days=5)
-        recent = self.NOW - timedelta(hours=2)
+    def test_all_below_mastered_but_all_recent_returns_none(self) -> None:
+        """No struggling topics + everything studied within 3 days ⇒ None."""
         ctx = _build_context(
             clock_at=self.NOW,
             topic_confidences=[
-                # Lowest confidence but still cooling down — must be skipped.
-                _topic("recent_weak", percentage=5, last_revised_at=recent),
-                _topic("old_developing", percentage=55, last_revised_at=old),
-                _topic("old_secure", percentage=80, last_revised_at=old),
+                self._topic_band(
+                    "a", percentage=45, band="developing", days_ago=1
+                ),
+                self._topic_band(
+                    "b", percentage=65, band="secure", days_ago=2
+                ),
             ],
         )
+        assert Rule3AdaptiveTopic()(ctx) is None
 
-        result = Rule3WeakestStaleTopic()(ctx)
-
-        assert result is not None
-        assert result.topic_name == "old_developing"
-
-    def test_tie_break_by_oldest_last_revised(self) -> None:
-        """Tie-break step 2: equal percentage ⇒ oldest revision first."""
-        older = self.NOW - timedelta(days=10)
-        newer = self.NOW - timedelta(days=3)
+    def test_weakest_below_mastered_wins_among_eligible(self) -> None:
+        """§6.3(b) weakest-first among stale, below-Mastered topics."""
         ctx = _build_context(
             clock_at=self.NOW,
             topic_confidences=[
-                _topic("zebra_newer", percentage=30, last_revised_at=newer),
-                _topic("aardvark_older", percentage=30, last_revised_at=older),
+                self._topic_band("secure", percentage=70, band="secure"),
+                self._topic_band("weak_dev", percentage=42, band="developing"),
+                self._topic_band("mid_dev", percentage=55, band="developing"),
             ],
         )
-
-        result = Rule3WeakestStaleTopic()(ctx)
-
-        # Older revision wins despite alphabetically-later topic name.
+        result = Rule3AdaptiveTopic()(ctx)
         assert result is not None
-        assert result.topic_name == "aardvark_older"
+        assert result.topic_name == "weak_dev"
 
-    def test_tie_break_by_alphabetical_topic_name(self) -> None:
-        """AC-006: identical confidence + revision ⇒ alphabetical wins.
-
-        ``@edge-case @determinism`` — two runs with the same inputs must
-        produce the same candidate, so the final tie-break must be a
-        stable, total ordering.
-        """
-        same_time = self.NOW - timedelta(days=4)
+    def test_tie_break_oldest_then_alphabetical(self) -> None:
+        """Tie-break: equal percentage ⇒ oldest last-studied, then alphabetical."""
         ctx = _build_context(
             clock_at=self.NOW,
             topic_confidences=[
-                _topic("zeta", percentage=45, last_revised_at=same_time),
-                _topic("alpha", percentage=45, last_revised_at=same_time),
-                _topic("mu", percentage=45, last_revised_at=same_time),
+                self._topic_band(
+                    "zeta", percentage=45, band="developing", days_ago=5
+                ),
+                self._topic_band(
+                    "alpha", percentage=45, band="developing", days_ago=10
+                ),
+                self._topic_band(
+                    "mu", percentage=45, band="developing", days_ago=10
+                ),
             ],
         )
-
-        result = Rule3WeakestStaleTopic()(ctx)
+        result = Rule3AdaptiveTopic()(ctx)
         assert result is not None
+        # alpha & mu are oldest (10 days); alpha wins alphabetically.
         assert result.topic_name == "alpha"
 
-    def test_consults_ctx_clock_not_utc_now(self) -> None:
-        """AC-008: cooldown is evaluated against ctx.clock(), not utcnow.
+    # -- (c) 4-day anti-repetition exclusion ------------------------------
 
-        The same topic flips from "still in cooldown" to "eligible" as
-        the injected clock advances past the 48h boundary — proving the
-        rule reads ``ctx.clock`` rather than calling ``datetime.utcnow``.
-        """
-        last_revised = datetime(2026, 4, 27, 12, 0, 0, tzinfo=timezone.utc)
-        topics = [
-            _topic("solo", percentage=15, last_revised_at=last_revised),
-        ]
-
-        # T0: 47h59m59s after last_revised — still inside the cooldown.
-        before_boundary = last_revised + timedelta(
-            hours=COOLDOWN_HOURS - 1, minutes=59, seconds=59
+    def test_anti_repetition_blocks_topic_recommended_four_days(self) -> None:
+        """§6.3(c): a topic recommended on each of the previous 4 London days
+        is excluded — the rule falls through to the next-best topic."""
+        # "hammered" would win (b) on weakness, but it was recommended on each
+        # of the previous 4 London days → blocked. "other" is picked instead.
+        recent = tuple(
+            ("hammered", self.NOW - timedelta(days=offset))
+            for offset in range(1, 5)  # days -1..-4
         )
-        ctx_before = _build_context(
-            clock_at=before_boundary,
-            topic_confidences=topics,
-        )
-        assert Rule3WeakestStaleTopic()(ctx_before) is None
-
-        # T0+1s: clock crosses the 48h boundary — topic becomes eligible.
-        at_boundary = last_revised + timedelta(hours=COOLDOWN_HOURS)
-        ctx_after = _build_context(
-            clock_at=at_boundary,
-            topic_confidences=topics,
-        )
-        result = Rule3WeakestStaleTopic()(ctx_after)
-        assert result is not None
-        assert result.topic_name == "solo"
-
-    def test_rationale_fragment_includes_topic_and_percentage(self) -> None:
-        """Rationale-observability: chosen topic + metric appear verbatim."""
-        old = self.NOW - timedelta(days=5)
         ctx = _build_context(
             clock_at=self.NOW,
             topic_confidences=[
-                _topic("dramatic irony", percentage=35, last_revised_at=old),
+                self._topic_band("hammered", percentage=30, band="developing"),
+                self._topic_band("other", percentage=50, band="developing"),
             ],
+            recent_recommendations=recent,
         )
-
-        result = Rule3WeakestStaleTopic()(ctx)
+        result = Rule3AdaptiveTopic()(ctx)
         assert result is not None
-        assert "dramatic irony" in result.rationale_fragment
-        assert "35" in result.rationale_fragment
-        assert "rule-3" in result.rationale_fragment
+        assert result.topic_name == "other"
+
+    def test_anti_repetition_three_days_does_not_block(self) -> None:
+        """§6.3(c) boundary: recommended only the previous 3 London days ⇒ the
+        run is not yet 4 consecutive, so the topic is NOT blocked."""
+        recent = tuple(
+            ("hammered", self.NOW - timedelta(days=offset))
+            for offset in range(1, 4)  # days -1..-3 only
+        )
+        ctx = _build_context(
+            clock_at=self.NOW,
+            topic_confidences=[
+                self._topic_band("hammered", percentage=30, band="developing"),
+                self._topic_band("other", percentage=50, band="developing"),
+            ],
+            recent_recommendations=recent,
+        )
+        result = Rule3AdaptiveTopic()(ctx)
+        assert result is not None
+        assert result.topic_name == "hammered"
+
+    def test_anti_repetition_blocks_even_struggling_topic(self) -> None:
+        """§6.3(c) applies to sub-rule (a) too: a hammered Struggling topic is
+        excluded so exploration keeps rotating."""
+        recent = tuple(
+            ("struggle", self.NOW - timedelta(days=offset))
+            for offset in range(1, 5)
+        )
+        ctx = _build_context(
+            clock_at=self.NOW,
+            topic_confidences=[
+                self._topic_band("struggle", percentage=20, band="struggling"),
+                self._topic_band("develop", percentage=50, band="developing"),
+            ],
+            recent_recommendations=recent,
+        )
+        result = Rule3AdaptiveTopic()(ctx)
+        assert result is not None
+        assert result.topic_name == "develop"
 
     def test_does_not_mutate_topic_confidences(self) -> None:
         """Pure rule: input ``topic_confidences`` list is not reordered."""
-        old = self.NOW - timedelta(days=5)
         topics = [
-            _topic("zeta", percentage=50, last_revised_at=old),
-            _topic("alpha", percentage=20, last_revised_at=old),
-            _topic("mu", percentage=30, last_revised_at=old),
+            self._topic_band("zeta", percentage=50, band="developing"),
+            self._topic_band("alpha", percentage=20, band="struggling"),
+            self._topic_band("mu", percentage=30, band="struggling"),
         ]
         ctx = _build_context(clock_at=self.NOW, topic_confidences=topics)
         original_order = [tc.topic_ref for tc in ctx.topic_confidences]
 
-        Rule3WeakestStaleTopic()(ctx)
+        Rule3AdaptiveTopic()(ctx)
 
         assert [tc.topic_ref for tc in ctx.topic_confidences] == original_order
 
@@ -435,14 +487,14 @@ class TestRule3WeakestStaleTopic:
 # ---------------------------------------------------------------------------
 
 
-def test_cooldown_hours_constant_is_48() -> None:
-    """ASSUM-001 (signed off): the cooldown window is 48 hours."""
-    assert COOLDOWN_HOURS == 48
+def test_spacing_days_constant_is_3() -> None:
+    """design §13.1 R11: the §6.3(b) spacing window is 3 London days."""
+    assert SPACING_DAYS == 3
 
 
 @pytest.mark.parametrize(
     "rule_factory",
-    [Rule1LearnerOverride, Rule3WeakestStaleTopic],
+    [Rule1LearnerOverride, Rule3AdaptiveTopic],
 )
 def test_rules_are_zero_arg_constructible(
     rule_factory: type,

@@ -118,7 +118,14 @@ async def start_session(request: Request) -> JSONResponse:
     """POST /api/sessions/start — create or resume session (contract §5.1).
 
     Request body: {subject?, topic?, resume_if_active?}
-    Response: {session_id, student_id, resumed, turns?}
+    Response: {session_id, student_id, resumed, turns?, topic?, opening_prompt?,
+    focus_aos?}
+
+    S-R3 §2.3 (binding §2.3): the response gains the three **additive** plan
+    fields — ``topic`` (the planned/persisted topic), ``opening_prompt`` (the
+    planner's first-turn prompt, not persisted), and ``focus_aos`` (the plan's
+    focus AOs, ``[]`` when the planner produced none / degraded). Existing fields
+    keep their exact names and semantics.
     """
     try:
         student_id = await _resolve_student_id(request)
@@ -138,11 +145,21 @@ async def start_session(request: Request) -> JSONResponse:
             resume_if_active=body.get("resume_if_active", False),
         )
 
-        # Project to contract response shape (§5.1)
+        # Project to contract response shape (§5.1 + §2.3 additive plan fields).
         response_data: dict[str, Any] = {
             "session_id": result.session_id,
             "student_id": result.student_id,
             "resumed": result.resumed,
+            # Additive (binding §2.3): the planned topic (persisted) plus the
+            # plan's opening_prompt (not persisted) and focus_aos. ``plan`` is
+            # None only for legacy/direct construction — degrade to nulls/[].
+            "topic": result.topic,
+            "opening_prompt": (
+                result.plan.opening_prompt if result.plan is not None else None
+            ),
+            "focus_aos": (
+                list(result.plan.focus_aos) if result.plan is not None else []
+            ),
         }
 
         # Include turns only if resumed (AC-005: resumed semantics surface unchanged)
@@ -356,7 +373,9 @@ async def end_session(request: Request) -> JSONResponse:
     Path param: session_id
     Response: {session_id, status: "ended"}
 
-    Note: completion parameter is None here (wiring in TASK-APP1-04).
+    S-R3 §2.4 / D14: the transport no longer passes ``completion`` — completion
+    assembly lives in ``SessionService.end_session``, which builds it from the
+    persisted session row for ALL transports (HTTP and MCP write identically).
     """
     try:
         student_id = await _resolve_student_id(request)
@@ -366,7 +385,6 @@ async def end_session(request: Request) -> JSONResponse:
         result = await service.end_session(
             student_id=student_id,
             session_id=session_id,
-            completion=None,  # Wiring deferred to TASK-APP1-04
         )
 
         # Project to contract response shape (§5.6)
@@ -492,6 +510,7 @@ def create_app(
     auth_config: HTTPAuthConfig,
     student_store: Any,
     reply_fn_factory: ReplyFnFactory | None = None,
+    reply_stream_fn_factory: Callable[..., Any] | None = None,
     voice_config: Any | None = None,
     voice_service: Any | None = None,
     chunk_store: Any | None = None,
@@ -508,6 +527,10 @@ def create_app(
             session_id/student_id (production — threads the typed
             SessionState into the tutor loop). Exactly one of reply_fn /
             reply_fn_factory is required.
+        reply_stream_fn_factory: Per-request streaming reply builder for the
+            WS turn path (S-R4 §2.7 — an async-iterator ``ReplyStreamFn``).
+            When omitted, a default adapts the non-streaming reply into a
+            single-chunk stream so the WS route stays functional.
         voice_config: Optional VoiceConfig (TASK-VOX-006). When enabled, voice routes
             are mounted.
         voice_service: Optional VoiceTurnService for voice routes.
@@ -525,6 +548,25 @@ def create_app(
 
         def reply_fn_factory(**_context: str) -> ReplyFn:
             return _session_agnostic_reply
+
+    # S-R4 §2.7: the WS turn path needs a streaming ReplyStreamFn factory.
+    # When production wires a real one (serve-http), use it; otherwise adapt
+    # the non-streaming reply into a single-chunk stream so the WS route
+    # (and its tests) stay functional.
+    if reply_stream_fn_factory is None:
+        _resolved_reply_fn_factory = reply_fn_factory
+
+        def reply_stream_fn_factory(**context: str) -> Any:
+            _reply_fn = _resolved_reply_fn_factory(**context)
+
+            async def _single_chunk_stream(user_message: str) -> Any:
+                reply = await _reply_fn(user_message)
+                text = getattr(reply, "response", "") or ""
+                if text:
+                    yield text
+
+            return _single_chunk_stream
+
     # Route table exactly per binding doc §2 (frozen contract). Typed as
     # list[BaseRoute] so the conditional voice WebSocketRoute append typechecks
     # alongside the Route entries (both subclass BaseRoute).
@@ -573,6 +615,7 @@ def create_app(
     app.state.service = service
     app.state.reply_fn = reply_fn
     app.state.reply_fn_factory = reply_fn_factory
+    app.state.reply_stream_fn_factory = reply_stream_fn_factory
     app.state.auth_config = auth_config
     app.state.student_store = student_store
 

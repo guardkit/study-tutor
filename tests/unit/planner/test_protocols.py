@@ -411,6 +411,9 @@ def test_planner_context_has_expected_fields() -> None:
         # rule inputs so the pipeline can route to ``_baseline_plan(False)``
         # when the student-model read failed or the learner is unseeded.
         "learner_state_available",
+        # S-R3 §6.3(c) R11 — persisted session plan facts feeding the 4-day
+        # London anti-repetition window (see anti_repetition_blocked()).
+        "recent_recommendations",
     }
 
 

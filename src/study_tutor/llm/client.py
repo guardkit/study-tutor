@@ -105,13 +105,28 @@ class LLMClient:
     def __init__(self, provider: str) -> None:
         self.provider = provider
 
-    def generate(self, prompt: str, system: str | None = None) -> str:
+    def generate(
+        self,
+        prompt: str,
+        system: str | None = None,
+        history: list[dict[str, str]] | None = None,
+    ) -> str:
+        """Generate a completion for ``prompt`` under the optional ``system``.
+
+        ``history`` (spec §2.6) is an optional messages-list of prior
+        ``{"role": ..., "content": ...}`` turns woven between the system
+        message and the current ``prompt`` — the in-session-memory window
+        the Player rehydrates from the durable store. Single-message
+        callers pass ``history=None`` and observe the exact prior payload
+        (system + one user message).
+        """
         if self.provider == "local":
             return self._generate_openai_compat(
                 prompt,
                 system,
                 model_env="LOCAL_MODEL",
                 base_url_env="LOCAL_BASE_URL",
+                history=history,
             )
         if self.provider == "local-coach":
             # Coach routes through its own llama-swap endpoint
@@ -135,6 +150,7 @@ class LLMClient:
                 system,
                 model_env="LOCAL_COACH_MODEL",
                 base_url_env="LOCAL_COACH_BASE_URL",
+                history=history,
             )
         if self.provider == "bedrock":
             raise NotImplementedError(
@@ -152,6 +168,7 @@ class LLMClient:
         *,
         model_env: str,
         base_url_env: str,
+        history: list[dict[str, str]] | None = None,
     ) -> str:
         """Call an OpenAI-compatible /v1/chat/completions endpoint.
 
@@ -178,6 +195,8 @@ class LLMClient:
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
+        if history:
+            messages.extend(history)
         messages.append({"role": "user", "content": prompt})
 
         payload: dict[str, object] = {
@@ -207,7 +226,10 @@ class LLMClient:
         return message.get("content", "")
 
     async def generate_stream(
-        self, prompt: str, system: str | None = None
+        self,
+        prompt: str,
+        system: str | None = None,
+        history: list[dict[str, str]] | None = None,
     ) -> AsyncIterator[str]:
         """Stream tokens from an OpenAI-compatible /v1/chat/completions endpoint.
 
@@ -217,6 +239,9 @@ class LLMClient:
         Args:
             prompt: User message content
             system: Optional system message
+            history: Optional prior messages-list (spec §2.6 in-session
+                memory), woven between the system message and the current
+                ``prompt``. ``None`` keeps the single-message payload.
 
         Yields:
             Token strings from delta.content fields
@@ -230,6 +255,7 @@ class LLMClient:
                 system,
                 model_env="LOCAL_MODEL",
                 base_url_env="LOCAL_BASE_URL",
+                history=history,
             ):
                 yield token
         elif self.provider == "local-coach":
@@ -238,6 +264,7 @@ class LLMClient:
                 system,
                 model_env="LOCAL_COACH_MODEL",
                 base_url_env="LOCAL_COACH_BASE_URL",
+                history=history,
             ):
                 yield token
         elif self.provider == "bedrock":
@@ -257,6 +284,7 @@ class LLMClient:
         *,
         model_env: str,
         base_url_env: str,
+        history: list[dict[str, str]] | None = None,
     ) -> AsyncIterator[str]:
         """Stream from an OpenAI-compatible endpoint using SSE format.
 
@@ -278,6 +306,8 @@ class LLMClient:
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
+        if history:
+            messages.extend(history)
         messages.append({"role": "user", "content": prompt})
 
         payload: dict[str, object] = {
