@@ -12,10 +12,15 @@ from datetime import date, datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from study_tutor.gamification import build_gamification_state
+from study_tutor.gamification import (
+    EndedSessionFact,
+    HeldAchievementFact,
+    build_gamification_state,
+)
 from study_tutor.gamification.economy import (
     MIN_SESSION_SECONDS,
     london_date,
+    session_xp,
     started_after_evening,
     started_before_morning,
 )
@@ -166,24 +171,40 @@ class FakeStudentStore:
         ]
 
     async def get_gamification_state(self, student_id: str) -> GamificationState:
-        """Read-side gamification snapshot from in-memory ended sessions.
+        """Read-side gamification snapshot from in-memory **banked** facts (spec §5).
 
-        Uses the same ``study_tutor.gamification`` builder as the Postgres store
-        so fake and real derive identical streak / level / XP.
+        Reads banked ``xp_awarded`` off ended session rows and the achievement
+        rows settlement wrote, then folds them through the same
+        ``study_tutor.gamification`` builder as the Postgres store, so fake and
+        real derive identical streak / level / XP / achievement views.
         """
         student = self._students.get(student_id)
         if not student:
             return GamificationState(exists=False)
 
         ended_sessions = [
-            (sess["started_at"], sess["last_activity"])
+            EndedSessionFact(
+                started_at=sess["started_at"],
+                last_activity=sess["last_activity"],
+                xp_awarded=int(sess.get("xp_awarded", 0) or 0),
+            )
             for sess in self._sessions.values()
             if sess["student_id"] == student_id and sess["status"] == "ended"
+        ]
+        achievements = [
+            HeldAchievementFact(
+                id=aid,
+                unlocked_at=row["unlocked_at"],
+                xp_awarded=int(row.get("xp_awarded", 0) or 0),
+            )
+            for (sid_key, aid), row in self._achievements.items()
+            if sid_key == student_id
         ]
         return build_gamification_state(
             student_name=student.get("name") or student_id,
             ended_sessions=ended_sessions,
-            today=datetime.now(timezone.utc).date(),
+            achievements=achievements,
+            today=london_date(datetime.now(timezone.utc)),
         )
 
     async def get_recent_misconceptions(
@@ -840,12 +861,22 @@ class FakeStudentStore:
         last_activity: datetime,
         subject: str = "english",
         topic: str | None = None,
+        xp_awarded: int | None = None,
     ) -> str:
-        """Helper for tests: add a completed (``ended``) session with explicit
-        timestamps, so gamification streak/XP arithmetic is deterministic.
+        """Helper for tests: add a completed (``ended``) session with a **banked**
+        ``xp_awarded`` so the banked-facts projection reads it directly (spec §5).
+
+        ``xp_awarded`` defaults to the engagement-band XP for the ``started_at →
+        last_activity`` duration (``session_xp``), matching what settlement would
+        have banked; pass an explicit value to stage a specific banked total.
 
         Returns the generated session_id.
         """
+        banked = (
+            xp_awarded
+            if xp_awarded is not None
+            else session_xp((last_activity - started_at).total_seconds())
+        )
         session_id = str(uuid4())
         self._sessions[session_id] = {
             "student_id": student_id,
@@ -857,6 +888,7 @@ class FakeStudentStore:
             "turn_count": 0,
             "aos_scaffolded": [],
             "summary": None,
+            "xp_awarded": banked,
         }
         self._turns[session_id] = []
         return session_id

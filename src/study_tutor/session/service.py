@@ -52,7 +52,7 @@ import os
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import AsyncIterator, Literal
+from typing import Any, AsyncIterator, Literal
 
 from study_tutor.knowledge.store.entities import (
     ConfidenceUpdate,
@@ -303,6 +303,12 @@ class SessionStatusView:
 class EndSessionResult:
     session_id: str
     status: Literal["ended"] = "ended"
+    #: The nullable ``gamification`` settlement block (contract Revision 2 /
+    #: API-session-cross-device.md §5; the MCP ``tutor_session_end`` addendum).
+    #: Built once here from the settlement decision so HTTP and MCP surface the
+    #: byte-identical shape (D14); ``None`` when the session ended but did not
+    #: settle (savepoint fault → swept later), so transports omit the block.
+    gamification: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -789,7 +795,21 @@ class SessionService:
                 },
             )
 
-        return EndSessionResult(session_id=result.session_id)
+        # Nullable gamification block (contract Revision 2 / MCP addendum). Built
+        # once here from the settlement decision — the SAME block HTTP and MCP
+        # surface (D14). Absent when settlement faulted (decision is None): the
+        # session ended, the sweep will settle it later.
+        from study_tutor.gamification.engine import gamification_end_block
+
+        gamification = (
+            gamification_end_block(result.decision)
+            if result.decision is not None
+            else None
+        )
+
+        return EndSessionResult(
+            session_id=result.session_id, gamification=gamification
+        )
 
 
 __all__ = [

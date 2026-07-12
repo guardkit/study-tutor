@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from typing import Any
 
 from study_tutor.gamification.catalog import (
     CATALOG,
@@ -37,6 +38,7 @@ from study_tutor.gamification.catalog import (
 )
 from study_tutor.gamification.economy import (
     level_number_for_total_xp,
+    level_title_for_total_xp,
     london_date,
     session_xp,
     started_after_evening,
@@ -182,7 +184,7 @@ def _cascade_unlocks(
     return unlocked, total_xp
 
 
-def _near_achievements(
+def compute_near_achievements(
     *,
     held: set[str],
     total_xp: int,
@@ -195,7 +197,9 @@ def _near_achievements(
     """Un-held achievements with progress, closest-first (spec §4.1).
 
     Sorted by completion fraction descending, tie-broken by catalog order, so
-    the projection can take the top N deterministically.
+    the projection can take the top N deterministically. Public so the read-side
+    projection reconstructs the *same* near-miss ordering the settlement path
+    produces (single source of truth for near-achievement ranking).
     """
     ctx = AchievementContext(
         streak_days=streak_days,
@@ -278,7 +282,7 @@ def decide(
     level_before = level_number_for_total_xp(prior.total_xp)
     level_after = level_number_for_total_xp(total_after)
 
-    near = _near_achievements(
+    near = compute_near_achievements(
         held=held,
         total_xp=total_after,
         streak_days=streak_days,
@@ -329,6 +333,30 @@ class SettlementResult:
     had_turns: bool
 
 
+def gamification_end_block(decision: GamificationDecision) -> dict[str, Any]:
+    """Project a settlement ``decision`` to the ``end_session`` gamification block.
+
+    The nullable block of the session-end response (API-session-cross-device.md §5
+    Revision 2; the MCP ``tutor_session_end`` addendum). Built once in the service
+    so HTTP and MCP surface the byte-identical shape (D14 — the adapter holds no
+    projection the HTTP path lacks). ``None`` decisions (unsettled — the savepoint
+    faulted) never reach here: the caller omits the block entirely.
+    """
+    return {
+        "xp_awarded": decision.xp_awarded,
+        "total_xp": decision.total_xp_after,
+        "level_number": decision.level_after,
+        "level_name": level_title_for_total_xp(decision.total_xp_after),
+        "level_up": decision.level_up,
+        "achievements_unlocked": [
+            {"id": award.id, "name": award.name, "xp": award.xp}
+            for award in decision.unlocked
+        ],
+        "streak_days": decision.streak_days,
+        "streak_extended": decision.streak_extended,
+    }
+
+
 def award_from_banked(achievement_id: str, xp_awarded: int) -> AchievementAward:
     """Rebuild an :class:`AchievementAward` from a banked achievement row.
 
@@ -349,5 +377,7 @@ __all__ = [
     "SessionFacts",
     "SettlementResult",
     "award_from_banked",
+    "compute_near_achievements",
     "decide",
+    "gamification_end_block",
 ]

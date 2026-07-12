@@ -355,6 +355,11 @@ class MCPAdapter:
         settlement or emit logic the HTTP path lacks (D14). It passes only its
         topic hint (the subject slug) as the weak fallback for a plan-less row.
 
+        S-E3 (MCP addendum): the output gains the **same nullable** ``gamification``
+        block its HTTP sibling gains (API-session-cross-device.md §5 Revision 2),
+        sourced verbatim from the SERVICE's settlement decision — the adapter only
+        surfaces it (D14 fence: no projection the HTTP path lacks).
+
         I-T6 zero-turn invariant preserved by the service: a session ended before
         any tutor turn still settles (at 0 XP) but emits no ``session.completed``.
         """
@@ -371,7 +376,7 @@ class MCPAdapter:
             }
 
         try:
-            await self._session_service.end_session(
+            result = await self._session_service.end_session(
                 student_id=identity,
                 session_id=session_id,
                 topic_hint=record.subject,
@@ -384,7 +389,10 @@ class MCPAdapter:
                 "error_type": "SessionForbidden",
             }
 
-        return {"session_id": session_id, "status": "ended"}
+        response: dict[str, Any] = {"session_id": session_id, "status": "ended"}
+        if result.gamification is not None:
+            response["gamification"] = result.gamification
+        return response
 
     async def _warm_up(self, provider: str) -> None:
         """Fire an empty generate() to prime the Ollama model into memory."""

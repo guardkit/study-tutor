@@ -118,13 +118,35 @@ def test_happy_projection_returns_real_gamification(
     )
     assert resp.status_code == 200
     body = resp.json()
+    # Original R05 fields — byte-identical names/semantics.
     assert body["student_name"] == "Lily May"
     assert body["streak_days"] == 1
     assert body["level_name"] == "Novice"  # 120 XP ≥ 100
     assert body["recent_xp"] == 120
-    assert body["near_achievements"] == []
     assert body["topic_confidence"] == {"macbeth": 0.7}
     assert body["data_available"] is True
+    # Enrichment (§2.2.1) — banked total, level progress, achievement views.
+    assert body["total_xp"] == 120
+    assert body["level_number"] == 2
+    assert body["xp_into_level"] == 20  # 120 − 100 (Novice floor)
+    assert body["xp_to_next_level"] == 180  # 300 (Apprentice) − 120
+    assert body["longest_streak"] == 1
+    assert body["recent_achievements"] == []  # fake stages no banked achievements
+    assert body["next_unlock"] == {"level": 3, "feature": "Topic mastery dashboard"}
+    # near_achievements grew from the R05 hardwired [] to in-progress objects.
+    assert isinstance(body["near_achievements"], list)
+    assert body["near_achievements"], "a 1/3 streak should surface near-misses"
+    near_ids = {n["id"] for n in body["near_achievements"]}
+    assert "three_day_run" in near_ids
+    for near in body["near_achievements"]:
+        assert set(near.keys()) == {
+            "id",
+            "name",
+            "description",
+            "progress",
+            "target",
+            "hint",
+        }
 
 
 def test_seeded_but_empty_is_data_available_false(client: TestClient) -> None:

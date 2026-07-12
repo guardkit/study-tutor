@@ -92,11 +92,19 @@ class StudentStore(Protocol):
         ...
 
     async def get_gamification_state(self, student_id: str) -> GamificationState:
-        """Read-side gamification snapshot (streak / level / XP) for the
-        student-model endpoint, derived from the student's ``ended`` sessions
-        (``study_tutor.gamification``). Returns ``GamificationState(exists=False)``
-        for an unknown student; never raises for the read path (graceful
-        degradation, as ``get_student_state``)."""
+        """Read-side gamification snapshot for the student-model endpoint, over
+        **banked** settlement facts (spec §5 / B3).
+
+        Sums the XP the engine already banked — ``total_xp =
+        SUM(session.xp_awarded) + SUM(achievement.xp_awarded)`` (ADR-ARCH-030 D2)
+        — and folds the student's ``ended`` sessions and ``achievement`` rows via
+        ``study_tutor.gamification`` into London-calendar streak / longest-streak /
+        level / recent-XP and the recent + near achievement views (contract
+        §2.2.1). No XP is re-derived from durations here (the S-E3 swap deleted the
+        duration-derivation), so this snapshot and the ``end_session`` block can
+        never disagree. Returns ``GamificationState(exists=False)`` for an unknown
+        student; never raises for the read path (graceful degradation, as
+        ``get_student_state``)."""
         ...
 
     # -- Learner-state writes (replace the prior write helper F1/F2/F3) -----

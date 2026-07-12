@@ -448,6 +448,50 @@ def test_end_session_happy_path(test_client, fake_service):
     assert data["status"] == "ended"
 
 
+def test_end_session_surfaces_gamification_block(test_client, fake_service):
+    """S-E3 (contract Revision 2 §5): the end response carries the nullable
+    gamification block verbatim when settlement produced it."""
+    block = {
+        "xp_awarded": 120,
+        "total_xp": 640,
+        "level_number": 5,
+        "level_name": "Learner",
+        "level_up": False,
+        "achievements_unlocked": [{"id": "first_steps", "name": "First Steps", "xp": 50}],
+        "streak_days": 6,
+        "streak_extended": True,
+    }
+    fake_service.end_session.return_value = EndSessionResult(
+        session_id="sess-123",
+        status="ended",
+        gamification=block,
+    )
+
+    response = test_client.post(
+        "/api/sessions/sess-123/end",
+        headers={"Authorization": "Bearer token-test"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["gamification"] == block
+
+
+def test_end_session_omits_block_when_unsettled(test_client, fake_service):
+    """The block is absent (not null) when settlement did not produce a decision
+    (savepoint fault → swept later) — pre-Rev-2 clients stay valid."""
+    fake_service.end_session.return_value = EndSessionResult(
+        session_id="sess-123", status="ended", gamification=None
+    )
+
+    response = test_client.post(
+        "/api/sessions/sess-123/end",
+        headers={"Authorization": "Bearer token-test"},
+    )
+
+    assert response.status_code == 200
+    assert "gamification" not in response.json()
+
+
 def test_end_session_already_ended(test_client, fake_service):
     """AC-002: Ending an already-ended session → 410."""
     fake_service.end_session.side_effect = SessionEnded("Already ended")

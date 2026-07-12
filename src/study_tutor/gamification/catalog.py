@@ -62,13 +62,19 @@ class AchievementContext:
 
 @dataclass(frozen=True)
 class AchievementDef:
-    """One catalog entry. ``kind`` + ``target`` drive the pure progress read."""
+    """One catalog entry. ``kind`` + ``target`` drive the pure progress read.
+
+    ``description`` is the static "what earns it" line (design §5 criterion),
+    surfaced in the ``near_achievements`` enrichment (contract §2.2.1); ``hint``
+    is the progress-interpolated nudge.
+    """
 
     id: str
     name: str
     xp: int
     kind: AchievementKind
     target: int
+    description: str
     hint: str
 
     def progress(self, ctx: AchievementContext) -> int:
@@ -103,69 +109,85 @@ CATALOG: tuple[AchievementDef, ...] = (
     # -- Consistency: First Steps + streak milestones (design §5.1) --------
     AchievementDef(
         "first_steps", "First Steps", 50, AchievementKind.FIRST_SESSION, 1,
+        "Complete your first study session.",
         "Finish your first study session (2+ minutes) to get started.",
     ),
     AchievementDef(
         "three_day_run", "Three Day Run", 100, AchievementKind.STREAK, 3,
+        "Study 3 days in a row.",
         "Study {progress}/{target} days in a row.",
     ),
     AchievementDef(
         "week_one", "Week One", 200, AchievementKind.STREAK, 7,
+        "Study 7 days in a row.",
         "Study {progress}/{target} days in a row.",
     ),
     AchievementDef(
         "fortnight_force", "Fortnight Force", 400, AchievementKind.STREAK, 14,
+        "Reach a 14-day study streak.",
         "Keep a {target}-day streak going — you're on {progress}.",
     ),
     AchievementDef(
         "thirty_days", "Thirty Days", 800, AchievementKind.STREAK, 30,
+        "Reach a 30-day study streak.",
         "Keep a {target}-day streak going — you're on {progress}.",
     ),
     AchievementDef(
         "sixty_strong", "Sixty Strong", 1200, AchievementKind.STREAK, 60,
+        "Reach a 60-day study streak.",
         "Keep a {target}-day streak going — you're on {progress}.",
     ),
     AchievementDef(
         "century", "Century", 2000, AchievementKind.STREAK, 100,
+        "Reach a 100-day study streak.",
         "Keep a {target}-day streak going — you're on {progress}.",
     ),
     # -- Consistency: start-window pair (design §5.1, R3) ------------------
     AchievementDef(
         "morning_star", "Morning Star", 150, AchievementKind.MORNING, 5,
+        "5 sessions started before 09:00.",
         "Start {progress}/{target} sessions before 09:00.",
     ),
     AchievementDef(
         "evening_scholar", "Evening Scholar", 150, AchievementKind.EVENING, 5,
+        "5 sessions started after 19:00.",
         "Start {progress}/{target} sessions after 19:00.",
     ),
     # -- Milestone: total-XP thresholds (design §5.6) ---------------------
     AchievementDef(
         "first_century", "First Century", 50, AchievementKind.TOTAL_XP, 100,
+        "Earn 100 XP in total.",
         "Earn {progress}/{target} XP.",
     ),
     AchievementDef(
         "kilo", "Kilo", 100, AchievementKind.TOTAL_XP, 1000,
+        "Earn 1,000 XP in total.",
         "Earn {progress}/{target} XP.",
     ),
     AchievementDef(
         "five_kilo", "Five Kilo", 250, AchievementKind.TOTAL_XP, 5000,
+        "Earn 5,000 XP in total.",
         "Earn {progress}/{target} XP.",
     ),
     AchievementDef(
         "ten_kilo", "Ten Kilo", 500, AchievementKind.TOTAL_XP, 10000,
+        "Earn 10,000 XP in total.",
         "Earn {progress}/{target} XP.",
     ),
     # -- Milestone: level thresholds (design §5.6) ------------------------
     AchievementDef(
         "scholar", "Scholar", 300, AchievementKind.LEVEL, 6,
+        "Reach Level 6.",
         "Reach level {target} (you're level {progress}).",
     ),
     AchievementDef(
         "master", "Master", 700, AchievementKind.LEVEL, 10,
+        "Reach Level 10.",
         "Reach level {target} (you're level {progress}).",
     ),
     AchievementDef(
         "grandmaster", "Grandmaster", 2000, AchievementKind.LEVEL, 15,
+        "Reach Level 15.",
         "Reach level {target} (you're level {progress}).",
     ),
 )

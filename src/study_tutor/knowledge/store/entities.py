@@ -107,15 +107,49 @@ class StudentState(_Record):
     most_recent_session_id: str | None = None
 
 
+class RecentAchievementView(_Record):
+    """One recently-unlocked achievement for the student-model enrichment
+    (contract §2.2.1 ``recent_achievements``)."""
+
+    id: str
+    name: str
+    unlocked_at: datetime
+    xp_awarded: int = Field(ge=0)
+
+
+class NearAchievementView(_Record):
+    """A not-yet-unlocked achievement and how close the learner is, for the
+    student-model enrichment (contract §2.2.1 ``near_achievements``)."""
+
+    id: str
+    name: str
+    description: str
+    progress: int = Field(ge=0)
+    target: int = Field(ge=0)
+    hint: str
+
+
+class NextUnlockView(_Record):
+    """The next level-gated feature (contract §2.2.1 ``next_unlock``; design §3.2)."""
+
+    level: int = Field(ge=1)
+    feature: str
+
+
 class GamificationState(_Record):
     """Read-side gamification snapshot for the student-model endpoint.
 
-    A *minimal real* projection derived from the durable ``session`` rows at
-    read time (``study_tutor.gamification``), not the Phase-2 state engine
-    (``FEAT-PO-007``; gamification design §12). ``exists=False`` is the
-    "no such student" sentinel; for a seeded student the fields carry real
-    streak / level / XP, and ``total_xp == 0`` with no topic confidence means a
-    seeded-but-empty record (``data_available: false`` on the wire).
+    A projection over the durable ``session`` + ``achievement`` rows at read time
+    (``study_tutor.gamification``): banked XP (``SUM(session.xp_awarded) +
+    SUM(achievement.xp_awarded)``, ADR-ARCH-030 D2), London-day streaks, and the
+    achievement catalog's recent/near state. ``exists=False`` is the "no such
+    student" sentinel; for a seeded student the fields carry real streak / level /
+    XP, and ``total_xp == 0`` with no topic confidence means a seeded-but-empty
+    record (``data_available: false`` on the wire).
+
+    The enrichment fields (contract §2.2.1) are additive over the original R05
+    snapshot: ``longest_streak``, ``level_number`` + within-level progress, and
+    the recent/near achievement views the endpoint surfaces.
     """
 
     exists: bool
@@ -124,6 +158,14 @@ class GamificationState(_Record):
     level_name: str | None = None
     total_xp: int = Field(default=0, ge=0)
     recent_xp: int = Field(default=0, ge=0)
+    # -- Enrichment (contract §2.2.1) --------------------------------------
+    longest_streak: int = Field(default=0, ge=0)
+    level_number: int = Field(default=1, ge=1)
+    xp_into_level: int = Field(default=0, ge=0)
+    xp_to_next_level: int = Field(default=0, ge=0)
+    recent_achievements: list[RecentAchievementView] = Field(default_factory=list)
+    near_achievements: list[NearAchievementView] = Field(default_factory=list)
+    next_unlock: NextUnlockView | None = None
 
 
 class TopicRecommendation(_Record):
@@ -206,8 +248,11 @@ __all__ = [
     "ConfidenceUpdate",
     "GamificationState",
     "MisconceptionSnapshot",
+    "NearAchievementView",
+    "NextUnlockView",
     "Quest",
     "QuestStatus",
+    "RecentAchievementView",
     "RecommendationReason",
     "SessionRecord",
     "SessionStatus",

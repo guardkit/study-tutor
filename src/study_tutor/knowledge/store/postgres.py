@@ -46,7 +46,11 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
-from study_tutor.gamification import build_gamification_state
+from study_tutor.gamification import (
+    EndedSessionFact,
+    HeldAchievementFact,
+    build_gamification_state,
+)
 from study_tutor.gamification.economy import (
     MIN_SESSION_SECONDS,
     london_date,
@@ -717,11 +721,15 @@ class PostgresStudentStore:
             )
 
     async def get_gamification_state(self, student_id: str) -> GamificationState:
-        """Read-side gamification snapshot (streak / level / XP) from Postgres.
+        """Read-side gamification snapshot from **banked** settlement facts (spec §5).
 
-        Derives real streak / level / recent-XP from the student's ``ended``
-        sessions via ``study_tutor.gamification`` (a *minimal real* slice of the
-        gamification design; near-achievements/quests are Phase-2 FEAT-PO-007).
+        Reads the XP the Phase-E engine already banked — ``total_xp =
+        SUM(session.xp_awarded) + SUM(achievement.xp_awarded)`` (ADR-ARCH-030 D2)
+        — plus the student's ``achievement`` rows, and folds them via
+        ``study_tutor.gamification`` into streak / longest-streak / level / recent
+        XP and the recent/near achievement views (contract §2.2.1). No XP is
+        re-derived from durations here; the read only sums what settlement wrote,
+        so this snapshot and the ``end_session`` block can never disagree.
 
         Returns ``GamificationState(exists=False)`` for an unknown student.
         DB/connection errors propagate so callers degrade, as ``get_student_state``.
@@ -743,25 +751,47 @@ class PostgresStudentStore:
             if student_row is None:
                 return GamificationState(exists=False)
 
-            # Completed sessions only — active/in-flight sessions do not yet
-            # bank XP or extend a streak (gamification §4.1).
+            # Completed sessions only — active/in-flight sessions have not settled
+            # (no banked XP, no streak credit) (gamification §4.1).
             session_result = await conn.execute(
                 sql_text(
-                    "SELECT started_at, last_activity "
+                    "SELECT started_at, last_activity, xp_awarded "
                     "FROM session "
                     "WHERE student_id = :sid AND status = 'ended'"
                 ),
                 {"sid": student_id},
             )
             ended_sessions = [
-                (row[0], row[1]) for row in session_result.fetchall()
+                EndedSessionFact(
+                    started_at=row[0],
+                    last_activity=row[1],
+                    xp_awarded=int(row[2] or 0),
+                )
+                for row in session_result.fetchall()
+            ]
+
+            achievement_result = await conn.execute(
+                sql_text(
+                    "SELECT achievement_id, unlocked_at, xp_awarded "
+                    "FROM achievement WHERE student_id = :sid"
+                ),
+                {"sid": student_id},
+            )
+            achievements = [
+                HeldAchievementFact(
+                    id=row[0],
+                    unlocked_at=row[1],
+                    xp_awarded=int(row[2] or 0),
+                )
+                for row in achievement_result.fetchall()
             ]
 
         student_name = student_row[0] or student_id
         return build_gamification_state(
             student_name=student_name,
             ended_sessions=ended_sessions,
-            today=datetime.now(timezone.utc).date(),
+            achievements=achievements,
+            today=london_date(datetime.now(timezone.utc)),
         )
 
     async def get_topic_confidences(self, student_id: str) -> list[TopicConfidence]:

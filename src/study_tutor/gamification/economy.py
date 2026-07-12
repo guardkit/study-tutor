@@ -37,6 +37,7 @@ from study_tutor.gamification.constants import (
 __all__ = [
     "CONFIDENCE_BASELINE_PERCENTAGE",
     "LEVEL_THRESHOLDS",
+    "LEVEL_UNLOCKS",
     "LONDON_TZ",
     "LONG_SESSION_XP",
     "MAX_LEVEL",
@@ -50,9 +51,11 @@ __all__ = [
     "MORNING_STAR_BEFORE_HOUR",
     "EVENING_SCHOLAR_AFTER_HOUR",
     "level_number_for_total_xp",
+    "level_progress",
     "level_title_for_total_xp",
     "london_date",
     "london_datetime",
+    "next_unlock_for_level",
     "session_xp",
     "started_before_morning",
     "started_after_evening",
@@ -140,6 +143,58 @@ def level_title_for_total_xp(total_xp: int) -> str:
     Returns the highest tier whose floor is met; ``Beginner`` at 0 XP.
     """
     return LEVEL_THRESHOLDS[level_number_for_total_xp(total_xp) - 1][1]
+
+
+def level_progress(total_xp: int) -> tuple[int, int, int]:
+    """``(level_number, xp_into_level, xp_to_next_level)`` for a total (design §3.1).
+
+    ``xp_into_level`` is the XP accumulated within the current tier (``total_xp``
+    minus the tier floor); ``xp_to_next_level`` is the XP still owed to reach the
+    next tier's floor, and is ``0`` at the terminal Level 15 (no next threshold).
+    Drives the ``GET /api/student-model`` enrichment (contract §2.2.1).
+    """
+    level = level_number_for_total_xp(total_xp)
+    floor = LEVEL_THRESHOLDS[level - 1][0]
+    xp_into = total_xp - floor
+    if level >= MAX_LEVEL:
+        return level, xp_into, 0
+    return level, xp_into, LEVEL_THRESHOLDS[level][0] - total_xp
+
+
+# -- Level unlock gates (design §3.2) ---------------------------------------
+
+#: The feature each level unlocks (design §3.2 table, verbatim key phrase). Level
+#: 1 is base tutoring (no "unlock"); levels 2–15 gate a named feature. Drives the
+#: ``next_unlock`` field of the student-model enrichment (contract §2.2.1).
+LEVEL_UNLOCKS: dict[int, str] = {
+    2: "Daily challenges panel",
+    3: "Topic mastery dashboard",
+    4: "Quest system",
+    5: "Per-AO progress breakdown",
+    6: "Exam-style practice questions",
+    7: "Comparative-essay scaffold mode",
+    8: "Boss Battle mode",
+    9: "Two concurrent quests",
+    10: "Teaching Mode",
+    11: "Cross-text comparison mode",
+    12: "Custom practice builder",
+    13: "Boss Battle Hard",
+    14: "Companion voice",
+    15: "Grandmaster status",
+}
+
+
+def next_unlock_for_level(level_number: int) -> tuple[int, str] | None:
+    """The next level-gated feature above ``level_number`` (design §3.2).
+
+    Returns ``(level, feature)`` for the next tier, or ``None`` at Level 15
+    (terminal — nothing further to unlock).
+    """
+    next_level = level_number + 1
+    feature = LEVEL_UNLOCKS.get(next_level)
+    if feature is None:
+        return None
+    return next_level, feature
 
 
 # -- Streak milestones (design §4.2 / §13.1) --------------------------------

@@ -98,7 +98,11 @@ async def test_session_end_flips_status(adapter: MCPAdapter) -> None:
     await _drain_warmups(adapter)
 
     end_result = await adapter.tutor_session_end(session_id=session_id)
-    assert end_result == {"session_id": session_id, "status": "ended"}
+    assert end_result["session_id"] == session_id
+    assert end_result["status"] == "ended"
+    # A zero-turn session still settles (at 0 XP) → the nullable block is present
+    # (S-E3 / MCP addendum), sourced from the service's settlement decision (D14).
+    assert end_result["gamification"]["xp_awarded"] == 0
 
     status = await adapter.tutor_session_status(session_id=session_id)
     assert status["status"] == "ended"
@@ -188,8 +192,12 @@ async def test_session_end_delegates_to_session_service(
 
     result = await adapter.tutor_session_end(session_id=session_id)
 
-    # Verify return shape.
-    assert result == {"session_id": session_id, "status": "ended"}
+    # Verify return shape — the nullable gamification block is sourced from the
+    # SERVICE's settlement decision (D14 fence; MCP addendum), not adapter logic.
+    assert result["session_id"] == session_id
+    assert result["status"] == "ended"
+    assert "gamification" in result
+    assert result["gamification"]["xp_awarded"] == 0  # near-instant turns → 0 XP
 
     # Verify session.completed was emitted post-commit with the conforming shape.
     assert len(captured_events) == 1
@@ -272,7 +280,9 @@ async def test_session_end_missing_plan_uses_fallback_topic(
     # End the session - should succeed even though plan cache is cold
     result = await adapter.tutor_session_end(session_id=session_id)
 
-    assert result == {"session_id": session_id, "status": "ended"}
+    assert result["session_id"] == session_id
+    assert result["status"] == "ended"
+    assert result["gamification"]["xp_awarded"] == 0
 
 
 # ---------------------------------------------------------------------------

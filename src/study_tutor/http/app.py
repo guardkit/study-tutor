@@ -376,6 +376,10 @@ async def end_session(request: Request) -> JSONResponse:
     S-R3 §2.4 / D14: the transport no longer passes ``completion`` — completion
     assembly lives in ``SessionService.end_session``, which builds it from the
     persisted session row for ALL transports (HTTP and MCP write identically).
+
+    S-E3 (contract Revision 2 §5): the response gains a **nullable** ``gamification``
+    settlement block, present once the engine settles the session and absent while
+    unsettled. It is built in the service (D14); the handler only surfaces it.
     """
     try:
         student_id = await _resolve_student_id(request)
@@ -387,11 +391,14 @@ async def end_session(request: Request) -> JSONResponse:
             session_id=session_id,
         )
 
-        # Project to contract response shape (§5.6)
-        response_data = {
+        # Project to contract response shape (§5.6 + Revision 2 §5). The
+        # gamification block is nullable: included only when settlement produced it.
+        response_data: dict[str, object] = {
             "session_id": result.session_id,
             "status": result.status,
         }
+        if result.gamification is not None:
+            response_data["gamification"] = result.gamification
 
         return JSONResponse(response_data, status_code=200)
 
@@ -409,11 +416,12 @@ async def student_model(request: Request) -> JSONResponse:
     ``student_name`` (optional hint, ignored — identity is derived server-side
     from the token, never client-asserted).
 
-    Response mirrors the old ``GraphitiClient.search_student_progress`` shape:
-    ``{student_name, streak_days, level_name, recent_xp, near_achievements,
-    topic_confidence, data_available}``. streak/level/recent_xp are a *minimal
-    real* projection (``study_tutor.gamification``); ``near_achievements`` is
-    ``[]`` until the Phase-2 engine (FEAT-PO-007) ships.
+    Response is the original R05 shape (``{student_name, streak_days, level_name,
+    recent_xp, near_achievements, topic_confidence, data_available}``) plus the
+    §2.2.1 enrichment over banked settlement facts: ``total_xp``, ``level_number``
+    + within-level progress, ``longest_streak``, ``recent_achievements`` (last 5),
+    ``near_achievements`` (now top-3 objects), and ``next_unlock``. The projection
+    (``study_tutor.gamification``) sums banked XP; nothing is re-derived here.
 
     Errors: unseeded/invalid token → 401 (never 500, ASSUM-001); a
     seeded-but-empty record → 200 with ``data_available: false`` (never 500 for
