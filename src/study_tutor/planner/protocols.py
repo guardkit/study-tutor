@@ -31,15 +31,20 @@ from __future__ import annotations
 
 import random
 from collections.abc import Mapping
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Literal, Protocol, runtime_checkable
 
+from study_tutor.gamification.constants import london_date
 from study_tutor.knowledge.student_model import (
     Misconception,
     TopicConfidence,
 )
 from study_tutor.planner.types import AssessmentObjectiveCode
+
+#: §6.3 R11 anti-repetition window: a topic recommended on each of the previous
+#: N consecutive **London** days is not recommended again until the run breaks.
+ANTI_REPETITION_DAYS: int = 4
 
 # ---------------------------------------------------------------------------
 # Type aliases
@@ -179,6 +184,14 @@ class PlannerContext:
     #: (read failed or learner unseeded). Defaults to True so existing
     #: callers that never set the flag preserve the prior behaviour.
     learner_state_available: bool = True
+    #: S-R3 §6.3(c) R11 — ``(topic, recommended_at)`` for the learner's
+    #: recent persisted session plan facts (the ``session.topic`` +
+    #: ``session`` timestamp of recent ended sessions). Feeds the 4-day
+    #: London anti-repetition window via :meth:`anti_repetition_blocked`.
+    #: Defaults to empty so pre-S-R3 callers keep their behaviour.
+    recent_recommendations: tuple[tuple[str, datetime], ...] = field(
+        default_factory=tuple
+    )
 
     @classmethod
     def create(
@@ -192,6 +205,7 @@ class PlannerContext:
         clock: Callable[[], datetime] | None = None,
         rng: random.Random | None = None,
         learner_state_available: bool = True,
+        recent_recommendations: tuple[tuple[str, datetime], ...] = (),
     ) -> PlannerContext:
         """Construct a ``PlannerContext`` with sensible production defaults.
 
@@ -228,6 +242,38 @@ class PlannerContext:
             clock=resolved_clock,
             rng=resolved_rng,
             learner_state_available=learner_state_available,
+            recent_recommendations=tuple(recent_recommendations),
+        )
+
+    def anti_repetition_blocked(self) -> frozenset[str]:
+        """Topics blocked by the §6.3(c) 4-day London anti-repetition rule.
+
+        A topic is blocked when it was the recommended topic on **each** of the
+        previous :data:`ANTI_REPETITION_DAYS` consecutive London days (derived
+        from :attr:`recent_recommendations`, the persisted session plan facts).
+        Today itself is excluded — the rule guards against recommending the same
+        topic a 5th consecutive day, not against a topic already picked earlier
+        today. All arithmetic is Europe/London (D6).
+        """
+        if not self.recent_recommendations:
+            return frozenset()
+
+        today = london_date(self.clock())
+        required_days = {
+            today - timedelta(days=offset)
+            for offset in range(1, ANTI_REPETITION_DAYS + 1)
+        }
+
+        days_by_topic: dict[str, set] = {}
+        for topic, recommended_at in self.recent_recommendations:
+            days_by_topic.setdefault(topic, set()).add(
+                london_date(recommended_at)
+            )
+
+        return frozenset(
+            topic
+            for topic, days in days_by_topic.items()
+            if required_days <= days
         )
 
     def topics_in_band(self, band: PlannerBand) -> list[TopicConfidence]:
@@ -277,6 +323,7 @@ class Rule(Protocol):
 
 
 __all__ = [
+    "ANTI_REPETITION_DAYS",
     "AOCode",
     "Candidate",
     "PlannerBand",

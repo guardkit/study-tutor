@@ -80,6 +80,7 @@ def _build_context(
     topic_override: str | None = None,
     rng: random.Random | None = None,
     clock_at: datetime | None = None,
+    recent_recommendations: tuple[tuple[str, datetime], ...] = (),
 ) -> PlannerContext:
     return PlannerContext.create(
         student_id="student-1",
@@ -89,6 +90,7 @@ def _build_context(
         topic_override=topic_override,
         clock=_frozen_clock(clock_at or _FROZEN_NOW),
         rng=rng or random.Random(42),
+        recent_recommendations=recent_recommendations,
     )
 
 
@@ -197,6 +199,77 @@ class TestRule4Selection:
         assert plan.fallback_used is None
         assert plan.topic_name == "topic-A"
         assert len(plan.related_misconceptions) == 1
+
+
+# ---------------------------------------------------------------------------
+# §6.3 priority order — struggling-first (rule-3a) precedes rule-4
+# ---------------------------------------------------------------------------
+
+
+class TestSixThreePriorityOrder:
+    """design.md §6.3 (R11): the adaptive rule (rule-3) — including its
+    struggling-first sub-rule — is dispatched *before* rule-4, so a Struggling
+    topic wins even when another topic carries an unrevisited misconception."""
+
+    def test_struggling_topic_beats_unrevisited_misconception(self) -> None:
+        ctx = _build_context(
+            topic_confidences=[
+                # Struggling — rule-3(a) recommends it regardless of recency.
+                _topic(
+                    "struggle",
+                    percentage=25,
+                    band="struggling",
+                    last_revised_at=_FROZEN_NOW,
+                ),
+                # Developing topic carrying an unrevisited misconception —
+                # would win rule-4, but rule-3 fires first.
+                _topic(
+                    "develop",
+                    percentage=45,
+                    band="developing",
+                    last_revised_at=_FROZEN_NOW - timedelta(hours=1),
+                ),
+            ],
+            misconceptions=[_misc("develop")],
+        )
+
+        plan = run_rule_pipeline(ctx)
+
+        assert plan.rule_selected == "rule-3"
+        assert plan.topic_name == "struggle"
+
+    def test_anti_repetition_blocked_topic_rotates_to_rule_6(self) -> None:
+        """§6.3(c): a developing topic recommended the previous 4 London days is
+        excluded from the random rule-6 pool, so exploration rotates away."""
+        blocked = tuple(
+            ("alpha", _FROZEN_NOW - timedelta(days=offset))
+            for offset in range(1, 5)
+        )
+        ctx = _build_context(
+            topic_confidences=[
+                # Both recent (within 3 days) so rule-3(b) can't fire; rule-6
+                # random pool would otherwise include both.
+                _topic(
+                    "alpha",
+                    percentage=50,
+                    band="developing",
+                    last_revised_at=_FROZEN_NOW - timedelta(hours=1),
+                ),
+                _topic(
+                    "beta",
+                    percentage=50,
+                    band="developing",
+                    last_revised_at=_FROZEN_NOW - timedelta(hours=1),
+                ),
+            ],
+            recent_recommendations=blocked,
+        )
+
+        plan = run_rule_pipeline(ctx)
+
+        assert plan.rule_selected == "rule-6"
+        # "alpha" is blocked by the 4-day rotation, so only "beta" remains.
+        assert plan.topic_name == "beta"
 
 
 # ---------------------------------------------------------------------------

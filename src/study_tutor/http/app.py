@@ -118,7 +118,14 @@ async def start_session(request: Request) -> JSONResponse:
     """POST /api/sessions/start — create or resume session (contract §5.1).
 
     Request body: {subject?, topic?, resume_if_active?}
-    Response: {session_id, student_id, resumed, turns?}
+    Response: {session_id, student_id, resumed, turns?, topic?, opening_prompt?,
+    focus_aos?}
+
+    S-R3 §2.3 (binding §2.3): the response gains the three **additive** plan
+    fields — ``topic`` (the planned/persisted topic), ``opening_prompt`` (the
+    planner's first-turn prompt, not persisted), and ``focus_aos`` (the plan's
+    focus AOs, ``[]`` when the planner produced none / degraded). Existing fields
+    keep their exact names and semantics.
     """
     try:
         student_id = await _resolve_student_id(request)
@@ -138,11 +145,21 @@ async def start_session(request: Request) -> JSONResponse:
             resume_if_active=body.get("resume_if_active", False),
         )
 
-        # Project to contract response shape (§5.1)
+        # Project to contract response shape (§5.1 + §2.3 additive plan fields).
         response_data: dict[str, Any] = {
             "session_id": result.session_id,
             "student_id": result.student_id,
             "resumed": result.resumed,
+            # Additive (binding §2.3): the planned topic (persisted) plus the
+            # plan's opening_prompt (not persisted) and focus_aos. ``plan`` is
+            # None only for legacy/direct construction — degrade to nulls/[].
+            "topic": result.topic,
+            "opening_prompt": (
+                result.plan.opening_prompt if result.plan is not None else None
+            ),
+            "focus_aos": (
+                list(result.plan.focus_aos) if result.plan is not None else []
+            ),
         }
 
         # Include turns only if resumed (AC-005: resumed semantics surface unchanged)
@@ -356,7 +373,9 @@ async def end_session(request: Request) -> JSONResponse:
     Path param: session_id
     Response: {session_id, status: "ended"}
 
-    Note: completion parameter is None here (wiring in TASK-APP1-04).
+    S-R3 §2.4 / D14: the transport no longer passes ``completion`` — completion
+    assembly lives in ``SessionService.end_session``, which builds it from the
+    persisted session row for ALL transports (HTTP and MCP write identically).
     """
     try:
         student_id = await _resolve_student_id(request)
@@ -366,7 +385,6 @@ async def end_session(request: Request) -> JSONResponse:
         result = await service.end_session(
             student_id=student_id,
             session_id=session_id,
-            completion=None,  # Wiring deferred to TASK-APP1-04
         )
 
         # Project to contract response shape (§5.6)

@@ -341,12 +341,16 @@ class FakeStudentStore:
         student_id: str,
         subject: str,
         topic: str | None = None,
+        aos_scaffolded: list[str] | None = None,
         resume_if_active: bool = False,
     ) -> tuple[SessionRecord, bool]:
         """Create a session, or resume the active one.
 
         Returns (record, created) - created=True for new, False for resumed.
+        S-R3 §2.1: ``aos_scaffolded`` persists the plan's ``focus_aos`` at
+        start-time onto the created row (``None`` → ``[]``); resumes ignore it.
         """
+        planned_aos = list(aos_scaffolded) if aos_scaffolded else []
         # Check for existing active session if resume requested
         if resume_if_active:
             for sid, sess in self._sessions.items():
@@ -382,7 +386,7 @@ class FakeStudentStore:
             "started_at": now,
             "last_activity": now,
             "turn_count": 0,
-            "aos_scaffolded": [],
+            "aos_scaffolded": list(planned_aos),
             "summary": None,
         }
         self._turns[session_id] = []
@@ -397,7 +401,7 @@ class FakeStudentStore:
                 started_at=now,
                 last_activity=now,
                 turn_count=0,
-                aos_scaffolded=[],
+                aos_scaffolded=planned_aos,
                 summary=None,
             ),
             True,  # Created

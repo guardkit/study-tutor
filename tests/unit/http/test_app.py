@@ -141,6 +141,50 @@ def test_start_session_resume_if_active(test_client, fake_service):
     assert len(data["turns"]) == 2
 
 
+def test_start_session_surfaces_additive_plan_fields(test_client, fake_service):
+    """S-R3 §2.3 (binding §2.3): the start response carries the additive
+    ``topic`` / ``opening_prompt`` / ``focus_aos`` plan fields, sourced from the
+    service's plan. Existing fields keep their exact names/semantics."""
+    from study_tutor.planner.types import SessionPlan
+
+    plan = SessionPlan(
+        topic_name="Macbeth",
+        focus_aos=["AO1", "AO2"],
+        opening_prompt="Let's explore ambition in Macbeth.",
+        related_misconceptions=[],
+        rationale="rule-1: learner override",
+        fallback_used=None,
+        rule_selected="rule-1",
+        ao_mapping_found=True,
+        learner_state_available=True,
+    )
+    fake_service.start_session.return_value = StartSessionResult(
+        session_id="sess-123",
+        student_id="test-student",
+        subject="English",
+        topic="Macbeth",
+        resumed=False,
+        turns=None,
+        plan=plan,
+    )
+
+    response = test_client.post(
+        "/api/sessions/start",
+        json={"subject": "English", "topic": "Macbeth"},
+        headers={"Authorization": "Bearer token-test"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    # Existing fields unchanged.
+    assert data["session_id"] == "sess-123"
+    assert data["resumed"] is False
+    # Additive plan fields.
+    assert data["topic"] == "Macbeth"
+    assert data["opening_prompt"] == "Let's explore ambition in Macbeth."
+    assert data["focus_aos"] == ["AO1", "AO2"]
+
+
 def test_start_session_missing_auth(test_client):
     """AC-002: Missing Authorization header → 401 Unauthenticated."""
     response = test_client.post(

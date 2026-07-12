@@ -216,12 +216,25 @@ class TestBuildSessionCompletion:
         assert completion.confidence_updates[0].percentage == 100  # Clamped to 100
 
     @pytest.mark.asyncio
-    async def test_skips_topic_with_no_current_confidence(self) -> None:
-        """If topic has no confidence row, skip it (no baseline to move)."""
+    async def test_first_seen_topic_bootstraps_at_baseline_50(self) -> None:
+        """S-R3 §2.3 / R12: a first-seen topic (no row yet) is created at the
+        mid-Developing baseline (50) BEFORE the session delta is applied.
+
+        This replaces the old skip-unknown-topic behaviour: the guard is
+        dropped so ``topic_confidence`` rows are actually *created*, not only
+        updated. With 5 turns + no misconceptions the policy delta is +1, so a
+        brand-new topic resolves to 51.
+        """
+        from study_tutor.gamification.constants import (
+            CONFIDENCE_BASELINE_PERCENTAGE,
+        )
+
+        assert CONFIDENCE_BASELINE_PERCENTAGE == 50
+
         store = FakeStudentStore()
         store.add_student(student_id="S1", year_group=10)
 
-        # No confidence row for "geometry" → should skip
+        # No confidence row for "geometry" → bootstrap at 50, then +1 delta.
         completion = await build_session_completion(
             store=store,
             student_id="S1",
@@ -232,7 +245,31 @@ class TestBuildSessionCompletion:
         )
 
         assert completion.topic == "geometry"
-        assert len(completion.confidence_updates) == 0  # No update for unknown topic
+        assert len(completion.confidence_updates) == 1
+        assert completion.confidence_updates[0].topic_name == "geometry"
+        assert completion.confidence_updates[0].percentage == 51  # 50 + 1
+
+    @pytest.mark.asyncio
+    async def test_first_seen_topic_with_misconceptions_bootstraps_below_50(
+        self,
+    ) -> None:
+        """Bootstrap-then-delta: a first-seen topic with 2 misconceptions
+        resolves to 50 − 6 = 44 (the delta is applied to the baseline, not
+        skipped)."""
+        store = FakeStudentStore()
+        store.add_student(student_id="S1", year_group=10)
+
+        completion = await build_session_completion(
+            store=store,
+            student_id="S1",
+            topic="geometry",
+            student_turn_count=5,
+            aos_scaffolded=[],
+            misconceptions_per_topic={"geometry": 2},  # -6 delta
+        )
+
+        assert len(completion.confidence_updates) == 1
+        assert completion.confidence_updates[0].percentage == 44  # 50 - 6
 
     @pytest.mark.asyncio
     async def test_zero_delta_omits_update(self) -> None:

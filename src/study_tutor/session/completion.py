@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
+from study_tutor.gamification.constants import CONFIDENCE_BASELINE_PERCENTAGE
 from study_tutor.knowledge.store.entities import ConfidenceUpdate
 from study_tutor.knowledge.store.port import StudentStore
 from study_tutor.session.service import SessionCompletion
@@ -135,27 +136,34 @@ async def build_session_completion(
         (tc for tc in topic_confidences if tc.topic_ref == topic), None
     )
 
-    confidence_updates: list[ConfidenceUpdate] = []
+    # S-R3 §2.3 / R12 confidence bootstrap: a first-seen topic (no row yet) is
+    # created at the mid-Developing baseline (``CONFIDENCE_BASELINE_PERCENTAGE``)
+    # BEFORE the session delta is applied — the guard that used to skip
+    # unknown-topic writes is dropped so ``topic_confidence`` rows are actually
+    # created, not only updated (design §13.1 R12). The store write is an upsert
+    # that derives the band + ``last_revised_at``.
+    base_percentage = (
+        current_confidence.percentage
+        if current_confidence is not None
+        else CONFIDENCE_BASELINE_PERCENTAGE
+    )
 
-    if current_confidence is not None:
-        # Apply the policy delta
-        session_summary = {
-            "student_turn_count": student_turn_count,
-            "misconceptions_per_topic": misconceptions_per_topic,
-        }
-        delta = policy.compute(
-            student_id=student_id,
-            topic_ref=topic,
-            session_summary=session_summary,
-        )
+    session_summary = {
+        "student_turn_count": student_turn_count,
+        "misconceptions_per_topic": misconceptions_per_topic,
+    }
+    delta = policy.compute(
+        student_id=student_id,
+        topic_ref=topic,
+        session_summary=session_summary,
+    )
 
-        # Calculate new confidence and clamp to [0, 100]
-        new_percentage = max(0, min(100, current_confidence.percentage + delta))
+    # Calculate new confidence and clamp to [0, 100]
+    new_percentage = max(0, min(100, base_percentage + delta))
 
-        # Emit update (even if unchanged — the AC allows both choices)
-        confidence_updates.append(
-            ConfidenceUpdate(topic_name=topic, percentage=new_percentage)
-        )
+    confidence_updates: list[ConfidenceUpdate] = [
+        ConfidenceUpdate(topic_name=topic, percentage=new_percentage)
+    ]
 
     # Return the completion with placeholders for xp and misconceptions
     return SessionCompletion(

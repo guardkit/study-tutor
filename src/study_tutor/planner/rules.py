@@ -46,9 +46,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from typing import Callable
 
+from study_tutor.gamification.constants import london_date
 from study_tutor.knowledge.student_model import Misconception, TopicConfidence
 from study_tutor.planner.protocols import (
     Candidate,
@@ -60,12 +61,12 @@ from study_tutor.planner.protocols import (
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Cooldown window separating "still revising" from "stale and overdue".
-#: Inclusive lower bound — a topic last revised exactly 48h ago is eligible.
-COOLDOWN_HOURS: int = 48
-
-#: Pre-computed timedelta form of the cooldown for boundary comparisons.
-_COOLDOWN_DELTA: timedelta = timedelta(hours=COOLDOWN_HOURS)
+#: §6.3(b) R11 spacing — a topic studied within the last ``SPACING_DAYS`` London
+#: days is too recent to recommend again. Replaces the retired 48h ASSUM-001
+#: cooldown (design §13.1 R11). A topic last studied exactly 3 London days ago is
+#: still "within the last 3 days" (excluded); the gap must **exceed** 3 London
+#: days to be eligible — the day-3-vs-day-4 boundary.
+SPACING_DAYS: int = 3
 
 
 # ---------------------------------------------------------------------------
@@ -109,77 +110,103 @@ class Rule1LearnerOverride:
 
 
 # ---------------------------------------------------------------------------
-# Rule 3 — weakest stale topic
+# Rule 3 — adaptive recommendation (design.md §6.3 verbatim, R11)
 # ---------------------------------------------------------------------------
 
 
-class Rule3WeakestStaleTopic:
-    """Pick the lowest-confidence topic that is outside the 48h cooldown.
+def _tie_break_key(tc: TopicConfidence) -> tuple[int, datetime, str]:
+    """The §6.3 weakest-first ordering, shared by both sub-rules.
 
-    A topic is *stale* when ``clock() - last_revised_at >= 48h`` — the
-    boundary is inclusive at exactly 48 hours per ASSUM-001 (signed off).
-    Among stale topics the rule ranks by:
+    ``(percentage ASC, last_revised_at ASC, topic_ref ASC)`` — weakest
+    confidence first, then oldest last-studied, then stable alphabetical so
+    two runs with identical inputs produce byte-identical output.
+    """
+    return (tc.percentage, _to_utc_aware(tc.last_revised_at), tc.topic_ref)
 
-    1. ``percentage`` ascending (weakest first)
-    2. ``last_revised_at`` ascending (oldest revision first)
-    3. ``topic_ref`` ascending (stable alphabetical fallback)
 
-    The triple-key sort guarantees that two runs with identical inputs
-    always produce the same candidate — the determinism property the
-    ``@determinism`` scenarios depend on. Returns ``None`` if no topic
-    is eligible (every topic is still inside its cooldown, or the
-    learner has no topic-confidence entries at all).
+class Rule3AdaptiveTopic:
+    """The design.md §6.3 adaptive session recommendation, verbatim (R11).
+
+    Two sub-rules in strict priority, each honouring the §6.3(c) 4-day London
+    anti-repetition exclusion (topics blocked by :meth:`
+    PlannerContext.anti_repetition_blocked` are never surfaced here):
+
+    **(a) Struggling-first.** If any topic is in the Struggling band (< 40%),
+    recommend the weakest such topic **regardless of recency** — a topic the
+    learner is actively failing is surfaced even if just studied.
+
+    **(b) Weakest below Mastered, 3-day spacing.** Otherwise recommend the
+    weakest topic **below the Mastered band** that has **not been studied in the
+    last 3 London days** (``SPACING_DAYS``). Mastered-band topics are excluded.
+    The 48h ASSUM-001 cooldown is retired (design §13.1 R11); the spacing is now
+    measured in Europe/London calendar days (D6).
+
+    Both sub-rules rank by :func:`_tie_break_key`. Returns ``None`` when neither
+    fires (no struggling topics and nothing is both below-Mastered and stale),
+    letting the pipeline fall through to Rule 4 / rule-6.
     """
 
     def __call__(self, ctx: PlannerContext) -> Candidate | None:
-        eligible = self._select_eligible_topics(ctx)
+        if not ctx.topic_confidences:
+            return None
+
+        blocked = ctx.anti_repetition_blocked()
+
+        # (a) Struggling-first — any Struggling-band topic, regardless of
+        # recency, minus anti-repetition-blocked topics.
+        struggling = [
+            tc
+            for tc in ctx.topic_confidences
+            if tc.band == "struggling" and tc.topic_ref not in blocked
+        ]
+        if struggling:
+            winner = min(struggling, key=_tie_break_key)
+            return Candidate(
+                topic_name=winner.topic_ref,
+                rule_source="rule-3",
+                confidence_percentage=float(winner.percentage),
+                related_misconceptions=[],
+                rationale_fragment=(
+                    f"rule-3(a): Struggling-band topic '{winner.topic_ref}' at "
+                    f"{winner.percentage}% confidence — recommended regardless "
+                    f"of recency"
+                ),
+            )
+
+        # (b) Weakest below Mastered, not studied in the last 3 London days.
+        today = london_date(ctx.clock())
+        eligible = [
+            tc
+            for tc in ctx.topic_confidences
+            if tc.band != "mastered"
+            and tc.topic_ref not in blocked
+            and self._days_since_studied(tc, today) > SPACING_DAYS
+        ]
         if not eligible:
             return None
 
-        eligible.sort(
-            key=lambda tc: (tc.percentage, tc.last_revised_at, tc.topic_ref),
-        )
-        winner = eligible[0]
-
-        rationale_fragment = self._build_rationale(winner)
+        winner = min(eligible, key=_tie_break_key)
         return Candidate(
             topic_name=winner.topic_ref,
             rule_source="rule-3",
             confidence_percentage=float(winner.percentage),
             related_misconceptions=[],
-            rationale_fragment=rationale_fragment,
+            rationale_fragment=(
+                f"rule-3(b): weakest below-Mastered topic '{winner.topic_ref}' "
+                f"at {winner.percentage}% confidence "
+                f"(not studied in the last {SPACING_DAYS} days)"
+            ),
         )
-
-    def _select_eligible_topics(
-        self, ctx: PlannerContext
-    ) -> list[TopicConfidence]:
-        """Return the subset of topics whose cooldown has elapsed.
-
-        Reads ``clock`` once per call so every comparison is against a
-        single ``now`` — otherwise a slow loop could split a topic across
-        the boundary.
-        """
-        now = ctx.clock()
-        return [
-            tc
-            for tc in ctx.topic_confidences
-            if (now - tc.last_revised_at) >= _COOLDOWN_DELTA
-        ]
 
     @staticmethod
-    def _build_rationale(winner: TopicConfidence) -> str:
-        """Render the per-rule rationale fragment for ``winner``.
+    def _days_since_studied(tc: TopicConfidence, today: date) -> int:
+        """London-calendar-day gap since ``tc`` was last studied.
 
-        Includes topic name and confidence percentage so the
-        rationale-observability scenarios in TASK-DSP-005/006 can assert
-        the chosen metric is surfaced. The phrase "outside 48h cooldown"
-        is stable across calls — no time-relative wording — so tests
-        comparing rationale strings stay deterministic.
+        ``last_revised_at`` approximates the last-studied moment; the gap is
+        measured in Europe/London calendar days so BST/GMT and UTC-midnight
+        crossings are handled honestly (D6).
         """
-        return (
-            f"rule-3: weakest topic '{winner.topic_ref}' at "
-            f"{winner.percentage}% confidence (outside 48h cooldown)"
-        )
+        return (today - london_date(_to_utc_aware(tc.last_revised_at))).days
 
 
 # ---------------------------------------------------------------------------
@@ -404,10 +431,10 @@ class Rule5AchievementNearUnlockStub:
 
 
 __all__ = [
-    "COOLDOWN_HOURS",
+    "SPACING_DAYS",
     "Rule1LearnerOverride",
     "Rule2ActiveQuestStub",
-    "Rule3WeakestStaleTopic",
+    "Rule3AdaptiveTopic",
     "Rule4UnrevisitedMisconception",
     "Rule5AchievementNearUnlockStub",
 ]

@@ -46,7 +46,9 @@ scaffolding is deliberately silent on these so the build resolves them once:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -64,6 +66,16 @@ from study_tutor.knowledge.store.port import (
 )
 from study_tutor.knowledge.store.provider import get_student_store
 from study_tutor.knowledge.student_model import Misconception
+from study_tutor.planner.pipeline import plan_session
+from study_tutor.planner.protocols import (
+    SessionCompletion as PlannerSessionCompletion,
+)
+from study_tutor.planner.types import (
+    AssessmentObjectiveCode,
+    SessionPlan,
+    _baseline_plan,
+    load_curriculum_defaults,
+)
 from study_tutor.session.errors import (
     SessionEnded,
     SessionForbidden,
@@ -71,6 +83,69 @@ from study_tutor.session.errors import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Planner-hoist configuration (S-R3 §2.1 — relocated from mcp/adapter.py)
+# ---------------------------------------------------------------------------
+
+#: Env var controlling the *outer* ``plan_session`` budget invoked inside
+#: :meth:`SessionService.start_session` (ASSUM-006, signed off 2026-04-29).
+#: Default 2.0s. The single graceful-degradation boundary for the planner: any
+#: timeout / internal exception / unknown learner degrades to a baseline plan
+#: rather than blocking session creation. Relocated here verbatim from the MCP
+#: adapter when planning moved into the core (spec §2.1 / D14).
+_PLANNER_HANDLER_BUDGET_ENV: str = "PLANNER_HANDLER_BUDGET_SEC"
+_PLANNER_HANDLER_BUDGET_DEFAULT: float = 2.0
+
+#: How many recent ended sessions to read as plan facts — the Rule-4
+#: revisit inputs (``session_completions``) and the §6.3(c) anti-repetition
+#: lookback (``recent_recommendations``). A single-student window is tiny; a
+#: generous cap keeps the 4-day London rotation honest without a heavy read.
+_RECENT_SESSIONS_WINDOW: int = 20
+
+
+def _planner_handler_budget_sec() -> float:
+    """Return the outer ``plan_session`` budget for ``start_session``.
+
+    Reads :data:`_PLANNER_HANDLER_BUDGET_ENV` at *call* time so test patching of
+    ``os.environ`` flows through without a process restart. Falls back to
+    :data:`_PLANNER_HANDLER_BUDGET_DEFAULT` when unset or unparseable.
+    """
+    raw = os.environ.get(_PLANNER_HANDLER_BUDGET_ENV)
+    if raw is None:
+        return _PLANNER_HANDLER_BUDGET_DEFAULT
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning(
+            "ignoring unparseable %s=%r; using default %.1fs",
+            _PLANNER_HANDLER_BUDGET_ENV,
+            raw,
+            _PLANNER_HANDLER_BUDGET_DEFAULT,
+        )
+        return _PLANNER_HANDLER_BUDGET_DEFAULT
+
+
+def _curriculum_ao_mapping() -> dict[str, list[AssessmentObjectiveCode]]:
+    """``topic_name → [AO codes]`` from the curriculum the planner understands.
+
+    S-R3 §2.1: the planner's ``ao_mapping`` input, sourced from
+    ``curriculum_defaults.yaml`` (the same AO source :func:`_baseline_plan`
+    already reads) so ``focus_aos`` is populated for curriculum topics rather
+    than blanked. A malformed/missing YAML degrades to an empty mapping — the
+    planner then reports ``ao_mapping_found=False`` rather than raising.
+    """
+    try:
+        entries = load_curriculum_defaults()
+    except Exception:  # noqa: BLE001 — degrade to empty mapping, never raise
+        logger.warning("event=curriculum_ao_mapping_unavailable", exc_info=True)
+        return {}
+    return {
+        str(entry["topic_name"]): list(entry.get("focus_aos") or [])
+        for entry in entries
+        if entry.get("topic_name")
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +200,12 @@ class StartSessionResult:
     resumed: bool
     #: Transcript, populated only on the resumed branch (a device re-attaching).
     turns: tuple[SessionTurn, ...] | None = None
+    #: S-R3 §2.1: the plan the service computed at start (planning moved into
+    #: the core, D14). Transports project it: HTTP surfaces ``topic`` /
+    #: ``opening_prompt`` / ``focus_aos`` (contract §2.3); MCP its
+    #: ``plan_summary``. ``None`` only for pre-S-R3/legacy callers that
+    #: construct the result directly.
+    plan: SessionPlan | None = None
 
 
 @dataclass(frozen=True)
@@ -237,12 +318,34 @@ class SessionService:
     ) -> StartSessionResult:
         """Create a session — or, with ``resume_if_active``, return the caller's
         existing active one (with its transcript). No ownership guard: an
-        auth-derived ``student_id`` can only create/resume its own session."""
+        auth-derived ``student_id`` can only create/resume its own session.
+
+        S-R3 §2.1 / D14: planning now lives here. The plan is computed under the
+        2.0s budget/degrade boundary keyed by the **ownership** ``student_id``
+        (the same identity the confidence writes use — spec §2.1 read-key fix),
+        and its facts persist on the created session row: ``topic`` and
+        ``focus_aos`` (in the ``aos_scaffolded`` column, S-R3 §2.1). The
+        ``opening_prompt`` is NOT persisted — it rides back in the plan on the
+        result only. ``topic`` (the learner-supplied value) is the planner's
+        override; the persisted/returned topic is the plan's chosen topic.
+        """
         store = self._resolve_store()
+
+        # Plan under the outer budget/degrade boundary. Keyed by the ownership
+        # student_id so the planner reads the same learner state the confidence
+        # writes key on (spec §2.1). ``topic`` is the learner override.
+        plan = await self._plan(
+            student_id=student_id, topic_override=topic
+        )
+
+        # Persist the plan facts on the row at start (spec §2.1). On a resume the
+        # store returns the existing row and ignores these; the freshly-computed
+        # plan still rides back on the result for the start response.
         record, created = await store.create_session(
             student_id=student_id,
             subject=subject,
-            topic=topic,
+            topic=plan.topic_name,
+            aos_scaffolded=list(plan.focus_aos),
             resume_if_active=resume_if_active,
         )
         turns: tuple[SessionTurn, ...] | None = None
@@ -255,7 +358,74 @@ class SessionService:
             topic=record.topic,
             resumed=not created,
             turns=turns,
+            plan=plan,
         )
+
+    async def _plan(
+        self, *, student_id: str, topic_override: str | None
+    ) -> SessionPlan:
+        """Run ``plan_session`` under the 2.0s budget/degrade boundary.
+
+        Relocated from ``mcp/adapter.py`` (spec §2.1). Feeds the planner its two
+        previously-blanked inputs: the curriculum ``ao_mapping`` (so
+        ``focus_aos`` is populated) and the learner's recent ended sessions as
+        both Rule-4 ``session_completions`` (revisit signal) and the §6.3(c)
+        ``recent_recommendations`` anti-repetition lookback. Any failure mode
+        (timeout / internal exception / unknown learner) degrades to
+        :func:`_baseline_plan(False)` rather than propagating — session creation
+        must never be blocked by the planner.
+        """
+        store = self._resolve_store()
+
+        # Recent ended sessions = the plan facts the two planner inputs need.
+        recent = await store.list_sessions(
+            student_id, status="ended", limit=_RECENT_SESSIONS_WINDOW
+        )
+        session_completions = [
+            PlannerSessionCompletion(
+                topics_covered=[r.topic] if r.topic else [],
+                ended_at=r.last_activity,
+            )
+            for r in recent
+        ]
+        recent_recommendations = tuple(
+            (r.topic, r.last_activity) for r in recent if r.topic
+        )
+
+        budget = _planner_handler_budget_sec()
+        try:
+            return await asyncio.wait_for(
+                plan_session(
+                    student_id,
+                    topic_override,
+                    ao_mapping=_curriculum_ao_mapping(),
+                    session_completions=session_completions,
+                    recent_recommendations=recent_recommendations,
+                ),
+                timeout=budget,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "planner exceeded %.2fs handler budget — degrading to "
+                "baseline plan",
+                budget,
+                extra={
+                    "event": "planner_handler_budget_exceeded",
+                    "student_id": student_id,
+                    "budget_sec": budget,
+                },
+            )
+            return _baseline_plan(learner_state_available=False)
+        except Exception as exc:  # noqa: BLE001 — boundary catch, never re-raise
+            logger.exception(
+                "planner internal error — degrading to baseline plan",
+                extra={
+                    "event": "planner_internal_error",
+                    "student_id": student_id,
+                    "error": str(exc),
+                },
+            )
+            return _baseline_plan(learner_state_available=False)
 
     async def list_sessions(
         self,
@@ -392,14 +562,24 @@ class SessionService:
         student_id: str,
         session_id: str,
         completion: SessionCompletion | None = None,
+        topic_hint: str | None = None,
     ) -> EndSessionResult:
-        """Transition ``active → ended`` and, when a ``completion`` is supplied,
-        commit the learner-state deltas — awaited inline (ADR-ARCH-023 D2).
+        """Transition ``active → ended`` and commit the learner-state deltas —
+        awaited inline (ADR-ARCH-023 D2).
 
-        ``completion=None`` preserves the I-T6 zero-turn rule (the adapter passes
-        ``None`` when ``turn_count == 0``): transition only, no completion write.
-        Event ``session.completed`` (design-review #5) is emitted by the transport
-        with the pinned payload; see the module open-decisions.
+        S-R3 §2.4 / D14: **completion assembly lives here**, for ALL transports.
+        When ``completion`` is not supplied (the transport path — both HTTP and
+        MCP), the service assembles it from the **persisted** session row
+        (``topic`` + ``aos_scaffolded`` plan facts) plus store reads, so the two
+        transports produce byte-identical writes. The MCP adapter passes only a
+        ``topic_hint`` (a weak fallback if the row has no ``topic``); HTTP passes
+        neither. An explicit ``completion`` is honoured as-is (the store-ordering
+        regression pin and future ``finalize_session`` seam).
+
+        I-T6 zero-turn rule: a session with no turns settles status only — no
+        completion write (``build_session_completion`` is skipped for
+        ``turn_count == 0``). Event ``session.completed`` is still emitted by the
+        transport with the pinned payload; see the module open-decisions.
 
         W0 ordering (spec §1): the completion write **precedes** the status
         transition. ``record_session_completion`` is gated on
@@ -410,8 +590,29 @@ class SessionService:
         Phase E replaces this two-call sequence with a single ``finalize_session``
         transaction (spec §4); until then, ordering is the fix.
         """
-        await self._load_owned_session(student_id, session_id, allow_ended=False)
+        record = await self._load_owned_session(
+            student_id, session_id, allow_ended=False
+        )
         store = self._resolve_store()
+
+        # Assemble the completion in the core when the transport didn't hand one
+        # in (spec §2.4). Derived purely from the persisted row + store reads so
+        # HTTP and MCP write identically. I-T6: skip for zero-turn sessions.
+        if completion is None and record.turn_count > 0:
+            # Local import avoids the completion↔service module import cycle.
+            from study_tutor.session.completion import build_session_completion
+
+            topic = record.topic or topic_hint or record.subject
+            completion = await build_session_completion(
+                store=store,
+                student_id=student_id,
+                topic=topic,
+                # Store rows are (user, tutor) turns; student turns are half.
+                student_turn_count=record.turn_count // 2,
+                aos_scaffolded=list(record.aos_scaffolded),
+                misconceptions_per_topic={},
+            )
+
         if completion is not None:
             await store.record_session_completion(
                 student_id=student_id,

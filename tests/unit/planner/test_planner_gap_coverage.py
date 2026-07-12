@@ -51,6 +51,7 @@ from study_tutor.planner.pipeline import run_rule_pipeline
 from study_tutor.planner.protocols import PlannerContext
 from study_tutor.planner.types import SessionPlan, _baseline_plan
 from study_tutor.roles.loader import RoleConfig
+from study_tutor.session import service as service_module
 from study_tutor.session.service import SessionService
 from tests.unit.knowledge.store.fakes import FakeStudentStore
 
@@ -182,11 +183,13 @@ async def test_post_write_read_consistency_does_not_block(
     await started_event.wait()
 
     async def fast_plan(
-        student_id: str, topic_override: str | None
+        student_id: str, topic_override: str | None, **_kw: object
     ) -> SessionPlan:
         return _baseline_plan(learner_state_available=False)
 
-    monkeypatch.setattr(adapter_module, "plan_session", fast_plan)
+    # S-R3 §2.1: planning moved into SessionService.start_session, so the
+    # planner entry point is now patched on the service module.
+    monkeypatch.setattr(service_module, "plan_session", fast_plan)
 
     started = time.perf_counter()
     result = await adapter.tutor_start_session(student_id="lilymay")
