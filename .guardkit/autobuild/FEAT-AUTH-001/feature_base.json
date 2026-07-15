@@ -1,0 +1,5 @@
+{
+  "feature_id": "FEAT-AUTH-001",
+  "feature_base_commit": "4ac3262451e29df554ad6e37868469ddf8f6fedc",
+  "base_branch": "main"
+}

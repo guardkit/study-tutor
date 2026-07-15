@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KC-001",
+    "pre_path": "tasks/backlog/TASK-KC-001-keycloak-compose-and-env.md",
+    "post_path": "tasks/design_approved/TASK-KC-001-keycloak-compose-and-env.md",
+    "timestamp": "2026-07-15T05:36:53.618695+00:00",
+    "kind": "design_approved_transition"
+  }
+]

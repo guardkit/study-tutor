@@ -145,6 +145,7 @@ celerybeat.pid
 .envrc
 .env.deploy
 deploy/**/.env.deploy
+deploy/**/certs/
 .venv
 env/
 venv/

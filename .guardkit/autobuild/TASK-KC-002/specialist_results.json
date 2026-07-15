@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "failed",
+    "duration_seconds": 0.4605716560035944,
+    "error": "tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops ",
+    "tests_run": 0,
+    "tests_failed": 1,
+    "tests_skipped": null,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops (alembic downgrade base drops the schema",
+    "quality_gates_passed": false
+  },
+  "phase_5": {
+    "status": "skipped",
+    "duration_seconds": 0.0,
+    "error": "phase_4 status=failed",
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}

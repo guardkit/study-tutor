@@ -1,6 +1,6 @@
 {
-  "content_hash": "4a36c3beb63015955de01027fc8c21b64cf16661fd326447aea0cfd40601d11d",
-  "success": true,
-  "timestamp": "2026-07-08T20:42:58.606106",
-  "venv_python": "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-VOICE-003/.venv/bin/python"
+  "content_hash": "35993fdfbfd6a749f2f2148dcc4642f0f2931ef3034d0a9afda36f25a516d959",
+  "success": false,
+  "timestamp": "2026-07-15T06:36:53.206327",
+  "venv_python": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python"
 }

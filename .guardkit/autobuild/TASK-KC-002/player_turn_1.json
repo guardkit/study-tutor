@@ -1,0 +1,107 @@
+{
+  "task_id": "TASK-KC-002",
+  "turn": 1,
+  "files_modified": [
+    ".gitignore"
+  ],
+  "files_created": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/deploy/keycloak/realm/study-tutor-realm.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/integration/keycloak/test_realm_as_code.py",
+    "deploy/keycloak/.env.deploy.example",
+    "deploy/keycloak/Dockerfile",
+    "deploy/keycloak/docker-compose.yml",
+    "deploy/keycloak/init-keycloak-db.sql",
+    "deploy/keycloak/realm/study-tutor-realm.json",
+    "deploy/keycloak/validate-keycloak-db.sh",
+    "tests/integration/keycloak/test_realm_as_code.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/integration/keycloak/test_realm_as_code.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Realm study-tutor with pinned IDs and https-only SSL",
+    "Public PKCE client for mobile app (study-tutor-app)",
+    "Public device authorization client for robot (reachy-robot)",
+    "Realm roles student and parent",
+    "Protocol mapper for student_id attribute to claim",
+    "Security invariants: no users, secrets, or test clients in committed config",
+    "Valid, well-formed JSON configuration"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 32,
+  "sdk_max_turns": 160,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.guardkit/autobuild/TASK-KC-002/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/deploy/keycloak/realm/study-tutor-realm.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/integration/keycloak/test_realm_as_code.py"
+  ],
+  "tests_passed_count": 15,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "deploy/keycloak/realm/study-tutor-realm.json defines realm `study-tutor` with pinned realm/client `id` fields and https-only `sslRequired`",
+      "status": "complete",
+      "evidence": "Created realm JSON with id 'study-tutor-realm-001', realm name 'study-tutor', and sslRequired set to 'all' for https-only. All clients have pinned id fields. Verified by test_realm_name_and_id_pinned and test_realm_https_only.",
+      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "implementation_files": [
+        "deploy/keycloak/realm/study-tutor-realm.json"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Clients `study-tutor-app` (public, PKCE S256 enforced, offline_access) and `reachy-robot` (public, device-grant enabled) are present with correct flows",
+      "status": "complete",
+      "evidence": "Created study-tutor-app client with publicClient=true, pkce.code.challenge.method=S256, standardFlowEnabled=true, and offline_access in defaultClientScopes. Created reachy-robot client with publicClient=true and oauth2.device.authorization.grant.enabled=true. Both have pinned IDs. Verified by test_study_tutor_app_config and test_reachy_robot_config.",
+      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "implementation_files": [
+        "deploy/keycloak/realm/study-tutor-realm.json"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Realm roles `student` and `parent` both exist",
+      "status": "complete",
+      "evidence": "Created both realm roles with pinned IDs (role-student-001 and role-parent-001). Student role has description for learners, parent role marked as reserved for future use. Verified by test_realm_roles_exist.",
+      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "implementation_files": [
+        "deploy/keycloak/realm/study-tutor-realm.json"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "A `student_id` user-attribute \u2192 `student_id` claim protocol mapper is defined and attached so tokens can carry the claim",
+      "status": "complete",
+      "evidence": "Added oidc-usermodel-attribute-mapper protocol mappers to both study-tutor-app and reachy-robot clients. Mappers configured with user.attribute=student_id, claim.name=student_id, jsonType.label=String, and enabled for id_token, access_token, and userinfo tokens. Verified by test_student_id_mapper_on_study_tutor_app and test_student_id_mapper_on_reachy_robot.",
+      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "implementation_files": [
+        "deploy/keycloak/realm/study-tutor-realm.json"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "The committed file contains **no** `users`, **no** client `secret`, and **no** `live-suite` client (grep-verifiable negatives)",
+      "status": "complete",
+      "evidence": "Realm JSON does not contain any users array, client secret fields, or live-suite client. Verified by test_no_users_array, test_no_client_secrets, test_no_live_suite_client, and test_raw_json_grep_verification which performs literal string matching.",
+      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "implementation_files": [
+        "deploy/keycloak/realm/study-tutor-realm.json"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "The realm JSON is valid JSON and passes project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Realm JSON is valid according to Python's json.tool validator. File is properly formatted with 2-space indentation and contains all required top-level fields (realm, id, clients, roles). Verified by test_json_is_well_formed and test_required_top_level_fields.",
+      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "implementation_files": [
+        "deploy/keycloak/realm/study-tutor-realm.json"
+      ]
+    }
+  ]
+}

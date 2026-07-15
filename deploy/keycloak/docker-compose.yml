@@ -1,0 +1,80 @@
+# study-tutor Keycloak IDP — Tailnet-TLS identity service (FEAT-AUTH-001 / ADR-ARCH-028 D1/D2).
+# Pinned 26.6.x, optimized start, 1-2GB memory band, TLS on :8443, realm-as-code import.
+# Stand-up + gates: docs/runbooks/RUNBOOK-study-tutor-keycloak-deploy.md (TASK-KC-005)
+# Realm/client config owned by realm JSON (TASK-KC-002), DB schema owned by Keycloak migrations.
+
+services:
+  study_tutor_keycloak:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: study_tutor_keycloak
+    restart: unless-stopped
+    mem_limit: 2g
+
+    command:
+      - start
+      - --optimized
+      - --import-realm
+
+    environment:
+      # Database connection (KEYCLOAK_DB contract § 4: co-located keycloak DB, intra-network :5432)
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://study_tutor_postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set KC_DB_PASSWORD in .env}
+
+      # Hostname (pinned for stable issuer URL)
+      KC_HOSTNAME: ${KC_HOSTNAME:?set KC_HOSTNAME in .env}
+      KC_HOSTNAME_STRICT: true
+      KC_HOSTNAME_STRICT_BACKCHANNEL: true
+
+      # TLS configuration
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/tls.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/tls.key
+      KC_HTTPS_PORT: ${KC_HTTPS_PORT:-8443}
+
+      # Health endpoint
+      KC_HEALTH_ENABLED: true
+
+      # Bootstrap admin (env-only, never committed)
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?set KC_BOOTSTRAP_ADMIN_USERNAME in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?set KC_BOOTSTRAP_ADMIN_PASSWORD in .env}
+
+      # Production mode settings
+      KC_HTTP_ENABLED: false
+      KC_HOSTNAME_DEBUG: false
+
+    ports:
+      - "${KC_HTTPS_PORT:-8443}:8443"
+      - "9000:9000"  # Health/metrics endpoint
+
+    volumes:
+      # Realm import (REALM_IMPORT contract § 4: realm JSON mounted read-only)
+      - ./realm:/opt/keycloak/data/import:ro
+
+      # TLS certificates (tailscale cert + key, mounted from host)
+      - ${KC_TLS_CERT_PATH:?set KC_TLS_CERT_PATH in .env}:/opt/keycloak/conf/tls.crt:ro
+      - ${KC_TLS_KEY_PATH:?set KC_TLS_KEY_PATH in .env}:/opt/keycloak/conf/tls.key:ro
+
+    networks:
+      - keycloak_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+    depends_on:
+      - study_tutor_postgres
+
+networks:
+  keycloak_network:
+    external: true
+    name: study_tutor_postgres_default
+
+# External network reference: keycloak joins the existing study_tutor_postgres network
+# (created by deploy/postgres/docker-compose.yml) so it can reach the DB at service name.
+# If deploying standalone or Postgres unavailable, use host:5434 via extra_hosts instead.
