@@ -5,5 +5,12 @@
     "post_path": "tasks/design_approved/TASK-KC-003-keycloak-db-and-role.md",
     "timestamp": "2026-07-15T05:36:53.618770+00:00",
     "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-KC-003",
+    "pre_path": "tasks/backlog/keycloak-idp-standup/TASK-KC-003-keycloak-db-and-role.md",
+    "post_path": "tasks/design_approved/TASK-KC-003-keycloak-db-and-role.md",
+    "timestamp": "2026-07-15T05:46:20.821676+00:00",
+    "kind": "design_approved_transition"
   }
 ]
