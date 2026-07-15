@@ -1,20 +1,20 @@
 {
   "phase_4": {
-    "status": "failed",
-    "duration_seconds": 0.45103905512951314,
-    "error": "tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops ",
-    "tests_run": 0,
-    "tests_failed": 1,
-    "tests_skipped": null,
+    "status": "passed",
+    "duration_seconds": 3.4149013760033995,
+    "error": null,
+    "tests_run": 51,
+    "tests_failed": 0,
+    "tests_skipped": 0,
     "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python",
     "coverage_pct": 0.0,
-    "output_summary": "Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops (alembic downgrade base drops the schema",
-    "quality_gates_passed": false
+    "output_summary": "Result:\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_live_suite_client PASSED [ 94%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_valid PASSED ",
+    "quality_gates_passed": true
   },
   "phase_5": {
-    "status": "skipped",
-    "duration_seconds": 0.0,
-    "error": "phase_4 status=failed",
+    "status": "passed",
+    "duration_seconds": 97.24937926302664,
+    "error": null,
     "issues": [],
     "quality_score": 0.0,
     "recommendations": [],

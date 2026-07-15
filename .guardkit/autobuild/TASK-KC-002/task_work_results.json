@@ -1,80 +1,49 @@
 {
   "task_id": "TASK-KC-002",
-  "timestamp": "2026-07-15T06:48:22.067235",
+  "timestamp": "2026-07-15T07:59:46.477387",
   "completed": true,
   "phases": {
     "phase_3": {
       "detected": true,
-      "text": "Implementation",
-      "completed": false
-    },
-    "phase_4.5": {
-      "detected": true,
+      "text": "Implementation (TDD Mode)",
       "completed": true
     }
   },
   "quality_gates": {
-    "tests_passing": false,
-    "tests_passed": 0,
-    "tests_failed": 1,
-    "coverage": 0.0,
-    "coverage_met": false,
-    "all_passed": false,
-    "reconciled_from_specialist": true
+    "tests_passing": true,
+    "tests_passed": 25,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
   },
-  "files_modified": [
-    ".gitignore",
-    "deploy/keycloak/.env.deploy.example",
-    "deploy/keycloak/Dockerfile",
-    "deploy/keycloak/docker-compose.yml",
-    "deploy/keycloak/init-keycloak-db.sql",
-    "deploy/keycloak/realm/study-tutor-realm.json",
-    "deploy/keycloak/validate-keycloak-db.sh",
-    "tests/integration/keycloak/test_realm_as_code.py"
-  ],
+  "files_modified": [],
   "files_created": [
-    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.guardkit/autobuild/TASK-KC-002/player_turn_3.json"
+    ".guardkit/bdd/TASK-KC-002_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/unit/test_keycloak_realm_config.py",
+    "tests/integration/keycloak/test_init_keycloak_db.py",
+    "tests/unit/test_keycloak_realm_config.py"
   ],
   "files_authored": [
-    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.guardkit/autobuild/TASK-KC-002/player_turn_3.json"
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.guardkit/autobuild/TASK-KC-002/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/unit/test_keycloak_realm_config.py"
   ],
-  "tests_written": [],
-  "summary": "15 tests passed",
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/unit/test_keycloak_realm_config.py"
+  ],
+  "summary": "25 tests passed",
   "sdk_turns": {
-    "turns_used": 18,
+    "turns_used": 23,
     "max_turns": 160,
     "ceiling_hit": false
   },
-  "bdd_results": {
-    "scenarios_passed": 0,
-    "scenarios_failed": 1,
-    "scenarios_pending": 0,
-    "scenarios_undefined": 0,
-    "failures": [
-      {
-        "feature_file": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/features/keycloak-idp-standup/keycloak-idp-standup.feature",
-        "scenario_name": "pytest_runner_error",
-        "failing_step": "",
-        "reason": "pytest_runner_error: exit=2; Exit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops (alembic downgrade base drops the schema; fix..."
-      }
-    ],
-    "pending": [],
-    "undefined": [],
-    "feature_files": [
-      "features/keycloak-idp-standup/keycloak-idp-standup.feature"
-    ],
-    "tag": "@task:TASK-KC-002"
-  },
   "task_type": "declarative",
   "agent_invocations_validation": {
-    "status": "violation",
+    "status": "passed",
     "expected_phases": 2,
-    "actual_invocations": 0,
-    "missing_phases": [
-      "4",
-      "5"
-    ],
-    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 2 agent invocations\nActual: 0 completed invocations\n\nMissing phases:\n  - Phase 4 (Testing)\n  - Phase 5 (Code Review)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2753 Phase 4 (Phase 4): test-orchestrator\n\u274c Phase 5 (Phase 5): SKIPPED (Not invoked)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+    "actual_invocations": 2,
+    "missing_phases": [],
+    "violation_message": null
   },
   "plan_audit": {
     "status": "skipped",
@@ -100,50 +69,50 @@
   "completion_promises": [
     {
       "criterion_id": "AC-001",
-      "criterion_text": "deploy/keycloak/realm/study-tutor-realm.json defines realm `study-tutor` with pinned realm/client `id` fields and https-only `sslRequired`",
+      "criterion_text": "deploy/keycloak/realm/study-tutor-realm.json defines realm study-tutor with pinned realm/client id fields and https-only sslRequired",
       "status": "complete",
-      "evidence": "Verified by passing test test_realm_name_and_id_pinned: realm='study-tutor', id='study-tutor-realm-001'. Verified by passing test test_realm_https_only: sslRequired='all' (https-only). All clients have pinned id fields (client-study-tutor-app-001, client-reachy-robot-001). Implementation completed in turn 2, verified with corrected environment in turn 3.",
-      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "evidence": "Realm JSON contains: realm='study-tutor', id='study-tutor-realm-001' (pinned), sslRequired='all' (https-only). All client IDs are pinned (client-study-tutor-app-001, client-reachy-robot-001). Verified by tests: test_realm_name_is_study_tutor, test_realm_id_is_pinned, test_ssl_required_is_all, test_study_tutor_app_has_pinned_id, test_reachy_robot_has_pinned_id",
+      "test_file": "tests/unit/test_keycloak_realm_config.py",
       "implementation_files": [
         "deploy/keycloak/realm/study-tutor-realm.json"
       ]
     },
     {
       "criterion_id": "AC-002",
-      "criterion_text": "Clients `study-tutor-app` (public, PKCE S256 enforced, offline_access) and `reachy-robot` (public, device-grant enabled) are present with correct flows",
+      "criterion_text": "Clients study-tutor-app (public, PKCE S256 enforced, offline_access) and reachy-robot (public, device-grant enabled) are present with correct flows",
       "status": "complete",
-      "evidence": "Verified by passing tests test_study_tutor_app_config and test_reachy_robot_config. study-tutor-app: publicClient=true, pkce.code.challenge.method='S256', standardFlowEnabled=true, offline_access in defaultClientScopes. reachy-robot: publicClient=true, oauth2.device.authorization.grant.enabled='true'. Implementation completed in turn 2, verified with corrected environment in turn 3.",
-      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "evidence": "study-tutor-app: publicClient=true, pkce.code.challenge.method='S256', offline_access in defaultClientScopes, standardFlowEnabled=true (Authorization Code flow). reachy-robot: publicClient=true, oauth2.device.authorization.grant.enabled='true'. Verified by tests: test_study_tutor_app_is_public_with_pkce, test_study_tutor_app_has_offline_access, test_reachy_robot_is_public_with_device_grant",
+      "test_file": "tests/unit/test_keycloak_realm_config.py",
       "implementation_files": [
         "deploy/keycloak/realm/study-tutor-realm.json"
       ]
     },
     {
       "criterion_id": "AC-003",
-      "criterion_text": "Realm roles `student` and `parent` both exist",
+      "criterion_text": "Realm roles student and parent both exist",
       "status": "complete",
-      "evidence": "Verified by passing test test_realm_roles_exist. Both realm roles present with pinned IDs: role-student-001 and role-parent-001. Roles array contains ['student', 'parent']. Implementation completed in turn 2, verified with corrected environment in turn 3.",
-      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "evidence": "Both roles exist in roles.realm array with pinned IDs: 'student' (role-student-001) and 'parent' (role-parent-001). Parent role marked as reserved for future use. Verified by tests: test_student_role_exists, test_parent_role_exists, test_student_role_has_pinned_id, test_parent_role_has_pinned_id",
+      "test_file": "tests/unit/test_keycloak_realm_config.py",
       "implementation_files": [
         "deploy/keycloak/realm/study-tutor-realm.json"
       ]
     },
     {
       "criterion_id": "AC-004",
-      "criterion_text": "A `student_id` user-attribute \u2192 `student_id` claim protocol mapper is defined and attached so tokens can carry the claim",
+      "criterion_text": "A student_id user-attribute to student_id claim protocol mapper is defined and attached so tokens can carry the claim",
       "status": "complete",
-      "evidence": "Verified by passing tests test_student_id_mapper_on_study_tutor_app and test_student_id_mapper_on_reachy_robot. Protocol mapper 'student_id' present on both clients with configuration: protocol='openid-connect', protocolMapper='oidc-usermodel-attribute-mapper', user.attribute='student_id', claim.name='student_id', jsonType.label='String', enabled for id/access/userinfo tokens. Implementation completed in turn 2, verified with corrected environment in turn 3.",
-      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "evidence": "Both clients have student_id protocol mappers (oidc-usermodel-attribute-mapper): user.attribute='student_id', claim.name='student_id', included in access.token, id.token, and userinfo.token. study-tutor-app mapper ID: mapper-student-id-app-001, reachy-robot mapper ID: mapper-student-id-robot-001. Verified by tests: test_study_tutor_app_mapper_configuration, test_reachy_robot_mapper_configuration",
+      "test_file": "tests/unit/test_keycloak_realm_config.py",
       "implementation_files": [
         "deploy/keycloak/realm/study-tutor-realm.json"
       ]
     },
     {
       "criterion_id": "AC-005",
-      "criterion_text": "The committed file contains **no** `users`, **no** client `secret`, and **no** `live-suite` client (grep-verifiable negatives)",
+      "criterion_text": "The committed file contains no users, no client secret, and no live-suite client (grep-verifiable negatives)",
       "status": "complete",
-      "evidence": "Verified by passing tests test_no_users_array, test_no_client_secrets, test_no_live_suite_client, and test_raw_json_grep_verification. Manual grep verification confirms: no 'users' key, no 'secret' fields, no 'live-suite' string found in JSON. Security invariants confirmed. Implementation completed in turn 2, verified with corrected environment in turn 3.",
-      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "evidence": "Verified prod-safe invariants: (1) No 'users' array or field in JSON, (2) No 'secret' fields in any client - all clients are publicClient=true, (3) No 'live-suite' client present - only study-tutor-app and reachy-robot exist. grep-verified: no 'users', no 'secret', no 'live-suite' in JSON content. Verified by tests: test_no_users_in_realm, test_no_client_secrets, test_no_live_suite_client",
+      "test_file": "tests/unit/test_keycloak_realm_config.py",
       "implementation_files": [
         "deploy/keycloak/realm/study-tutor-realm.json"
       ]
@@ -152,8 +121,8 @@
       "criterion_id": "AC-006",
       "criterion_text": "The realm JSON is valid JSON and passes project-configured lint/format checks with zero errors",
       "status": "complete",
-      "evidence": "Verified by passing tests test_json_is_well_formed and test_required_top_level_fields. JSON parses successfully with Python json module, proper 2-space indentation, all required top-level fields present (realm, id, clients, roles). File is well-formed and valid. Implementation completed in turn 2, verified with corrected environment in turn 3.",
-      "test_file": "tests/integration/keycloak/test_realm_as_code.py",
+      "evidence": "JSON is valid (successfully parsed), properly formatted with newlines and 2-space indentation, passes round-trip parsing. All required Keycloak fields present (id, realm, enabled, sslRequired, clients, roles). Verified by tests: test_json_is_valid, test_json_is_properly_formatted, test_required_keycloak_fields_present",
+      "test_file": "tests/unit/test_keycloak_realm_config.py",
       "implementation_files": [
         "deploy/keycloak/realm/study-tutor-realm.json"
       ]
@@ -163,18 +132,16 @@
     {
       "phase": "4",
       "agent": "test-orchestrator",
-      "status": "failed",
+      "status": "completed",
       "source": "orchestrator",
-      "duration_seconds": 0.45103905512951314,
-      "error": "tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops "
+      "duration_seconds": 3.4149013760033995
     },
     {
       "phase": "5",
       "agent": "code-reviewer",
-      "status": "skipped",
+      "status": "completed",
       "source": "orchestrator",
-      "duration_seconds": 0.0,
-      "error": "phase_4 status=failed"
+      "duration_seconds": 97.24937926302664
     }
   ]
 }

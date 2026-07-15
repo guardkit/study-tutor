@@ -1,15 +1,23 @@
 {
   "honesty": {
-    "verified": true,
-    "discrepancies": [],
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file deploy/keycloak/realm/study-tutor-realm.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
     "honesty_score": 1.0,
     "resolved_paths": [],
-    "should_fix_count": 0
+    "should_fix_count": 1
   },
-  "gathering_status": "partial_gate_abort",
+  "gathering_status": "complete",
   "gathering_error": null,
   "quality_gates": {
-    "tests_passed": false,
+    "tests_passed": true,
     "coverage_met": true,
     "arch_review_passed": true,
     "plan_audit_passed": true,
@@ -17,10 +25,10 @@
     "coverage_required": false,
     "arch_review_required": false,
     "plan_audit_required": true,
-    "all_gates_passed": false
+    "all_gates_passed": true
   },
   "coverage_details": {
-    "coverage_met": false,
+    "coverage_met": null,
     "line_coverage": null,
     "branch_coverage": null,
     "line_threshold": null,
@@ -41,34 +49,15 @@
     "discrepancies_count": 0,
     "message": "no implementation plan on disk"
   },
-  "bdd": {
-    "scenarios_passed": 0,
-    "scenarios_failed": 1,
-    "scenarios_pending": 0,
-    "scenarios_undefined": 0,
-    "failures": [
-      {
-        "feature_file": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/features/keycloak-idp-standup/keycloak-idp-standup.feature",
-        "scenario_name": "pytest_runner_error",
-        "failing_step": "",
-        "reason": "pytest_runner_error: exit=2; Exit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops (alembic downgrade base drops the schema; fix..."
-      }
-    ],
-    "pending": [],
-    "undefined": [],
-    "feature_files": [
-      "features/keycloak-idp-standup/keycloak-idp-standup.feature"
-    ],
-    "tag": "@task:TASK-KC-002"
-  },
+  "bdd": null,
   "bdd_authoring_sweep": null,
   "arch_review": null,
   "tests": {
-    "tests_passed": false,
+    "tests_passed": true,
     "tests_required": true,
     "tests_run": null,
-    "tests_failed": 1,
-    "all_passed": false,
+    "tests_failed": 0,
+    "all_passed": null,
     "requires_infrastructure": []
   },
   "wiring": null,
@@ -77,35 +66,79 @@
   "stub_scan": null,
   "coverage": null,
   "behavioural_oracle": null,
-  "independent_tests": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/integration/keycloak/test_init_keycloak_db.py tests/unit/test_keycloak_realm_config.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_live_suite_client PASSED [ 94%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_valid PASSED [ 96%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_properly_formatted PASSED [ 98%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_required_keycloak_fields_present PASSED [100%]\n============================== 51 passed in 2.73s ==============================",
+    "duration_seconds": 3.1877105236053467,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-rzf6m5dk\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2, langsmith-0.10.4, cov-7.1.0, bdd-8.1.0, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 51 items\n\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_apply_init_sql_succeeds PASSED [  1%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_exists PASSED [  3%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_is_not_superuser PASSED [  5%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_cannot_create_databases PASSED [  7%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_cannot_create_roles PASSED [  9%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_can_login PASSED [ 11%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_database_exists PASSED [ 13%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_database_owned_by_keycloak_role PASSED [ 15%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestIdempotency::test_second_application_succeeds PASSED [ 17%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestIdempotency::test_second_application_skips_creation PASSED [ 19%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestPasswordFromVariable::test_sql_file_contains_no_hardcoded_passwords PASSED [ 21%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestPasswordFromVariable::test_role_has_password_set PASSED [ 23%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_keycloak_cannot_connect_to_study_tutor_database PASSED [ 25%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_study_tutor_cannot_connect_to_keycloak_database PASSED [ 27%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_keycloak_can_connect_to_own_database PASSED [ 29%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_study_tutor_can_connect_to_own_database PASSED [ 31%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_negative_proof_keycloak_connection_fails PASSED [ 33%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestNamingContract::test_role_name_is_keycloak PASSED [ 35%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestNamingContract::test_database_name_is_keycloak PASSED [ 37%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_exists PASSED [ 39%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_is_readable PASSED [ 41%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_has_documentation PASSED [ 43%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_documents_least_privilege_proof PASSED [ 45%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestValidationScript::test_validation_script_exists PASSED [ 47%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestValidationScript::test_validation_script_is_executable PASSED [ 49%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestValidationScript::test_validation_script_runs_successfully PASSED [ 50%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_realm_name_is_study_tutor PASSED [ 52%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_realm_id_is_pinned PASSED [ 54%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_ssl_required_is_all PASSED [ 56%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_realm_is_enabled PASSED [ 58%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_client_exists PASSED [ 60%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_is_public_with_pkce PASSED [ 62%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_has_offline_access PASSED [ 64%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_has_pinned_id PASSED [ 66%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_reachy_robot_client_exists PASSED [ 68%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_reachy_robot_is_public_with_device_grant PASSED [ 70%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_reachy_robot_has_pinned_id PASSED [ 72%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_student_role_exists PASSED [ 74%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_parent_role_exists PASSED [ 76%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_student_role_has_pinned_id PASSED [ 78%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_parent_role_has_pinned_id PASSED [ 80%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_study_tutor_app_has_student_id_mapper PASSED [ 82%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_study_tutor_app_mapper_configuration PASSED [ 84%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_reachy_robot_has_student_id_mapper PASSED [ 86%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_reachy_robot_mapper_configuration PASSED [ 88%]\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_users_in_realm PASSED [ 90%]\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_client_secrets PASSED [ 92%]\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_live_suite_client PASSED [ 94%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_valid PASSED [ 96%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_properly_formatted PASSED [ 98%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_required_keycloak_fields_present PASSED [100%]\n\n============================== 51 passed in 2.73s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python"
+  },
   "independent_test_classification": null,
-  "requirements": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`deploy/keycloak/realm/study-tutor-realm.json` defines realm `study-tutor` with pinned realm/client `id` fields and https-only `sslRequired`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Realm JSON contains: realm='study-tutor', id='study-tutor-realm-001' (pinned), sslRequired='all' (https-only). All client IDs are pinned (client-study-tutor-app-001, client-reachy-robot-001). Verified by tests: test_realm_name_is_study_tutor, test_realm_id_is_pinned, test_ssl_required_is_all, test_study_tutor_app_has_pinned_id, test_reachy_robot_has_pinned_id"
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Clients `study-tutor-app` (public, PKCE S256 enforced, offline_access) and `reachy-robot` (public, device-grant enabled) are present with correct flows",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "study-tutor-app: publicClient=true, pkce.code.challenge.method='S256', offline_access in defaultClientScopes, standardFlowEnabled=true (Authorization Code flow). reachy-robot: publicClient=true, oauth2.device.authorization.grant.enabled='true'. Verified by tests: test_study_tutor_app_is_public_with_pkce, test_study_tutor_app_has_offline_access, test_reachy_robot_is_public_with_device_grant"
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Realm roles `student` and `parent` both exist",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Both roles exist in roles.realm array with pinned IDs: 'student' (role-student-001) and 'parent' (role-parent-001). Parent role marked as reserved for future use. Verified by tests: test_student_role_exists, test_parent_role_exists, test_student_role_has_pinned_id, test_parent_role_has_pinned_id"
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "A `student_id` user-attribute \u2192 `student_id` claim protocol mapper is defined and attached so tokens can carry the claim",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Both clients have student_id protocol mappers (oidc-usermodel-attribute-mapper): user.attribute='student_id', claim.name='student_id', included in access.token, id.token, and userinfo.token. study-tutor-app mapper ID: mapper-student-id-app-001, reachy-robot mapper ID: mapper-student-id-robot-001. Verified by tests: test_study_tutor_app_mapper_configuration, test_reachy_robot_mapper_configuration"
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "The committed file contains **no** `users`, **no** client `secret`, and **no** `live-suite` client (grep-verifiable negatives)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified prod-safe invariants: (1) No 'users' array or field in JSON, (2) No 'secret' fields in any client - all clients are publicClient=true, (3) No 'live-suite' client present - only study-tutor-app and reachy-robot exist. grep-verified: no 'users', no 'secret', no 'live-suite' in JSON content. Verified by tests: test_no_users_in_realm, test_no_client_secrets, test_no_live_suite_client"
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "The realm JSON is valid JSON and passes project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "JSON is valid (successfully parsed), properly formatted with newlines and 2-space indentation, passes round-trip parsing. All required Keycloak fields present (id, realm, enabled, sslRequired, clients, roles). Verified by tests: test_json_is_valid, test_json_is_properly_formatted, test_required_keycloak_fields_present"
+      }
+    ]
+  },
   "runtime_parity": null,
   "evidence_repo_tests": [],
   "severity_recommendations": [],
   "advisory_issues": [
     {
-      "severity": "warning",
-      "category": "agent_invocations_advisory",
-      "description": "Advisory (non-blocking): task-work produced a report with 0 of 2 expected agent invocations. Missing phases: 4 (Testing), 5 (Code Review). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 4: `test-orchestrator` (Testing)\n- Phase 5: `code-reviewer` (Code Review)",
-      "details": {
-        "missing_phases": [
-          "4",
-          "5"
-        ],
-        "expected_phases": 2,
-        "actual_invocations": 0
-      }
-    },
-    {
       "severity": "should_fix",
-      "category": "specialist_substrate",
-      "description": "Orchestrator-invoked specialist 'test-orchestrator' (Phase 4) did not produce evidence: tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops . This is a substrate failure attributed to the orchestrator, not a Player honesty issue \u2014 the phase's evidence is ABSENT, not failed.",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file deploy/keycloak/realm/study-tutor-realm.json. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
       "details": {
-        "phase": "4",
-        "agent": "test-orchestrator",
-        "status": "failed",
-        "error": "tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops "
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file deploy/keycloak/realm/study-tutor-realm.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
       }
     }
   ],
