@@ -10,7 +10,17 @@
       "message": "[guardkit-checkpoint] Turn 1 complete (tests: fail)",
       "from_prior_run": false,
       "evidence_commits": {}
+    },
+    {
+      "turn": 2,
+      "commit_hash": "fe35b14b4f26ec50ba60bd2b62ea8e678b0d9281",
+      "timestamp": "2026-07-15T06:46:06.352431",
+      "tests_passed": false,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 2 complete (tests: fail)",
+      "from_prior_run": false,
+      "evidence_commits": {}
     }
   ],
-  "last_updated": "2026-07-15T06:42:36.090365"
+  "last_updated": "2026-07-15T06:46:06.352512"
 }
