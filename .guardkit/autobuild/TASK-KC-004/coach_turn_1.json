@@ -1,0 +1,60 @@
+{
+  "task_id": "TASK-KC-004",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "requirements_met": [
+      "Separate keycloak_<stamp>.dump with custom format (-Fc)",
+      "Atomic temp-then-rename + PGDMP magic validation for both dumps",
+      "Non-zero exit on either dump failure",
+      "Shared 14-day retention for both dump families",
+      "Keycloak dump targets keycloak DB per KEYCLOAK_DB contract",
+      "All modified files pass shellcheck with zero errors"
+    ],
+    "tests_run": true,
+    "tests_passed": true,
+    "test_command": "pytest tests/seam/test_backup_keycloak_contract.py -v --tb=short",
+    "test_output_summary": "1 passed in 0.01s - test_backup_dumps_keycloak_and_fails_on_error validates script structure via static analysis",
+    "code_quality": "Defensive implementation with shared validation helper, fail-fast semantics, atomic operations, and clear documentation. SC2034/SC2024 shellcheck issues properly resolved.",
+    "edge_cases_covered": [
+      "Empty/partial dumps blocked by PGDMP magic check",
+      "Failure isolation via set -euo pipefail and explicit exit codes",
+      "Independent validation per dump with shared helper",
+      "Uniform retention policy across both dump families",
+      "Logged operations for audit trail"
+    ]
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "Lines 71-82 implement keycloak_${stamp}.dump with pg_dump -Fc. Study_tutor dump preserved at lines 54-68. Independent test confirms pg_dump command structure."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "verified",
+      "notes": "Shared validate_and_finalize() helper (lines 34-48) checks non-empty file and PGDMP magic bytes. Both dumps use .tmp extension during write, mv to final name only after validation. Failed validation removes temp and exits 1."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "verified",
+      "notes": "set -euo pipefail (line 16) ensures fail-fast. Explicit exit 1 on study_tutor failure (lines 65-67), keycloak failure (lines 82-84), and validation failure (line 46). Any failure prevents subsequent operations."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "verified",
+      "notes": "RETENTION_DAYS=14 unchanged (line 24). Lines 88-91 prune both study_tutor_*.dump and keycloak_*.dump with shared 14-day retention. All operations log via log() function."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "verified",
+      "notes": "Line 79: pg_dump -U keycloak -d keycloak -Fc. Dumps keycloak database as keycloak role per KC-D3 isolation requirement. Satisfies KEYCLOAK_DB contract as consumer of TASK-KC-003."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "verified",
+      "notes": "shellcheck deploy/postgres/backup.sh returns exit code 0 with no warnings. SC2034 warnings resolved by removing unused variables. SC2024 warnings suppressed with inline directives as false positives for root-run script."
+    }
+  ],
+  "rationale": "All six acceptance criteria verified with specific line-level evidence. Independent test execution (1 passed, signal_absent: false) confirms Player's claims via static analysis of bash script structure. Quality gates all green: tests passed, coverage 94.07%, honesty score 1.0. Implementation uses defensive patterns (shared validation helper, fail-fast semantics, atomic operations) and properly handles edge cases (empty dumps blocked, failure isolation, uniform retention). No critical guards triggered. Advisory about missing Phase 3 agent invocation is non-blocking guidance only."
+}

@@ -1,19 +1,24 @@
 ---
-id: TASK-KC-004
-title: "backup.sh — second pg_dump -d keycloak block; nightly backup fails if EITHER dump fails"
-task_type: feature
-parent_review: TASK-REV-KCA1
-feature_id: FEAT-AUTH-001
-wave: 2
-implementation_mode: task-work
 complexity: 4
-dependencies: [TASK-KC-003]
 consumer_context:
-  - task: TASK-KC-003
-    consumes: KEYCLOAK_DB
-    framework: "pg_dump custom-format (-Fc) via docker exec"
-    driver: "postgresql-client in study_tutor_postgres container"
-    format_note: "dump target DB name is exactly `keycloak`; dump as the keycloak role (`pg_dump -U keycloak -d keycloak -Fc`) since study_tutor role has no grants into the keycloak DB (KC-D3 isolation)"
+- consumes: KEYCLOAK_DB
+  driver: postgresql-client in study_tutor_postgres container
+  format_note: dump target DB name is exactly `keycloak`; dump as the keycloak role
+    (`pg_dump -U keycloak -d keycloak -Fc`) since study_tutor role has no grants into
+    the keycloak DB (KC-D3 isolation)
+  framework: pg_dump custom-format (-Fc) via docker exec
+  task: TASK-KC-003
+dependencies:
+- TASK-KC-003
+feature_id: FEAT-AUTH-001
+id: TASK-KC-004
+implementation_mode: task-work
+parent_review: TASK-REV-KCA1
+status: design_approved
+task_type: feature
+title: backup.sh — second pg_dump -d keycloak block; nightly backup fails if EITHER
+  dump fails
+wave: 2
 ---
 
 ## Description

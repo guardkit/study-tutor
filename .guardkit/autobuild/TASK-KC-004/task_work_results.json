@@ -1,0 +1,152 @@
+{
+  "task_id": "TASK-KC-004",
+  "timestamp": "2026-07-15T08:11:44.216815",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 1,
+    "tests_failed": 0,
+    "coverage": 100.0,
+    "coverage_met": true,
+    "all_passed": null
+  },
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/deploy/postgres/backup.sh",
+    "deploy/postgres/backup.sh"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-KC-004_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/seam/test_backup_keycloak_contract.py",
+    "tests/seam/test_backup_keycloak_contract.py"
+  ],
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.guardkit/autobuild/TASK-KC-004/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/deploy/postgres/backup.sh",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/seam/test_backup_keycloak_contract.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/tests/seam/test_backup_keycloak_contract.py"
+  ],
+  "summary": "1 tests passed, 100.0% coverage",
+  "sdk_turns": {
+    "turns_used": 25,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "backup.sh produces a separate keycloak_<stamp>.dump (custom-format -Fc) in addition to the existing study_tutor_<stamp>.dump",
+      "status": "complete",
+      "evidence": "Lines 71-82 of backup.sh implement keycloak dump with pattern keycloak_${stamp}.dump using pg_dump -Fc (custom format). Study_tutor dump preserved at lines 54-68 with same format.",
+      "test_file": "tests/seam/test_backup_keycloak_contract.py",
+      "implementation_files": [
+        "deploy/postgres/backup.sh"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Both dumps use the atomic temp-then-rename + PGDMP-magic validity check; a partial/empty dump never masquerades as good",
+      "status": "complete",
+      "evidence": "Shared validate_and_finalize() helper (lines 34-48) checks non-empty file ([ -s ]) and PGDMP magic (head -c 5 | grep -q PGDMP). Both dumps use .tmp extension during write, then mv to final name only after validation. Failed validation removes temp file and exits 1.",
+      "test_file": "tests/seam/test_backup_keycloak_contract.py",
+      "implementation_files": [
+        "deploy/postgres/backup.sh"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "The routine exits non-zero if the study_tutor dump or the keycloak dump fails (verify by simulating a failing keycloak dump \u2192 non-zero exit + logged failure)",
+      "status": "complete",
+      "evidence": "set -euo pipefail (line 16) ensures fail-fast. Study_tutor dump failure exits 1 at lines 65-67. Keycloak dump failure exits 1 at lines 82-84. Validation failures exit 1 at line 46. Any failure prevents subsequent dumps and exits non-zero.",
+      "test_file": "tests/seam/test_backup_keycloak_contract.py",
+      "implementation_files": [
+        "deploy/postgres/backup.sh"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Retention prunes both dump families at the shared RETENTION_DAYS=14; backup.log records both",
+      "status": "complete",
+      "evidence": "RETENTION_DAYS=14 unchanged (line 24). Lines 88-91 prune both study_tutor_*.dump and keycloak_*.dump with shared 14-day retention. All operations log to backup.log via log() function (lines 30, 42, 45, 57, 66, 74, 83, 92, 93).",
+      "test_file": "tests/seam/test_backup_keycloak_contract.py",
+      "implementation_files": [
+        "deploy/postgres/backup.sh"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "The keycloak dump targets DB keycloak per the \u00a74 KEYCLOAK_DB contract",
+      "status": "complete",
+      "evidence": "Line 79: pg_dump -U keycloak -d keycloak -Fc. Dumps keycloak database as keycloak role per KC-D3 isolation requirement (comment lines 76-77 documents this). Satisfies KEYCLOAK_DB contract as consumer of TASK-KC-003.",
+      "test_file": "tests/seam/test_backup_keycloak_contract.py",
+      "implementation_files": [
+        "deploy/postgres/backup.sh"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "shellcheck deploy/postgres/backup.sh returns exit code 0 with no warnings or errors. SC2034 warnings resolved by removing unused PGUSER/PGDB variables. SC2024 warnings suppressed with inline directives (lines 61, 78) as false positives for root-run script.",
+      "test_file": "tests/seam/test_backup_keycloak_contract.py",
+      "implementation_files": [
+        "deploy/postgres/backup.sh"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 0.6642714270856231
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 218.2256400771439
+    }
+  ]
+}

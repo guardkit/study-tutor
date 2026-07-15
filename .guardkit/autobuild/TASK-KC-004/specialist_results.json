@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 0.6642714270856231,
+    "error": null,
+    "tests_run": 1,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/seam/test_backup_keycloak_contract.py::test_backup_dumps_keycloak_and_fails_on_error PASSED [100%]\n============================== 1 passed in 0.01s ===============================",
+    "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "passed",
+    "duration_seconds": 218.2256400771439,
+    "error": null,
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}
