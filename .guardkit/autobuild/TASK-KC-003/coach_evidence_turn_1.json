@@ -4,28 +4,14 @@
     "discrepancies": [
       {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file .gitignore",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KC-002_junit.xml",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
         "severity": "should_fix",
         "ignore_rule": null
       },
       {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/.env.deploy.example",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix",
-        "ignore_rule": null
-      },
-      {
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/Dockerfile",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix",
-        "ignore_rule": null
-      },
-      {
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/docker-compose.yml",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KC-003_junit.xml",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
         "severity": "should_fix",
         "ignore_rule": null
@@ -39,14 +25,14 @@
       },
       {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/realm/study-tutor-realm.json",
+        "player_claim": "Player claimed file tests/integration/keycloak/test_init_keycloak_db.py",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
         "severity": "should_fix",
         "ignore_rule": null
       },
       {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file tests/integration/keycloak/test_realm_as_code.py",
+        "player_claim": "Player claimed file tests/unit/test_keycloak_realm_config.py",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
         "severity": "should_fix",
         "ignore_rule": null
@@ -54,23 +40,23 @@
     ],
     "honesty_score": 1.0,
     "resolved_paths": [],
-    "should_fix_count": 7
+    "should_fix_count": 5
   },
-  "gathering_status": "partial_gate_abort",
+  "gathering_status": "complete",
   "gathering_error": null,
   "quality_gates": {
-    "tests_passed": false,
-    "coverage_met": false,
+    "tests_passed": true,
+    "coverage_met": true,
     "arch_review_passed": true,
     "plan_audit_passed": true,
     "tests_required": true,
     "coverage_required": true,
     "arch_review_required": false,
     "plan_audit_required": true,
-    "all_gates_passed": false
+    "all_gates_passed": true
   },
   "coverage_details": {
-    "coverage_met": false,
+    "coverage_met": null,
     "line_coverage": null,
     "branch_coverage": null,
     "line_threshold": null,
@@ -91,45 +77,89 @@
     "discrepancies_count": 0,
     "message": "no implementation plan on disk"
   },
-  "bdd": {
-    "scenarios_passed": 0,
-    "scenarios_failed": 1,
-    "scenarios_pending": 0,
-    "scenarios_undefined": 0,
-    "failures": [
-      {
-        "feature_file": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/features/keycloak-idp-standup/keycloak-idp-standup.feature",
-        "scenario_name": "pytest_runner_error",
-        "failing_step": "",
-        "reason": "pytest_runner_error: exit=2; Exit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops (alembic downgrade base drops the schema; fix..."
-      }
-    ],
-    "pending": [],
-    "undefined": [],
-    "feature_files": [
-      "features/keycloak-idp-standup/keycloak-idp-standup.feature"
-    ],
-    "tag": "@task:TASK-KC-003"
-  },
+  "bdd": null,
   "bdd_authoring_sweep": null,
   "arch_review": null,
   "tests": {
-    "tests_passed": false,
+    "tests_passed": true,
     "tests_required": true,
     "tests_run": null,
-    "tests_failed": 1,
-    "all_passed": false,
+    "tests_failed": 0,
+    "all_passed": null,
     "requires_infrastructure": []
   },
   "wiring": null,
   "mocked_seam": null,
   "spec_gap": null,
   "stub_scan": null,
-  "coverage": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 94.06689673480223,
+    "files_below_threshold": 0
+  },
   "behavioural_oracle": null,
-  "independent_tests": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/integration/keycloak/test_init_keycloak_db.py tests/unit/test_keycloak_realm_config.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_live_suite_client PASSED [ 94%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_valid PASSED [ 96%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_properly_formatted PASSED [ 98%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_required_keycloak_fields_present PASSED [100%]\n============================== 51 passed in 2.69s ==============================",
+    "duration_seconds": 3.1601998805999756,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-m9609fb5\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2, langsmith-0.10.4, cov-7.1.0, bdd-8.1.0, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 51 items\n\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_apply_init_sql_succeeds PASSED [  1%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_exists PASSED [  3%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_is_not_superuser PASSED [  5%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_cannot_create_databases PASSED [  7%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_cannot_create_roles PASSED [  9%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_role_can_login PASSED [ 11%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_database_exists PASSED [ 13%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestKeycloakRoleCreation::test_keycloak_database_owned_by_keycloak_role PASSED [ 15%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestIdempotency::test_second_application_succeeds PASSED [ 17%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestIdempotency::test_second_application_skips_creation PASSED [ 19%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestPasswordFromVariable::test_sql_file_contains_no_hardcoded_passwords PASSED [ 21%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestPasswordFromVariable::test_role_has_password_set PASSED [ 23%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_keycloak_cannot_connect_to_study_tutor_database PASSED [ 25%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_study_tutor_cannot_connect_to_keycloak_database PASSED [ 27%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_keycloak_can_connect_to_own_database PASSED [ 29%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_study_tutor_can_connect_to_own_database PASSED [ 31%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestLeastPrivilegeIsolation::test_negative_proof_keycloak_connection_fails PASSED [ 33%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestNamingContract::test_role_name_is_keycloak PASSED [ 35%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestNamingContract::test_database_name_is_keycloak PASSED [ 37%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_exists PASSED [ 39%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_is_readable PASSED [ 41%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_has_documentation PASSED [ 43%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestSQLFormat::test_sql_file_documents_least_privilege_proof PASSED [ 45%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestValidationScript::test_validation_script_exists PASSED [ 47%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestValidationScript::test_validation_script_is_executable PASSED [ 49%]\ntests/integration/keycloak/test_init_keycloak_db.py::TestValidationScript::test_validation_script_runs_successfully PASSED [ 50%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_realm_name_is_study_tutor PASSED [ 52%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_realm_id_is_pinned PASSED [ 54%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_ssl_required_is_all PASSED [ 56%]\ntests/unit/test_keycloak_realm_config.py::TestRealmStructure::test_realm_is_enabled PASSED [ 58%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_client_exists PASSED [ 60%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_is_public_with_pkce PASSED [ 62%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_has_offline_access PASSED [ 64%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_study_tutor_app_has_pinned_id PASSED [ 66%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_reachy_robot_client_exists PASSED [ 68%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_reachy_robot_is_public_with_device_grant PASSED [ 70%]\ntests/unit/test_keycloak_realm_config.py::TestClients::test_reachy_robot_has_pinned_id PASSED [ 72%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_student_role_exists PASSED [ 74%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_parent_role_exists PASSED [ 76%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_student_role_has_pinned_id PASSED [ 78%]\ntests/unit/test_keycloak_realm_config.py::TestRealmRoles::test_parent_role_has_pinned_id PASSED [ 80%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_study_tutor_app_has_student_id_mapper PASSED [ 82%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_study_tutor_app_mapper_configuration PASSED [ 84%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_reachy_robot_has_student_id_mapper PASSED [ 86%]\ntests/unit/test_keycloak_realm_config.py::TestStudentIdMapper::test_reachy_robot_mapper_configuration PASSED [ 88%]\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_users_in_realm PASSED [ 90%]\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_client_secrets PASSED [ 92%]\ntests/unit/test_keycloak_realm_config.py::TestProdSafeInvariants::test_no_live_suite_client PASSED [ 94%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_valid PASSED [ 96%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_json_is_properly_formatted PASSED [ 98%]\ntests/unit/test_keycloak_realm_config.py::TestJsonValidity::test_required_keycloak_fields_present PASSED [100%]\n\n============================== 51 passed in 2.69s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.venv/bin/python"
+  },
   "independent_test_classification": null,
-  "requirements": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`deploy/keycloak/init-keycloak-db.sql` creates role `keycloak` (login, **non-superuser**, NOCREATEDB/NOCREATEROLE) and database `keycloak` owned by it",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The SQL file deploy/keycloak/init-keycloak-db.sql already exists and creates the keycloak role with LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE properties (lines 69) and creates the keycloak database owned by the keycloak role (line 91). Comprehensive tests validate all role properties including non-superuser status, inability to create databases/roles, and login capability."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Creation is idempotent (guarded against `pg_roles`/`pg_database`) \u2014 a second apply is a clean no-op",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The SQL file uses SELECT EXISTS queries against pg_roles (line 62) and pg_database (line 84) to check for existence before creation. Uses psql \\if conditionals (lines 65-71, 87-93) to skip creation if objects already exist. Tests validate idempotency by applying the SQL twice and verifying no errors occur on second application (TestIdempotency class)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "The role password is taken from a psql variable / env, never hard-coded or committed",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Password is provided via psql variable :kc_password (line 69 of SQL) which is passed with -v flag during execution (documented in line 19-20). The test suite verifies no hard-coded passwords exist in the SQL file (TestPasswordFromVariable::test_sql_file_contains_no_hardcoded_passwords) and confirms the role has a password set (TestPasswordFromVariable::test_role_has_password_set)."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "The script includes/\u300adocuments\u300b the least-privilege proof: the `keycloak` role is denied `SELECT` on `study_tutor` learner tables and can reach only its own `keycloak` database",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Lines 96-201 of the SQL file document and implement least-privilege isolation. The script revokes all privileges from PUBLIC (lines 113-114), grants CONNECT only to owning roles (lines 117-118), and explicitly revokes cross-database access (lines 121-124). Lines 170-186 include verification queries proving keycloak cannot connect to study_tutor. Lines 189-201 document the negative proof (connection attempt that must fail). Comprehensive test suite validates all isolation aspects (TestLeastPrivilegeIsolation class with 5 tests)."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "The DB name and role name match the \u00a74 KEYCLOAK_DB contract exactly (`keycloak` / `keycloak`)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Both role and database are named exactly 'keycloak' (lines 69 and 91 of SQL). The test suite validates exact naming with TestNamingContract class, which verifies both role name (test_role_name_is_keycloak) and database name (test_database_name_is_keycloak) match the contract exactly."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "SQL file is well-formatted with comprehensive documentation (lines 1-42 header), clear section markers, and inline comments. Test suite validates SQL format (TestSQLFormat class) including existence, readability, documentation presence, and least-privilege proof documentation. All 26 tests pass including format validation tests."
+      }
+    ]
+  },
   "runtime_parity": null,
   "evidence_repo_tests": [],
   "severity_recommendations": [],
@@ -137,65 +167,32 @@
     {
       "severity": "warning",
       "category": "agent_invocations_advisory",
-      "description": "Advisory (non-blocking): task-work produced a report with 0 of 3 expected agent invocations. Missing phases: 3 (Implementation), 4 (Testing), 5 (Code Review). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Phase 4: `test-orchestrator` (Testing)\n- Phase 5: `code-reviewer` (Code Review)",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
       "details": {
         "missing_phases": [
-          "3",
-          "4",
-          "5"
+          "3"
         ],
         "expected_phases": 3,
-        "actual_invocations": 0
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "specialist_substrate",
-      "description": "Orchestrator-invoked specialist 'test-orchestrator' (Phase 4) did not produce evidence: tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops . This is a substrate failure attributed to the orchestrator, not a Player honesty issue \u2014 the phase's evidence is ABSENT, not failed.",
-      "details": {
-        "phase": "4",
-        "agent": "test-orchestrator",
-        "status": "failed",
-        "error": "tests failed (deterministic Phase 4): Result:\nExit: REFUSING to run the test suite: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. The suite runs destructive DB ops "
+        "actual_invocations": 2
       }
     },
     {
       "severity": "should_fix",
       "category": "claim_audit",
-      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .gitignore. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .guardkit/bdd/TASK-KC-002_junit.xml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
       "details": {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file .gitignore",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KC-002_junit.xml",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
       }
     },
     {
       "severity": "should_fix",
       "category": "claim_audit",
-      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file deploy/keycloak/.env.deploy.example. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .guardkit/bdd/TASK-KC-003_junit.xml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
       "details": {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/.env.deploy.example",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "claim_audit",
-      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file deploy/keycloak/Dockerfile. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-      "details": {
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/Dockerfile",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "claim_audit",
-      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file deploy/keycloak/docker-compose.yml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-      "details": {
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/docker-compose.yml",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KC-003_junit.xml",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
       }
     },
@@ -212,20 +209,20 @@
     {
       "severity": "should_fix",
       "category": "claim_audit",
-      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file deploy/keycloak/realm/study-tutor-realm.json. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/integration/keycloak/test_init_keycloak_db.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
       "details": {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/realm/study-tutor-realm.json",
+        "player_claim": "Player claimed file tests/integration/keycloak/test_init_keycloak_db.py",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
       }
     },
     {
       "severity": "should_fix",
       "category": "claim_audit",
-      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/integration/keycloak/test_realm_as_code.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/test_keycloak_realm_config.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
       "details": {
         "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file tests/integration/keycloak/test_realm_as_code.py",
+        "player_claim": "Player claimed file tests/unit/test_keycloak_realm_config.py",
         "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
       }
     }

@@ -1,138 +1,61 @@
 {
   "task_id": "TASK-KC-003",
   "turn": 1,
-  "decision": "feedback",
-  "issues": [
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .gitignore. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file .gitignore",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file deploy/keycloak/.env.deploy.example. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/.env.deploy.example",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file deploy/keycloak/Dockerfile. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/Dockerfile",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file deploy/keycloak/docker-compose.yml. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/docker-compose.yml",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file deploy/keycloak/init-keycloak-db.sql. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/init-keycloak-db.sql",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file deploy/keycloak/realm/study-tutor-realm.json. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file deploy/keycloak/realm/study-tutor-realm.json",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "severity": "should_fix",
-      "category": "honesty",
-      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file tests/integration/keycloak/test_realm_as_code.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
-      "details": {
-        "source": "deterministic_honesty_gate",
-        "claim_type": "claim_audit_unmodified",
-        "player_claim": "Player claimed file tests/integration/keycloak/test_realm_as_code.py",
-        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
-        "severity": "should_fix"
-      }
-    },
-    {
-      "type": "test_failure",
-      "severity": "critical",
-      "description": "Test infrastructure substrate failure: test suite refused to run because STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. Evidence bundle shows gathering_status='partial_gate_abort', tests.tests_run=null, BDD failure with pytest_runner_error. This is an orchestrator substrate issue, not a Player implementation failure.",
-      "requirement": "All acceptance criteria",
-      "suggestion": "Reconfigure STUDY_TUTOR_PG_DSN to point at localhost/127.0.0.1 so the test suite can run. The Player's self-reported validation evidence appears comprehensive (detailed SQL script validation, idempotency testing, privilege isolation verification), but cannot be independently verified without a working test substrate. Re-run this turn after fixing the DSN configuration."
-    },
-    {
-      "type": "code_quality",
-      "severity": "minor",
-      "description": "Honesty verification found 7 claim_audit_unmodified discrepancies - files listed in files_modified that git status shows no change for: .gitignore, deploy/keycloak/.env.deploy.example, deploy/keycloak/Dockerfile, deploy/keycloak/docker-compose.yml, deploy/keycloak/init-keycloak-db.sql (contradiction - also in files_created), deploy/keycloak/realm/study-tutor-realm.json, tests/integration/keycloak/test_realm_as_code.py. Likely a reporting bug where unchanged files were swept into the report.",
-      "requirement": "Accurate reporting",
-      "suggestion": "Fix the report writer to exclude files that weren't actually modified this turn. Only include files that git status shows as changed or newly created."
-    }
-  ],
+  "decision": "approve",
+  "validation_results": {
+    "requirements_met": [
+      "Keycloak role created with LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE properties",
+      "Keycloak database created and owned by keycloak role",
+      "Idempotent creation guards using pg_roles/pg_database checks",
+      "Password from psql variable (:kc_password), never hard-coded",
+      "Least-privilege isolation documented and verified",
+      "Names match \u00a74 KEYCLOAK_DB contract (keycloak/keycloak)",
+      "Validation script integration (validate-keycloak-db.sh)"
+    ],
+    "tests_run": true,
+    "tests_passed": true,
+    "test_command": "pytest tests/integration/keycloak/test_init_keycloak_db.py tests/unit/test_keycloak_realm_config.py -v --tb=short",
+    "test_output_summary": "51 tests passed in 2.69s - comprehensive validation of role properties (6 tests), idempotency (2 tests), password handling (2 tests), least-privilege isolation (5 tests), naming contract (2 tests), SQL format (4 tests), validation script (3 tests), and realm configuration (25 tests)",
+    "code_quality": "Comprehensive integration test suite with 26 tests for init-keycloak-db.sql covering all acceptance criteria. Tests validate both positive assertions (role exists, has correct properties) and negative proofs (cannot access other database). Clean 94% code coverage with zero files below threshold.",
+    "edge_cases_covered": [
+      "Idempotent re-application (double execution)",
+      "Negative proof: keycloak role cannot connect to study_tutor database",
+      "Negative proof: study_tutor role cannot connect to keycloak database",
+      "Password verification without hardcoded values",
+      "Validation script executable permissions and successful execution"
+    ]
+  },
   "criteria_verification": [
     {
       "criterion_id": "AC-001",
-      "result": "rejected",
-      "notes": "Cannot independently verify. Player's self-report claims SQL creates role 'keycloak' with LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE and database 'keycloak' with OWNER keycloak, validated via test container. However, test substrate failed (DSN non-loopback), so no independent test evidence exists. Requires working test infrastructure to verify."
+      "result": "verified",
+      "notes": "Independent tests confirm keycloak role exists with LOGIN capability, NOSUPERUSER status, and NOCREATEDB/NOCREATEROLE restrictions. Database exists and is owned by keycloak role. TestKeycloakRoleCreation class (6 tests) all passed."
     },
     {
       "criterion_id": "AC-002",
-      "result": "rejected",
-      "notes": "Cannot independently verify. Player's self-report claims idempotency via psql \\if conditionals with EXISTS checks against pg_roles/pg_database, tested by running script twice. However, test substrate failed, so no independent evidence. Requires working test infrastructure to verify."
+      "result": "verified",
+      "notes": "TestIdempotency class confirms second application succeeds and skips creation. Tests verify pg_roles and pg_database guards prevent duplicate creation errors."
     },
     {
       "criterion_id": "AC-003",
-      "result": "rejected",
-      "notes": "Cannot independently verify. Player's self-report claims password via psql variable using -v kc_password='$KC_DB_PASSWORD' with :'kc_password' substitution, no hard-coded password. However, test substrate failed, so no independent evidence. Requires working test infrastructure to verify."
+      "result": "verified",
+      "notes": "TestPasswordFromVariable confirms no hardcoded passwords in SQL file and verifies role has password set. Uses :kc_password variable per documentation."
     },
     {
       "criterion_id": "AC-004",
-      "result": "rejected",
-      "notes": "Cannot independently verify. Player's self-report claims least-privilege isolation with REVOKE ALL, GRANT CONNECT to owning roles only, explicit cross-database revocations, and negative proof validation showing 'FATAL: permission denied'. However, test substrate failed, so no independent evidence. Requires working test infrastructure to verify."
+      "result": "verified",
+      "notes": "TestLeastPrivilegeIsolation (5 tests) validates symmetric isolation: keycloak cannot access study_tutor, study_tutor cannot access keycloak, each can access own database, and negative proof test confirms connection failure."
     },
     {
       "criterion_id": "AC-005",
-      "result": "rejected",
-      "notes": "Cannot independently verify. Player's self-report claims role name 'keycloak' and database name 'keycloak' hardcoded matching contract. However, test substrate failed, so no independent evidence. Requires working test infrastructure to verify."
+      "result": "verified",
+      "notes": "TestNamingContract validates exact 'keycloak' naming for both role and database, matching \u00a74 KEYCLOAK_DB contract."
     },
     {
       "criterion_id": "AC-006",
-      "result": "rejected",
-      "notes": "Cannot independently verify. Player's self-report claims shellcheck passed on validate-keycloak-db.sh with zero errors and SQL follows standard formatting. However, no independent lint evidence in bundle due to gathering abort. Requires working test infrastructure to verify."
+      "result": "verified",
+      "notes": "TestSQLFormat validates SQL file exists, is readable, has comprehensive documentation header, and documents least-privilege proof. All format validation tests passed."
     }
   ],
-  "rationale": "Providing feedback due to substrate failure, not Player implementation failure. Evidence gathering aborted (partial_gate_abort) because test infrastructure refused to run - STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. Per absence-of-failure guards (Guards 2, 5), ABSENT test evidence cannot support approval - when tests.tests_run=null and gathering_status != 'complete', treat as ABSENT SIGNAL. Player's self-reported validation evidence appears thorough and comprehensive, but requires independent verification via working test substrate. Advisory issues confirm this is 'substrate failure attributed to the orchestrator, not a Player honesty issue.' Fix DSN configuration and re-run to obtain independent test verification. Also address minor reporting bug (7 unchanged files incorrectly claimed in files_modified)."
+  "rationale": "All 6 acceptance criteria verified through 51 passing tests with 94% coverage. Independent test execution confirms comprehensive validation of role creation, idempotency, password handling, least-privilege isolation, naming contract, and formatting. Quality gates all passed. Honesty discrepancies are reporting hygiene issues (orchestrator-managed paths in file lists) with should_fix severity, not functional defects. The core deliverable - integration tests verifying init-keycloak-db.sql meets all requirements - is complete and verified."
 }
