@@ -1,0 +1,9 @@
+{
+  "turn": 2,
+  "feedback_from_turn": 1,
+  "feedback_summary": "- Test suite safety guard refused execution: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. Test runner correctly blocked destructive DB operations against remote host. BDD oracle failed with same error. Evidence gathering status: partial_gate_abort.: Configure STUDY_TUTOR_PG_DSN to point to localhost/127.0.0.1 (e.g., postgresql://user:pass@localhost:5432/study_tutor_test), or if the Tailscale host is safe for destructive operations, override the safety check. Then re-run tests to generate verification evidence.",
+  "must_fix": [],
+  "should_fix": [],
+  "validation_results": {},
+  "raw_feedback": "- Test suite safety guard refused execution: STUDY_TUTOR_PG_DSN points at non-loopback host 'whitestocks.tailebf801.ts.net'. Test runner correctly blocked destructive DB operations against remote host. BDD oracle failed with same error. Evidence gathering status: partial_gate_abort.: Configure STUDY_TUTOR_PG_DSN to point to localhost/127.0.0.1 (e.g., postgresql://user:pass@localhost:5432/study_tutor_test), or if the Tailscale host is safe for destructive operations, override the safety check. Then re-run tests to generate verification evidence."
+}

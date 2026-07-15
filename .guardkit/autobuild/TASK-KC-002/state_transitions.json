@@ -5,5 +5,12 @@
     "post_path": "tasks/design_approved/TASK-KC-002-realm-as-code.md",
     "timestamp": "2026-07-15T05:36:53.622936+00:00",
     "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-KC-002",
+    "pre_path": "tasks/backlog/keycloak-idp-standup/TASK-KC-002-realm-as-code.md",
+    "post_path": "tasks/design_approved/TASK-KC-002-realm-as-code.md",
+    "timestamp": "2026-07-15T05:42:36.092582+00:00",
+    "kind": "design_approved_transition"
   }
 ]
