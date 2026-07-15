@@ -1,13 +1,19 @@
 ---
-id: TASK-KC-005
-title: "RUNBOOK-study-tutor-keycloak-standup.md — executable standup runbook with the KC-G1 gate model"
-task_type: documentation
-parent_review: TASK-REV-KCA1
-feature_id: FEAT-AUTH-001
-wave: 3
-implementation_mode: task-work
 complexity: 5
-dependencies: [TASK-KC-001, TASK-KC-002, TASK-KC-003, TASK-KC-004]
+dependencies:
+- TASK-KC-001
+- TASK-KC-002
+- TASK-KC-003
+- TASK-KC-004
+feature_id: FEAT-AUTH-001
+id: TASK-KC-005
+implementation_mode: task-work
+parent_review: TASK-REV-KCA1
+status: design_approved
+task_type: documentation
+title: RUNBOOK-study-tutor-keycloak-standup.md — executable standup runbook with the
+  KC-G1 gate model
+wave: 3
 ---
 
 ## Description

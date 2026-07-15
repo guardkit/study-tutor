@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KC-005",
+    "pre_path": "tasks/backlog/TASK-KC-005-standup-runbook.md",
+    "post_path": "tasks/design_approved/TASK-KC-005-standup-runbook.md",
+    "timestamp": "2026-07-15T07:17:15.584287+00:00",
+    "kind": "design_approved_transition"
+  }
+]

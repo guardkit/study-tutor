@@ -1,0 +1,141 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": false,
+    "coverage_required": false,
+    "arch_review_required": false,
+    "plan_audit_required": false,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": false
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": false,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": null,
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "Independent test verification skipped (tests not required for documentation tasks)",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md` exists with all phases 0\u20136, the KC-G1 gate definition, and a decision-gates table",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md (371 lines) with all required phases (0-6), KC-G1 gate validation section, and decision gates table matching the postgres runbook structure. Phases include: Phase 0 (NAS prep), Phase 1 (TLS cert mint), Phase 2 (DB + role), Phase 3 (deploy + realm import), Phase 4 (user provisioning), Phase 5 (backup config), Phase 6 (network exposure). Decision gates table at line 345 includes G0, KC-G0a, KC-G0b, KC-G1a, KC-G1b, and KC-G1."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Cert story documents the direct `tailscale cert` mount **and** both ordered fallbacks (`tailscale serve`, GB10), all preserving the pinned issuer name",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Phase 1 documents the complete cert strategy with three paths: (1) Primary path: direct 'tailscale cert' mount to /volume1/docker/study_tutor_keycloak/certs/ (lines 89-112), (2) Fallback A: 'tailscale serve --https 8443' fronting Keycloak if direct mount fails (lines 117-128), (3) Fallback B: GB10 placement as last resort (lines 130-138). All three paths preserve the pinned issuer name 'https://whitestocks.tailebf801.ts.net:8443/realms/study-tutor' as documented on line 140."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "Provisioning phase states users are created in the admin console + `seed-students --student-ids`, and are **never committed**",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Phase 4 (User provisioning, lines 206-263) documents manual user creation in the admin console for Lilymay (lines 210-231) and the companion 'seed-students --student-ids' command (lines 235-244). Multiple warnings state users are never committed: line 18 table entry, line 36 credentials table, line 38 CRITICAL warning box, line 206 section title '(manual, never committed)', and line 360 in 'What NOT to do' section. The PII posture for a minor's identity is explicitly stated."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Network section states tailnet-only / no-WAN and admin-console-tailnet-only, mirroring the postgres Phase 5 posture",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Phase 6 (Network exposure & access hardening, lines 276-317) documents tailnet-only access with no WAN port-forward, explicitly mirroring the postgres 5434 three-layer posture. Documents: (1) Internet edge - Aruba gateway confirms NO WAN port-forward for 8443 (lines 283-286), (2) Tailnet ACLs for tailnet IP 100.92.74.2:8443 (lines 288-297), (3) DSM firewall as optional defence-in-depth (lines 299-306). Admin console access documented as tailnet-only on lines 308-310. Intent statement on line 277 matches postgres runbook's 'never the internet' posture."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "Re-run safety (idempotency, non-overwriting realm import, runbook-user survival) and ~90-day cert renewal are documented",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Section 'Idempotency & re-run safety' (lines 337-343) documents: (1) docker compose up -d is idempotent (line 340), (2) realm import with --import-realm is non-overwriting and runbook-created users (Lilymay, Alex) survive re-imports per ASSUM-003 (lines 340-341), (3) already-bound resources fail cleanly or no-op (lines 342-343). Cert renewal documented in Phase 1: Tailscale cert renews ~90 days unattended (lines 113-116), with check command for expiry. Renewal re-documented in idempotency section line 343."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "A \"What NOT to do\" section is present; the runbook references the committed artifacts (compose, realm, init SQL, backup.sh)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "'What NOT to do' section present at lines 358-374 with 8 prohibition items covering: no users/secrets in git, no WAN exposure, no skipping keycloak pg_dump, no changing issuer URL, no 'compose down -v', no direct NAS edits, no start-dev mode, no role reuse. Committed artifacts referenced throughout: docker-compose.yml (lines 3, 184), realm JSON (line 38, 184, 360), init-keycloak-db.sql (line 143, 375), backup.sh (lines 19, 268-270, 375). Footer on line 375 explicitly lists all artifact paths in deploy/keycloak/ and deploy/postgres/backup.sh."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "task_type": "documentation",
+  "profile_name": "documentation"
+}

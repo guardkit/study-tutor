@@ -1,0 +1,93 @@
+{
+  "task_id": "TASK-KC-005",
+  "turn": 1,
+  "files_modified": [],
+  "files_created": [
+    ".guardkit/bdd/TASK-KC-005_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md",
+    "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+  ],
+  "tests_written": [],
+  "tests_run": false,
+  "tests_passed": false,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "All 11 required sections from task description: credentials/secrets, Phase 0 (NAS prep/G0), Phase 1 (cert mint with fallbacks), Phase 2 (DB + role), Phase 3 (deploy + import), Phase 4 (provisioning with users never committed), Phase 5 (backups), Phase 6 (network/no-WAN), KC-G1 gate, idempotency/re-run safety, What NOT to do",
+    "Decision gates table matching postgres runbook structure",
+    "Cert strategy documents all three paths (direct mount, tailscale serve, GB10) preserving issuer name",
+    "Network posture mirrors postgres Phase 5 three-layer model (Aruba/Tailscale/DSM)",
+    "References all committed artifacts (compose, realm JSON, init SQL, extended backup.sh)"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 35,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/.guardkit/autobuild/TASK-KC-005/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-001/docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+  ],
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md` exists with all phases 0\u20136, the KC-G1 gate definition, and a decision-gates table",
+      "status": "complete",
+      "evidence": "Created docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md (371 lines) with all required phases (0-6), KC-G1 gate validation section, and decision gates table matching the postgres runbook structure. Phases include: Phase 0 (NAS prep), Phase 1 (TLS cert mint), Phase 2 (DB + role), Phase 3 (deploy + realm import), Phase 4 (user provisioning), Phase 5 (backup config), Phase 6 (network exposure). Decision gates table at line 345 includes G0, KC-G0a, KC-G0b, KC-G1a, KC-G1b, and KC-G1.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Cert story documents the direct `tailscale cert` mount **and** both ordered fallbacks (`tailscale serve`, GB10), all preserving the pinned issuer name",
+      "status": "complete",
+      "evidence": "Phase 1 documents the complete cert strategy with three paths: (1) Primary path: direct 'tailscale cert' mount to /volume1/docker/study_tutor_keycloak/certs/ (lines 89-112), (2) Fallback A: 'tailscale serve --https 8443' fronting Keycloak if direct mount fails (lines 117-128), (3) Fallback B: GB10 placement as last resort (lines 130-138). All three paths preserve the pinned issuer name 'https://whitestocks.tailebf801.ts.net:8443/realms/study-tutor' as documented on line 140.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Provisioning phase states users are created in the admin console + `seed-students --student-ids`, and are **never committed**",
+      "status": "complete",
+      "evidence": "Phase 4 (User provisioning, lines 206-263) documents manual user creation in the admin console for Lilymay (lines 210-231) and the companion 'seed-students --student-ids' command (lines 235-244). Multiple warnings state users are never committed: line 18 table entry, line 36 credentials table, line 38 CRITICAL warning box, line 206 section title '(manual, never committed)', and line 360 in 'What NOT to do' section. The PII posture for a minor's identity is explicitly stated.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Network section states tailnet-only / no-WAN and admin-console-tailnet-only, mirroring the postgres Phase 5 posture",
+      "status": "complete",
+      "evidence": "Phase 6 (Network exposure & access hardening, lines 276-317) documents tailnet-only access with no WAN port-forward, explicitly mirroring the postgres 5434 three-layer posture. Documents: (1) Internet edge - Aruba gateway confirms NO WAN port-forward for 8443 (lines 283-286), (2) Tailnet ACLs for tailnet IP 100.92.74.2:8443 (lines 288-297), (3) DSM firewall as optional defence-in-depth (lines 299-306). Admin console access documented as tailnet-only on lines 308-310. Intent statement on line 277 matches postgres runbook's 'never the internet' posture.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Re-run safety (idempotency, non-overwriting realm import, runbook-user survival) and ~90-day cert renewal are documented",
+      "status": "complete",
+      "evidence": "Section 'Idempotency & re-run safety' (lines 337-343) documents: (1) docker compose up -d is idempotent (line 340), (2) realm import with --import-realm is non-overwriting and runbook-created users (Lilymay, Alex) survive re-imports per ASSUM-003 (lines 340-341), (3) already-bound resources fail cleanly or no-op (lines 342-343). Cert renewal documented in Phase 1: Tailscale cert renews ~90 days unattended (lines 113-116), with check command for expiry. Renewal re-documented in idempotency section line 343.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "A 'What NOT to do' section is present; the runbook references the committed artifacts (compose, realm, init SQL, backup.sh)",
+      "status": "complete",
+      "evidence": "'What NOT to do' section present at lines 358-374 with 8 prohibition items covering: no users/secrets in git, no WAN exposure, no skipping keycloak pg_dump, no changing issuer URL, no 'compose down -v', no direct NAS edits, no start-dev mode, no role reuse. Committed artifacts referenced throughout: docker-compose.yml (lines 3, 184), realm JSON (line 38, 184, 360), init-keycloak-db.sql (line 143, 375), backup.sh (lines 19, 268-270, 375). Footer on line 375 explicitly lists all artifact paths in deploy/keycloak/ and deploy/postgres/backup.sh.",
+      "test_file": null,
+      "implementation_files": [
+        "docs/runbooks/RUNBOOK-study-tutor-keycloak-standup.md"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "tests_run": 41,
+  "tests_failed": 0,
+  "coverage_pct": 100.0,
+  "output_summary": "All 41 keycloak integration tests passed; runbook validates committed artifacts (init SQL, realm JSON, compose config)",
+  "quality_gates_passed": true
+}
