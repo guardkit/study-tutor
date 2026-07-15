@@ -4,7 +4,7 @@ description: 'FEAT-AUTH-001 A1 standup: bring study_tutor_keycloak up on the NAS
   realm-as-code, tailnet TLS, co-located keycloak DB, and backups; pass gate KC-G1.
   Runbook + committable artifacts; live standup is operator_handoff.'
 created: '2026-07-08T20:39:33.430048'
-status: planned
+status: completed
 complexity: 6
 estimated_tasks: 6
 tasks:
@@ -13,7 +13,7 @@ tasks:
   file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-001-keycloak-compose-and-env.md
   complexity: 5
   dependencies: []
-  status: pending
+  status: completed
   description: ''
   implementation_mode: task-work
   estimated_minutes: 75
@@ -22,7 +22,7 @@ tasks:
   file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-002-realm-as-code.md
   complexity: 6
   dependencies: []
-  status: pending
+  status: completed
   description: ''
   implementation_mode: task-work
   estimated_minutes: 113
@@ -31,7 +31,7 @@ tasks:
   file_path: tasks/backlog/keycloak-idp-standup/TASK-KC-003-keycloak-db-and-role.md
   complexity: 4
   dependencies: []
-  status: pending
+  status: completed
   description: ''
   implementation_mode: task-work
   estimated_minutes: 50
@@ -41,7 +41,7 @@ tasks:
   complexity: 4
   dependencies:
   - TASK-KC-003
-  status: pending
+  status: completed
   description: ''
   implementation_mode: task-work
   estimated_minutes: 50
@@ -54,7 +54,7 @@ tasks:
   - TASK-KC-002
   - TASK-KC-003
   - TASK-KC-004
-  status: pending
+  status: completed
   description: ''
   implementation_mode: task-work
   estimated_minutes: 75
@@ -64,7 +64,7 @@ tasks:
   complexity: 5
   dependencies:
   - TASK-KC-005
-  status: pending
+  status: deferred
   description: ''
   implementation_mode: task-work
   estimated_minutes: 75
