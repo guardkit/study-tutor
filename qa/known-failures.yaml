@@ -1,0 +1,43 @@
+# F2 · study-tutor known-failure ledger (guardkit qa kind: known-failures)
+# The DOCUMENTED expected outcome of the FULL default pytest suite, plus every
+# pre-existing, triaged failure. This is the FIRST QA-surface artifact for the
+# repo: every later suite run is compared against THIS ledger, not against "all
+# green". An un-ledgered failure fails the gate; a ledgered entry that starts
+# passing is a stale-ledger finding to be struck. Zero net-new vs this ledger is
+# the bar — that is what makes each later green honest.
+#
+# Suite of record (default selection — the "live" marker is NOT added; the sole
+# live-marked test skips without real providers). Throwaway loopback Postgres,
+# schema at alembic head:
+#   STUDY_TUTOR_PG_DSN="postgresql://study_tutor:test@127.0.0.1:55441/study_tutor" \
+#     uv run --no-sync python -m pytest -q
+# Observed baseline 2026-07-16 @ 8cb27ff9: 1566 passed, 1 failed (below),
+# 6 skipped, 0 errored, of 1573 collected in 47.46s.
+format_version: "1.0"
+suite_id: study-tutor-pytest-suite
+framework: pytest
+language: python
+captured_at:
+  sha: "8cb27ff9"
+  date: "2026-07-16"
+totals:
+  collected: 1573
+  passed: 1566
+  failed: 1
+  errored: 0
+  skipped: 6
+  runtime: "47.46s"
+entries:
+  - nodeid: "tests/test_smp_01_alembic_setup.py::test_ac002_uv_lock_in_sync"
+    status: known_failure
+    reason: >-
+      Environment artifact, NOT a product defect: the repo tree carries a
+      pre-existing modified `uv.lock` that is out of sync with pyproject.toml,
+      so `uv lock --check` exits 1. The uv.lock is a fenced file this baseline
+      is forbidden to touch; the failure is deterministic (re-run reproduced it)
+      and clears the moment the lockfile is regenerated.
+    env_condition: "runs whenever the working-tree uv.lock is out of sync with pyproject.toml (`uv lock --check` non-zero)"
+    first_seen: "2026-07-16"
+    owner: "richwoollcott"
+    review_by: "2026-08-16"
+    tracking_ref: "pre-existing modified uv.lock (S1 baseline fence: never commit/stage/revert uv.lock)"
