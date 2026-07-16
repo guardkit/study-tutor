@@ -13,23 +13,17 @@
 #     uv run --no-sync python -m pytest -q
 # Observed baseline 2026-07-16 @ 8cb27ff9: 1566 passed, 1 failed (below),
 # 6 skipped, 0 errored, of 1573 collected in 47.46s.
+# (Full observed counts live in this comment because the pinned F2 schema
+# carries only expected.passed: 1573 collected · 1566 passed · 1 failed ·
+# 0 errored · 6 skipped · 47.46s, captured 2026-07-16 @ 8cb27ff9.)
 format_version: "1.0"
 suite_id: study-tutor-pytest-suite
 framework: pytest
 language: python
-captured_at:
-  sha: "8cb27ff9"
-  date: "2026-07-16"
-totals:
-  collected: 1573
+expected:
   passed: 1566
-  failed: 1
-  errored: 0
-  skipped: 6
-  runtime: "47.46s"
-entries:
-  - nodeid: "tests/test_smp_01_alembic_setup.py::test_ac002_uv_lock_in_sync"
-    status: known_failure
+known_failures:
+  - test_id: "tests/test_smp_01_alembic_setup.py::test_ac002_uv_lock_in_sync"
     reason: >-
       Environment artifact, NOT a product defect: the repo tree carries a
       pre-existing modified `uv.lock` that is out of sync with pyproject.toml,
@@ -37,7 +31,9 @@ entries:
       is forbidden to touch; the failure is deterministic (re-run reproduced it)
       and clears the moment the lockfile is regenerated.
     env_condition: "runs whenever the working-tree uv.lock is out of sync with pyproject.toml (`uv lock --check` non-zero)"
-    first_seen: "2026-07-16"
+    since:
+      date: "2026-07-16"
+      sha: "8cb27ff9"
     owner: "richwoollcott"
     review_by: "2026-08-16"
     tracking_ref: "pre-existing modified uv.lock (S1 baseline fence: never commit/stage/revert uv.lock)"
