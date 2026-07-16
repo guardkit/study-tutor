@@ -1,0 +1,39 @@
+# deploy-profile (guardkit qa kind: deploy-profile)
+# The per-repo deploy profile the forge DEPLOY stage reads to render its runbook.
+# study-tutor's compose front door is deploy/http/docker-compose.yml: it stands up
+# `study-tutor serve-http` on host :8100 (HTTP_PORT default) against StudentStore
+# (Postgres, deploy/postgres/), NO NATS dependency (FEAT-APP-001 / ADR-ARCH-023).
+#
+# secret_injection lists the env-var NAMES the http compose consumes as REFS ONLY
+# (STUDY_TUTOR_PG_DSN, STUDY_TUTOR_HTTP_TOKENS) — names, never values. The compose
+# resolves these from deploy/http/.env at run time; the WS5 register owns the
+# values. Both are declared `${VAR:?...}` (fail-fast) in the compose file, so they
+# are the profile's true secret surface. No `=`, URL, or whitespace here (the B8
+# secret-ref guardrail refuses anything value-bearing).
+format_version: "1.0"
+env_id: local
+compose:
+  file: deploy/http/docker-compose.yml
+hosts:
+  - host: localhost
+    role: app
+secret_injection:
+  - STUDY_TUTOR_PG_DSN
+  - STUDY_TUTOR_HTTP_TOKENS
+models_required: []
+health_checks:
+  - cmd: "curl -fsS http://localhost:8100/healthz"
+    expected: "ok"
+cwd: "."
+# live_gate: the F16 real per-target backend (forge RepoDriverLiveGateInvoker,
+# C4-prep). The forge parser on the CURRENT tree supports this section
+# (DeployLiveGate + _parse_live_gate, commit b101933). `driver` is the BASE argv
+# only — the invoker appends --feature/--target/--gates itself — resolved relative
+# to `cwd` (the repo root). env carries the NON-SECRET base URL the driver's F16
+# healthz probe reads (STUDY_TUTOR_BASE_URL); secrets stay register REFS above.
+live_gate:
+  driver:
+    - python3
+    - qa/gates/local_live_gate.py
+  env:
+    STUDY_TUTOR_BASE_URL: "http://localhost:8100"
