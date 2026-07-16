@@ -1,0 +1,51 @@
+# F1 · pass-bar (guardkit qa kind: pass-bar) for the SESSIONS-READONLY gate.
+# The criteria ARE the gate qa/gates/sessions_readonly_gate.py: the bearer-authed
+# read surface GET /api/sessions returns 200 + a JSON ARRAY to an authenticated
+# caller, and refuses an anonymous caller (no Authorization header -> 401).
+#
+# auth_surface_bearing: true — /api/sessions is bearer-authed
+# (src/study_tutor/http/app.py list_sessions via _resolve_student_id; the
+# transport maps Unauthenticated to HTTP 401). Because the flag is true the
+# pass-bar schema (PB-14) requires all five negative paths declared below; the
+# gate itself DIRECTLY exercises the anonymous-refusal path (the ::anonymous_refused
+# assertion, mapped to wrong_credential / anonymous_deep_link / post_logout_401 /
+# unauthorized_403_ui — the study-tutor API is header-bearer, so a missing/invalid
+# token is one refusal shape: 401 Unauthenticated). The bearer token is supplied
+# to the gate ONLY via the STUDY_TUTOR_GATE_TOKEN env var — never embedded here.
+#
+# dependency_down_degradation basis: list_sessions reads the Postgres StudentStore
+# (SessionService.list_sessions); with the DB down the request degrades to the
+# transport's error mapping (5xx / error envelope), never a false 200. serve-http
+# fails fast at boot if Postgres is unreachable, so a booted server has proven the
+# dependency at startup.
+format_version: "2.0"
+task_id: TASK-APP1-SESSIONS-READONLY-GATE
+registered_at:
+  sha: "33cc776"
+  date: "2026-07-16"
+auth_surface_bearing: true
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-SESSIONS-AUTHED-200
+    text: "GET /api/sessions with a valid bearer token returns HTTP 200"
+    class: machine
+    evidence_kind: json
+  - id: C-SESSIONS-BODY-LIST
+    text: "authed response body is a JSON array (contract §5.2 list of session summaries)"
+    class: machine
+    evidence_kind: json
+  - id: C-SESSIONS-ANON-REFUSED
+    text: "GET /api/sessions with NO Authorization header is refused with 401 (Unauthenticated)"
+    class: machine
+    evidence_kind: json
+# Negative path names are plain strings (pass-bar v2.0 schema). auth_surface_bearing:true
+# requires all five (AUTH_NEGATIVE_PATHS | dependency_down_degradation). The four
+# auth-shaped paths collapse to the single header-bearer refusal shape this API
+# exposes (missing/invalid token -> 401), evidenced by C-SESSIONS-ANON-REFUSED.
+negative_paths:
+  - dependency_down_degradation
+  - wrong_credential
+  - anonymous_deep_link
+  - post_logout_401
+  - unauthorized_403_ui

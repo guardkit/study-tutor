@@ -1,0 +1,45 @@
+# F1 · pass-bar (guardkit qa kind: pass-bar) for the HEALTHZ gate.
+# The criteria ARE the gate qa/gates/healthz_gate.py: GET /healthz returns 200
+# with a JSON body reporting status:"ok" (the TASK-APP1-04 READY check), and the
+# route is GET-only so POST is method-not-allowed (405). auth_surface_bearing:false
+# — /healthz is an UNAUTHED route (src/study_tutor/http/app.py healthz), so it
+# exposes no auth surface and only dependency_down_degradation is a required
+# negative path.
+#
+# dependency_down_degradation basis: /healthz is a static READY check — it
+# returns {"status":"ok"} without touching Postgres or the model provider, so its
+# honest degradation story is that it stays available (200) even when the DB is
+# down. serve-http itself fails fast at BOOT if Postgres is unreachable
+# (cli/main.py), so a booted server answering /healthz has already proven its DB
+# dependency at startup; the health route does not re-probe per request.
+format_version: "2.0"
+task_id: TASK-APP1-04-HEALTHZ-GATE
+registered_at:
+  sha: "33cc776"
+  date: "2026-07-16"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-HEALTHZ-200
+    text: "GET /healthz returns HTTP 200"
+    class: machine
+    evidence_kind: json
+  - id: C-HEALTHZ-JSON
+    text: "response body is a JSON object"
+    class: machine
+    evidence_kind: json
+  - id: C-HEALTHZ-STATUS-OK
+    text: 'response body reports status == "ok"'
+    class: machine
+    evidence_kind: json
+  - id: C-HEALTHZ-POST-405
+    text: "POST /healthz is rejected with 405 (route mounted GET-only)"
+    class: machine
+    evidence_kind: json
+# Negative path names are plain strings (pass-bar v2.0 schema).
+# dependency_down_degradation is mandatory for every pass bar (PB-14); for
+# /healthz the honest story is NO degradation — the READY check touches no
+# database and stays available when the DB is down.
+negative_paths:
+  - dependency_down_degradation
