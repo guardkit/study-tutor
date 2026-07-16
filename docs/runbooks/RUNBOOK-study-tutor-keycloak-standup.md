@@ -151,13 +151,13 @@ scp -i $HOME/.ssh/fleet_memory_nas_ed25519 -P ${NAS_SSH_PORT} \
   deploy/keycloak/init-keycloak-db.sql ${NAS_USER}@${NAS_HOST}:/tmp/
 
 # Apply SQL (creates keycloak DB + role, sets password from .env)
-$SSH "sudo -n /usr/local/bin/docker exec -i study_tutor_postgres psql -U postgres -d study_tutor" <<EOF
+$SSH "sudo -n /usr/local/bin/docker exec -i study_tutor_postgres psql -U study_tutor -d study_tutor" <<EOF
 \i /tmp/init-keycloak-db.sql
 ALTER USER keycloak PASSWORD '${KC_DB_PASSWORD}';
 EOF
 
 # GATE KC-G0b: Verify keycloak DB and role
-$SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres psql -U postgres -d keycloak -c 'SELECT 1;'"
+$SSH "sudo -n /usr/local/bin/docker exec study_tutor_postgres psql -U study_tutor -d keycloak -c 'SELECT 1;'"
 # PASS: returns 1. FAIL: DB or role creation failed — check logs, re-run SQL.
 ```
 

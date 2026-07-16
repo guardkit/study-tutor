@@ -47,7 +47,8 @@ services:
 
     ports:
       - "${KC_HTTPS_PORT:-8443}:8443"
-      - "9000:9000"  # Health/metrics endpoint
+      # Management/health port 9000 is intentionally NOT published — the container
+      # healthcheck probes it on localhost; exposing it to the tailnet is unnecessary.
 
     volumes:
       # Realm import (REALM_IMPORT contract § 4: realm JSON mounted read-only)
@@ -60,20 +61,23 @@ services:
     networks:
       - keycloak_network
 
+    # NOTE: study_tutor_postgres is an EXTERNAL container (postgres deploy), reached
+    # over the shared external network below — not a depends_on target in this file.
+    # The management port (9000) serves over HTTPS when the server is TLS-only, and
+    # the image ships no curl/wget — so we can't do an app-level HTTP GET here. A
+    # tool-free TCP-open probe against the management port is a reliable liveness
+    # signal (Keycloak binds 9000 only once startup completes).
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 60s
 
-    depends_on:
-      - study_tutor_postgres
-
 networks:
   keycloak_network:
     external: true
-    name: study_tutor_postgres_default
+    name: study_tutor_default
 
 # External network reference: keycloak joins the existing study_tutor_postgres network
 # (created by deploy/postgres/docker-compose.yml) so it can reach the DB at service name.
