@@ -922,16 +922,66 @@ def serve_http(port: int, host: str, log_level: str) -> None:
         orchestrator_factory, get_session_service()
     )
 
-    # Wire HTTP auth config
-    from study_tutor.http.auth import HTTPAuthConfig
+    # TASK-KCA2-004: Load OIDC settings and validate (fail-fast boot)
+    from study_tutor.http.oidc_config import OIDCSettings
 
+    oidc_settings = OIDCSettings.from_env()
+    validation_errors = oidc_settings.validate()
+
+    if validation_errors:
+        # Non-empty validation result → fail fast with clear message
+        click.echo(
+            "[study-tutor] Error: OIDC configuration validation failed:",
+            err=True,
+        )
+        for error in validation_errors:
+            click.echo(f"  - {error}", err=True)
+        raise SystemExit(1)
+
+    # TASK-KCA2-004: Select TokenResolver based on auth mode
+    from study_tutor.http.auth import HTTPAuthConfig, TokenResolver
+
+    resolver: TokenResolver
+    if oidc_settings.auth_mode == "table":
+        # Table mode: Use TableTokenResolver (no PyJWT import)
+        from study_tutor.http.auth import TableTokenResolver
+        tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
+        # Parse tokens for table resolver
+        import json
+        try:
+            token_to_student = json.loads(tokens_json) if tokens_json else {}
+        except json.JSONDecodeError:
+            token_to_student = {}
+
+        resolver = TableTokenResolver(token_to_student=token_to_student)
+    elif oidc_settings.auth_mode == "keycloak":
+        # Keycloak mode: Lazy import of auth_keycloak (AC-003)
+        # This import happens ONLY in the keycloak branch, so table-mode boot
+        # never pulls in PyJWT
+        from study_tutor.http.auth_keycloak import KeycloakTokenResolver
+        resolver = KeycloakTokenResolver(oidc_settings)
+    else:
+        # This should never happen due to validate() above, but guard anyway
+        click.echo(
+            f"[study-tutor] Error: Unknown auth mode: {oidc_settings.auth_mode}",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # Wire HTTP auth config with selected resolver
     tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
     dev_reset_str = os.environ.get("STUDY_TUTOR_HTTP_DEV_RESET", "false")
+
+    # TASK-KCA2-004: Dev-reset pairing - never allow dev_reset in keycloak mode
+    # Dev flavor stays table mode, so keycloak mode should always have dev_reset=false
+    if oidc_settings.auth_mode == "keycloak":
+        dev_reset_str = "false"  # Force dev_reset off in keycloak mode
 
     try:
         auth_config = HTTPAuthConfig.from_env(
             tokens_json=tokens_json,
             dev_reset=dev_reset_str,
+            resolver=resolver,
         )
     except ValueError as exc:
         click.echo(

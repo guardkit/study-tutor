@@ -109,12 +109,19 @@ class HTTPAuthConfig:
     resolver: TokenResolver
 
     @classmethod
-    def from_env(cls, tokens_json: str, dev_reset: str) -> HTTPAuthConfig:
+    def from_env(
+        cls,
+        tokens_json: str,
+        dev_reset: str,
+        resolver: TokenResolver | None = None,
+    ) -> HTTPAuthConfig:
         """Parse HTTP auth config from environment variables.
 
         Args:
             tokens_json: STUDY_TUTOR_HTTP_TOKENS JSON string (e.g. '{"token-lilymay": "lilymay"}').
             dev_reset: STUDY_TUTOR_HTTP_DEV_RESET flag string ("true"/"false"/"1"/"0" etc).
+            resolver: Optional TokenResolver instance. If None, defaults to TableTokenResolver
+                with the parsed token_to_student mapping (table mode default).
 
         Returns:
             Parsed HTTPAuthConfig.
@@ -161,8 +168,9 @@ class HTTPAuthConfig:
         # Parse dev_reset flag
         dev_reset_bool = _parse_bool_flag(dev_reset)
 
-        # Construct TableTokenResolver for table mode
-        resolver = TableTokenResolver(token_to_student=parsed)
+        # Use provided resolver or default to TableTokenResolver for table mode
+        if resolver is None:
+            resolver = TableTokenResolver(token_to_student=parsed)
 
         return cls(token_to_student=parsed, dev_reset=dev_reset_bool, resolver=resolver)
 

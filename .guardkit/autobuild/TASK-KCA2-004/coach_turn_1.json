@@ -1,0 +1,54 @@
+{
+  "task_id": "TASK-KCA2-004",
+  "turn": 1,
+  "decision": "feedback",
+  "issues": [
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Evidence gathering aborted with status 'partial_gate_abort'. The plan_audit gate failed with message 'no plan on disk; AC names file path(s) that could not be independently verified (no file_existence discrepancy was recorded for the referenced path): /app.py/ws.py'. This appears to be a false positive - the AC-001 text uses '/app.py/ws.py' as shorthand for 'the app.py and ws.py files', not as a literal file path. However, all_gates_passed is false, preventing approval.",
+      "requirement": "Quality gate framework requires all gates to pass",
+      "suggestion": "Investigate the plan_audit parsing issue. The AC-001 text '`create_app`/app.py/ws.py callsites are unchanged' should be interpreted as 'callsites in create_app function, app.py file, and ws.py file remain unchanged', not as requiring a file named '/app.py/ws.py'. Consider re-running evidence gathering after resolving the plan audit tooling issue."
+    },
+    {
+      "type": "test_failure",
+      "severity": "major",
+      "description": "independent_tests field is null due to partial_gate_abort. No independent test verification was performed by the Coach's trust-but-verify pytest run. While quality_gates.tests_passed is true, the absence of independent verification is a gap in the evidence chain.",
+      "requirement": "Guard 5: Absent signal with partial evidence gathering",
+      "suggestion": "Re-run evidence gathering to completion so independent test verification can execute."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "Player modified cli/main.py to select TableTokenResolver for 'table' mode and KeycloakTokenResolver for 'keycloak' mode, injecting via HTTPAuthConfig.resolver parameter. Test test_token_resolver_injected_without_callsite_change verifies the seam. Honesty check passed with no discrepancies."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "verified",
+      "notes": "Player implemented OIDCSettings.validate() with fail-fast SystemExit(1) for missing issuer, missing audience, and unknown auth_mode. Three dedicated tests cover each scenario: test_keycloak_mode_fails_fast_with_missing_issuer, test_keycloak_mode_fails_fast_with_missing_audience, test_unknown_auth_mode_fails_fast."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "verified",
+      "notes": "Player implemented lazy import of auth_keycloak.KeycloakTokenResolver inside the keycloak auth_mode branch only. Test test_table_mode_does_not_import_pyjwt verifies table mode doesn't trigger JWT imports."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "verified",
+      "notes": "Player forces dev_reset_str='false' when auth_mode is 'keycloak', ensuring HTTPAuthConfig.dev_reset is always False in keycloak mode. Existing create_app() logic only mounts /__dev__/reset when dev_reset=True. Test test_dev_reset_not_mounted_in_keycloak_mode verifies the pairing."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "verified",
+      "notes": "Player uses subprocess.Popen with explicit env dict (os.environ.copy() + modifications) to achieve hermetic boot tests. While the AC specifies 'monkeypatch', the subprocess approach achieves the same hermetic intent and actually tests the real CLI entry point, which is arguably more thorough. Each test pins its specific env vars without cross-test contamination."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "verified",
+      "notes": "All modified files pass py_compile syntax validation. No explicit linter/formatter (ruff/black/flake8) is configured in project, so 'project-configured lint/format checks' is satisfied by successful compilation."
+    }
+  ],
+  "rationale": "Cannot approve despite all 6 acceptance criteria appearing satisfied. Evidence gathering aborted with status 'partial_gate_abort' and all_gates_passed is false due to plan_audit failure. Per Guard 5, must not approve with incomplete evidence gathering. The plan_audit failure appears to be a tooling false positive (misreading AC-001 text '/app.py/ws.py' as a file path rather than shorthand notation), but the quality gate framework requires resolution before approval. Additionally, independent_tests verification is absent (null). Recommend investigating plan_audit parsing issue and re-running evidence collection to completion."
+}
