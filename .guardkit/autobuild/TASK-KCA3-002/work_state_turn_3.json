@@ -1,0 +1,36 @@
+{
+  "turn_number": 3,
+  "files_modified": [],
+  "files_created": [],
+  "tests_written": [],
+  "tests_passed": false,
+  "test_count": 1548,
+  "timestamp": "2026-07-17T15:09:17.462616",
+  "detection_method": "player_report",
+  "git_changes": {
+    "files_modified": [
+      ".guardkit/autobuild/TASK-KCA3-002/checkpoints.json",
+      ".guardkit/autobuild/TASK-KCA3-002/task_work_results.json",
+      ".guardkit/autobuild/TASK-KCA3-002/turn_context.json"
+    ],
+    "files_added": [
+      ".guardkit/autobuild/TASK-KCA3-002/player_turn_3.json"
+    ],
+    "files_deleted": [],
+    "diff_stats": ".guardkit/autobuild/TASK-KCA3-002/checkpoints.json |  12 +-\n .../autobuild/TASK-KCA3-002/task_work_results.json | 170 +++------------------\n .../autobuild/TASK-KCA3-002/turn_context.json      |   4 +-\n 3 files changed, 37 insertions(+), 149 deletions(-)",
+    "insertions": 37,
+    "deletions": 149,
+    "timestamp": "2026-07-17T15:08:18.836725"
+  },
+  "test_results": {
+    "tests_run": true,
+    "tests_passed": false,
+    "test_count": 1548,
+    "passed_count": 0,
+    "failed_count": 1548,
+    "output_summary": "........................................................................ [  4%]\n........................................................................ [  9%]\n......EEEEEEEEEF........................................................ [ 13%]\n..............s......................................s.....F............ [ 18%]\n........................................................................ [ 23%]\n........................................................................ [ 27%]\n....................",
+    "timestamp": "2026-07-17T15:09:17.462366",
+    "error": null
+  },
+  "player_report_available": true
+}

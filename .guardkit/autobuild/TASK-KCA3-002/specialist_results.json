@@ -1,18 +1,18 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 101.45686382288113,
+    "duration_seconds": 207.18625069595873,
     "error": null,
-    "tests_run": 355,
-    "tests_failed": 0,
-    "coverage_pct": 86.62,
-    "output_summary": "Flutter: 355 tests passed, 0 failed, 86.62% line coverage",
-    "quality_gates_passed": true
+    "tests_run": 1559,
+    "tests_failed": 11,
+    "coverage_pct": 89.86,
+    "output_summary": "1548 passed, 2 failed, 9 errors, 7 skipped; 89.86% coverage across app/src modules",
+    "quality_gates_passed": false
   },
   "phase_5": {
-    "status": "passed",
-    "duration_seconds": 270.00593923102133,
-    "error": null,
+    "status": "failed",
+    "duration_seconds": 438.53043718403205,
+    "error": "SDKTimeoutError: Agent invocation exceeded 433s timeout",
     "issues": [],
     "quality_score": 0.0,
     "recommendations": [],

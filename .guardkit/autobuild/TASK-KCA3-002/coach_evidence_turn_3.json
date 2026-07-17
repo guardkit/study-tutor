@@ -1,0 +1,147 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": true,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": null,
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": null,
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "No task-specific tests found for TASK-KCA3-002, skipping independent verification",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 7,
+    "criteria_met": 7,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`SecureSessionStore.write`/`read` round-trips a `StoredSession` (refresh token, access token, expiry, displayName) through `flutter_secure_storage`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by running test 'write/read round-trips a StoredSession' which writes a StoredSession with all 4 fields (refreshToken, accessToken, accessTokenExpiry, displayName) and successfully reads them back. Test passes."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`read()` returns `null` for an absent key **and** for an unreadable/corrupt blob **and** when the backing store throws \u2014 it never propagates an exception (serves \"An unreadable stored session is treated as signed out\")",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by 3 passing tests: (1) 'read() returns null when key is absent' - tests null return for missing key, (2) 'read() returns null for corrupt/undeserializable blob' - tests null return for invalid JSON, (3) 'read() returns null when backing store throws' - tests null return when storage throws exception. Implementation has try-catch that returns null for all error cases."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "The session is persisted in the platform secure store (`flutter_secure_storage`), not plaintext `SharedPreferences` (serves \"The signed-in session is held in the platform secure store\")",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by code inspection: SecureSessionStore exclusively uses FlutterSecureStorage (injected via constructor) for all read/write/delete operations. No SharedPreferences imports or usage anywhere in the implementation."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`clear()` removes the persisted session",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by passing test 'clear() removes the persisted session' which writes a session, verifies it exists via read(), calls clear(), then verifies read() returns null. Test passes."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "No `flutter_appauth` type crosses the store API (the adapter owns the `TokenResponse` \u2194 `StoredSession` mapping)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by code inspection: StoredSession is a plain value object with only primitive Dart types (String, DateTime). No flutter_appauth imports in secure_session_store.dart. API surface only exposes StoredSession, which is library-agnostic."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "Tests inject a fake secure storage \u2014 no platform channel, no real Keystore/Keychain",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by code inspection of test file: FakeSecureStorage class implements FlutterSecureStorage with in-memory Map storage. All tests inject this fake via constructor: SecureSessionStore(storage: fakeStorage). No platform channel initialization. All 7 tests pass with fake storage."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified by running flutter analyze: no errors or warnings reported for app/lib/adapters/secure_session_store.dart or app/test/adapters/secure_session_store_test.dart. The only project lint issue is in an unrelated file (voice_runtime_config_test.dart)."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 1 of 3 expected agent invocations. Missing phases: 3 (Implementation), 5 (Code Review). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)\n- Phase 5: `code-reviewer` (Code Review)",
+      "details": {
+        "missing_phases": [
+          "3",
+          "5"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 1
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "specialist_substrate",
+      "description": "Orchestrator-invoked specialist 'code-reviewer' (Phase 5) did not produce evidence: SDKTimeoutError: Agent invocation exceeded 433s timeout. This is a substrate failure attributed to the orchestrator, not a Player honesty issue \u2014 the phase's evidence is ABSENT, not failed.",
+      "details": {
+        "phase": "5",
+        "agent": "code-reviewer",
+        "status": "failed",
+        "error": "SDKTimeoutError: Agent invocation exceeded 433s timeout"
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}
