@@ -1,14 +1,15 @@
 ---
-id: TASK-KCA3-005
-title: "Sign-out affordance — home-screen app-bar action → identity.signOut() → routeToSignIn"
-task_type: feature
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 2
-implementation_mode: task-work
 complexity: 3
 dependencies:
 - TASK-KCA3-001
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-005
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: feature
+title: Sign-out affordance — home-screen app-bar action → identity.signOut() → routeToSignIn
+wave: 2
 ---
 
 ## Description

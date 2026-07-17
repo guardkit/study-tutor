@@ -1,14 +1,16 @@
 ---
-id: TASK-KCA3-002
-title: "SecureSessionStore — flutter_secure_storage-backed token-response persistence (read/write/clear, unreadable ⇒ absent)"
-task_type: feature
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
 - TASK-KCA3-001
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-002
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: feature
+title: SecureSessionStore — flutter_secure_storage-backed token-response persistence
+  (read/write/clear, unreadable ⇒ absent)
+wave: 2
 ---
 
 ## Description

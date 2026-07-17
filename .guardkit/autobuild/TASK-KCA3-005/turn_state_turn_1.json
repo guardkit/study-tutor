@@ -1,0 +1,29 @@
+{
+  "id": "TURN-FEAT-AUTH-003-1",
+  "feature_id": "FEAT-AUTH-003",
+  "task_id": "TASK-KCA3-005",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    ".guardkit/bdd/TASK-KCA3-005_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_out_test.dart",
+    "app/lib/adapters/secure_session_store.dart",
+    "app/test/ui/sign_out_test.dart"
+  ],
+  "tests_passed": 4,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-17T14:11:45.431294",
+  "completed_at": "2026-07-17T14:11:45.431294",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

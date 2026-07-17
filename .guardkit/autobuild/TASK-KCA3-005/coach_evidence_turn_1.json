@@ -1,0 +1,164 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/ui/home_screen.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 1
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": true,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 93.99616072019593,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "No task-specific tests found for TASK-KCA3-005, skipping independent verification",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`HomeScreen` exposes a sign-out affordance as an app-bar action (ASSUM-006)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "HomeScreen already has a PopupMenuButton in the app bar (lines 198-209 of home_screen.dart) with a 'Sign out' menu item. Widget test 'AC-001: HomeScreen exposes sign-out action in app bar' verifies the overflow menu exists and contains the Sign out action."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "Tapping it calls `identity.signOut()` and then `routeToSignIn(...)`, clearing the navigation stack and landing on `SignInScreen`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The _signOut() method (lines 182-186 of home_screen.dart) calls await widget.identity.signOut() followed by routeToSignIn(...). The test 'AC-002, AC-003: Tapping sign-out calls identity.signOut() and routes to SignInScreen' verifies the navigation behavior and that HomeScreen is removed from the tree (stack cleared)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "After sign-out `identity.currentPrincipal` is `null` and the sign-in screen is shown (serves \"Signing out clears the session and returns to the sign-in screen\")",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "FakeIdentityProvider.signOut() sets _current to null (line 50 of fake_identity_provider.dart). Tests verify currentPrincipal is null after sign-out and SignInScreen is displayed. The BDD scenario test '@key-example @smoke' explicitly validates the complete flow."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "The affordance is driven through the `IdentityProvider` port \u2014 the widget test uses `FakeIdentityProvider`, no Keycloak adapter required",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All tests use FakeIdentityProvider (setUp at line 20-24 of sign_out_test.dart). The test 'AC-004: Sign-out is driven through IdentityProvider port' explicitly validates that the port abstraction works without any Keycloak dependency. The implementation only calls the port method widget.identity.signOut()."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "No test in this task asserts adapter-level refresh-race behaviour (owned by TASK-KCA3-003)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "The test suite in sign_out_test.dart contains no assertions about background refresh behavior or race conditions. All tests focus only on the UI affordance and the port-level signOut() contract. No mocking or verification of adapter-internal refresh mechanisms."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran 'flutter analyze test/ui/sign_out_test.dart' which completed with 'No issues found!' (74.5s runtime). The only file created in this task (sign_out_test.dart) passes all lint checks with zero errors."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file app/lib/ui/home_screen.dart. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/ui/home_screen.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}

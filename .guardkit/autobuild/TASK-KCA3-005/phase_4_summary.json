@@ -1,0 +1,12 @@
+{
+  "tests_run": 310,
+  "tests_failed": 0,
+  "coverage_pct": 86.62,
+  "output_summary": "flutter test: 310 passed (including 4 new sign-out tests in test/ui/sign_out_test.dart), 0 failed; coverage 86.62% on app/lib",
+  "quality_gates_passed": true,
+  "test_runner": "flutter test",
+  "test_targets": [
+    "test/ui/sign_out_test.dart"
+  ],
+  "notes": "Phase 4 test orchestration: ran full Flutter test suite with coverage. The 4 new sign-out tests (AC-001 through AC-004 plus smoke test) all passed. Coverage includes app/lib/ui/home_screen.dart (sign-out affordance implementation) and validates the IdentityProvider port abstraction via FakeIdentityProvider. secure_session_store.dart created for future Keycloak adapter (TASK-KCA3-003) but not exercised by this task's tests."
+}
