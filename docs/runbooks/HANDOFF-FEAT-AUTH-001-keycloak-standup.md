@@ -5,6 +5,16 @@
 
 ---
 
+## ✅ UPDATE 2026-07-16 — standup + Phase 4 COMPLETE
+
+Keycloak is live/healthy; **Phase 4 done**: user **`lilymay`** created (password set, realm role `student`, attribute `student_id=lilymay`). Verified an example access token via the `study-tutor-app` mappers carries **`student_id: lilymay`**, and it **survives a full `--import-realm` restart**.
+
+Found + fixed one more **KC-002 bug**: the realm shipped the `student_id` *mapper* but no user-profile declaration, so Keycloak 26's declarative User Profile silently dropped the attribute (the claim would always be empty). Declared `student_id` in the realm JSON's user profile — folded into `study-tutor-realm.json` (committed) so it persists across re-imports.
+
+**All machine-verifiable KC-G1 ACs pass** (G1-02 issuer, G1-03 RAM, G1-06 realm+Lilymay, G1-07 cert-renewal; G1-01 cert chain validated via curl). **Only operator-eyes items left** (can't be checked from a tailnet host): **AC-G1-04** — confirm the Aruba Instant On gateway has **no WAN port-forward to `:8443`**; and a literal browser glance for **AC-G1-01** (no cert warning). TASK-KC-006 was closed on Richard's explicit instruction, relying on the same tailnet-only posture already accepted for the postgres `:5434` deploy.
+
+---
+
 ## TL;DR
 
 **Keycloak is LIVE and healthy on the NAS** (`Up 21h (healthy)` as of this writing). The realm imported, TLS is valid, and **every automated KC-G1 gate passed**. What remains is: (A) create user **Lilymay**, (B) three human-eyes verifications I can't do headless, (C) commit the repo bug-fixes I made live, (D) close TASK-KC-006.
