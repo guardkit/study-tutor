@@ -1,14 +1,20 @@
 ---
 id: TASK-KC-006
-title: "Live NAS standup + KC-G1 gate (operator-executed)"
+title: Live NAS standup + KC-G1 gate (operator-executed)
 task_type: operator_handoff
 parent_review: TASK-REV-KCA1
 feature_id: FEAT-AUTH-001
 wave: 4
 implementation_mode: direct
 complexity: 5
-dependencies: [TASK-KC-005]
+dependencies:
+- TASK-KC-005
+status: completed
+completed: '2026-07-17T11:25:59.185968Z'
+completed_location: tasks/completed/2026-07
+updated: '2026-07-17T11:25:59.185968Z'
 ---
+
 
 ## Description
 
