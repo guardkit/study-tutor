@@ -1,26 +1,30 @@
 ---
-id: TASK-KCA2-003
-title: "KeycloakTokenResolver in http/auth_keycloak.py — PyJWT + PyJWKClient JWKS validation"
-task_type: feature
-parent_review: TASK-REV-KCA2
-feature_id: FEAT-AUTH-002
-wave: 2
-implementation_mode: task-work
 complexity: 8
+consumer_context:
+- consumes: OIDC_SETTINGS
+  driver: PyJWT[crypto] (cryptography for RS256)
+  format_note: issuer stays pinned to the ts.net https name for iss validation even
+    when STUDY_TUTOR_OIDC_JWKS_URL overrides the fetch location to a tailnet IP (KC-D2);
+    audience must match token aud; 60s leeway on exp/nbf
+  framework: PyJWT decode + PyJWKClient (asymmetric JWKS)
+  task: TASK-KCA2-001
+- consumes: TOKEN_RESOLVER
+  driver: asyncio
+  format_note: async resolve(token) -> student_id, raising Unauthenticated on every
+    failure mode (never a 500)
+  framework: implements the async TokenResolver protocol
+  task: TASK-KCA2-002
 dependencies:
 - TASK-KCA2-001
 - TASK-KCA2-002
-consumer_context:
-  - task: TASK-KCA2-001
-    consumes: OIDC_SETTINGS
-    framework: "PyJWT decode + PyJWKClient (asymmetric JWKS)"
-    driver: "PyJWT[crypto] (cryptography for RS256)"
-    format_note: "issuer stays pinned to the ts.net https name for iss validation even when STUDY_TUTOR_OIDC_JWKS_URL overrides the fetch location to a tailnet IP (KC-D2); audience must match token aud; 60s leeway on exp/nbf"
-  - task: TASK-KCA2-002
-    consumes: TOKEN_RESOLVER
-    framework: "implements the async TokenResolver protocol"
-    driver: "asyncio"
-    format_note: "async resolve(token) -> student_id, raising Unauthenticated on every failure mode (never a 500)"
+feature_id: FEAT-AUTH-002
+id: TASK-KCA2-003
+implementation_mode: task-work
+parent_review: TASK-REV-KCA2
+status: design_approved
+task_type: feature
+title: KeycloakTokenResolver in http/auth_keycloak.py — PyJWT + PyJWKClient JWKS validation
+wave: 2
 ---
 
 ## Description
