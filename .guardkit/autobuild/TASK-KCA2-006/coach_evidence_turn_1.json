@@ -1,0 +1,240 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA2-005_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA2-006_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file pyproject.toml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/integration/test_keycloak_contract.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 6
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": false,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": false
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": null,
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/integration/test_keycloak_contract.py tests/unit/http/test_auth.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/http/test_auth.py::test_auth_keycloak_has_jwt_imports PASSED  [ 86%]\ntests/unit/http/test_auth.py::test_dev_reset_not_mounted_in_keycloak_mode PASSED [ 90%]\ntests/unit/http/test_auth.py::test_full_auth_flow_valid_token_seeded_student PASSED [ 95%]\ntests/unit/http/test_auth.py::test_dev_reset_flag_parsing PASSED         [100%]\n======================== 20 passed, 2 skipped in 0.24s =========================",
+    "duration_seconds": 1.4875032901763916,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-j1k2n2rf\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2, cov-7.1.0, bdd-8.1.0, langsmith-0.10.5, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 22 items\n\ntests/integration/test_keycloak_contract.py::test_token_endpoint_url_construction PASSED [  4%]\ntests/integration/test_keycloak_contract.py::test_token_response_parsing PASSED [  9%]\ntests/integration/test_keycloak_contract.py::test_mint_token_for_test_student SKIPPED [ 13%]\ntests/integration/test_keycloak_contract.py::test_mint_token_invalid_username_fails SKIPPED [ 18%]\ntests/integration/test_keycloak_contract.py::test_hermetic_suites_never_mint_real_tokens PASSED [ 22%]\ntests/unit/http/test_auth.py::test_config_parse_valid_single_entry PASSED [ 27%]\ntests/unit/http/test_auth.py::test_config_parse_valid_multiple_entries PASSED [ 31%]\ntests/unit/http/test_auth.py::test_config_parse_malformed_json_raises_clear_error PASSED [ 36%]\ntests/unit/http/test_auth.py::test_config_parse_empty_json_raises_clear_error PASSED [ 40%]\ntests/unit/http/test_auth.py::test_config_parse_non_dict_json_raises_clear_error PASSED [ 45%]\ntests/unit/http/test_auth.py::test_missing_authorization_header_raises_unauthenticated PASSED [ 50%]\ntests/unit/http/test_auth.py::test_malformed_authorization_header_raises_unauthenticated PASSED [ 54%]\ntests/unit/http/test_auth.py::test_unknown_token_raises_unauthenticated PASSED [ 59%]\ntests/unit/http/test_auth.py::test_token_only_from_header_not_body PASSED [ 63%]\ntests/unit/http/test_auth.py::test_unseeded_student_raises_unauthenticated_before_store_write PASSED [ 68%]\ntests/unit/http/test_auth.py::test_seeded_student_resolves_successfully PASSED [ 72%]\ntests/unit/http/test_auth.py::test_token_derived_student_id_is_authoritative PASSED [ 77%]\ntests/unit/http/test_auth.py::test_no_keycloak_jwt_imports PASSED        [ 81%]\ntests/unit/http/test_auth.py::test_auth_keycloak_has_jwt_imports PASSED  [ 86%]\ntests/unit/http/test_auth.py::test_dev_reset_not_mounted_in_keycloak_mode PASSED [ 90%]\ntests/unit/http/test_auth.py::test_full_auth_flow_valid_token_seeded_student PASSED [ 95%]\ntests/unit/http/test_auth.py::test_dev_reset_flag_parsing PASSED         [100%]\n\n======================== 20 passed, 2 skipped in 0.24s =========================\n",
+    "signal_absent": false,
+    "tests_skipped": 2,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 4,
+    "criteria_met": 4,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`tests/integration/test_keycloak_contract.py` mints tokens via the dev-realm `live-suite` client (Direct Access Grant) for a test student",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented `mint_live_suite_token` async function that performs OAuth2 Resource Owner Password Credentials flow (Direct Access Grant) against Keycloak token endpoint. The function constructs token URL from issuer, sends POST request with client credentials and user credentials, and extracts access_token from response. Integration test `test_mint_token_for_test_student` validates the complete flow end-to-end by minting a token for a test student and verifying it's a valid JWT format."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "The integration test is excluded from the default hermetic run and **skips cleanly** when live-realm env is absent (no hard failure)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Integration tests are marked with `@pytest.mark.integration` and `@pytest.mark.keycloak`, plus decorated with `@_skip_no_live_realm` skipif marker that checks for required env vars (STUDY_TUTOR_OIDC_ISSUER, STUDY_TUTOR_LIVE_SUITE_CLIENT_ID, STUDY_TUTOR_LIVE_SUITE_CLIENT_SECRET, STUDY_TUTOR_LIVE_SUITE_USERS). When env is absent, tests skip with descriptive reason message. Registered both markers in pyproject.toml. Verified: running `pytest -m 'not integration and not keycloak'` runs only hermetic tests (3 passed, 2 deselected). Running without env vars shows tests skip cleanly (2 skipped, 0 failed)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "A hermetic plumbing test covers URL/response handling without a network, pinning env via monkeypatch",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented two hermetic plumbing tests that run offline without network: (1) `test_token_endpoint_url_construction` validates URL construction logic for Keycloak token endpoint, testing standard issuer URLs and edge cases like trailing slashes. (2) `test_token_response_parsing` validates access_token extraction from token response JSON, testing valid responses, missing tokens, empty tokens, and invalid types. Both tests are pure unit tests with no env reads or network calls, making them Coach-verifiable offline. These tests run in the default hermetic suite."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "Hermetic suites stay in `table` mode and mint no real tokens",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Hermetic suites never invoke `mint_live_suite_token` function \u2014 it's only called from integration-marked tests that skip when env is absent. The skip marker uses `_has_live_realm_env()` check that returns False in hermetic CI where live-realm env vars are not set. Implemented `test_hermetic_suites_never_mint_real_tokens` that validates the module imports without side effects and confirms the skip marker is configured correctly. All token minting logic is isolated behind integration markers and environment checks, ensuring hermetic suites stay in table mode."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": false,
+    "passed": false,
+    "command": "set -e\npython -m pytest tests/unit/http -x -q\n",
+    "exit_code": null,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": "parallel_wave",
+    "output_tail": null
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .guardkit/bdd/TASK-KCA2-005_junit.xml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA2-005_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .guardkit/bdd/TASK-KCA2-006_junit.xml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA2-006_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file coverage.json. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file pyproject.toml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file pyproject.toml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/integration/test_keycloak_contract.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/integration/test_keycloak_contract.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_auth.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "testing",
+  "profile_name": "testing"
+}
