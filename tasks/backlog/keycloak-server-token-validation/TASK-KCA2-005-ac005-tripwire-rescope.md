@@ -1,6 +1,6 @@
 ---
 id: TASK-KCA2-005
-title: "AC-005 tripwire re-scope + dev-reset/keycloak coexistence guard"
+title: AC-005 tripwire re-scope + dev-reset/keycloak coexistence guard
 task_type: testing
 parent_review: TASK-REV-KCA2
 feature_id: FEAT-AUTH-002
@@ -10,6 +10,23 @@ complexity: 3
 dependencies:
 - TASK-KCA2-003
 - TASK-KCA2-004
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
+  base_branch: main
+  started_at: '2026-07-17T14:37:52.432691'
+  last_updated: '2026-07-17T14:45:09.470216'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T14:37:52.432691'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA2-006
-title: "Live contract-suite token harness — dev-realm live-suite client token minting (skips without live realm)"
+title: "Live contract-suite token harness \u2014 dev-realm live-suite client token\
+  \ minting (skips without live realm)"
 task_type: testing
 parent_review: TASK-REV-KCA2
 feature_id: FEAT-AUTH-002
@@ -10,6 +11,23 @@ complexity: 5
 dependencies:
 - TASK-KCA2-003
 - TASK-KCA2-004
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
+  base_branch: main
+  started_at: '2026-07-17T14:37:52.438507'
+  last_updated: '2026-07-17T14:52:39.880066'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T14:37:52.438507'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA2-004
-title: "Boot wiring — STUDY_TUTOR_AUTH_MODE resolver selection + fail-fast, thread resolver into HTTPAuthConfig"
+title: "Boot wiring \u2014 STUDY_TUTOR_AUTH_MODE resolver selection + fail-fast, thread\
+  \ resolver into HTTPAuthConfig"
 task_type: feature
 parent_review: TASK-REV-KCA2
 feature_id: FEAT-AUTH-002
@@ -12,16 +13,36 @@ dependencies:
 - TASK-KCA2-002
 - TASK-KCA2-003
 consumer_context:
-  - task: TASK-KCA2-002
-    consumes: TOKEN_RESOLVER
-    framework: "Starlette boot wiring — HTTPAuthConfig.resolver injected at serve_http"
-    driver: "click CLI + uvicorn boot"
-    format_note: "select TableTokenResolver in table mode, KeycloakTokenResolver in keycloak mode; inject via HTTPAuthConfig.resolver so app.py/ws.py callsites are unchanged"
-  - task: TASK-KCA2-001
-    consumes: OIDC_SETTINGS
-    framework: "boot fail-fast on OIDCSettings.validate()"
-    driver: "SystemExit(1) matching the DSN discipline"
-    format_note: "non-empty validate() list -> click.echo(err) + SystemExit(1); unknown STUDY_TUTOR_AUTH_MODE also fails fast"
+- task: TASK-KCA2-002
+  consumes: TOKEN_RESOLVER
+  framework: "Starlette boot wiring \u2014 HTTPAuthConfig.resolver injected at serve_http"
+  driver: click CLI + uvicorn boot
+  format_note: select TableTokenResolver in table mode, KeycloakTokenResolver in keycloak
+    mode; inject via HTTPAuthConfig.resolver so callsites in app.py and ws.py are
+    unchanged
+- task: TASK-KCA2-001
+  consumes: OIDC_SETTINGS
+  framework: boot fail-fast on OIDCSettings.validate()
+  driver: SystemExit(1) matching the DSN discipline
+  format_note: non-empty validate() list -> click.echo(err) + SystemExit(1); unknown
+    STUDY_TUTOR_AUTH_MODE also fails fast
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
+  base_branch: main
+  started_at: '2026-07-17T14:26:19.373221'
+  last_updated: '2026-07-17T14:37:44.210420'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T14:26:19.373221'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description
@@ -44,7 +65,7 @@ serving. Consumer of both §4 contracts.
    never imports PyJWT and `auth.py` stays keycloak-free (AC-005). Do the selection
    in the boot path (or a small `http` factory) — **never** inside `auth.py`.
 3. Build `HTTPAuthConfig` carrying the selected resolver and pass it to
-   `create_app(...)` exactly as today. app.py/ws.py are untouched — **WS inherits
+   `create_app(...)` exactly as today. app.py and ws.py are untouched — **WS inherits
    the resolver at upgrade time** (binding §2.1).
 4. **Dev-reset pairing:** keep `/__dev__/reset` existence-gated; assert in this
    task's tests that the dev-reset route and keycloak mode never coexist (dev
@@ -57,7 +78,7 @@ monkeypatch (hermetic).
 
 ## Acceptance Criteria
 
-- [ ] Boot selects `TableTokenResolver` in `table` mode and `KeycloakTokenResolver` in `keycloak` mode, injecting it via `HTTPAuthConfig.resolver`; `create_app`/app.py/ws.py callsites are unchanged
+- [ ] Boot selects `TableTokenResolver` in `table` mode and `KeycloakTokenResolver` in `keycloak` mode, injecting it via `HTTPAuthConfig.resolver`; `create_app` callsites in `src/study_tutor/http/app.py` and `src/study_tutor/http/ws.py` are unchanged
 - [ ] `keycloak` mode with a missing issuer or audience, or an unknown `STUDY_TUTOR_AUTH_MODE`, fails fast with `SystemExit(1)` and a clear message; the server does not begin serving
 - [ ] `auth_keycloak`/PyJWT is imported only in the keycloak branch (table-mode boot pulls no JWT import)
 - [ ] `/__dev__/reset` is never mounted in keycloak mode (dev-reset and keycloak never coexist)
@@ -87,7 +108,7 @@ def test_token_resolver_injected_without_callsite_change():
 
     Contract: async resolve(token) -> student_id raising Unauthenticated,
     injected through HTTPAuthConfig so resolve_student_from_token keeps its
-    signature (app.py/ws.py unchanged).
+    signature (app.py and ws.py unchanged).
     Producer: TASK-KCA2-002
     """
     from study_tutor.http.auth import HTTPAuthConfig, TokenResolver

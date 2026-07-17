@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA3-003
-title: "KeycloakIdentityProvider — real OIDC adapter behind the unchanged port (silent-then-interactive, PKCE, proactive refresh, sign-out wins)"
+title: "KeycloakIdentityProvider \u2014 real OIDC adapter behind the unchanged port\
+  \ (silent-then-interactive, PKCE, proactive refresh, sign-out wins)"
 task_type: feature
 parent_review: TASK-REV-KCA3
 feature_id: FEAT-AUTH-003
@@ -11,21 +12,180 @@ dependencies:
 - TASK-KCA3-001
 - TASK-KCA3-002
 consumer_context:
-  - task: TASK-KCA3-001
-    consumes: OIDC_CLIENT_CONFIG
-    framework: "flutter_appauth (FlutterAppAuth.authorizeAndExchangeCode / token)"
-    driver: "flutter_appauth"
-    format_note: "issuer/discovery = KeycloakConfig.issuer; clientId = study-tutor-app; scopes = [openid, offline_access]; the interactive flow requests offline_access so a refresh token is issued"
-  - task: TASK-KCA3-001
-    consumes: REDIRECT_URI
-    framework: "flutter_appauth redirectUrl argument"
-    driver: "flutter_appauth"
-    format_note: "redirectUrl passed to appauth MUST equal KeycloakConfig.redirectUrl = com.appmilla.studytutor:/oauth2redirect byte-for-byte — the same string registered in the Android manifest scheme and iOS CFBundleURLSchemes and the Keycloak client"
-  - task: TASK-KCA3-002
-    consumes: STORED_SESSION
-    framework: "SecureSessionStore.read/write/clear"
-    driver: "flutter_secure_storage (via the store seam)"
-    format_note: "adapter maps appauth TokenResponse ↔ StoredSession (refreshToken, accessToken, accessTokenExpiry, displayName); read() ⇒ null means treat as signed out"
+- task: TASK-KCA3-001
+  consumes: OIDC_CLIENT_CONFIG
+  framework: flutter_appauth (FlutterAppAuth.authorizeAndExchangeCode / token)
+  driver: flutter_appauth
+  format_note: issuer/discovery = KeycloakConfig.issuer; clientId = study-tutor-app;
+    scopes = [openid, offline_access]; the interactive flow requests offline_access
+    so a refresh token is issued
+- task: TASK-KCA3-001
+  consumes: REDIRECT_URI
+  framework: flutter_appauth redirectUrl argument
+  driver: flutter_appauth
+  format_note: "redirectUrl passed to appauth MUST equal KeycloakConfig.redirectUrl\
+    \ = com.appmilla.studytutor:/oauth2redirect byte-for-byte \u2014 the same string\
+    \ registered in the Android manifest scheme and iOS CFBundleURLSchemes and the\
+    \ Keycloak client"
+- task: TASK-KCA3-002
+  consumes: STORED_SESSION
+  framework: SecureSessionStore.read/write/clear
+  driver: flutter_secure_storage (via the store seam)
+  format_note: "adapter maps appauth TokenResponse \u2194 StoredSession (refreshToken,\
+    \ accessToken, accessTokenExpiry, displayName); read() \u21D2 null means treat\
+    \ as signed out"
+status: blocked
+autobuild_state:
+  current_turn: 5
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003
+  base_branch: main
+  started_at: '2026-07-17T15:21:31.405141'
+  last_updated: '2026-07-17T17:03:43.438561'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: '- Deterministic honesty record (claim_audit_gitignored, severity=should_fix):
+      Player claim: Player claimed file app/test/adapters/keycloak_identity_provider_test.dart.
+      Actual: Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/);
+      ''git add -A'' silently skipped it. Fix the ignore rule (or rebase the worktree
+      onto a branch where the rule is fixed) and re-run the turn..
+
+      - Flutter analyze found 2 lint errors in test/adapters/keycloak_identity_provider_test.dart
+      at lines 308-309: ''Use an initializing formal to assign a parameter to a field.
+      Try using an initialing formal (this._throwsCancel / this._throwsFailure) to
+      initialize the field''. These must be fixed to satisfy AC-011.: Change the FakeAppAuth
+      constructor parameters from ''bool _throwsCancel, bool _throwsFailure'' to ''this._throwsCancel,
+      this._throwsFailure'' and remove the assignment statements from the constructor
+      body.
+
+      - The test file app/test/adapters/keycloak_identity_provider_test.dart exists
+      on disk but matched .gitignore rule at line 304 (adapters/), so ''git add -A''
+      silently skipped it. The file cannot be committed until the .gitignore rule
+      is fixed.: Fix the .gitignore rule at line 304, or rebase the worktree onto
+      main if the .gitignore was already fixed there. Then re-run the turn so the
+      test file can be committed.'
+    timestamp: '2026-07-17T15:21:31.405141'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: feedback
+    feedback: "- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .cov_output/coverage.json. Actual: Path\
+      \ is tracked in git but 'git status --porcelain' shows no change for it \u2014\
+      \ the Player claimed work on a file it did not actually modify this turn. Most\
+      \ likely cause: the report writer swept an orchestrator-managed path (e.g. a\
+      \ file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth\
+      \ for the agent_invoker-side filter; this is a warning, not a turn-rejecting\
+      \ fabrication..\n- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file app/test_output.txt. Actual: Path is tracked\
+      \ in git but 'git status --porcelain' shows no change for it \u2014 the Player\
+      \ claimed work on a file it did not actually modify this turn. Most likely cause:\
+      \ the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/\
+      \ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side\
+      \ filter; this is a warning, not a turn-rejecting fabrication..\n- Runtime-parity\
+      \ failure: the deliverable passed pytest but its declared runtime entry point\
+      \ FAILED to run (exit=1, expected=0). This is a 'passes tests but does not run'\
+      \ defect \u2014 fix the deliverable so it runs standalone. Command: set -e\n\
+      cd app && flutter analyze && flutter test\n:\n  Analyzing app...           \
+      \                                     \n\n   info \u2022 The imported package\
+      \ 'yaml' isn't a dependency of the importing package. Try adding a dependency\
+      \ for 'yaml' in the 'pubspec.yaml' file \u2022 test/voice_runtime_config_test.dart:20:8\
+      \ \u2022 depend_on_referenced_packages\n1 issue found. (ran in 1.0s)"
+    timestamp: '2026-07-17T15:45:51.662932'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 3
+    decision: feedback
+    feedback: "- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .cov_output/coverage.json. Actual: Path\
+      \ is tracked in git but 'git status --porcelain' shows no change for it \u2014\
+      \ the Player claimed work on a file it did not actually modify this turn. Most\
+      \ likely cause: the report writer swept an orchestrator-managed path (e.g. a\
+      \ file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth\
+      \ for the agent_invoker-side filter; this is a warning, not a turn-rejecting\
+      \ fabrication..\n- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .gitignore. Actual: Path is tracked in git\
+      \ but 'git status --porcelain' shows no change for it \u2014 the Player claimed\
+      \ work on a file it did not actually modify this turn. Most likely cause: the\
+      \ report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/\
+      \ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side\
+      \ filter; this is a warning, not a turn-rejecting fabrication..\n- Deterministic\
+      \ honesty record (claim_audit_unmodified, severity=should_fix): Player claim:\
+      \ Player claimed file app/lib/adapters/keycloak_identity_provider.dart. Actual:\
+      \ Path is tracked in git but 'git status --porcelain' shows no change for it\
+      \ \u2014 the Player claimed work on a file it did not actually modify this turn.\
+      \ Most likely cause: the report writer swept an orchestrator-managed path (e.g.\
+      \ a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified.\
+      \ Defence-in-depth for the agent_invoker-side filter; this is a warning, not\
+      \ a turn-rejecting fabrication..\n... and 7 more issues"
+    timestamp: '2026-07-17T16:01:35.758372'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 4
+    decision: feedback
+    feedback: "- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .cov_output/coverage.json. Actual: Path\
+      \ is tracked in git but 'git status --porcelain' shows no change for it \u2014\
+      \ the Player claimed work on a file it did not actually modify this turn. Most\
+      \ likely cause: the report writer swept an orchestrator-managed path (e.g. a\
+      \ file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth\
+      \ for the agent_invoker-side filter; this is a warning, not a turn-rejecting\
+      \ fabrication..\n- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .gitignore. Actual: Path is tracked in git\
+      \ but 'git status --porcelain' shows no change for it \u2014 the Player claimed\
+      \ work on a file it did not actually modify this turn. Most likely cause: the\
+      \ report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/\
+      \ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side\
+      \ filter; this is a warning, not a turn-rejecting fabrication..\n- Deterministic\
+      \ honesty record (claim_audit_unmodified, severity=should_fix): Player claim:\
+      \ Player claimed file app/lib/adapters/keycloak_identity_provider.dart. Actual:\
+      \ Path is tracked in git but 'git status --porcelain' shows no change for it\
+      \ \u2014 the Player claimed work on a file it did not actually modify this turn.\
+      \ Most likely cause: the report writer swept an orchestrator-managed path (e.g.\
+      \ a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified.\
+      \ Defence-in-depth for the agent_invoker-side filter; this is a warning, not\
+      \ a turn-rejecting fabrication..\n... and 6 more issues"
+    timestamp: '2026-07-17T16:15:57.434654'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 5
+    decision: feedback
+    feedback: "- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .cov_output/coverage.json. Actual: Path\
+      \ is tracked in git but 'git status --porcelain' shows no change for it \u2014\
+      \ the Player claimed work on a file it did not actually modify this turn. Most\
+      \ likely cause: the report writer swept an orchestrator-managed path (e.g. a\
+      \ file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth\
+      \ for the agent_invoker-side filter; this is a warning, not a turn-rejecting\
+      \ fabrication..\n- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
+      \ Player claim: Player claimed file .gitignore. Actual: Path is tracked in git\
+      \ but 'git status --porcelain' shows no change for it \u2014 the Player claimed\
+      \ work on a file it did not actually modify this turn. Most likely cause: the\
+      \ report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/\
+      \ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side\
+      \ filter; this is a warning, not a turn-rejecting fabrication..\n- Deterministic\
+      \ honesty record (claim_audit_unmodified, severity=should_fix): Player claim:\
+      \ Player claimed file app/test/adapters/secure_session_store_test.dart. Actual:\
+      \ Path is tracked in git but 'git status --porcelain' shows no change for it\
+      \ \u2014 the Player claimed work on a file it did not actually modify this turn.\
+      \ Most likely cause: the report writer swept an orchestrator-managed path (e.g.\
+      \ a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified.\
+      \ Defence-in-depth for the agent_invoker-side filter; this is a warning, not\
+      \ a turn-rejecting fabrication..\n... and 5 more issues"
+    timestamp: '2026-07-17T16:44:35.367804'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA2-001
-title: "OIDC settings + PyJWT[crypto] dependency — http/oidc_config.py env surface + fail-fast validation"
+title: "OIDC settings + PyJWT[crypto] dependency \u2014 http/oidc_config.py env surface\
+  \ + fail-fast validation"
 task_type: declarative
 parent_review: TASK-REV-KCA2
 feature_id: FEAT-AUTH-002
@@ -8,6 +9,23 @@ wave: 1
 implementation_mode: task-work
 complexity: 4
 dependencies: []
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
+  base_branch: main
+  started_at: '2026-07-17T13:11:46.463397'
+  last_updated: '2026-07-17T13:20:03.317256'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T13:11:46.463397'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

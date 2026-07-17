@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA3-005
-title: "Sign-out affordance — home-screen app-bar action → identity.signOut() → routeToSignIn"
+title: "Sign-out affordance \u2014 home-screen app-bar action \u2192 identity.signOut()\
+  \ \u2192 routeToSignIn"
 task_type: feature
 parent_review: TASK-REV-KCA3
 feature_id: FEAT-AUTH-003
@@ -9,6 +10,23 @@ implementation_mode: task-work
 complexity: 3
 dependencies:
 - TASK-KCA3-001
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003
+  base_branch: main
+  started_at: '2026-07-17T13:52:28.400287'
+  last_updated: '2026-07-17T14:11:45.502784'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T13:52:28.400287'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description

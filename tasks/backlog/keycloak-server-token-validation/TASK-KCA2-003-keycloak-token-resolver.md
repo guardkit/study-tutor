@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA2-003
-title: "KeycloakTokenResolver in http/auth_keycloak.py — PyJWT + PyJWKClient JWKS validation"
+title: "KeycloakTokenResolver in http/auth_keycloak.py \u2014 PyJWT + PyJWKClient\
+  \ JWKS validation"
 task_type: feature
 parent_review: TASK-REV-KCA2
 feature_id: FEAT-AUTH-002
@@ -11,16 +12,36 @@ dependencies:
 - TASK-KCA2-001
 - TASK-KCA2-002
 consumer_context:
-  - task: TASK-KCA2-001
-    consumes: OIDC_SETTINGS
-    framework: "PyJWT decode + PyJWKClient (asymmetric JWKS)"
-    driver: "PyJWT[crypto] (cryptography for RS256)"
-    format_note: "issuer stays pinned to the ts.net https name for iss validation even when STUDY_TUTOR_OIDC_JWKS_URL overrides the fetch location to a tailnet IP (KC-D2); audience must match token aud; 60s leeway on exp/nbf"
-  - task: TASK-KCA2-002
-    consumes: TOKEN_RESOLVER
-    framework: "implements the async TokenResolver protocol"
-    driver: "asyncio"
-    format_note: "async resolve(token) -> student_id, raising Unauthenticated on every failure mode (never a 500)"
+- task: TASK-KCA2-001
+  consumes: OIDC_SETTINGS
+  framework: PyJWT decode + PyJWKClient (asymmetric JWKS)
+  driver: PyJWT[crypto] (cryptography for RS256)
+  format_note: issuer stays pinned to the ts.net https name for iss validation even
+    when STUDY_TUTOR_OIDC_JWKS_URL overrides the fetch location to a tailnet IP (KC-D2);
+    audience must match token aud; 60s leeway on exp/nbf
+- task: TASK-KCA2-002
+  consumes: TOKEN_RESOLVER
+  framework: implements the async TokenResolver protocol
+  driver: asyncio
+  format_note: async resolve(token) -> student_id, raising Unauthenticated on every
+    failure mode (never a 500)
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
+  base_branch: main
+  started_at: '2026-07-17T13:24:57.065288'
+  last_updated: '2026-07-17T13:35:41.774020'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T13:24:57.065288'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description
