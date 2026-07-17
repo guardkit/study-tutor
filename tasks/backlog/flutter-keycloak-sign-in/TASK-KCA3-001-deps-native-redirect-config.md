@@ -27,7 +27,7 @@ Producer of the **§4 `REDIRECT_URI`** and **§4 `OIDC_CLIENT_CONFIG`** contract
    the whole feature adds — record the zero-deps-DoD scope event in the task notes
    / DoD ledger (mirrors the voice track's recorded exception).
 2. **Android** — `app/android/app/src/main/AndroidManifest.xml` (and the
-   `appAuthRedirectScheme` manifest placeholder in `app/android/app/build.gradle`
+   `appAuthRedirectScheme` manifest placeholder in `app/android/app/build.gradle.kts` (Kotlin DSL)
    where `flutter_appauth` reads it): register the redirect **scheme**
    `com.appmilla.studytutor` so the browser can hand the result back to the app.
 3. **iOS** — `app/ios/Runner/Info.plist`: add the redirect scheme to

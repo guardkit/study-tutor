@@ -12,7 +12,7 @@ scope event.
 **Execution:** detect waves (recommended parallel 2)
 
 The one composition seam — `composeSessionApi` in
-[main.dart:21](../../../app/lib/main.dart#L21) — de-types its `identity` parameter from the
+[main.dart:27](../../../app/lib/main.dart#L27) — de-types its `identity` parameter from the
 concrete `FakeIdentityProvider` to the **port**; the hermetic fake flavour keeps the concrete
 fake for its `studentIdForToken` introspection hook and stays green. The existing
 `Unauthenticated → routeToSignIn` recovery is preserved as the hard fallback and kept strictly

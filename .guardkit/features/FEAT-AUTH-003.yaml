@@ -40,7 +40,7 @@ tasks:
   - TASK-KCA3-001
   status: pending
   description: ''
-  implementation_mode: direct
+  implementation_mode: task-work
   estimated_minutes: 33
 - id: TASK-KCA3-003
   name: KeycloakIdentityProvider silent-then-interactive PKCE adapter

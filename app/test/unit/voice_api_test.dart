@@ -1,7 +1,5 @@
 // FEAT-VOICE-003 unit tests: VoiceApi port DTOs and structure invariants.
 // Tests the data types without implementing the port (adapters come later).
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/ports/voice_api.dart';
 

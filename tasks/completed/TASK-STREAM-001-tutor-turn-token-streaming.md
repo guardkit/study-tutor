@@ -1,13 +1,36 @@
 ---
 id: TASK-STREAM-001
 title: "Tutor-turn token streaming (the real UX win) — server stream + streaming transport + app client"
-status: backlog
+status: superseded
 task_type: feature
 implementation_mode: task-work
 complexity: 8
 dependencies: [ADR-ARCH-026, ADR-ARCH-027]
 adr: docs/architecture/decisions/ADR-ARCH-026-player-coach-async-coach-monitor-streaming-ready.md
 ---
+
+## CLOSED 2026-07-17 — superseded by FEAT-VOICE-002/003 (do not build)
+
+Closed per the weekend handoff (`docs/runbooks/HANDOFF-weekend-auth-voice-fable-window.md`
+§2 straggler + §10.1): ~90 % of this scope shipped inside the voice track.
+
+**Shipped vs. this task's scope:**
+
+1. *Server streaming Player generation* — **SHIPPED** by FEAT-VOICE-002
+   (merge `8d4bf2dd`): streaming path in `llm/client.py`,
+   `tutoring/orchestrator.py`, and `tutoring/sentence_chunker.py` implementing
+   the ADR-ARCH-027 verify-at-the-sentence-chunk-boundary quote handover.
+2. *Transport + contract (WS turn, `BINDING_SHA` re-freeze)* — **SHIPPED** by
+   FEAT-VOICE-002: `http/ws.py` + `voice/ws_voice_turn.py`; the frozen voice
+   `CONTRACT_SHA`/`BINDING_SHA` now pin that surface (additive-only).
+3. *App streaming client + incremental rendering* — **SHIPPED** for the voice
+   path by FEAT-VOICE-003 (merge `74bef473`): `app/lib/adapters/http_voice_api.dart`
+   `voiceTurnStream` + streaming playback UI.
+4. **Residual (~10 %, deliberately NOT re-filed):** incremental token rendering
+   of the *text* chat path (the JSON `turn` endpoint stays non-streaming for
+   text clients), plus streaming variants of the text-path contract suite. If
+   that polish is ever wanted, file a fresh slim task against the then-current
+   voice transport — this task's design context is preserved above.
 
 ## Why this exists (do not lose it)
 

@@ -343,11 +343,6 @@ void main() {
     // Unit-level tests here verify the event mapping and error handling logic.
 
     test('_wsUri converts http to ws scheme', () {
-      final api = HttpVoiceApi(
-        baseUrl: 'http://gb10.tail:8100',
-        identity: identity,
-      );
-
       // Use reflection or test the URI building indirectly
       final wsUri = Uri.parse(
         'http://gb10.tail:8100/path',
@@ -357,11 +352,6 @@ void main() {
     });
 
     test('_wsUri converts https to wss scheme', () {
-      final api = HttpVoiceApi(
-        baseUrl: 'https://gb10.tail:8100',
-        identity: identity,
-      );
-
       final wsUri = Uri.parse(
         'https://gb10.tail:8100/path',
       ).replace(scheme: 'wss');
