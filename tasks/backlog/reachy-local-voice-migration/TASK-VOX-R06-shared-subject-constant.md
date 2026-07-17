@@ -13,7 +13,7 @@ repo: study-tutor
 
 # Reconcile the shared default subject (recon D6 / ASSUM-001 — RESOLVED: english)
 
-`resume_if_active` matches on `(student, subject)` (confirmed `session/service.py:218-233`).
+`resume_if_active` matches on `(student, subject)` (confirmed `session/service.py:429` — citation refreshed 2026-07-17; was `:218-233` pre-refactor).
 Investigation resolved the D6 tension: the tutor is an **English** tutor (Scholar persona =
 AQA English Lang 8700 / Lit 8702; `query_student_model` `DEFAULT_SUBJECT='english'`; the
 fine-tune + student model are English Literature). The app's `defaultSubject = 'maths'` was
