@@ -110,3 +110,16 @@ void main() {
 ## References
 
 - design [KC-D7](../../../docs/design/keycloak-auth-user-management-design.md) · IMPLEMENTATION-GUIDE §4 (`OIDC_CLIENT_CONFIG`) · seam [main.dart:21](../../../app/lib/main.dart#L21) · [composition_test.dart](../../../app/test/ui/composition_test.dart) · treatments [error_handling.dart](../../../app/lib/ui/error_handling.dart)
+
+## Pre-build drift note (2026-07-17, weekend handoff §5 — binding)
+
+`main.dart` has **three** concrete-`FakeIdentityProvider` seams, not one:
+`composeSessionApi` (`app/lib/main.dart:27`), `composeVoiceApi` (`:32`), and
+`composeStudentModelApi` (`:41`) — this task's text names only the first.
+Directive: **de-type whatever the keycloak flavour must construct with the real
+adapter** (all three take `identity`); the hermetic-fake flavour keeps the
+concretes. `composition_test.dart` asserts the `composeSessionApi` rule — keep
+it green. No flavour may end up mixing fake and real identity (coach-checked).
+Flavour selection keys on `KEYCLOAK_ISSUER` (empty → fake) per this task;
+`API_BASE_URL` stays what it is today (the backend URL), it no longer selects
+the flavour.

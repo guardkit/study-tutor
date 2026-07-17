@@ -109,3 +109,12 @@ void main() {
 ## References
 
 - design [KC-D7](../../../docs/design/keycloak-auth-user-management-design.md) · assumptions [ASSUM-005](../../../features/flutter-keycloak-sign-in/flutter-keycloak-sign-in_assumptions.yaml) · IMPLEMENTATION-GUIDE §4 (`SIGNIN_OUTCOME`) · current screen [sign_in_screen.dart](../../../app/lib/ui/sign_in_screen.dart) · error idiom [error_handling.dart](../../../app/lib/ui/error_handling.dart)
+
+## Pre-build drift note (2026-07-17, weekend handoff §5 — binding)
+
+The current `SignInScreen` ctor (`app/lib/ui/sign_in_screen.dart:19`) also
+**requires `voiceApi`** (added by FEAT-VOICE-003, after this task was written).
+This task's two-arg seam test predates that. Directive: **reconcile the widget
+signature with the seam test rather than blindly following either** — keep the
+`voiceApi` wiring intact (do not strip it), and adapt the seam test to the real
+ctor shape while still proving the loading/failure/cancel states this task owns.
