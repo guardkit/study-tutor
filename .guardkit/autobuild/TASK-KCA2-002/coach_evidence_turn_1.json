@@ -1,0 +1,737 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA2-002_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file pyproject.toml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/http/auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/http/oidc_config.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_app.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_oidc_config.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_serve_http.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_student_model.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      },
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_voice_routes.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 10
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": {
+    "status": "complete",
+    "dialect": "python",
+    "language": "python",
+    "dialects": [
+      "python"
+    ],
+    "languages": [
+      "python"
+    ],
+    "targets_scanned": 1,
+    "symbols_examined": 5,
+    "findings": [],
+    "degraded_files": [],
+    "ctor_arity": {
+      "status": "skipped_no_composition_root",
+      "ran": false,
+      "skip_reason": "no composition root found",
+      "dialect": "python",
+      "language": "python",
+      "composition_roots_scanned": 0,
+      "findings": []
+    },
+    "callsite_drift": {
+      "status": "ran",
+      "ran": true,
+      "skip_reason": null,
+      "dialect": "python",
+      "language": "python",
+      "apertures_run": [
+        "B"
+      ],
+      "findings": []
+    },
+    "env_tamper": {
+      "status": "ran",
+      "ran": true,
+      "skip_reason": null,
+      "dialect": "python",
+      "language": "python",
+      "findings": []
+    },
+    "permissive_double": {
+      "status": "ran",
+      "ran": true,
+      "skip_reason": null,
+      "dialect": "python",
+      "language": "python",
+      "findings": [
+        {
+          "file": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_serve_http.py",
+          "lineno": 172,
+          "symbol": "SessionService",
+          "kind": "PERMISSIVE_DOUBLE",
+          "pattern": "PERMISSIVE_DOUBLE",
+          "form": "spec_mock",
+          "target_evidence": "patched",
+          "severity": "info",
+          "why": "permissive double installed over first-party 'SessionService' (spec= is tier-2 (needs seam manifest)). Use a SignatureBindingFake (tests/support/signature_binding.py) or autospec.",
+          "authored_this_turn": true
+        }
+      ]
+    }
+  },
+  "mocked_seam": {
+    "status": "ran",
+    "ran": true,
+    "skip_reason": null,
+    "dialect": "python",
+    "language": "python",
+    "findings": [
+      {
+        "file": "features/deterministic-session-planner/test_deterministic_session_planner.py",
+        "symbol": "adapter_module",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 1336,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: adapter_module",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/deterministic-session-planner/test_deterministic_session_planner.py",
+        "symbol": "adapter_module",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 1462,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: adapter_module",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/deterministic-session-planner/test_deterministic_session_planner.py",
+        "symbol": "pipeline_module",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 1358,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: pipeline_module",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/deterministic-session-planner/test_deterministic_session_planner.py",
+        "symbol": "pipeline_module",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 1382,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: pipeline_module",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/deterministic-session-planner/test_deterministic_session_planner.py",
+        "symbol": "adapter_module",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 1516,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: adapter_module",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/deterministic-session-planner/test_deterministic_session_planner.py",
+        "symbol": "adapter_module",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 1543,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: adapter_module",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/http-app-access-adapter/test_http_app_access_adapter.py",
+        "symbol": "SessionService",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 70,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: SessionService",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/mcp-llm-player-coach-adapters/test_mcp_llm_player_coach_adapters.py",
+        "symbol": "builtins",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 470,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: builtins",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/voice-server-module/test_voice_server_module.py",
+        "symbol": "SessionService",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 82,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: SessionService",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/voice-server-module/test_voice_server_module.py",
+        "symbol": "study_tutor.session.service.SessionService.session_status",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 759,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: study_tutor.session.service.SessionService.session_status",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "features/voice-server-module/test_voice_server_module.py",
+        "symbol": "study_tutor.voice.validation.probe_duration_seconds",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 583,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: study_tutor.voice.validation.probe_duration_seconds",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/http/test_ws_turn_e2e.py",
+        "symbol": "study_tutor.tutoring.adapters.llm_player_adapter.LLMClient",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 119,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: study_tutor.tutoring.adapters.llm_player_adapter.LLMClient",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_cli_rag_wiring.py",
+        "symbol": "study_tutor.knowledge.coach_handover.verify_quotes",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 463,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: study_tutor.knowledge.coach_handover.verify_quotes",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_voice_channel_acceptance.py",
+        "symbol": "AudioClient",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 71,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: AudioClient",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_voice_channel_acceptance.py",
+        "symbol": "AudioClient",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 317,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: AudioClient",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_voice_channel_acceptance.py",
+        "symbol": "SessionService",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 129,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: SessionService",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_voice_channel_acceptance.py",
+        "symbol": "SessionService",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 192,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: SessionService",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_voice_channel_acceptance.py",
+        "symbol": "SessionService",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 329,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: SessionService",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "tests/integration/test_voice_channel_acceptance.py",
+        "symbol": "study_tutor.voice.service.time.time",
+        "kind": "MOCKED_SEAM",
+        "module": "",
+        "lineno": 369,
+        "severity": "info",
+        "pattern": "MOCKED_SEAM",
+        "why": "Mock of non-authored target: study_tutor.voice.service.time.time",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "mock",
+        "authored_this_turn": false,
+        "dialect": "python",
+        "language": "python"
+      }
+    ],
+    "external_mocks_ignored": []
+  },
+  "spec_gap": {
+    "status": "unsupported_stack",
+    "ground_truth_count": 3,
+    "executed_count": 0,
+    "pending_count": 0,
+    "findings": [],
+    "whole_file_deselection": false,
+    "bdd_plugin_name": null,
+    "executed_evidence": "counts_only"
+  },
+  "stub_scan": {
+    "status": "complete",
+    "ran": true,
+    "skip_reason": null,
+    "dialect": "python",
+    "language": "python",
+    "symbols_examined": 1,
+    "findings": [
+      {
+        "file": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/auth.py",
+        "symbol": "resolve",
+        "kind": "STUB_BODY",
+        "module": "auth.py",
+        "lineno": 35,
+        "severity": "warning",
+        "pattern": "STUB_BODY",
+        "why": "Stub body (ellipsis): resolve",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "",
+        "authored_this_turn": null,
+        "dialect": "python",
+        "language": "python"
+      },
+      {
+        "file": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/auth.py",
+        "symbol": "student_exists",
+        "kind": "STUB_BODY",
+        "module": "auth.py",
+        "lineno": 88,
+        "severity": "warning",
+        "pattern": "STUB_BODY",
+        "why": "Stub body (ellipsis): student_exists",
+        "registration_found": false,
+        "searched_refs": 0,
+        "mock_kind": "",
+        "authored_this_turn": null,
+        "dialect": "python",
+        "language": "python"
+      }
+    ],
+    "degraded_files": []
+  },
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 91.90113068630029,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/http/test_app.py tests/unit/http/test_auth.py tests/unit/http/test_oidc_config.py tests/unit/http/test_serve_http.py tests/unit/http/test_student_model.py tests/unit/http/test_voice_routes.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/http/test_voice_routes.py::test_existing_routes_unaffected_when_voice_disabled PASSED [ 98%]\ntests/unit/http/test_voice_routes.py::test_chunk_miss_is_transport_404 PASSED [100%]\ntests/unit/http/test_app.py:13\n/tmp/guardkit-coach-iso-d4qgpjyh/tests/unit/http/test_app.py:13: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n======================== 82 passed, 1 warning in 2.31s =========================",
+    "duration_seconds": 3.7055251598358154,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-d4qgpjyh\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2, cov-7.1.0, bdd-8.1.0, langsmith-0.10.5, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 82 items\n\ntests/unit/http/test_app.py::test_start_session_happy_path PASSED        [  1%]\ntests/unit/http/test_app.py::test_start_session_resume_if_active PASSED  [  2%]\ntests/unit/http/test_app.py::test_start_session_surfaces_additive_plan_fields PASSED [  3%]\ntests/unit/http/test_app.py::test_start_session_missing_auth PASSED      [  4%]\ntests/unit/http/test_app.py::test_start_session_malformed_body PASSED    [  6%]\ntests/unit/http/test_app.py::test_list_sessions_happy_path PASSED        [  7%]\ntests/unit/http/test_app.py::test_list_sessions_with_filters PASSED      [  8%]\ntests/unit/http/test_app.py::test_resume_session_happy_path PASSED       [  9%]\ntests/unit/http/test_app.py::test_resume_session_not_found PASSED        [ 10%]\ntests/unit/http/test_app.py::test_resume_session_forbidden PASSED        [ 12%]\ntests/unit/http/test_app.py::test_resume_session_ended PASSED            [ 13%]\ntests/unit/http/test_app.py::test_turn_happy_path PASSED                 [ 14%]\ntests/unit/http/test_app.py::test_turn_session_ended PASSED              [ 15%]\ntests/unit/http/test_app.py::test_session_status_happy_path PASSED       [ 17%]\ntests/unit/http/test_app.py::test_session_status_allows_ended PASSED     [ 18%]\ntests/unit/http/test_app.py::test_end_session_happy_path PASSED          [ 19%]\ntests/unit/http/test_app.py::test_end_session_surfaces_gamification_block PASSED [ 20%]\ntests/unit/http/test_app.py::test_end_session_omits_block_when_unsettled PASSED [ 21%]\ntests/unit/http/test_app.py::test_end_session_already_ended PASSED       [ 23%]\ntests/unit/http/test_app.py::test_forbidden_wins_over_ended PASSED       [ 24%]\ntests/unit/http/test_app.py::test_unexpected_exception_500 PASSED        [ 25%]\ntests/unit/http/test_app.py::test_api_session_http_binding_md_format PASSED [ 26%]\ntests/unit/http/test_auth.py::test_config_parse_valid_single_entry PASSED [ 28%]\ntests/unit/http/test_auth.py::test_config_parse_valid_multiple_entries PASSED [ 29%]\ntests/unit/http/test_auth.py::test_config_parse_malformed_json_raises_clear_error PASSED [ 30%]\ntests/unit/http/test_auth.py::test_config_parse_empty_json_raises_clear_error PASSED [ 31%]\ntests/unit/http/test_auth.py::test_config_parse_non_dict_json_raises_clear_error PASSED [ 32%]\ntests/unit/http/test_auth.py::test_missing_authorization_header_raises_unauthenticated PASSED [ 34%]\ntests/unit/http/test_auth.py::test_malformed_authorization_header_raises_unauthenticated PASSED [ 35%]\ntests/unit/http/test_auth.py::test_unknown_token_raises_unauthenticated PASSED [ 36%]\ntests/unit/http/test_auth.py::test_token_only_from_header_not_body PASSED [ 37%]\ntests/unit/http/test_auth.py::test_unseeded_student_raises_unauthenticated_before_store_write PASSED [ 39%]\ntests/unit/http/test_auth.py::test_seeded_student_resolves_successfully PASSED [ 40%]\ntests/unit/http/test_auth.py::test_token_derived_student_id_is_authoritative PASSED [ 41%]\ntests/unit/http/test_auth.py::test_no_keycloak_jwt_imports PASSED        [ 42%]\ntests/unit/http/test_auth.py::test_full_auth_flow_valid_token_seeded_student PASSED [ 43%]\ntests/unit/http/test_auth.py::test_dev_reset_flag_parsing PASSED         [ 45%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsFromEnv::test_table_mode_defaults PASSED [ 46%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsFromEnv::test_keycloak_mode_with_full_config PASSED [ 47%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsFromEnv::test_keycloak_mode_with_minimal_config PASSED [ 48%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_table_mode_valid PASSED [ 50%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_valid_with_full_config PASSED [ 51%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_missing_issuer PASSED [ 52%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_missing_audience PASSED [ 53%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_missing_both PASSED [ 54%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_unknown_auth_mode PASSED [ 56%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_derived_from_issuer PASSED [ 57%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_override_without_changing_issuer PASSED [ 58%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_none_in_table_mode PASSED [ 59%]\ntests/unit/http/test_serve_http.py::test_serve_http_boots_and_answers_healthz PASSED [ 60%]\ntests/unit/http/test_serve_http.py::test_serve_http_fails_fast_with_missing_dsn PASSED [ 62%]\ntests/unit/http/test_serve_http.py::test_serve_http_fails_fast_with_unreachable_store PASSED [ 63%]\ntests/unit/http/test_serve_http.py::test_turn_uses_shared_orchestrator_factory PASSED [ 64%]\ntests/unit/http/test_serve_http.py::test_tutor_loop_failure_returns_error_envelope_session_resumable PASSED [ 65%]\ntests/unit/http/test_serve_http.py::test_session_events_emitted_with_pinned_payload PASSED [ 67%]\ntests/unit/http/test_serve_http.py::test_http_reply_fn_factory_drives_run_turn_with_session_state PASSED [ 68%]\ntests/unit/http/test_student_model.py::test_missing_authorization_is_401 PASSED [ 69%]\ntests/unit/http/test_student_model.py::test_rejected_bearer_is_401 PASSED [ 70%]\ntests/unit/http/test_student_model.py::test_unseeded_student_is_401_not_500 PASSED [ 71%]\ntests/unit/http/test_student_model.py::test_missing_subject_is_400_without_error_type PASSED [ 73%]\ntests/unit/http/test_student_model.py::test_wrong_method_is_405 PASSED   [ 74%]\ntests/unit/http/test_student_model.py::test_happy_projection_returns_real_gamification PASSED [ 75%]\ntests/unit/http/test_student_model.py::test_seeded_but_empty_is_data_available_false PASSED [ 76%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_recording_too_large PASSED [ 78%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_query_too_long PASSED [ 79%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_unsupported_audio_format PASSED [ 80%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_empty_recording PASSED [ 81%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_unintelligible_query PASSED [ 82%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_voice_unavailable PASSED [ 84%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_missing_token PASSED [ 85%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_invalid_token PASSED [ 86%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_session_forbidden PASSED [ 87%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_session_not_found PASSED [ 89%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_session_ended PASSED [ 90%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_happy_path PASSED  [ 91%]\ntests/unit/http/test_voice_routes.py::test_voice_turn_stream_field_ignored PASSED [ 92%]\ntests/unit/http/test_voice_routes.py::test_voice_audio_happy_path PASSED [ 93%]\ntests/unit/http/test_voice_routes.py::test_voice_audio_chunk_miss_404_no_error_type PASSED [ 95%]\ntests/unit/http/test_voice_routes.py::test_voice_audio_missing_token PASSED [ 96%]\ntests/unit/http/test_voice_routes.py::test_voice_routes_not_mounted_when_disabled PASSED [ 97%]\ntests/unit/http/test_voice_routes.py::test_existing_routes_unaffected_when_voice_disabled PASSED [ 98%]\ntests/unit/http/test_voice_routes.py::test_chunk_miss_is_transport_404 PASSED [100%]\n\n=============================== warnings summary ===============================\ntests/unit/http/test_app.py:13\n  /tmp/guardkit-coach-iso-d4qgpjyh/tests/unit/http/test_app.py:13: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 82 passed, 1 warning in 2.31s =========================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`TokenResolver` protocol and `TableTokenResolver` exist in `auth.py`; `HTTPAuthConfig` carries a `resolver` built by `from_env`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created TokenResolver protocol with async resolve(token: str) -> str method. Implemented TableTokenResolver frozen dataclass that wraps token_to_student dict. Added resolver: TokenResolver field to HTTPAuthConfig. Updated from_env to construct TableTokenResolver and pass it to the config."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`resolve_student_from_token` keeps its signature and delegates only step 2 to `config.resolver.resolve(token)`; Bearer extraction and the unseeded-student guard are unchanged",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Modified resolve_student_from_token to replace the inline token lookup (lines 182-187 in original) with a call to await config.resolver.resolve(token). Bearer extraction (header parsing, format validation) and unseeded-student guard (student_exists check) remain byte-for-byte identical. Function signature is unchanged."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "The existing `tests/unit/http/test_auth.py` suite (incl. missing-header, non-Bearer, unknown-token, unseeded-guard) passes unchanged \u2014 table mode is **byte-for-byte** identical",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All 15 tests in test_auth.py pass. Updated test fixtures to construct TableTokenResolver when creating HTTPAuthConfig directly, preserving exact behavior. Verified with pytest: 15/15 tests pass including missing-header, non-Bearer, unknown-token, unseeded-guard scenarios."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`auth.py` contains no `jwt`/`keycloak`/`jose` import (AC-005 tripwire stays green)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified with grep that auth.py contains no import statements for jwt, keycloak, or jose. Only references are in comments explaining what NOT to import. The AC-005 tripwire test (test_no_keycloak_jwt_imports) passes."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All tests pass including the broader HTTP test suite (98 passed, 3 skipped). Updated test fixtures in test_app.py, test_voice_routes.py, test_serve_http.py, and test_student_model.py to match the new HTTPAuthConfig signature. No lint/format errors encountered."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file .guardkit/bdd/TASK-KCA2-002_junit.xml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA2-002_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file pyproject.toml. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file pyproject.toml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file src/study_tutor/http/auth.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/http/auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file src/study_tutor/http/oidc_config.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/http/oidc_config.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_app.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_app.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_auth.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_oidc_config.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_oidc_config.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_serve_http.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_serve_http.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_student_model.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_student_model.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file tests/unit/http/test_voice_routes.py. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_voice_routes.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "refactor",
+  "profile_name": "refactor"
+}
