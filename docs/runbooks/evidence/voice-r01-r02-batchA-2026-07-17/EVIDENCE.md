@@ -16,16 +16,23 @@ Install order honoured: qwentts cu130 wheel BEFORE speech-to-speech: Y — but t
   -> install-s2s.sh encodes wheel-before-AND-after.
 torch: 2.13.0+cu130 (PyPI aarch64; W0-R had 2.12.1 — version drift, cuda.is_available()=True)
 speech-to-speech: git 118acb79fb2375a404ef640aa92b29d035b3c5ed (same rev family as W0-R venv)
-TTS checkpoint: pending launch (0.6B target; 1.7B fallback pre-approved ASSUM-003)
+TTS checkpoint loaded: 0.6B (ggml backend) — no fallback needed; warmup 'generated 2.08s audio in 3.26s'
 Ryan flag set server-side: Y (--qwen3_tts_speaker Ryan in launch-s2s.sh); audible-Ryan deferred to R03 app-side MODEL_VOICE (W0-R finding 1)
-Unit type: systemd USER unit  name: s2s-realtime.service  (staged, daemon-reloaded, NOT started)
+Unit type: systemd USER unit  name: s2s-realtime.service — LAUNCHED + VERIFIED 17:33-17:52 BST, then
+  stopped by design to hand the GPU back to the dcl session (restart = systemctl --user start s2s-realtime)
   Digest pin = wheel resolve-URL 0.3.1+cu130 + s2s git rev + torch 2.13.0+cu130, recorded in launch-s2s.sh
-Bind: 0.0.0.0:8765 (in unit); ss check pending launch
+Bind: LISTEN 0.0.0.0:8765 confirmed (ss), non-loopback (AC-R01-1); ready line
+  'OpenAI Realtime API starting on ws://0.0.0.0:8765/v1/realtime' seen; released cleanly on stop
 --model_name: gemma4-tutor (runbook "confirm/pass" — passed explicitly)
 VAD: in-process Silero (no version flag exists — recorded as such, matches EVIDENCE inventory)
-num_pipelines 2 concurrent check: pending launch
-Round-trip rt_probe.py: pending launch
-Steady-state memory: pending launch
+num_pipelines 2 concurrent check: PASS — probe logged 'session.created — SECOND SESSION ALLOCATED (R-G6 accept)'
+Round-trip rt_probe.py: **PASS (R-G6 bare-turn gate)** — full event chain incl. response.output_audio.done;
+  reply audio 7.8 s; STT of reply: 'A simile is a figure of speech that compares two different things
+  using the words like or as.' (gemma4-tutor via :9000 responses-api). First attempt timed out on
+  reply leg due to dcl-session workhorse evictions (contention, not a defect); clean pass once quiet.
+Steady-state memory: 67 GB used / 121 with tutor set + s2s pool-of-2 (well under the ~110 line); 52 GB after stop
+NEW DEVIATIONS RECORDED: (2b) s2s resolve replaces the cu130 qwentts wheel — re-assert after (in install-s2s.sh);
+  (5) huggingface-hub 1.24.0 breaks transformers (needs >=0.34,<1.0) — pinned 0.36.2 (in install-s2s.sh)
 Unit files/scripts mirrored to dgx-spark: Y — spark-fcf6:~/s2s-mirror/ {install-s2s.sh, launch-s2s.sh, s2s-realtime.service} (via gb10_to_nodeb key)
 
 ## R02 — Pi app version + local-mode support — **PASS 2026-07-17 ~17:05 BST**
