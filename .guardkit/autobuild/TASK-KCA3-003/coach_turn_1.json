@@ -1,0 +1,91 @@
+{
+  "task_id": "TASK-KCA3-003",
+  "turn": 1,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_gitignored, severity=should_fix): Player claim: Player claimed file app/test/adapters/keycloak_identity_provider_test.dart. Actual: Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file app/test/adapters/keycloak_identity_provider_test.dart",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Flutter analyze found 2 lint errors in test/adapters/keycloak_identity_provider_test.dart at lines 308-309: 'Use an initializing formal to assign a parameter to a field. Try using an initialing formal (this._throwsCancel / this._throwsFailure) to initialize the field'. These must be fixed to satisfy AC-011.",
+      "requirement": "AC-011",
+      "suggestion": "Change the FakeAppAuth constructor parameters from 'bool _throwsCancel, bool _throwsFailure' to 'this._throwsCancel, this._throwsFailure' and remove the assignment statements from the constructor body."
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "major",
+      "description": "The test file app/test/adapters/keycloak_identity_provider_test.dart exists on disk but matched .gitignore rule at line 304 (adapters/), so 'git add -A' silently skipped it. The file cannot be committed until the .gitignore rule is fixed.",
+      "requirement": "Infrastructure - file tracking",
+      "suggestion": "Fix the .gitignore rule at line 304, or rebase the worktree onto main if the .gitignore was already fixed there. Then re-run the turn so the test file can be committed."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "KeycloakIdentityProvider implements the 3-member IdentityProvider port with sync currentPrincipal backed by _currentPrincipal field. Implementation file confirmed in evidence."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "verified",
+      "notes": "Silent refresh attempted via _silentRefresh() using stored refresh token before falling back to interactive flow via _interactiveSignIn(). PKCE S256 is flutter_appauth default."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "verified",
+      "notes": "Interactive flow uses KeycloakConfig.redirectUrl, requests offline_access via _config.scopes, and completes on custom-scheme redirect. Configuration enforcement confirmed."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "verified",
+      "notes": "SignInCancelled and SignInFailed are distinct exception types. _isCancelError() distinguishes CANCELED code from other failures. No conflation."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "verified",
+      "notes": "Single-flight guard implemented via _signInInFlight field. Second signIn() returns existing Future instead of starting new flow."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "verified",
+      "notes": "Proactive refresh scheduled 5 minutes before expiry via _scheduleProactiveRefresh() using accessTokenExpirationDateTime. Background refresh executed via _performBackgroundRefresh()."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "verified",
+      "notes": "Generation-based epoch (_generation counter) ensures signOut() wins over in-flight refresh. Refresh operations check generation before updating principal and discard stale updates."
+    },
+    {
+      "criterion_id": "AC-008",
+      "result": "verified",
+      "notes": "Background refresh wrapped in try-catch, clears _currentPrincipal on failure. No exception propagation to sync currentPrincipal getter. Graceful degradation confirmed."
+    },
+    {
+      "criterion_id": "AC-009",
+      "result": "verified",
+      "notes": "_performSignIn() checks storedSession for null and expiry via _isExpired(). Absent/unreadable/expired sessions skip silent refresh and trigger interactive flow. No initialization at launch."
+    },
+    {
+      "criterion_id": "AC-010",
+      "result": "verified",
+      "notes": "FakeAppAuth and FakeSecureSessionStore implement required interfaces. Tests inject fakes via constructor. No browser, network, or platform channels in tests. Hermetic confirmed."
+    },
+    {
+      "criterion_id": "AC-011",
+      "result": "rejected",
+      "notes": "Runtime parity check (flutter analyze) found 2 lint errors in the test file at lines 308-309 (prefer_initializing_formals). AC-011 requires zero lint errors. Player marked this as uncertain, which was accurate."
+    }
+  ],
+  "rationale": "Functional implementation is complete and all behavioral acceptance criteria (AC-001 through AC-010) are verified with strong evidence. However, AC-011 is not satisfied: flutter analyze found 2 lint errors in the test file that must be fixed. Additionally, the test file is blocked from git commit by a .gitignore rule that needs correction. The lint errors are straightforward to fix (use initializing formals), and the .gitignore issue is an infrastructure problem, not dishonesty. Once these two issues are resolved, the implementation will be ready for approval."
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KCA3-003",
+    "pre_path": "tasks/backlog/TASK-KCA3-003-keycloak-identity-provider.md",
+    "post_path": "tasks/design_approved/TASK-KCA3-003-keycloak-identity-provider.md",
+    "timestamp": "2026-07-17T14:21:31.410922+00:00",
+    "kind": "design_approved_transition"
+  }
+]

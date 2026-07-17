@@ -1,31 +1,38 @@
 ---
-id: TASK-KCA3-003
-title: "KeycloakIdentityProvider — real OIDC adapter behind the unchanged port (silent-then-interactive, PKCE, proactive refresh, sign-out wins)"
-task_type: feature
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 3
-implementation_mode: task-work
 complexity: 8
+consumer_context:
+- consumes: OIDC_CLIENT_CONFIG
+  driver: flutter_appauth
+  format_note: issuer/discovery = KeycloakConfig.issuer; clientId = study-tutor-app;
+    scopes = [openid, offline_access]; the interactive flow requests offline_access
+    so a refresh token is issued
+  framework: flutter_appauth (FlutterAppAuth.authorizeAndExchangeCode / token)
+  task: TASK-KCA3-001
+- consumes: REDIRECT_URI
+  driver: flutter_appauth
+  format_note: redirectUrl passed to appauth MUST equal KeycloakConfig.redirectUrl
+    = com.appmilla.studytutor:/oauth2redirect byte-for-byte — the same string registered
+    in the Android manifest scheme and iOS CFBundleURLSchemes and the Keycloak client
+  framework: flutter_appauth redirectUrl argument
+  task: TASK-KCA3-001
+- consumes: STORED_SESSION
+  driver: flutter_secure_storage (via the store seam)
+  format_note: adapter maps appauth TokenResponse ↔ StoredSession (refreshToken, accessToken,
+    accessTokenExpiry, displayName); read() ⇒ null means treat as signed out
+  framework: SecureSessionStore.read/write/clear
+  task: TASK-KCA3-002
 dependencies:
 - TASK-KCA3-001
 - TASK-KCA3-002
-consumer_context:
-  - task: TASK-KCA3-001
-    consumes: OIDC_CLIENT_CONFIG
-    framework: "flutter_appauth (FlutterAppAuth.authorizeAndExchangeCode / token)"
-    driver: "flutter_appauth"
-    format_note: "issuer/discovery = KeycloakConfig.issuer; clientId = study-tutor-app; scopes = [openid, offline_access]; the interactive flow requests offline_access so a refresh token is issued"
-  - task: TASK-KCA3-001
-    consumes: REDIRECT_URI
-    framework: "flutter_appauth redirectUrl argument"
-    driver: "flutter_appauth"
-    format_note: "redirectUrl passed to appauth MUST equal KeycloakConfig.redirectUrl = com.appmilla.studytutor:/oauth2redirect byte-for-byte — the same string registered in the Android manifest scheme and iOS CFBundleURLSchemes and the Keycloak client"
-  - task: TASK-KCA3-002
-    consumes: STORED_SESSION
-    framework: "SecureSessionStore.read/write/clear"
-    driver: "flutter_secure_storage (via the store seam)"
-    format_note: "adapter maps appauth TokenResponse ↔ StoredSession (refreshToken, accessToken, accessTokenExpiry, displayName); read() ⇒ null means treat as signed out"
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-003
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: feature
+title: KeycloakIdentityProvider — real OIDC adapter behind the unchanged port (silent-then-interactive,
+  PKCE, proactive refresh, sign-out wins)
+wave: 3
 ---
 
 ## Description
