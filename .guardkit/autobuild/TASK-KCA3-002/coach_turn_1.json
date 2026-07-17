@@ -1,0 +1,200 @@
+{
+  "task_id": "TASK-KCA3-002",
+  "turn": 1,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-001].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-001].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-002].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-002].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-003].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-003].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-004].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-004].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-005].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-005].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-006].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-006].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-007].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "promise_file_existence",
+        "player_claim": "completion_promises[AC-007].status=complete with implementation_files including lib/adapters/secure_session_store.dart",
+        "actual_value": "File does not exist at lib/adapters/secure_session_store.dart",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_gitignored, severity=should_fix): Player claim: Player claimed file app/test/adapters/secure_session_store_test.dart. Actual: Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file app/test/adapters/secure_session_store_test.dart",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit, severity=critical): Player claim: Player claimed file lib/adapters/secure_session_store.dart. Actual: Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit",
+        "player_claim": "Player claimed file lib/adapters/secure_session_store.dart",
+        "actual_value": "Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk.",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit, severity=critical): Player claim: Player claimed file test/adapters/secure_session_store_test.dart. Actual: Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit",
+        "player_claim": "Player claimed file test/adapters/secure_session_store_test.dart",
+        "actual_value": "Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk.",
+        "severity": "critical"
+      }
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Evidence gathering aborted (partial_honesty_abort) before collecting test execution, coverage, or quality gate data. All verification fields are null, providing ABSENT SIGNAL rather than passing evidence.",
+      "requirement": "All ACs require independent verification",
+      "suggestion": "Fix the underlying gitignore and path issues, then re-run the turn so the orchestrator can collect complete evidence."
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Test file app/test/adapters/secure_session_store_test.dart matched .gitignore rule (.gitignore:304:adapters/) and was silently excluded from the checkpoint commit. Cannot verify test implementation or execution.",
+      "requirement": "AC-006 (hermetic tests with fake storage)",
+      "suggestion": "Fix .gitignore:304 to allow adapters/ directory, or rebase the worktree onto a branch where this rule is fixed. The advisory explicitly recommends: 'Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.'"
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Implementation file lib/adapters/secure_session_store.dart does not exist (path_exists=False). Player created app/lib/adapters/secure_session_store.dart but referenced it incorrectly in all 7 completion promises.",
+      "requirement": "AC-001 through AC-007 (all reference this file)",
+      "suggestion": "Correct the path references in completion promises to match actual file locations: app/lib/adapters/secure_session_store.dart (not lib/adapters/...). Ensure the path can be committed after fixing gitignore."
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "major",
+      "description": "No independent test execution evidence. The tests field is null, bdd field is null, and independent_tests field is null. Cannot verify that tests ran or passed.",
+      "requirement": "All ACs require test verification",
+      "suggestion": "After fixing gitignore and paths, re-run the turn. The orchestrator will execute tests independently and populate the evidence bundle."
+    },
+    {
+      "type": "code_quality",
+      "severity": "major",
+      "description": "Honesty score 0.36 with 9 critical discrepancies. While these appear to be path/gitignore infrastructure issues rather than deliberate misrepresentation, they block verification of all claimed work.",
+      "requirement": "All ACs",
+      "suggestion": "The discrepancies should resolve once gitignore is fixed and files can be properly committed at their actual paths."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "rejected",
+      "notes": "Cannot verify round-trip behavior. Implementation file doesn't exist at claimed path (lib/adapters/secure_session_store.dart). No test execution evidence (tests=null). ABSENT SIGNAL per Guard 5."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "rejected",
+      "notes": "Cannot verify null-return behavior for absent/corrupt/throwing cases. Implementation file doesn't exist at claimed path. No test execution evidence. ABSENT SIGNAL per Guard 5."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "Cannot inspect implementation to verify flutter_secure_storage usage. Implementation file doesn't exist at claimed path (lib/adapters/secure_session_store.dart). ABSENT SIGNAL per Guard 5."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "Cannot verify clear() removes session. Implementation file doesn't exist at claimed path. No test execution evidence. ABSENT SIGNAL per Guard 5."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "rejected",
+      "notes": "Cannot inspect implementation to verify no flutter_appauth type leakage. Implementation file doesn't exist at claimed path. ABSENT SIGNAL per Guard 5."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "rejected",
+      "notes": "Cannot verify hermetic test implementation. Test file app/test/adapters/secure_session_store_test.dart is gitignored (.gitignore:304:adapters/) and excluded from commit. No test execution evidence (tests=null). ABSENT SIGNAL per Guard 5."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "rejected",
+      "notes": "Cannot verify lint/format compliance. quality_gates field is null due to partial_honesty_abort gathering status. ABSENT SIGNAL per Guard 5."
+    }
+  ],
+  "rationale": "Gathering status 'partial_honesty_abort' means evidence collection stopped before verification data could be collected. All verification fields (tests, bdd, independent_tests, quality_gates, coverage) are null, providing ABSENT SIGNAL rather than passing evidence. Additionally, the test file is gitignored (.gitignore:304:adapters/) and implementation files exist at paths that don't match the completion promises (app/lib/adapters/ vs lib/adapters/). Fix the .gitignore rule, correct path references, and re-run the turn so the orchestrator can collect complete verification evidence. Per Guard 5: null fields due to aborted gathering are ABSENT SIGNAL - do not approve."
+}
