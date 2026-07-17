@@ -6,7 +6,7 @@ description: 'FEAT-AUTH-002 A2 server slice (KC-D6): TokenResolver seam so the H
   auth.py stays JWT-free; KeycloakTokenResolver lands in http/auth_keycloak.py. Default
   table everywhere; KC-G2 live gate is operator_handoff.'
 created: '2026-07-08T21:20:29.976838'
-status: planned
+status: completed
 complexity: 7
 estimated_tasks: 7
 tasks:
@@ -15,19 +15,37 @@ tasks:
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-001-oidc-config-and-dep.md
   complexity: 4
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T13:11:46.442460'
+  completed_at: '2026-07-17T13:24:55.456215'
 - id: TASK-KCA2-002
   name: TokenResolver protocol + TableTokenResolver refactor
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-002-tokenresolver-seam-refactor.md
   complexity: 6
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T13:11:46.446540'
+  completed_at: '2026-07-17T13:24:55.459435'
 - id: TASK-KCA2-003
   name: KeycloakTokenResolver PyJWT + PyJWKClient
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-003-keycloak-token-resolver.md
@@ -35,10 +53,19 @@ tasks:
   dependencies:
   - TASK-KCA2-001
   - TASK-KCA2-002
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 256
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T13:24:57.054123'
+  completed_at: '2026-07-17T13:35:41.776564'
 - id: TASK-KCA2-004
   name: Boot wiring mode-select + fail-fast
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-004-boot-wiring-mode-select-failfast.md
@@ -47,10 +74,19 @@ tasks:
   - TASK-KCA2-001
   - TASK-KCA2-002
   - TASK-KCA2-003
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T14:26:19.358863'
+  completed_at: '2026-07-17T14:37:44.214821'
 - id: TASK-KCA2-005
   name: AC-005 tripwire re-scope + dev-reset guard
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-005-ac005-tripwire-rescope.md
@@ -58,10 +94,19 @@ tasks:
   dependencies:
   - TASK-KCA2-003
   - TASK-KCA2-004
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T14:37:52.413921'
+  completed_at: '2026-07-17T14:52:39.883521'
 - id: TASK-KCA2-006
   name: Live-suite token harness
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-006-live-suite-token-harness.md
@@ -69,20 +114,38 @@ tasks:
   dependencies:
   - TASK-KCA2-003
   - TASK-KCA2-004
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T14:37:52.420768'
+  completed_at: '2026-07-17T14:52:39.889640'
 - id: TASK-KCA2-007
   name: KC-G2 live gate
   file_path: tasks/backlog/keycloak-server-token-validation/TASK-KCA2-007-kc-g2-live-gate.md
   complexity: 5
   dependencies:
   - TASK-KCA2-006
-  status: pending
-  description: ''
+  status: deferred
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 0
+    final_decision: deferred
+    error: null
+    deferred_reason: "operator follow-up \u2014 runtime verification required"
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: '2026-07-17T14:52:46.981063'
 orchestration:
   parallel_groups:
   - - TASK-KCA2-001
@@ -95,20 +158,33 @@ orchestration:
   estimated_duration_minutes: 677
   recommended_parallel: 2
 smoke_gates:
-  # Composition gate for the auth seam: after the resolver + boot wiring land
-  # (wave 3) and after the tripwire re-scope edits test_auth.py (wave 4), run the
-  # whole http unit suite so a broken table-mode parity or resolver/boot
-  # integration is caught between waves, not 30 tasks later. Path is a verified
-  # existing root (tests/unit/http); test_auth_keycloak.py is created in wave 2,
-  # so both after_wave values are temporally safe.
-  #
-  # Wave 5 (TASK-KCA2-007) is deliberately NOT gated: it is the KC-G2
-  # operator_handoff live gate — AutoBuild short-circuits it and lands no code,
-  # so wave 4 is the final code-bearing wave and the meaningful last gate. The
-  # feature-validate "does not cover the final wave" warning is expected here.
-  after_wave: [3, 4]
-  command: |
-    set -e
+  after_wave:
+  - 3
+  - 4
+  command: 'set -e
+
     python -m pytest tests/unit/http -x -q
+
+    '
   expected_exit: 0
   timeout: 180
+  exit5_is_hard_fail: false
+preflight_strict: false
+evidence_repos: []
+execution:
+  started_at: '2026-07-17T13:11:40.967963'
+  completed_at: '2026-07-17T14:52:46.995879'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
+  total_turns: 6
+  tasks_completed: 7
+  tasks_failed: 0
+  current_wave: 5
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  last_updated: '2026-07-17T14:52:46.989881'
+  archived_at: null
+  archived_to: null

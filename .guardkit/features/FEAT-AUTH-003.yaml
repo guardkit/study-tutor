@@ -9,7 +9,7 @@ description: 'FEAT-AUTH-003 A3 app slice (KC-D7, gate KC-G3): a real KeycloakIde
   the concrete fake). flutter_appauth + flutter_secure_storage added as a recorded
   zero-added-deps DoD scope event. KC-G3 live gate is operator_handoff.'
 created: '2026-07-08T23:06:52.723652'
-status: planned
+status: failed
 complexity: 7
 estimated_tasks: 7
 tasks:
@@ -18,30 +18,57 @@ tasks:
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-001-deps-native-redirect-config.md
   complexity: 4
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 50
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T13:40:05.086237'
+  completed_at: '2026-07-17T13:52:28.351452'
 - id: TASK-KCA3-002
   name: SecureSessionStore secure-storage token persistence
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-002-secure-session-store.md
   complexity: 5
   dependencies:
   - TASK-KCA3-001
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result:
+    total_turns: 3
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 3
+  current_turn: 0
+  started_at: '2026-07-17T13:52:28.377263'
+  completed_at: '2026-07-17T15:21:31.380111'
 - id: TASK-KCA3-005
   name: Sign-out affordance home app-bar action
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-005-sign-out-affordance.md
   complexity: 3
   dependencies:
   - TASK-KCA3-001
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-17T13:52:28.383806'
+  completed_at: '2026-07-17T15:21:31.383253'
 - id: TASK-KCA3-003
   name: KeycloakIdentityProvider silent-then-interactive PKCE adapter
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-003-keycloak-identity-provider.md
@@ -49,10 +76,19 @@ tasks:
   dependencies:
   - TASK-KCA3-001
   - TASK-KCA3-002
-  status: pending
-  description: ''
+  status: failed
   implementation_mode: task-work
   estimated_minutes: 256
+  requires_infrastructure: []
+  result:
+    total_turns: 5
+    final_decision: max_turns_exceeded
+    error: Maximum turns (5) exceeded without approval
+    deferred_reason: null
+  turns_completed: 5
+  current_turn: 0
+  started_at: '2026-07-17T15:21:31.397507'
+  completed_at: '2026-07-17T17:03:43.449110'
 - id: TASK-KCA3-004
   name: SignInScreen loading failure cancel states
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-004-sign-in-screen-states.md
@@ -60,9 +96,14 @@ tasks:
   dependencies:
   - TASK-KCA3-003
   status: pending
-  description: ''
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result: null
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: null
 - id: TASK-KCA3-006
   name: Composition de-type to port and flavour wiring
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-006-composition-detype-and-wiring.md
@@ -72,9 +113,14 @@ tasks:
   - TASK-KCA3-004
   - TASK-KCA3-005
   status: pending
-  description: ''
   implementation_mode: task-work
   estimated_minutes: 113
+  requires_infrastructure: []
+  result: null
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: null
 - id: TASK-KCA3-007
   name: KC-G3 live gate operator_handoff
   file_path: tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-007-kc-g3-live-gate.md
@@ -82,9 +128,14 @@ tasks:
   dependencies:
   - TASK-KCA3-006
   status: pending
-  description: ''
   implementation_mode: task-work
   estimated_minutes: 75
+  requires_infrastructure: []
+  result: null
+  turns_completed: 0
+  current_turn: 0
+  started_at: null
+  completed_at: null
 orchestration:
   parallel_groups:
   - - TASK-KCA3-001
@@ -97,25 +148,30 @@ orchestration:
   estimated_duration_minutes: 677
   recommended_parallel: 2
 smoke_gates:
-  # Feature-level composition gate for the Flutter app slice. This is the
-  # FLUTTER track, not the Python server — the R3 nudge's pytest example does
-  # not apply; the project's per-wave green gate is `cd app && flutter test`
-  # (docs/runbooks/RUNBOOK-overnight-fable-flutter.md). Path is flutter's
-  # default discovery root app/test/ (verified to exist), so no explicit argv.
-  #
-  # after_wave 3: the KeycloakIdentityProvider (003) + SecureSessionStore (002)
-  #   unit suites land — a broken adapter/store is caught here, not 3 tasks later.
-  # after_wave 5: the composition de-type + error-routing regression (006) lands
-  #   — catches a de-type compile break or an Unauthenticated/TransportError
-  #   routing regression at the seam.
-  #
-  # Wave 6 (TASK-KCA3-007) is deliberately NOT gated: it is the KC-G3
-  # operator_handoff live gate — AutoBuild short-circuits it and lands no code,
-  # so wave 5 is the final code-bearing wave and the meaningful last gate. The
-  # feature-validate "does not cover the final wave" warning is expected here.
-  after_wave: [3, 5]
-  command: |
-    set -e
+  after_wave:
+  - 3
+  - 5
+  command: 'set -e
+
     cd app && flutter analyze && flutter test
+
+    '
   expected_exit: 0
   timeout: 300
+  exit5_is_hard_fail: false
+preflight_strict: false
+evidence_repos: []
+execution:
+  started_at: '2026-07-17T13:39:53.567705'
+  completed_at: '2026-07-17T17:03:43.453346'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003
+  total_turns: 10
+  tasks_completed: 3
+  tasks_failed: 1
+  current_wave: 3
+  completed_waves:
+  - 1
+  - 2
+  last_updated: '2026-07-17T17:03:43.449128'
+  archived_at: null
+  archived_to: null
