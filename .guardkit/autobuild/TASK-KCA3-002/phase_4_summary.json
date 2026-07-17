@@ -1,7 +1,7 @@
 {
-  "tests_run": 7,
+  "tests_run": 355,
   "tests_failed": 0,
-  "coverage_pct": 100.0,
-  "output_summary": "7 tests passed with 100% line coverage (22/22 lines) on SecureSessionStore adapter",
+  "coverage_pct": 86.62,
+  "output_summary": "Flutter: 355 tests passed, 0 failed, 86.62% line coverage",
   "quality_gates_passed": true
 }

@@ -5,5 +5,12 @@
     "post_path": "tasks/design_approved/TASK-KCA3-002-secure-session-store.md",
     "timestamp": "2026-07-17T12:52:28.408544+00:00",
     "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-KCA3-002",
+    "pre_path": "tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-002-secure-session-store.md",
+    "post_path": "tasks/design_approved/TASK-KCA3-002-secure-session-store.md",
+    "timestamp": "2026-07-17T13:13:18.879325+00:00",
+    "kind": "design_approved_transition"
   }
 ]
