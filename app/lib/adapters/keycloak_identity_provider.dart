@@ -33,16 +33,13 @@ class SignInFailed implements Exception {
   final Object? cause;
 
   @override
-  String toString() => 'SignInFailed: $message${cause != null ? ' (cause: $cause)' : ''}';
+  String toString() =>
+      'SignInFailed: $message${cause != null ? ' (cause: $cause)' : ''}';
 }
 
 /// KeycloakIdentityProvider implementing the IdentityProvider port.
 class KeycloakIdentityProvider implements IdentityProvider {
-  KeycloakIdentityProvider(
-    this._config,
-    this._appAuth,
-    this._store,
-  );
+  KeycloakIdentityProvider(this._config, this._appAuth, this._store);
 
   final KeycloakConfig _config;
   final FlutterAppAuth _appAuth;
@@ -142,8 +139,10 @@ class KeycloakIdentityProvider implements IdentityProvider {
         code == 'CANCELED';
   }
 
-  Future<Principal> _handleTokenResponse(TokenResponse response, int expectedGeneration) async {
-
+  Future<Principal> _handleTokenResponse(
+    TokenResponse response,
+    int expectedGeneration,
+  ) async {
     final displayName = _extractDisplayName(response.idToken);
     final accessToken = response.accessToken;
     final refreshToken = response.refreshToken;
@@ -153,26 +152,23 @@ class KeycloakIdentityProvider implements IdentityProvider {
       throw SignInFailed('Access token is missing');
     }
 
-    final principal = Principal(
-      token: accessToken,
-      displayName: displayName,
-    );
+    final principal = Principal(token: accessToken, displayName: displayName);
 
     // Persist to secure store
-    await _store.write(StoredSession(
-      refreshToken: refreshToken ?? '',
-      accessToken: accessToken,
-      accessTokenExpiry: expiry ?? DateTime.now().add(const Duration(hours: 1)),
-      displayName: displayName,
-    ));
+    await _store.write(
+      StoredSession(
+        refreshToken: refreshToken ?? '',
+        accessToken: accessToken,
+        accessTokenExpiry:
+            expiry ?? DateTime.now().add(const Duration(hours: 1)),
+        displayName: displayName,
+      ),
+    );
 
     // Only update principal if generation hasn't changed (sign-out wins)
     if (_generation == expectedGeneration) {
       _currentPrincipal = principal;
-      _scheduleProactiveRefresh(
-        refreshToken ?? '',
-        expiry,
-      );
+      _scheduleProactiveRefresh(refreshToken ?? '', expiry);
     }
 
     return principal;
@@ -190,7 +186,9 @@ class KeycloakIdentityProvider implements IdentityProvider {
       final decoded = utf8.decode(base64.decode(normalized));
       final json = jsonDecode(decoded) as Map<String, dynamic>;
 
-      return json['name'] as String? ?? json['preferred_username'] as String? ?? 'User';
+      return json['name'] as String? ??
+          json['preferred_username'] as String? ??
+          'User';
     } catch (e) {
       return 'User';
     }

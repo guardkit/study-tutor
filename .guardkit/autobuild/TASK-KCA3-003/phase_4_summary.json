@@ -1,18 +1,7 @@
 {
-  "tests_run": 16,
+  "tests_run": 324,
   "tests_failed": 2,
-  "coverage_pct": 96.19,
-  "output_summary": "16 tests run, 2 failed (exception handling), 96.19% coverage on KeycloakIdentityProvider",
-  "quality_gates_passed": false,
-  "details": {
-    "failed_tests": [
-      "user cancel throws SignInCancelled",
-      "discovery failure throws SignInFailed"
-    ],
-    "failure_reason": "Async exceptions not properly caught in try-catch blocks",
-    "coverage_lines_found": 105,
-    "coverage_lines_hit": 101,
-    "test_file": "test/adapters/keycloak_identity_provider_test.dart",
-    "implementation_file": "lib/adapters/keycloak_identity_provider.dart"
-  }
+  "coverage_pct": 87.08,
+  "output_summary": "324 tests (2 failed): keycloak_identity_provider_test.dart failures in SEAM TESTS; 87.08% coverage",
+  "quality_gates_passed": false
 }

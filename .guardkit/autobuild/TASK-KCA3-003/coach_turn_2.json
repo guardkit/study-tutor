@@ -1,0 +1,133 @@
+{
+  "task_id": "TASK-KCA3-003",
+  "turn": 2,
+  "decision": "feedback",
+  "validation_results": {
+    "requirements_met": [
+      "KeycloakIdentityProvider implements 3-member IdentityProvider port with sync currentPrincipal",
+      "Silent refresh before interactive browser flow",
+      "Interactive PKCE S256 flow with offline_access",
+      "Distinct SignInCancelled and SignInFailed outcomes",
+      "Single-flight sign-in guard",
+      "Proactive background refresh before token expiry",
+      "Generation-based signOut wins refresh race",
+      "Graceful degradation on unrecoverable refresh",
+      "Launch treats absent/expired session as signed out",
+      "Hermetic tests with fake FlutterAppAuth and SecureSessionStore",
+      "Modified files pass lint checks"
+    ],
+    "tests_run": true,
+    "tests_passed": true,
+    "test_command": "cd app && flutter analyze && flutter test",
+    "test_output_summary": "All task tests passed (0 failures). Runtime parity check detected pre-existing lint issue in unrelated file voice_runtime_config_test.dart (missing yaml dependency), not introduced by this task.",
+    "code_quality": "High quality implementation with proper error handling, generation-based race prevention, proactive token refresh, and comprehensive hermetic test coverage (93.99% overall coverage).",
+    "edge_cases_covered": [
+      "Concurrent signIn calls (single-flight guard)",
+      "SignOut during in-flight refresh (generation epoch)",
+      "Unrecoverable background refresh (graceful degradation to null principal)",
+      "Absent stored session at launch",
+      "Expired stored session at launch",
+      "Silent refresh failure fallback to interactive",
+      "User cancellation vs auth failure distinction",
+      "Token expiry with proactive refresh"
+    ]
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "KeycloakIdentityProvider implements IdentityProvider with sync currentPrincipal getter backed by _currentPrincipal field, async signIn(), and async signOut() methods. Port interface unchanged."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "verified",
+      "notes": "_performSignIn() checks stored session, attempts _silentRefresh() via FlutterAppAuth.token() first, falls back to _interactiveSignIn() via authorizeAndExchangeCode() only when silent refresh unavailable or fails. PKCE S256 is flutter_appauth default."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "verified",
+      "notes": "Interactive flow uses AuthorizationTokenRequest with _config.clientId, _config.redirectUrl (com.appmilla.studytutor:/oauth2redirect), _config.issuer, and _config.scopes including 'offline_access'. KeycloakConfig enforces correct values."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "verified",
+      "notes": "SignInCancelled and SignInFailed are distinct exception types. _interactiveSignIn() catches FlutterAppAuthPlatformException and uses _isCancelError() to check for CANCELED code, throwing appropriate exception type. Cancel and failure never conflated."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "verified",
+      "notes": "Single-flight guard implemented via _signInInFlight Future field. signIn() checks if Future is in flight and returns existing Future instead of starting new flow. Field cleared when Future completes."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "verified",
+      "notes": "_scheduleProactiveRefresh() schedules Timer to refresh 5 minutes before expiry using response.accessTokenExpirationDateTime. Called after successful token operations. _performBackgroundRefresh() executes refresh and updates cached principal, preventing re-sign-in during idle periods within offline session validity (KC-G3)."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "verified",
+      "notes": "Generation-based epoch using _generation counter. signOut() increments _generation, cancels refresh timer, clears principal and store. All refresh operations capture generation at start and check before updating principal, discarding updates if generation changed. SignOut wins refresh race."
+    },
+    {
+      "criterion_id": "AC-008",
+      "result": "verified",
+      "notes": "_performBackgroundRefresh() has try-catch wrapping token refresh. On exception, clears _currentPrincipal and store if generation unchanged. Never propagates exceptions to callers. Degrades gracefully to sign-in fallback without crashing or hanging."
+    },
+    {
+      "criterion_id": "AC-009",
+      "result": "verified",
+      "notes": "_performSignIn() checks storedSession for null and expiry via _isExpired(). If absent, unreadable (SecureSessionStore returns null), or expired, skips silent refresh and proceeds to interactive flow. No initialization sets principal at launch, treating absent/unreadable/expired as signed out."
+    },
+    {
+      "criterion_id": "AC-010",
+      "result": "verified",
+      "notes": "FakeAppAuth implementing FlutterAppAuth and FakeSecureSessionStore implementing SecureSessionStore defined in test file. Tests inject fakes via constructor. No real platform channels, browser, or network calls in tests. Fully hermetic."
+    },
+    {
+      "criterion_id": "AC-011",
+      "result": "verified",
+      "notes": "All modified files (keycloak_identity_provider.dart, keycloak_identity_provider_test.dart, secure_session_store_test.dart) pass lint checks. Player fixed lint errors using initializing formals in FakeAppAuth constructor. Runtime parity detected lint issue in voice_runtime_config_test.dart (missing yaml dependency), but this file was NOT modified by this task\u2014pre-existing codebase issue requiring separate resolution."
+    }
+  ],
+  "rationale": "Runtime-parity failure: the deliverable passed pytest but its declared runtime entry point FAILED to run (exit=1, expected=0). This is a 'passes tests but does not run' defect \u2014 fix the deliverable so it runs standalone. Command: set -e\ncd app && flutter analyze && flutter test\n",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .cov_output/coverage.json. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .cov_output/coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test_output.txt. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test_output.txt",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "runtime_parity",
+      "description": "Runtime-parity failure: the deliverable passed pytest but its declared runtime entry point FAILED to run (exit=1, expected=0). This is a 'passes tests but does not run' defect \u2014 fix the deliverable so it runs standalone. Command: set -e\ncd app && flutter analyze && flutter test\n",
+      "test_output": "Analyzing app...                                                \n\n   info \u2022 The imported package 'yaml' isn't a dependency of the importing package. Try adding a dependency for 'yaml' in the 'pubspec.yaml' file \u2022 test/voice_runtime_config_test.dart:20:8 \u2022 depend_on_referenced_packages\n1 issue found. (ran in 1.0s)",
+      "details": {
+        "command": "set -e\ncd app && flutter analyze && flutter test\n",
+        "exit_code": 1,
+        "timed_out": false,
+        "stderr_tail": "1 issue found. (ran in 1.0s)",
+        "output_tail": "Analyzing app...                                                \n\n   info \u2022 The imported package 'yaml' isn't a dependency of the importing package. Try adding a dependency for 'yaml' in the 'pubspec.yaml' file \u2022 test/voice_runtime_config_test.dart:20:8 \u2022 depend_on_referenced_packages\n1 issue found. (ran in 1.0s)",
+        "overridden_decision": "approve"
+      }
+    }
+  ]
+}

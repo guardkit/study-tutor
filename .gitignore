@@ -321,6 +321,8 @@ merged-fp16/
 !src/study_tutor/adapters/*.py
 !tests/unit/adapters/
 !tests/unit/adapters/*.py
+!app/test/adapters/
+!app/test/adapters/*.dart
 
 # Flutter app source (ADR-ARCH-025). The unanchored Python-template
 # ``lib/`` rule at the top of this file matches app/lib/ and silently
