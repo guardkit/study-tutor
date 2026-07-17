@@ -1,0 +1,23 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 1.201106454944238,
+    "error": null,
+    "tests_run": 27,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_unknown_auth_mode PASSED [ 88%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_derived_f",
+    "quality_gates_passed": true
+  },
+  "phase_5": {
+    "status": "passed",
+    "duration_seconds": 205.3772564860992,
+    "error": null,
+    "issues": [],
+    "quality_score": 0.0,
+    "recommendations": [],
+    "output_summary": "Review completed by orchestrator-invoked code-reviewer."
+  }
+}

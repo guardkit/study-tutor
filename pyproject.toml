@@ -42,6 +42,11 @@ dependencies = [
     # wired through ``[tool.uv.sources]`` below, mirroring specialist-agent's
     # pattern. See features/nats-fleet-integration/nats-fleet-scope-and-build-plan.md.
     "nats-core>=0.4",
+    # TASK-KCA2-001 / FEAT-AUTH-002 (2026-07-17): PyJWT with cryptography extra
+    # for RS256/JWKS asymmetric token verification in keycloak mode. The [crypto]
+    # extra pulls the cryptography package required for asymmetric algorithms.
+    # Zero-deps-scope event (same pattern as voice track).
+    "PyJWT[crypto]>=2.8",
 ]
 
 [project.scripts]
@@ -137,6 +142,8 @@ markers = [
     "feat_ph1_003: tests scoped to the DeepAgents Tutoring Loop with Coach feature (FEAT-PH1-003)",
     "feat_lca: tests scoped to the MCP LLM Player and Coach Adapters feature (FEAT-6CC5)",
     "live: operator-conducted live smokes (require real LLM providers / Postgres store; excluded from default CI)",
+    "integration: integration tests requiring live external services (excluded from default hermetic run)",
+    "keycloak: tests requiring live Keycloak dev realm (excluded from default hermetic run)",
 ]
 
 # TASK-SMP-04 coverage configuration: exclude NotImplementedError stubs

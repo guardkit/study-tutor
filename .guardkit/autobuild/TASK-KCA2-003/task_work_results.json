@@ -1,0 +1,154 @@
+{
+  "task_id": "TASK-KCA2-003",
+  "timestamp": "2026-07-17T13:29:29.920096",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "implementation in TDD mode.",
+      "completed": false
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 15,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
+  },
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth_keycloak.py"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-KCA2-003_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/auth_keycloak.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth_keycloak.py",
+    "src/study_tutor/http/auth_keycloak.py",
+    "tests/unit/http/test_auth_keycloak.py"
+  ],
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.guardkit/autobuild/TASK-KCA2-003/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/auth_keycloak.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth_keycloak.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth_keycloak.py"
+  ],
+  "summary": "15 tests passed",
+  "sdk_turns": {
+    "turns_used": 23,
+    "max_turns": 180,
+    "ceiling_hit": false
+  },
+  "task_type": "feature",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "KeycloakTokenResolver in src/study_tutor/http/auth_keycloak.py implements TokenResolver and validates signature, iss, aud, exp/nbf (60s leeway), and an RS256-only algorithm allowlist",
+      "status": "complete",
+      "evidence": "KeycloakTokenResolver implements the TokenResolver protocol with async resolve() method. Uses PyJWT.decode() with algorithms=['RS256'] allowlist, validates issuer via issuer= parameter, audience via audience= parameter, exp/nbf with leeway=60 from settings. Tests verify RS256 validation, alg:none rejection, HS256 rejection, issuer validation, audience validation, expiration, and not-yet-valid handling.",
+      "test_file": "tests/unit/http/test_auth_keycloak.py",
+      "implementation_files": [
+        "src/study_tutor/http/auth_keycloak.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "The student_id claim (name from OIDCSettings.student_claim) is extracted only after validation; a missing claim raises Unauthenticated, never a 500",
+      "status": "complete",
+      "evidence": "Claim extraction happens in Step 3 of resolve() method, after all PyJWT validation passes. Missing/empty/non-string student_id claim raises Unauthenticated with descriptive message. Test test_missing_student_claim_raises_unauthenticated verifies this behavior.",
+      "test_file": "tests/unit/http/test_auth_keycloak.py",
+      "implementation_files": [
+        "src/study_tutor/http/auth_keycloak.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "Every negative path (bad signature, wrong issuer, wrong audience, expired, not-yet-valid, alg:none/HS256, unknown kid, unreachable JWKS, garbage token) raises Unauthenticated and raises no unexpected error",
+      "status": "complete",
+      "evidence": "All PyJWT exceptions (ExpiredSignatureError, ImmatureSignatureError, InvalidIssuerError, InvalidAudienceError, InvalidAlgorithmError, InvalidSignatureError, DecodeError, InvalidTokenError) are caught and converted to Unauthenticated. PyJWKClientError from JWKS fetch failures also raises Unauthenticated. Final catch-all Exception handler ensures fail-closed behavior. Tests cover all negative paths: bad signature, unknown kid, wrong issuer/audience, expired, not-yet-valid, alg:none, HS256, unreachable JWKS, garbage token.",
+      "test_file": "tests/unit/http/test_auth_keycloak.py",
+      "implementation_files": [
+        "src/study_tutor/http/auth_keycloak.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Issuer used for iss validation stays the ts.net name even when the JWKS fetch URL is overridden to a tailnet IP (KC-D2)",
+      "status": "complete",
+      "evidence": "KeycloakTokenResolver.__init__ stores expected_issuer=settings.issuer (the ts.net name) separately from jwks_url. PyJWT.decode() uses issuer=self.expected_issuer for validation, not derived from JWKS URL. Test test_issuer_validation_uses_ts_net_name verifies that tokens with ts.net issuer pass validation while tokens with IP issuer fail, even when JWKS URL is the IP address.",
+      "test_file": "tests/unit/http/test_auth_keycloak.py",
+      "implementation_files": [
+        "src/study_tutor/http/auth_keycloak.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "Hermetic tests mint their own keys and monkeypatch JWKS \u2014 no live realm and no network",
+      "status": "complete",
+      "evidence": "Tests use cryptography library to generate RSA keypairs in rsa_keypair fixture. mint_token() helper creates test JWTs signed with test keys. mock_pyjwkclient fixture monkeypatches PyJWKClient.get_signing_key_from_jwt to return test public keys without network calls. All 15 tests pass without requiring external Keycloak realm or network access.",
+      "test_file": "tests/unit/http/test_auth_keycloak.py",
+      "implementation_files": [
+        "tests/unit/http/test_auth_keycloak.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Project does not have ruff or flake8 configured. Code follows PEP 8 conventions: proper imports, type hints, docstrings, line length < 100 chars, consistent naming. No linting errors detected.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/http/auth_keycloak.py",
+        "tests/unit/http/test_auth_keycloak.py"
+      ]
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 1.9459417080506682
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 204.57995619205758
+    }
+  ]
+}

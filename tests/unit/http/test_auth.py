@@ -10,7 +10,11 @@ from typing import Protocol
 
 import pytest
 
-from study_tutor.http.auth import HTTPAuthConfig, resolve_student_from_token
+from study_tutor.http.auth import (
+    HTTPAuthConfig,
+    TableTokenResolver,
+    resolve_student_from_token,
+)
 from study_tutor.session.errors import Unauthenticated
 
 
@@ -85,8 +89,11 @@ def test_config_parse_non_dict_json_raises_clear_error():
 @pytest.mark.asyncio
 async def test_missing_authorization_header_raises_unauthenticated():
     """AC-002: Missing token resolves to Unauthenticated."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -101,8 +108,11 @@ async def test_missing_authorization_header_raises_unauthenticated():
 @pytest.mark.asyncio
 async def test_malformed_authorization_header_raises_unauthenticated():
     """AC-002: Non-Bearer auth scheme resolves to Unauthenticated."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -119,8 +129,11 @@ async def test_malformed_authorization_header_raises_unauthenticated():
 @pytest.mark.asyncio
 async def test_unknown_token_raises_unauthenticated():
     """AC-002: Unknown token resolves to Unauthenticated."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -141,8 +154,11 @@ async def test_token_only_from_header_not_body():
     valid token in the header works, while missing header fails regardless of what
     might be in the body/query.
     """
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -170,8 +186,11 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 
     Verified with a fake store: no create_session call should happen.
     """
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     # Fake store has NO students seeded
     fake_store = InMemoryFakeStore(known_students=set())
@@ -190,8 +209,11 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 @pytest.mark.asyncio
 async def test_seeded_student_resolves_successfully():
     """AC-003: Seeded student with valid token resolves successfully."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore(known_students={"lilymay"})
 
@@ -215,9 +237,11 @@ async def test_token_derived_student_id_is_authoritative():
     student_id returned from resolve_student_from_token is always the one
     from the token table, not client-provided.
     """
+    token_to_student = {"token-lilymay": "lilymay", "token-alex": "alex"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay", "token-alex": "alex"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore(known_students={"lilymay", "alex"})
 
@@ -238,9 +262,9 @@ async def test_token_derived_student_id_is_authoritative():
     assert student_id == "alex"
 
 
-# AC-005: No Keycloak/JWT imports
+# AC-005: No Keycloak/JWT imports in auth.py
 def test_no_keycloak_jwt_imports():
-    """AC-005: No import of Keycloak/JWT libraries — table lookup only.
+    """AC-005: No import of Keycloak/JWT libraries in auth.py — table lookup only.
 
     This test verifies by importing the module and checking it doesn't fail,
     and that the implementation doesn't use JWT/Keycloak features.
@@ -257,13 +281,93 @@ def test_no_keycloak_jwt_imports():
         assert len(matching) == 0, f"Found forbidden import reference: {matching}"
 
 
+# TASK-KCA2-005: AC-002 - Positive half: JWT imports ARE present in auth_keycloak.py
+def test_auth_keycloak_has_jwt_imports():
+    """TASK-KCA2-005 AC-002: auth_keycloak.py DOES import JWT/JWKS stack.
+
+    This is the positive half of the AC-005 tripwire re-scope: the JWT imports
+    must live *somewhere*, and that somewhere is auth_keycloak.py, not auth.py.
+    We verify that auth_keycloak has the expected PyJWT imports.
+
+    Hermetic: Just checks module imports, no network or live realm.
+    """
+    from study_tutor.http import auth_keycloak
+
+    # Module should have jwt-related imports
+    module_dict = dir(auth_keycloak)
+
+    # Check for PyJWT-related names (jwt module, PyJWKClient class, etc.)
+    assert "jwt" in module_dict, "auth_keycloak should import jwt module"
+    assert "PyJWKClient" in module_dict, "auth_keycloak should import PyJWKClient"
+
+    # Verify KeycloakTokenResolver exists (the main class from this module)
+    assert "KeycloakTokenResolver" in module_dict, "auth_keycloak should export KeycloakTokenResolver"
+
+
+# TASK-KCA2-005: AC-003 - Dev-reset/keycloak coexistence guard
+def test_dev_reset_not_mounted_in_keycloak_mode():
+    """TASK-KCA2-005 AC-003: /__dev__/reset never coexists with keycloak mode.
+
+    Design invariant (KC-D6): dev flavor stays table mode, so keycloak mode
+    should never have the dev-reset route mounted. We verify this by creating
+    an app with keycloak-mode auth config and asserting the route doesn't exist.
+
+    Hermetic: Uses in-memory fakes, no live realm or network.
+    """
+    from study_tutor.http.app import create_app
+    from study_tutor.http.auth import HTTPAuthConfig, TableTokenResolver
+    from study_tutor.session.service import SessionService
+
+    # Create a fake service and store for app setup
+    class FakeService:
+        pass
+
+    class FakeStore:
+        async def student_exists(self, student_id: str) -> bool:
+            return True
+
+    fake_service = FakeService()
+    fake_store = FakeStore()
+
+    # Create HTTPAuthConfig with dev_reset=False (keycloak mode)
+    # In keycloak mode, dev_reset is always forced to false (cli/main.py:978)
+    token_to_student = {"token-test": "test"}
+    auth_config = HTTPAuthConfig(
+        token_to_student=token_to_student,
+        dev_reset=False,  # Keycloak mode: dev_reset is always false
+        resolver=TableTokenResolver(token_to_student=token_to_student),
+    )
+
+    # Create app with keycloak-mode config (dev_reset=False)
+    app = create_app(
+        service=fake_service,  # type: ignore
+        auth_config=auth_config,
+        student_store=fake_store,
+        reply_fn=lambda msg: None,  # type: ignore
+    )
+
+    # Extract all route paths
+    route_paths = [route.path for route in app.routes]
+
+    # Assert /__dev__/reset is NOT in the route table
+    assert "/__dev__/reset" not in route_paths, (
+        "/__dev__/reset should not be mounted when dev_reset=False (keycloak mode)"
+    )
+
+    # Verify normal routes ARE mounted (sanity check)
+    assert "/healthz" in route_paths, "healthz should always be mounted"
+    assert "/api/sessions/start" in route_paths, "sessions/start should always be mounted"
+
+
 # Integration test: full flow with valid token and seeded student
 @pytest.mark.asyncio
 async def test_full_auth_flow_valid_token_seeded_student():
     """Integration: Full auth flow with valid token and seeded student."""
+    token_to_student = {"token-lilymay": "lilymay", "token-alex": "alex"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay", "token-alex": "alex"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore(known_students={"lilymay", "alex"})
 

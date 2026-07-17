@@ -76,11 +76,13 @@ def fake_reply_fn():
 @pytest.fixture
 def fake_auth_config():
     """Mock HTTPAuthConfig with test token."""
-    from study_tutor.http.auth import HTTPAuthConfig
+    from study_tutor.http.auth import HTTPAuthConfig, TableTokenResolver
 
+    token_to_student = {"token-test": "test-student"}
     return HTTPAuthConfig(
-        token_to_student={"token-test": "test-student"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
 
 

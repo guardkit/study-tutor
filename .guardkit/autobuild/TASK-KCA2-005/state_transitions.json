@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KCA2-005",
+    "pre_path": "tasks/backlog/TASK-KCA2-005-ac005-tripwire-rescope.md",
+    "post_path": "tasks/design_approved/TASK-KCA2-005-ac005-tripwire-rescope.md",
+    "timestamp": "2026-07-17T13:37:52.440740+00:00",
+    "kind": "design_approved_transition"
+  }
+]

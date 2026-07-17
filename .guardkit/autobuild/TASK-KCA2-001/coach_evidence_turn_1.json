@@ -1,0 +1,128 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": false,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": true,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": false
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": true,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": null,
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "pytest tests/unit/http/test_auth.py tests/unit/http/test_oidc_config.py -v --tb=short",
+    "test_output_summary": "Result:\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_unknown_auth_mode PASSED [ 88%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_derived_from_issuer PASSED [ 92%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_override_without_changing_issuer PASSED [ 96%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_none_in_table_mode PASSED [100%]\n============================== 27 passed in 0.14s ==============================",
+    "duration_seconds": 0.9778218269348145,
+    "raw_output": "============================= test session starts ==============================\nplatform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python\ncachedir: .pytest_cache\nrootdir: /tmp/guardkit-coach-iso-8r8np9t9\nconfigfile: pyproject.toml\nplugins: anyio-4.14.2, cov-7.1.0, bdd-8.1.0, langsmith-0.10.5, asyncio-1.4.0\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 27 items\n\ntests/unit/http/test_auth.py::test_config_parse_valid_single_entry PASSED [  3%]\ntests/unit/http/test_auth.py::test_config_parse_valid_multiple_entries PASSED [  7%]\ntests/unit/http/test_auth.py::test_config_parse_malformed_json_raises_clear_error PASSED [ 11%]\ntests/unit/http/test_auth.py::test_config_parse_empty_json_raises_clear_error PASSED [ 14%]\ntests/unit/http/test_auth.py::test_config_parse_non_dict_json_raises_clear_error PASSED [ 18%]\ntests/unit/http/test_auth.py::test_missing_authorization_header_raises_unauthenticated PASSED [ 22%]\ntests/unit/http/test_auth.py::test_malformed_authorization_header_raises_unauthenticated PASSED [ 25%]\ntests/unit/http/test_auth.py::test_unknown_token_raises_unauthenticated PASSED [ 29%]\ntests/unit/http/test_auth.py::test_token_only_from_header_not_body PASSED [ 33%]\ntests/unit/http/test_auth.py::test_unseeded_student_raises_unauthenticated_before_store_write PASSED [ 37%]\ntests/unit/http/test_auth.py::test_seeded_student_resolves_successfully PASSED [ 40%]\ntests/unit/http/test_auth.py::test_token_derived_student_id_is_authoritative PASSED [ 44%]\ntests/unit/http/test_auth.py::test_no_keycloak_jwt_imports PASSED        [ 48%]\ntests/unit/http/test_auth.py::test_full_auth_flow_valid_token_seeded_student PASSED [ 51%]\ntests/unit/http/test_auth.py::test_dev_reset_flag_parsing PASSED         [ 55%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsFromEnv::test_table_mode_defaults PASSED [ 59%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsFromEnv::test_keycloak_mode_with_full_config PASSED [ 62%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsFromEnv::test_keycloak_mode_with_minimal_config PASSED [ 66%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_table_mode_valid PASSED [ 70%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_valid_with_full_config PASSED [ 74%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_missing_issuer PASSED [ 77%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_missing_audience PASSED [ 81%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_keycloak_mode_missing_both PASSED [ 85%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsValidate::test_unknown_auth_mode PASSED [ 88%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_derived_from_issuer PASSED [ 92%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_override_without_changing_issuer PASSED [ 96%]\ntests/unit/http/test_oidc_config.py::TestOIDCSettingsJWKSDerivation::test_jwks_url_none_in_table_mode PASSED [100%]\n\n============================== 27 passed in 0.14s ==============================\n",
+    "signal_absent": false,
+    "tests_skipped": 0,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python"
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`PyJWT[crypto]>=2.8` is declared in `pyproject.toml`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added 'PyJWT[crypto]>=2.8' to the [project] dependencies array in pyproject.toml with explanatory comment documenting the zero-deps-scope event and cryptography extra purpose."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`OIDCSettings.from_env` parses the full env surface above with the documented defaults (mode defaults to `table`; student-claim to `student_id`; leeway to `60`)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented OIDCSettings.from_env() class method that reads all 6 environment variables (STUDY_TUTOR_AUTH_MODE, STUDY_TUTOR_OIDC_ISSUER, STUDY_TUTOR_OIDC_AUDIENCE, STUDY_TUTOR_OIDC_JWKS_URL, STUDY_TUTOR_OIDC_STUDENT_CLAIM, STUDY_TUTOR_OIDC_LEEWAY) with correct defaults: auth_mode='table', student_claim='student_id', leeway=60. Validated by tests test_table_mode_defaults, test_keycloak_mode_with_full_config, and test_keycloak_mode_with_minimal_config."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`validate()` returns messages for keycloak mode with a missing **issuer** and/or **audience**, and for an **unknown** `STUDY_TUTOR_AUTH_MODE` value (ASSUM-002/005/007); returns `[]` when config is complete",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented validate() method that returns list of error strings. Returns empty list for valid configs (table mode always valid, keycloak mode valid when issuer and audience present). Returns specific error messages for: missing issuer in keycloak mode, missing audience in keycloak mode (can return both), and unknown auth_mode value. Validated by 6 tests covering all validation scenarios."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "When `STUDY_TUTOR_OIDC_JWKS_URL` is absent, the effective JWKS URL is derived from the issuer; when present, it overrides fetch **without** changing the issuer used for `iss` validation (KC-D2)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Implemented get_effective_jwks_url() method that: (1) returns explicit jwks_url when set, (2) derives '{issuer}/protocol/openid-connect/certs' when issuer is set but jwks_url is not, (3) returns None when no issuer. The issuer attribute remains unchanged in all cases for 'iss' claim validation. Validated by 3 JWKS derivation tests."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "All tests are hermetic (env pinned via monkeypatch), never reading ambient config",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All 12 tests use pytest monkeypatch fixture to explicitly setenv/delenv for every environment variable read by the implementation. No test reads ambient environment - each test pins its exact env surface before calling from_env()."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Verified all files compile successfully with py_compile. Project does not have ruff or flake8 configured. Code follows Python conventions: type hints, docstrings, proper imports with __future__ annotations, frozen dataclass pattern matching existing codebase style."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [],
+  "task_type": "declarative",
+  "profile_name": "declarative"
+}

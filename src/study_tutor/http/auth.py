@@ -24,6 +24,61 @@ from study_tutor.session.errors import Unauthenticated
 logger = logging.getLogger(__name__)
 
 
+class TokenResolver(Protocol):
+    """TokenResolver protocol for step 2 of auth resolution.
+
+    This protocol abstracts the token-to-student_id derivation logic (step 2),
+    allowing multiple implementations (table-based, Keycloak-based, etc.) to be
+    used interchangeably by resolve_student_from_token.
+    """
+
+    async def resolve(self, token: str) -> str:
+        """Resolve a token to a student_id.
+
+        Args:
+            token: The Bearer token extracted from the Authorization header.
+
+        Returns:
+            The resolved student_id.
+
+        Raises:
+            Unauthenticated: If the token cannot be resolved (unknown, invalid, etc).
+        """
+        ...
+
+
+@dataclass(frozen=True)
+class TableTokenResolver:
+    """Table-based token resolver using static token→student_id mapping.
+
+    This is the implementation of TokenResolver for table mode (interim auth).
+    It performs a simple dictionary lookup and raises Unauthenticated on miss,
+    preserving the exact behavior of the original inline lookup.
+    """
+
+    token_to_student: dict[str, str]
+
+    async def resolve(self, token: str) -> str:
+        """Resolve token via static table lookup.
+
+        Args:
+            token: The Bearer token to look up.
+
+        Returns:
+            The student_id from the token table.
+
+        Raises:
+            Unauthenticated: If token is not in the table (unknown token).
+        """
+        student_id = self.token_to_student.get(token)
+        if student_id is None:
+            logger.warning(
+                "Auth failed: Unknown token: %s", token[:20]
+            )  # Truncate for logs
+            raise Unauthenticated("Unknown token")
+        return student_id
+
+
 class StudentStore(Protocol):
     """StudentStore protocol for the unseeded-student guard.
 
@@ -46,18 +101,37 @@ class HTTPAuthConfig:
     Attributes:
         token_to_student: Static token→student_id mapping from STUDY_TUTOR_HTTP_TOKENS.
         dev_reset: STUDY_TUTOR_HTTP_DEV_RESET flag (consumed by TASK-APP1-05 seed logic).
+        resolver: TokenResolver instance for step 2 of auth resolution. Omitting it
+            defaults to a TableTokenResolver over token_to_student (table mode),
+            mirroring from_env — direct construction keeps pre-seam behaviour.
     """
 
     token_to_student: dict[str, str]
     dev_reset: bool
+    resolver: TokenResolver | None = None
+
+    def __post_init__(self) -> None:
+        if self.resolver is None:
+            object.__setattr__(
+                self,
+                "resolver",
+                TableTokenResolver(token_to_student=self.token_to_student),
+            )
 
     @classmethod
-    def from_env(cls, tokens_json: str, dev_reset: str) -> HTTPAuthConfig:
+    def from_env(
+        cls,
+        tokens_json: str,
+        dev_reset: str,
+        resolver: TokenResolver | None = None,
+    ) -> HTTPAuthConfig:
         """Parse HTTP auth config from environment variables.
 
         Args:
             tokens_json: STUDY_TUTOR_HTTP_TOKENS JSON string (e.g. '{"token-lilymay": "lilymay"}').
             dev_reset: STUDY_TUTOR_HTTP_DEV_RESET flag string ("true"/"false"/"1"/"0" etc).
+            resolver: Optional TokenResolver instance. If None, defaults to TableTokenResolver
+                with the parsed token_to_student mapping (table mode default).
 
         Returns:
             Parsed HTTPAuthConfig.
@@ -104,7 +178,11 @@ class HTTPAuthConfig:
         # Parse dev_reset flag
         dev_reset_bool = _parse_bool_flag(dev_reset)
 
-        return cls(token_to_student=parsed, dev_reset=dev_reset_bool)
+        # Use provided resolver or default to TableTokenResolver for table mode
+        if resolver is None:
+            resolver = TableTokenResolver(token_to_student=parsed)
+
+        return cls(token_to_student=parsed, dev_reset=dev_reset_bool, resolver=resolver)
 
 
 def _parse_bool_flag(value: str) -> bool:
@@ -178,15 +256,11 @@ async def resolve_student_from_token(
 
     token = parts[1]
 
-    # AC-002: Look up token in config table (unknown token → Unauthenticated)
-    student_id = config.token_to_student.get(token)
-    if student_id is None:
-        logger.warning(
-            "Auth failed: Unknown token: %s", token[:20]
-        )  # Truncate for logs
-        raise Unauthenticated("Unknown token")
+    # AC-002: Resolve token to student_id via the resolver (step 2 delegated)
+    # The resolver handles the lookup and raises Unauthenticated on unknown token
+    student_id = await config.resolver.resolve(token)
 
-    # AC-004: The student_id from the token table is server-side truth
+    # AC-004: The student_id from the resolver is server-side truth
     # (client-asserted student_id in request body is ignored by the caller)
 
     # AC-003: Unseeded-student guard (ASSUM-001)
@@ -209,5 +283,7 @@ async def resolve_student_from_token(
 __all__ = [
     "HTTPAuthConfig",
     "StudentStore",
+    "TokenResolver",
+    "TableTokenResolver",
     "resolve_student_from_token",
 ]

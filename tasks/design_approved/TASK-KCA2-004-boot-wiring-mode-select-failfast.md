@@ -1,48 +1,31 @@
 ---
-id: TASK-KCA2-004
-title: "Boot wiring \u2014 STUDY_TUTOR_AUTH_MODE resolver selection + fail-fast, thread\
-  \ resolver into HTTPAuthConfig"
-task_type: feature
-parent_review: TASK-REV-KCA2
-feature_id: FEAT-AUTH-002
-wave: 3
-implementation_mode: task-work
 complexity: 5
+consumer_context:
+- consumes: TOKEN_RESOLVER
+  driver: click CLI + uvicorn boot
+  format_note: select TableTokenResolver in table mode, KeycloakTokenResolver in keycloak
+    mode; inject via HTTPAuthConfig.resolver so callsites in app.py and ws.py are unchanged
+  framework: Starlette boot wiring — HTTPAuthConfig.resolver injected at serve_http
+  task: TASK-KCA2-002
+- consumes: OIDC_SETTINGS
+  driver: SystemExit(1) matching the DSN discipline
+  format_note: non-empty validate() list -> click.echo(err) + SystemExit(1); unknown
+    STUDY_TUTOR_AUTH_MODE also fails fast
+  framework: boot fail-fast on OIDCSettings.validate()
+  task: TASK-KCA2-001
 dependencies:
 - TASK-KCA2-001
 - TASK-KCA2-002
 - TASK-KCA2-003
-consumer_context:
-- task: TASK-KCA2-002
-  consumes: TOKEN_RESOLVER
-  framework: "Starlette boot wiring \u2014 HTTPAuthConfig.resolver injected at serve_http"
-  driver: click CLI + uvicorn boot
-  format_note: select TableTokenResolver in table mode, KeycloakTokenResolver in keycloak
-    mode; inject via HTTPAuthConfig.resolver so callsites in app.py and ws.py are
-    unchanged
-- task: TASK-KCA2-001
-  consumes: OIDC_SETTINGS
-  framework: boot fail-fast on OIDCSettings.validate()
-  driver: SystemExit(1) matching the DSN discipline
-  format_note: non-empty validate() list -> click.echo(err) + SystemExit(1); unknown
-    STUDY_TUTOR_AUTH_MODE also fails fast
-status: in_review
-autobuild_state:
-  current_turn: 1
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002
-  base_branch: main
-  started_at: '2026-07-17T14:26:19.373221'
-  last_updated: '2026-07-17T14:37:44.210420'
-  turns:
-  - turn: 1
-    decision: approve
-    feedback: null
-    timestamp: '2026-07-17T14:26:19.373221'
-    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
-      actual: 0'
-    player_success: true
-    coach_success: true
+feature_id: FEAT-AUTH-002
+id: TASK-KCA2-004
+implementation_mode: task-work
+parent_review: TASK-REV-KCA2
+status: design_approved
+task_type: feature
+title: Boot wiring — STUDY_TUTOR_AUTH_MODE resolver selection + fail-fast, thread
+  resolver into HTTPAuthConfig
+wave: 3
 ---
 
 ## Description

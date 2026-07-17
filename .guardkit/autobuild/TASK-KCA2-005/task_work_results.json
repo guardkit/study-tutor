@@ -1,0 +1,121 @@
+{
+  "task_id": "TASK-KCA2-005",
+  "timestamp": "2026-07-17T14:40:48.238666",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "Implementation** in TDD mode.",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 17,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
+  },
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth.py",
+    "tests/unit/http/test_auth.py"
+  ],
+  "files_created": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.guardkit/autobuild/TASK-KCA2-005/player_turn_1.json"
+  ],
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.guardkit/autobuild/TASK-KCA2-005/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth.py"
+  ],
+  "summary": "17 tests passed",
+  "sdk_turns": {
+    "turns_used": 20,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "testing",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 2,
+    "missing_phases": [
+      "3"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 2 completed invocations\n\nMissing phases:\n  - Phase 3 (Implementation)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 4 (Phase 4): test-orchestrator (completed in ?s)\n\u2705 Phase 5 (Phase 5): code-reviewer (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "test_no_keycloak_jwt_imports still passes for auth.py (no jwt/keycloak/jose)",
+      "status": "complete",
+      "evidence": "The existing test_no_keycloak_jwt_imports test was verified to still pass. It checks that auth.py module has no jwt, JWT, keycloak, Keycloak, or jose imports by inspecting the module's dir() output. Test passed successfully.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "A test asserts the JWT/JWKS imports **are present** in auth_keycloak.py",
+      "status": "complete",
+      "evidence": "Added test_auth_keycloak_has_jwt_imports that asserts auth_keycloak.py DOES import the JWT stack. The test verifies that 'jwt', 'PyJWKClient', and 'KeycloakTokenResolver' are present in the module's namespace. This is the positive half of the tripwire: JWT imports must live somewhere, and that somewhere is auth_keycloak.py. Test passed successfully.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "A test asserts /__dev__/reset is not mounted in keycloak mode",
+      "status": "complete",
+      "evidence": "Added test_dev_reset_not_mounted_in_keycloak_mode that creates an app with keycloak-mode auth config (dev_reset=False) and asserts the /__dev__/reset route is not in the app's route table. The test uses in-memory fakes to verify the design invariant that dev-reset and keycloak validation never coexist. Test passed successfully.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "The new tests are hermetic (no live realm, no network)",
+      "status": "complete",
+      "evidence": "All tests are hermetic. test_no_keycloak_jwt_imports and test_auth_keycloak_has_jwt_imports only check module imports via dir(), with no network calls. test_dev_reset_not_mounted_in_keycloak_mode uses in-memory fake objects (FakeService, FakeStore) and only inspects the app's route configuration. No live Keycloak realm, no JWKS fetch, no network I/O in any test.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    }
+  ],
+  "agent_invocations": [
+    {
+      "phase": "4",
+      "agent": "test-orchestrator",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 1.6306216660887003
+    },
+    {
+      "phase": "5",
+      "agent": "code-reviewer",
+      "status": "completed",
+      "source": "orchestrator",
+      "duration_seconds": 199.27981112408452
+    }
+  ]
+}

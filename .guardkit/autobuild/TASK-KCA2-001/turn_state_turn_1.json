@@ -1,0 +1,33 @@
+{
+  "id": "TURN-FEAT-AUTH-002-1",
+  "feature_id": "FEAT-AUTH-002",
+  "task_id": "TASK-KCA2-001",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "approve",
+  "coach_decision": "approve",
+  "coach_feedback": null,
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: approve",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/pyproject.toml",
+    "pyproject.toml",
+    "src/study_tutor/http/auth.py",
+    "tests/unit/http/test_auth.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/oidc_config.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_oidc_config.py",
+    "src/study_tutor/http/oidc_config.py",
+    "tests/unit/http/test_oidc_config.py"
+  ],
+  "tests_passed": 27,
+  "tests_failed": 0,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-17T13:20:03.262255",
+  "completed_at": "2026-07-17T13:20:03.262255",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}
