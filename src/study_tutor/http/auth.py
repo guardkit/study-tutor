@@ -101,12 +101,22 @@ class HTTPAuthConfig:
     Attributes:
         token_to_student: Static token→student_id mapping from STUDY_TUTOR_HTTP_TOKENS.
         dev_reset: STUDY_TUTOR_HTTP_DEV_RESET flag (consumed by TASK-APP1-05 seed logic).
-        resolver: TokenResolver instance for step 2 of auth resolution.
+        resolver: TokenResolver instance for step 2 of auth resolution. Omitting it
+            defaults to a TableTokenResolver over token_to_student (table mode),
+            mirroring from_env — direct construction keeps pre-seam behaviour.
     """
 
     token_to_student: dict[str, str]
     dev_reset: bool
-    resolver: TokenResolver
+    resolver: TokenResolver | None = None
+
+    def __post_init__(self) -> None:
+        if self.resolver is None:
+            object.__setattr__(
+                self,
+                "resolver",
+                TableTokenResolver(token_to_student=self.token_to_student),
+            )
 
     @classmethod
     def from_env(
