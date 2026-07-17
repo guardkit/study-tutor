@@ -1,17 +1,17 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 67.55263943504542,
+    "duration_seconds": 70.47373534692451,
     "error": null,
     "tests_run": 8,
     "tests_failed": 0,
-    "coverage_pct": 66.3,
-    "output_summary": "8 tests passed; sign_in_screen.dart 66.30% coverage (61/92 lines)",
+    "coverage_pct": 7.87,
+    "output_summary": "8 tests passed, 0 failed; coverage 7.87% (146/1856 lines)",
     "quality_gates_passed": true
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 171.2093019981403,
+    "duration_seconds": 216.9318755439017,
     "error": null,
     "issues": [],
     "quality_score": 0.0,
