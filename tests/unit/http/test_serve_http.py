@@ -443,29 +443,34 @@ def test_unknown_auth_mode_fails_fast(monkeypatch):
 
 
 def test_table_mode_does_not_import_pyjwt(monkeypatch):
-    """Table mode boot does not import PyJWT or auth_keycloak module (AC-003)."""
-    # This test verifies lazy imports by checking sys.modules after boot would have loaded
+    """Table mode resolver selection does not import PyJWT/auth_keycloak (AC-003).
+
+    Executable fence: runs the real boot-path selection (_select_token_resolver)
+    in table mode and asserts the keycloak modules were never loaded — a future
+    module-scope import of auth_keycloak in cli.main would fail this test.
+    """
     import sys
 
-    # Clear any previous imports
-    modules_to_clear = [m for m in sys.modules if 'auth_keycloak' in m or 'jwt' in m.lower()]
-    for mod in modules_to_clear:
-        del sys.modules[mod]
-
-    # Import the main module to trigger module-level imports
-    # In table mode, auth_keycloak should NOT be imported
+    from study_tutor.cli.main import _select_token_resolver
+    from study_tutor.http.auth import TableTokenResolver
     from study_tutor.http.oidc_config import OIDCSettings
 
-    # Load settings in table mode
-    monkeypatch.setenv("STUDY_TUTOR_AUTH_MODE", "table")
-    settings = OIDCSettings.from_env()
+    # Clear keycloak-adjacent modules loaded by earlier tests
+    for mod in [m for m in sys.modules if "auth_keycloak" in m or m == "jwt" or m.startswith("jwt.")]:
+        del sys.modules[mod]
 
-    # Verify table mode
+    monkeypatch.setenv("STUDY_TUTOR_AUTH_MODE", "table")
+    monkeypatch.setenv("STUDY_TUTOR_HTTP_TOKENS", '{"token-test": "testuser"}')
+    settings = OIDCSettings.from_env()
     assert settings.auth_mode == "table"
 
-    # Check that jwt/auth_keycloak modules are not loaded
-    # (This is a proxy test - the real guarantee is in the boot path structure)
-    # The actual AC-003 is verified by the boot path having the import inside the keycloak branch
+    resolver = _select_token_resolver(settings)
+
+    assert isinstance(resolver, TableTokenResolver)
+    assert "study_tutor.http.auth_keycloak" not in sys.modules, \
+        "table-mode selection must not import auth_keycloak (AC-003)"
+    assert "jwt" not in sys.modules, \
+        "table-mode selection must not import PyJWT (AC-003)"
 
 
 def test_dev_reset_not_mounted_in_keycloak_mode():

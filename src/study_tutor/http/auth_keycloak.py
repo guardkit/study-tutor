@@ -9,6 +9,7 @@ failures raise Unauthenticated (never a 500) as per the fail-closed contract.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 
@@ -100,9 +101,14 @@ class KeycloakTokenResolver:
         """
         try:
             # Step 1: Get signing key from JWKS (signature verification)
-            # PyJWKClient handles kid extraction, JWKS fetch, caching, and rotation
+            # PyJWKClient handles kid extraction, JWKS fetch, caching, and rotation.
+            # Offloaded to a thread: an unknown kid triggers a synchronous,
+            # cache-bypassing urllib fetch (30s timeout) that must not stall the
+            # shared event loop for concurrent HTTP/WS traffic.
             try:
-                signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+                signing_key = await asyncio.to_thread(
+                    self.jwks_client.get_signing_key_from_jwt, token
+                )
             except jwt.exceptions.PyJWKClientError as e:
                 # Unknown kid, JWKS fetch failure, etc.
                 logger.warning("JWKS key fetch failed: %s", e)
@@ -137,10 +143,10 @@ class KeycloakTokenResolver:
                 raise Unauthenticated("Token is not yet valid") from e
             except jwt.exceptions.InvalidIssuerError as e:
                 logger.warning("Invalid issuer: %s", e)
-                raise Unauthenticated(f"Token issuer does not match expected issuer") from e
+                raise Unauthenticated("Token issuer does not match expected issuer") from e
             except jwt.exceptions.InvalidAudienceError as e:
                 logger.warning("Invalid audience: %s", e)
-                raise Unauthenticated(f"Token audience does not match expected audience") from e
+                raise Unauthenticated("Token audience does not match expected audience") from e
             except jwt.exceptions.InvalidAlgorithmError as e:
                 logger.warning("Invalid algorithm: %s", e)
                 raise Unauthenticated(f"Token algorithm not allowed: {e}") from e

@@ -35,7 +35,7 @@ import logging
 import os
 import signal
 import sys
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import click
 
@@ -67,7 +67,46 @@ from study_tutor.tutoring.orchestrator import (
 )
 from study_tutor.tutoring.session_end import EventBus
 
+if TYPE_CHECKING:
+    from study_tutor.http.auth import TokenResolver
+    from study_tutor.http.oidc_config import OIDCSettings
+
 logger = logging.getLogger(__name__)
+
+
+def _select_token_resolver(oidc_settings: OIDCSettings) -> TokenResolver:
+    """Select the TokenResolver for the configured auth mode (TASK-KCA2-004).
+
+    Extracted from serve_http so the AC-003 fence — table mode never imports
+    auth_keycloak/PyJWT — is executable in tests, not just structural: the
+    keycloak import stays lazy inside its branch.
+    """
+    if oidc_settings.auth_mode == "table":
+        # Table mode: Use TableTokenResolver (no PyJWT import)
+        import json
+
+        from study_tutor.http.auth import TableTokenResolver
+
+        tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
+        try:
+            token_to_student = json.loads(tokens_json) if tokens_json else {}
+        except json.JSONDecodeError:
+            token_to_student = {}
+
+        return TableTokenResolver(token_to_student=token_to_student)
+    if oidc_settings.auth_mode == "keycloak":
+        # Keycloak mode: Lazy import of auth_keycloak (AC-003)
+        # This import happens ONLY in the keycloak branch, so table-mode boot
+        # never pulls in PyJWT
+        from study_tutor.http.auth_keycloak import KeycloakTokenResolver
+
+        return KeycloakTokenResolver(oidc_settings)
+    # This should never happen due to validate() above, but guard anyway
+    click.echo(
+        f"[study-tutor] Error: Unknown auth mode: {oidc_settings.auth_mode}",
+        err=True,
+    )
+    raise SystemExit(1)
 
 
 def _build_coach_handover() -> CoachHandover:
@@ -938,35 +977,11 @@ def serve_http(port: int, host: str, log_level: str) -> None:
             click.echo(f"  - {error}", err=True)
         raise SystemExit(1)
 
-    # TASK-KCA2-004: Select TokenResolver based on auth mode
-    from study_tutor.http.auth import HTTPAuthConfig, TokenResolver
+    # TASK-KCA2-004: Select TokenResolver based on auth mode (extracted to
+    # _select_token_resolver so the AC-003 lazy-import fence is testable)
+    from study_tutor.http.auth import HTTPAuthConfig
 
-    resolver: TokenResolver
-    if oidc_settings.auth_mode == "table":
-        # Table mode: Use TableTokenResolver (no PyJWT import)
-        from study_tutor.http.auth import TableTokenResolver
-        tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
-        # Parse tokens for table resolver
-        import json
-        try:
-            token_to_student = json.loads(tokens_json) if tokens_json else {}
-        except json.JSONDecodeError:
-            token_to_student = {}
-
-        resolver = TableTokenResolver(token_to_student=token_to_student)
-    elif oidc_settings.auth_mode == "keycloak":
-        # Keycloak mode: Lazy import of auth_keycloak (AC-003)
-        # This import happens ONLY in the keycloak branch, so table-mode boot
-        # never pulls in PyJWT
-        from study_tutor.http.auth_keycloak import KeycloakTokenResolver
-        resolver = KeycloakTokenResolver(oidc_settings)
-    else:
-        # This should never happen due to validate() above, but guard anyway
-        click.echo(
-            f"[study-tutor] Error: Unknown auth mode: {oidc_settings.auth_mode}",
-            err=True,
-        )
-        raise SystemExit(1)
+    resolver = _select_token_resolver(oidc_settings)
 
     # Wire HTTP auth config with selected resolver
     tokens_json = os.environ.get("STUDY_TUTOR_HTTP_TOKENS", "{}")
