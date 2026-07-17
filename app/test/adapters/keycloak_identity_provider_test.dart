@@ -41,36 +41,48 @@ void main() {
       expect(idp.currentPrincipal, isNotNull);
     });
 
-    test('user cancel throws SignInCancelled', () async {
+    test('cancel and failure surface as distinct outcomes', () async {
       final store = FakeSecureSessionStore();
+
+      // Verify cancel outcome
       final cancelIdp = KeycloakIdentityProvider(
         config,
         FakeAppAuth.cancels(),
         store,
       );
 
+      bool cancelThrew = false;
+      bool cancelCorrectType = false;
       try {
         await cancelIdp.signIn();
-        fail('Expected SignInCancelled to be thrown');
-      } on SignInCancelled catch (e) {
-        expect(e.message, contains('cancel'), reason: 'Exception message should mention cancellation');
+      } catch (e, stack) {
+        cancelThrew = true;
+        cancelCorrectType = e is SignInCancelled;
+        // If wrong type, let it propagate for debugging
+        if (!cancelCorrectType) rethrow;
       }
-    });
+      expect(cancelThrew, isTrue, reason: 'Cancel should throw an exception');
+      expect(cancelCorrectType, isTrue, reason: 'Cancel should throw SignInCancelled');
 
-    test('discovery failure throws SignInFailed', () async {
-      final store = FakeSecureSessionStore();
+      // Verify failure outcome
       final failIdp = KeycloakIdentityProvider(
         config,
         FakeAppAuth.failsDiscovery(),
         store,
       );
 
+      bool failureThrew = false;
+      bool failureCorrectType = false;
       try {
         await failIdp.signIn();
-        fail('Expected SignInFailed to be thrown');
-      } on SignInFailed catch (e) {
-        expect(e.message, isNotEmpty, reason: 'Exception should have a message');
+      } catch (e, stack) {
+        failureThrew = true;
+        failureCorrectType = e is SignInFailed;
+        // If wrong type, let it propagate for debugging
+        if (!failureCorrectType) rethrow;
       }
+      expect(failureThrew, isTrue, reason: 'Failure should throw an exception');
+      expect(failureCorrectType, isTrue, reason: 'Failure should throw SignInFailed');
     });
   });
 

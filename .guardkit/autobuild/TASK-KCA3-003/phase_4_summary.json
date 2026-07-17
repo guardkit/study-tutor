@@ -1,7 +1,7 @@
 {
-  "tests_run": 324,
+  "tests_run": 372,
   "tests_failed": 2,
-  "coverage_pct": 87.08,
-  "output_summary": "324 tests (2 failed): keycloak_identity_provider_test.dart failures in SEAM TESTS; 87.08% coverage",
+  "coverage_pct": 87.09,
+  "output_summary": "Flutter: 370/372 tests passed; KeycloakIdentityProvider error handling tests failed; 87.09% line coverage",
   "quality_gates_passed": false
 }
