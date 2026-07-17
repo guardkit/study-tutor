@@ -5,5 +5,12 @@
     "post_path": "tasks/design_approved/TASK-KCA2-004-boot-wiring-mode-select-failfast.md",
     "timestamp": "2026-07-17T12:35:43.271342+00:00",
     "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-KCA2-004",
+    "pre_path": "tasks/backlog/keycloak-server-token-validation/TASK-KCA2-004-boot-wiring-mode-select-failfast.md",
+    "post_path": "tasks/design_approved/TASK-KCA2-004-boot-wiring-mode-select-failfast.md",
+    "timestamp": "2026-07-17T12:48:58.692648+00:00",
+    "kind": "design_approved_transition"
   }
 ]
