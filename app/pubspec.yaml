@@ -70,6 +70,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # yaml: used by test/voice_runtime_config_test.dart to parse pubspec.yaml
+  yaml: ^3.1.2
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

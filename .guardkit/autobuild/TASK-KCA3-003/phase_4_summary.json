@@ -1,7 +1,7 @@
 {
-  "tests_run": 15,
+  "tests_run": 325,
   "tests_failed": 0,
-  "coverage_pct": 91.51,
-  "output_summary": "15 tests passed (keycloak_identity_provider), 91.51% line coverage",
+  "coverage_pct": 86.86,
+  "output_summary": "325 Flutter tests passed, 86.86% line coverage (1897/2184 lines)",
   "quality_gates_passed": true
 }
