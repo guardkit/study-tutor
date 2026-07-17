@@ -1,0 +1,68 @@
+{
+  "task_id": "TASK-KCA2-005",
+  "turn": 1,
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth.py",
+    "tests/unit/http/test_auth.py"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-KCA2-005_junit.xml"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Keep test_no_keycloak_jwt_imports green for auth.py",
+    "Add test asserting JWT/JWKS imports are present in auth_keycloak.py",
+    "Add test asserting /__dev__/reset is not mounted in keycloak mode",
+    "Ensure all tests are hermetic (no live realm, no network)"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 20,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.guardkit/autobuild/TASK-KCA2-005/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_auth.py"
+  ],
+  "tests_passed_count": 17,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "test_no_keycloak_jwt_imports still passes for auth.py (no jwt/keycloak/jose)",
+      "status": "complete",
+      "evidence": "The existing test_no_keycloak_jwt_imports test was verified to still pass. It checks that auth.py module has no jwt, JWT, keycloak, Keycloak, or jose imports by inspecting the module's dir() output. Test passed successfully.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "A test asserts the JWT/JWKS imports **are present** in auth_keycloak.py",
+      "status": "complete",
+      "evidence": "Added test_auth_keycloak_has_jwt_imports that asserts auth_keycloak.py DOES import the JWT stack. The test verifies that 'jwt', 'PyJWKClient', and 'KeycloakTokenResolver' are present in the module's namespace. This is the positive half of the tripwire: JWT imports must live somewhere, and that somewhere is auth_keycloak.py. Test passed successfully.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "A test asserts /__dev__/reset is not mounted in keycloak mode",
+      "status": "complete",
+      "evidence": "Added test_dev_reset_not_mounted_in_keycloak_mode that creates an app with keycloak-mode auth config (dev_reset=False) and asserts the /__dev__/reset route is not in the app's route table. The test uses in-memory fakes to verify the design invariant that dev-reset and keycloak validation never coexist. Test passed successfully.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "The new tests are hermetic (no live realm, no network)",
+      "status": "complete",
+      "evidence": "All tests are hermetic. test_no_keycloak_jwt_imports and test_auth_keycloak_has_jwt_imports only check module imports via dir(), with no network calls. test_dev_reset_not_mounted_in_keycloak_mode uses in-memory fake objects (FakeService, FakeStore) and only inspects the app's route configuration. No live Keycloak realm, no JWKS fetch, no network I/O in any test.",
+      "test_file": "tests/unit/http/test_auth.py",
+      "implementation_files": []
+    }
+  ]
+}

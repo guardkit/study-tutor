@@ -1,15 +1,17 @@
 ---
-id: TASK-KCA2-006
-title: "Live contract-suite token harness — dev-realm live-suite client token minting (skips without live realm)"
-task_type: testing
-parent_review: TASK-REV-KCA2
-feature_id: FEAT-AUTH-002
-wave: 4
-implementation_mode: task-work
 complexity: 5
 dependencies:
 - TASK-KCA2-003
 - TASK-KCA2-004
+feature_id: FEAT-AUTH-002
+id: TASK-KCA2-006
+implementation_mode: task-work
+parent_review: TASK-REV-KCA2
+status: design_approved
+task_type: testing
+title: Live contract-suite token harness — dev-realm live-suite client token minting
+  (skips without live realm)
+wave: 4
 ---
 
 ## Description

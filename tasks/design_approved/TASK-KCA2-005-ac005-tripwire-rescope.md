@@ -1,15 +1,16 @@
 ---
-id: TASK-KCA2-005
-title: "AC-005 tripwire re-scope + dev-reset/keycloak coexistence guard"
-task_type: testing
-parent_review: TASK-REV-KCA2
-feature_id: FEAT-AUTH-002
-wave: 4
-implementation_mode: task-work
 complexity: 3
 dependencies:
 - TASK-KCA2-003
 - TASK-KCA2-004
+feature_id: FEAT-AUTH-002
+id: TASK-KCA2-005
+implementation_mode: task-work
+parent_review: TASK-REV-KCA2
+status: design_approved
+task_type: testing
+title: AC-005 tripwire re-scope + dev-reset/keycloak coexistence guard
+wave: 4
 ---
 
 ## Description

@@ -1,0 +1,14 @@
+{
+  "phase_4": {
+    "status": "passed",
+    "duration_seconds": 1.3826038918923587,
+    "error": null,
+    "tests_run": 20,
+    "tests_failed": 0,
+    "tests_skipped": 2,
+    "resolved_interpreter": "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.venv/bin/python",
+    "coverage_pct": 0.0,
+    "output_summary": "Result:\ntests/unit/http/test_auth.py::test_auth_keycloak_has_jwt_imports PASSED  [ 86%]\ntests/unit/http/test_auth.py::test_dev_reset_not_mounted_in_keycloak_mode PASSED [ 90%]\ntests/unit/http/test_aut",
+    "quality_gates_passed": true
+  }
+}

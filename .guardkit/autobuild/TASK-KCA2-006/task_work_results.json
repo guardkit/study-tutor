@@ -1,0 +1,122 @@
+{
+  "task_id": "TASK-KCA2-006",
+  "timestamp": "2026-07-17T14:44:03.687938",
+  "completed": true,
+  "phases": {
+    "phase_3": {
+      "detected": true,
+      "text": "(Implementation) for TASK-KCA2-006. Let me start by reading the task file and implementation plan.",
+      "completed": true
+    }
+  },
+  "quality_gates": {
+    "tests_passing": true,
+    "tests_passed": 18,
+    "tests_failed": 0,
+    "coverage": null,
+    "coverage_met": null,
+    "all_passed": null
+  },
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/pyproject.toml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/integration/test_keycloak_contract.py",
+    "coverage.json",
+    "pyproject.toml",
+    "tests/unit/http/test_auth.py"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-KCA2-005_junit.xml",
+    ".guardkit/bdd/TASK-KCA2-006_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/integration/test_keycloak_contract.py",
+    "tests/integration/test_keycloak_contract.py"
+  ],
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.guardkit/autobuild/TASK-KCA2-006/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/pyproject.toml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/integration/test_keycloak_contract.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/integration/test_keycloak_contract.py"
+  ],
+  "summary": "18 tests passed",
+  "sdk_turns": {
+    "turns_used": 45,
+    "max_turns": 150,
+    "ceiling_hit": false
+  },
+  "task_type": "testing",
+  "agent_invocations_validation": {
+    "status": "violation",
+    "expected_phases": 3,
+    "actual_invocations": 1,
+    "missing_phases": [
+      "4",
+      "5"
+    ],
+    "violation_message": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u274c PROTOCOL VIOLATION: Agent invocation incomplete\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nExpected: 3 agent invocations\nActual: 1 completed invocations\n\nMissing phases:\n  - Phase 4 (Testing)\n  - Phase 5 (Code Review)\n\nCannot generate completion report until all agents are invoked.\nReview the AGENT INVOCATIONS LOG above to see which phases were skipped.\n\nAGENT INVOCATIONS LOG:\n\u2705 Phase 3 (Phase 3): (Implementation) for TASK-KCA2-006. Let me start by reading the task file and implementation plan. (completed in ?s)\n\nTASK WILL BE MOVED TO BLOCKED STATE\nReason: Protocol violation - required agents not invoked\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "unconfirmed_low_confidence_assumptions": {
+    "status": "ok",
+    "unconfirmed": [],
+    "files_scanned": 0,
+    "files_skipped": 0,
+    "message": null
+  },
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`tests/integration/test_keycloak_contract.py` mints tokens via the dev-realm `live-suite` client (Direct Access Grant) for a test student",
+      "status": "complete",
+      "evidence": "Implemented `mint_live_suite_token` async function that performs OAuth2 Resource Owner Password Credentials flow (Direct Access Grant) against Keycloak token endpoint. The function constructs token URL from issuer, sends POST request with client credentials and user credentials, and extracts access_token from response. Integration test `test_mint_token_for_test_student` validates the complete flow end-to-end by minting a token for a test student and verifying it's a valid JWT format.",
+      "test_file": "tests/integration/test_keycloak_contract.py",
+      "implementation_files": [
+        "tests/integration/test_keycloak_contract.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "The integration test is excluded from the default hermetic run and **skips cleanly** when live-realm env is absent (no hard failure)",
+      "status": "complete",
+      "evidence": "Integration tests are marked with `@pytest.mark.integration` and `@pytest.mark.keycloak`, plus decorated with `@_skip_no_live_realm` skipif marker that checks for required env vars (STUDY_TUTOR_OIDC_ISSUER, STUDY_TUTOR_LIVE_SUITE_CLIENT_ID, STUDY_TUTOR_LIVE_SUITE_CLIENT_SECRET, STUDY_TUTOR_LIVE_SUITE_USERS). When env is absent, tests skip with descriptive reason message. Registered both markers in pyproject.toml. Verified: running `pytest -m 'not integration and not keycloak'` runs only hermetic tests (3 passed, 2 deselected). Running without env vars shows tests skip cleanly (2 skipped, 0 failed).",
+      "test_file": "tests/integration/test_keycloak_contract.py",
+      "implementation_files": [
+        "tests/integration/test_keycloak_contract.py",
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "A hermetic plumbing test covers URL/response handling without a network, pinning env via monkeypatch",
+      "status": "complete",
+      "evidence": "Implemented two hermetic plumbing tests that run offline without network: (1) `test_token_endpoint_url_construction` validates URL construction logic for Keycloak token endpoint, testing standard issuer URLs and edge cases like trailing slashes. (2) `test_token_response_parsing` validates access_token extraction from token response JSON, testing valid responses, missing tokens, empty tokens, and invalid types. Both tests are pure unit tests with no env reads or network calls, making them Coach-verifiable offline. These tests run in the default hermetic suite.",
+      "test_file": "tests/integration/test_keycloak_contract.py",
+      "implementation_files": [
+        "tests/integration/test_keycloak_contract.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "Hermetic suites stay in `table` mode and mint no real tokens",
+      "status": "complete",
+      "evidence": "Hermetic suites never invoke `mint_live_suite_token` function \u2014 it's only called from integration-marked tests that skip when env is absent. The skip marker uses `_has_live_realm_env()` check that returns False in hermetic CI where live-realm env vars are not set. Implemented `test_hermetic_suites_never_mint_real_tokens` that validates the module imports without side effects and confirms the skip marker is configured correctly. All token minting logic is isolated behind integration markers and environment checks, ensuring hermetic suites stay in table mode.",
+      "test_file": "tests/integration/test_keycloak_contract.py",
+      "implementation_files": [
+        "tests/integration/test_keycloak_contract.py"
+      ]
+    }
+  ]
+}
