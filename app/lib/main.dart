@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
 
 import 'adapters/http_session_api.dart';
 import 'adapters/http_student_model_api.dart';
 import 'adapters/http_voice_api.dart';
+import 'adapters/keycloak_identity_provider.dart';
+import 'adapters/secure_session_store.dart';
+import 'config/keycloak_config.dart';
 import 'fakes/fake_identity_provider.dart';
 import 'fakes/fake_session_api.dart';
 import 'fakes/fake_student_model_api.dart';
 import 'fakes/fake_voice_api.dart';
+import 'ports/identity_provider.dart';
 import 'ports/session_api.dart';
 import 'ports/student_model_api.dart';
 import 'ports/voice_api.dart';
@@ -20,32 +25,73 @@ import 'ui/app.dart';
 /// adapter. No settings UI, no runtime switching.
 const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
-/// The one composition rule, separated from [main] so a widget test can
-/// assert it. Identity stays [FakeIdentityProvider] in BOTH flavours (port
-/// untouched this phase); its constant token is the binding doc's dev-table
-/// entry #1, which is what the real adapter sends as the bearer token.
-SessionApi composeSessionApi(String baseUrl, FakeIdentityProvider identity) =>
-    baseUrl.isEmpty
-        ? FakeSessionApi(identity: identity)
-        : HttpSessionApi(baseUrl: baseUrl, identity: identity);
+/// KC-D7 flavour key: empty issuer (default) → hermetic-fake flavour with
+/// concrete FakeIdentityProvider; set issuer → keycloak flavour with
+/// KeycloakIdentityProvider. Replaces API_BASE_URL as the flavour switch.
+const keycloakIssuer = String.fromEnvironment('KEYCLOAK_ISSUER');
+const keycloakClientId =
+    String.fromEnvironment('KEYCLOAK_CLIENT_ID', defaultValue: 'study-tutor-app');
 
-VoiceApi composeVoiceApi(String baseUrl, FakeIdentityProvider identity) =>
+/// KC-D7: compose the identity adapter by flavour. Empty issuer (default) →
+/// concrete FakeIdentityProvider for the hermetic flavour; set issuer →
+/// KeycloakIdentityProvider with OIDC config. Separated from [main] so tests
+/// can assert the flavour selection.
+IdentityProvider composeIdentity({String? keycloakIssuer}) {
+  final issuer = keycloakIssuer ?? const String.fromEnvironment('KEYCLOAK_ISSUER');
+  if (issuer.isEmpty) {
+    // Hermetic-fake flavour: concrete FakeIdentityProvider for studentIdForToken
+    return FakeIdentityProvider();
+  } else {
+    // Keycloak flavour: real OIDC adapter
+    final config = KeycloakConfig(
+      issuer: issuer,
+      clientId: keycloakClientId,
+    );
+    return KeycloakIdentityProvider(
+      config,
+      FlutterAppAuth(),
+      SecureSessionStore(),
+    );
+  }
+}
+
+/// The composition rules, de-typed to accept the [IdentityProvider] port
+/// (KC-D7). The hermetic flavour composes fakes; the set-baseUrl flavour
+/// composes HTTP adapters. FakeSessionApi still needs the concrete
+/// FakeIdentityProvider for its studentIdForToken introspection hook, so
+/// the fake flavour must pass the concrete type where the port expects it.
+SessionApi composeSessionApi(String baseUrl, IdentityProvider identity) {
+  if (baseUrl.isEmpty) {
+    // Hermetic flavour: fake backend needs concrete FakeIdentityProvider
+    return FakeSessionApi(identity: identity as FakeIdentityProvider);
+  } else {
+    // HTTP flavour: adapter accepts the port
+    return HttpSessionApi(baseUrl: baseUrl, identity: identity);
+  }
+}
+
+VoiceApi composeVoiceApi(String baseUrl, IdentityProvider identity) =>
     baseUrl.isEmpty
         ? FakeVoiceApi()
         : HttpVoiceApi(baseUrl: baseUrl, identity: identity);
 
 /// The `StudentModelApi` composition (S-A3), mirroring [composeSessionApi]:
 /// the fake read on the default flavour, the HTTP adapter when a base URL is
-/// set. Composed against the [FakeIdentityProvider] here, but each adapter
-/// only depends on the `IdentityProvider` interface (KC-D7-proofing).
+/// set. Now accepts the [IdentityProvider] port (KC-D7).
 StudentModelApi composeStudentModelApi(
-        String baseUrl, FakeIdentityProvider identity) =>
-    baseUrl.isEmpty
-        ? FakeStudentModelApi(identity: identity)
-        : HttpStudentModelApi(baseUrl: baseUrl, identity: identity);
+    String baseUrl, IdentityProvider identity) {
+  if (baseUrl.isEmpty) {
+    // Hermetic flavour: fake needs concrete FakeIdentityProvider
+    return FakeStudentModelApi(identity: identity as FakeIdentityProvider);
+  } else {
+    // HTTP flavour: adapter accepts the port
+    return HttpStudentModelApi(baseUrl: baseUrl, identity: identity);
+  }
+}
 
 void main() {
-  final identity = FakeIdentityProvider();
+  // KC-D7: flavour selection keys on KEYCLOAK_ISSUER (empty → fake, set → real)
+  final identity = composeIdentity();
   runApp(StudyTutorApp(
     identity: identity,
     sessionApi: composeSessionApi(apiBaseUrl, identity),

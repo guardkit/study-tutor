@@ -1,22 +1,27 @@
 ---
-id: TASK-KCA3-006
-title: "Composition seam de-type to the port + real-flavour wiring; preserve Unauthenticated↔TransportError distinction"
-task_type: refactor
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 5
-implementation_mode: task-work
 complexity: 6
+consumer_context:
+- consumes: OIDC_CLIENT_CONFIG
+  driver: flutter_appauth + flutter_secure_storage
+  format_note: the keycloak flavour builds KeycloakConfig from KEYCLOAK_ISSUER/KEYCLOAK_CLIENT_ID;
+    an empty KEYCLOAK_ISSUER selects the hermetic-fake flavour, which keeps the concrete
+    FakeIdentityProvider
+  framework: composition root (main.dart) constructs KeycloakIdentityProvider(config,
+    appauth, store)
+  task: TASK-KCA3-001
 dependencies:
 - TASK-KCA3-003
 - TASK-KCA3-004
 - TASK-KCA3-005
-consumer_context:
-  - task: TASK-KCA3-001
-    consumes: OIDC_CLIENT_CONFIG
-    framework: "composition root (main.dart) constructs KeycloakIdentityProvider(config, appauth, store)"
-    driver: "flutter_appauth + flutter_secure_storage"
-    format_note: "the keycloak flavour builds KeycloakConfig from KEYCLOAK_ISSUER/KEYCLOAK_CLIENT_ID; an empty KEYCLOAK_ISSUER selects the hermetic-fake flavour, which keeps the concrete FakeIdentityProvider"
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-006
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: refactor
+title: Composition seam de-type to the port + real-flavour wiring; preserve Unauthenticated↔TransportError
+  distinction
+wave: 5
 ---
 
 ## Description

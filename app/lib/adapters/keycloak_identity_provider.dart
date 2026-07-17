@@ -53,6 +53,9 @@ class KeycloakIdentityProvider implements IdentityProvider {
   @override
   Principal? get currentPrincipal => _currentPrincipal;
 
+  /// Expose config for composition seam tests (KC-D7).
+  KeycloakConfig get config => _config;
+
   @override
   Future<Principal> signIn() {
     // Single-flight guard: return in-flight Future if one exists
