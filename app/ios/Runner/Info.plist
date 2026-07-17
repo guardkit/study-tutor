@@ -68,5 +68,17 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- TASK-KCA3-001: OAuth2 redirect handler (ASSUM-003 frozen scheme) -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.appmilla.studytutor</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

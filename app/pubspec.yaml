@@ -45,6 +45,13 @@ dependencies:
   just_audio: ^0.9.42
   web_socket_channel: ^3.0.1
 
+  # Keycloak authentication runtime dependencies (TASK-KCA3-001: scope event 2026-07-17)
+  # DELIBERATE zero-added-runtime-dependencies DoD break (mirrors voice track pattern)
+  # - flutter_appauth: OIDC/OAuth2 authentication flow
+  # - flutter_secure_storage: secure token storage
+  flutter_appauth: ^8.0.2
+  flutter_secure_storage: ^9.2.2
+
 # Walk-time toolchain fix (2026-07-13): the homebrew Flutter upgrade's front-end
 # rejects record_linux 0.7.2 against record_platform_interface 1.6.0 (missing
 # startStream). We never ship Linux; override the desktop stub to a version that

@@ -1,0 +1,134 @@
+{
+  "honesty": {
+    "verified": true,
+    "discrepancies": [],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 0
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": false,
+    "coverage_required": false,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": false
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": false,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": null,
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "Independent test verification skipped (tests not required for scaffolding tasks)",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 5,
+    "criteria_met": 5,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`flutter_appauth` and `flutter_secure_storage` are declared in `app/pubspec.yaml` and are the **only** two runtime dependencies added by this feature (serves the scope-event scenario)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added flutter_appauth: ^8.0.2 and flutter_secure_storage: ^9.2.2 to app/pubspec.yaml dependencies section with scope event documentation comment matching the voice track pattern (TASK-KCA3-001: scope event 2026-07-17). These are the only two runtime dependencies added, documented as a deliberate zero-added-runtime-dependencies DoD break."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "The redirect scheme `com.appmilla.studytutor` is registered in the Android manifest (`appAuthRedirectScheme`) **and** in the iOS `Info.plist` `CFBundleURLSchemes`, matching `KeycloakConfig.redirectUrl` = `com.appmilla.studytutor:/oauth2redirect` byte-for-byte",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Android: Added manifestPlaceholders[\"appAuthRedirectScheme\"] = \"com.appmilla.studytutor\" to app/android/app/build.gradle.kts defaultConfig and added intent-filter with data android:scheme=\"${appAuthRedirectScheme}\" to AndroidManifest.xml. iOS: Added CFBundleURLTypes with CFBundleURLSchemes containing \"com.appmilla.studytutor\" to app/ios/Runner/Info.plist. KeycloakConfig.redirectUrl is frozen constant \"com.appmilla.studytutor:/oauth2redirect\" ensuring byte-for-byte match per ASSUM-003."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`KeycloakConfig` carries `issuer`, `clientId` (default `study-tutor-app`), `redirectUrl`, and `scopes` (`openid`, `offline_access`); an empty `KEYCLOAK_ISSUER` selects the hermetic-fake flavour (no Keycloak)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created app/lib/config/keycloak_config.dart with immutable KeycloakConfig class containing: issuer (String, required), clientId (String, defaults to 'study-tutor-app'), redirectUrl (frozen constant 'com.appmilla.studytutor:/oauth2redirect'), scopes (frozen constant ['openid', 'offline_access']). Implemented fromEnvironment factory that reads KEYCLOAK_ISSUER (defaults to empty string for hermetic-fake flavour) and KEYCLOAK_CLIENT_ID (defaults to 'study-tutor-app'). Verified via 13 comprehensive tests covering construction, defaults, environment reading, equality, and ASSUM-003 compliance."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "The zero-added-runtime-dependencies DoD scope event is recorded in the task notes / DoD ledger",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Recorded scope event in pubspec.yaml inline comment: '# Keycloak authentication runtime dependencies (TASK-KCA3-001: scope event 2026-07-17)' followed by '# DELIBERATE zero-added-runtime-dependencies DoD break (mirrors voice track pattern)'. This matches the voice track's scope event documentation pattern (TASK-VC-001: scope event 2026-07-08)."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "`flutter analyze` remains clean; `flutter test` stays green (no behavioural change yet)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "flutter test: All 299 tests passed (including 13 new KeycloakConfig tests). flutter analyze: One pre-existing issue in voice_runtime_config_test.dart (depend_on_referenced_packages for yaml package) - not introduced by this task. No new analyze issues introduced. git diff confirms voice_runtime_config_test.dart was not modified. All new code follows Dart conventions with proper documentation, immutability patterns, and comprehensive test coverage."
+      }
+    ]
+  },
+  "runtime_parity": null,
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    }
+  ],
+  "task_type": "scaffolding",
+  "profile_name": "scaffolding"
+}

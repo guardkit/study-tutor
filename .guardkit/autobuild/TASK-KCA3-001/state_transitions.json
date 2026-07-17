@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KCA3-001",
+    "pre_path": "tasks/backlog/TASK-KCA3-001-deps-native-redirect-config.md",
+    "post_path": "tasks/design_approved/TASK-KCA3-001-deps-native-redirect-config.md",
+    "timestamp": "2026-07-17T12:40:05.108361+00:00",
+    "kind": "design_approved_transition"
+  }
+]
