@@ -80,4 +80,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('English'), findsOneWidget);
   });
+
+  test('keycloak flavour without a backend URL fails fast (KC-D7 coherence)',
+      () {
+    expect(
+      () => assertFlavourCoherence(
+          issuer: 'https://kc.example/realms/study-tutor', baseUrl: ''),
+      throwsStateError,
+      reason: 'a real identity adapter must never be handed to the fake '
+          'composers via an as-cast crash — fail fast with guidance instead',
+    );
+    // Coherent combinations pass silently.
+    assertFlavourCoherence(issuer: '', baseUrl: '');
+    assertFlavourCoherence(issuer: '', baseUrl: 'http://h:8100');
+    assertFlavourCoherence(
+        issuer: 'https://kc.example/realms/study-tutor',
+        baseUrl: 'http://h:8100');
+  });
 }

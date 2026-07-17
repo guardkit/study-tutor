@@ -89,8 +89,23 @@ StudentModelApi composeStudentModelApi(
   }
 }
 
+/// KC-D7 flavour-coherence guard: the keycloak flavour needs the real
+/// backend. KEYCLOAK_ISSUER set with API_BASE_URL empty would hand the real
+/// adapter to the fake composers (`identity as FakeIdentityProvider`) and
+/// crash obscurely at boot — fail fast with an actionable message instead.
+void assertFlavourCoherence({required String issuer, required String baseUrl}) {
+  if (issuer.isNotEmpty && baseUrl.isEmpty) {
+    throw StateError(
+      'KEYCLOAK_ISSUER is set but API_BASE_URL is empty: the keycloak '
+      'flavour requires the real backend. Pass --dart-define=API_BASE_URL=… '
+      'or unset KEYCLOAK_ISSUER for the hermetic-fake flavour.',
+    );
+  }
+}
+
 void main() {
   // KC-D7: flavour selection keys on KEYCLOAK_ISSUER (empty → fake, set → real)
+  assertFlavourCoherence(issuer: keycloakIssuer, baseUrl: apiBaseUrl);
   final identity = composeIdentity();
   runApp(StudyTutorApp(
     identity: identity,

@@ -75,9 +75,12 @@ class KeycloakIdentityProvider implements IdentityProvider {
   }
 
   Future<Principal> _performSignIn() async {
-    // Attempt silent refresh first
+    // Silent-then-interactive (KC-D7): ALWAYS try the stored refresh token
+    // before any browser. Access-token expiry is deliberately NOT checked —
+    // an expired access token with a live refresh token is the normal
+    // >5-minute-idle case the silent path exists for (KC-G3 idle-refresh).
     final storedSession = await _store.read();
-    if (storedSession != null && !_isExpired(storedSession.accessTokenExpiry)) {
+    if (storedSession != null && storedSession.refreshToken.isNotEmpty) {
       try {
         final principal = await _silentRefresh(storedSession.refreshToken);
         return principal;
@@ -88,10 +91,6 @@ class KeycloakIdentityProvider implements IdentityProvider {
 
     // Interactive flow
     return await _interactiveSignIn();
-  }
-
-  bool _isExpired(DateTime expiry) {
-    return DateTime.now().isAfter(expiry);
   }
 
   Future<Principal> _silentRefresh(String refreshToken) async {
@@ -127,8 +126,15 @@ class KeycloakIdentityProvider implements IdentityProvider {
       );
 
       return await _handleTokenResponse(response, currentGeneration);
+    } on FlutterAppAuthUserCancelledException {
+      // flutter_appauth 8.x: user cancel is a SIBLING of the platform
+      // exception (both extend PlatformException directly) — it must be
+      // caught explicitly or a real cancel escapes the SignInCancelled fence.
+      throw SignInCancelled('User cancelled sign-in');
     } on FlutterAppAuthPlatformException catch (e) {
       if (_isCancelError(e)) {
+        // Belt-and-braces: some platform variants surface cancel as a plain
+        // platform exception carrying a CANCEL code.
         throw SignInCancelled('User cancelled sign-in');
       } else {
         throw SignInFailed('Interactive sign-in failed: ${e.message}', e);
@@ -158,21 +164,27 @@ class KeycloakIdentityProvider implements IdentityProvider {
 
     final principal = Principal(token: accessToken, displayName: displayName);
 
-    // Persist to secure store
-    await _store.write(
-      StoredSession(
-        refreshToken: refreshToken ?? '',
-        accessToken: accessToken,
-        accessTokenExpiry:
-            expiry ?? DateTime.now().add(const Duration(hours: 1)),
-        displayName: displayName,
-      ),
-    );
-
-    // Only update principal if generation hasn't changed (sign-out wins)
+    // signOut-wins fence: persist AND publish only when no generation bump
+    // happened during the async exchange — an unconditional write here would
+    // resurrect the session signOut just cleared (family device). The write
+    // itself awaits, so re-check afterwards and compensate if signOut landed
+    // mid-write.
     if (_generation == expectedGeneration) {
-      _currentPrincipal = principal;
-      _scheduleProactiveRefresh(refreshToken ?? '', expiry);
+      await _store.write(
+        StoredSession(
+          refreshToken: refreshToken ?? '',
+          accessToken: accessToken,
+          accessTokenExpiry:
+              expiry ?? DateTime.now().add(const Duration(hours: 1)),
+          displayName: displayName,
+        ),
+      );
+      if (_generation == expectedGeneration) {
+        _currentPrincipal = principal;
+        _scheduleProactiveRefresh(refreshToken ?? '', expiry);
+      } else {
+        await _store.clear();
+      }
     }
 
     return principal;

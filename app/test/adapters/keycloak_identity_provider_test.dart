@@ -94,7 +94,8 @@ void main() {
       expect(idp.currentPrincipal, equals(principal));
     });
 
-    test('expired stored session triggers interactive flow', () async {
+    test('expired access token still refreshes silently (no browser)',
+        () async {
       final appauth = FakeAppAuth();
       final pastExpiry = DateTime.now().subtract(const Duration(hours: 1));
       final store = FakeSecureSessionStore()
@@ -108,6 +109,27 @@ void main() {
 
       await idp.signIn();
 
+      expect(appauth.tokenRefreshCalls, 1,
+          reason: 'an expired access token with a live refresh token is the '
+              'normal >5-min-idle case — silent refresh, not a browser '
+              '(KC-G3 idle-refresh gate)');
+      expect(appauth.interactiveCalls, 0);
+    });
+
+    test('stored session without a refresh token goes interactive', () async {
+      final appauth = FakeAppAuth();
+      final store = FakeSecureSessionStore()
+        ..seed(
+          refreshToken: '',
+          accessToken: 'a0',
+          expiry: DateTime.now().add(const Duration(minutes: 30)),
+          displayName: 'Test User',
+        );
+      final idp = KeycloakIdentityProvider(config, appauth, store);
+
+      await idp.signIn();
+
+      expect(appauth.tokenRefreshCalls, 0);
       expect(appauth.interactiveCalls, 1);
     });
 
@@ -149,23 +171,26 @@ void main() {
 
   group('proactive refresh', () {
     test('refreshes before access token expiry', () async {
-      final appauth = FakeAppAuth();
-      final soonExpiry = DateTime.now().add(const Duration(minutes: 4));
+      final appauth = FakeAppAuth()
+        // Refreshed tokens expire just past the 5-minute proactive threshold
+        // so the timer (delay = expiry - now - 5 min) fires ~300 ms in.
+        ..tokenLifetime = const Duration(minutes: 5, milliseconds: 300);
       final store = FakeSecureSessionStore()
         ..seed(
           refreshToken: 'r0',
           accessToken: 'a0',
-          expiry: soonExpiry,
+          expiry: DateTime.now().add(const Duration(minutes: 30)),
           displayName: 'Test User',
         );
       final idp = KeycloakIdentityProvider(config, appauth, store);
 
-      await idp.signIn();
+      await idp.signIn(); // silent refresh #1 schedules the proactive timer
 
-      // Wait for proactive refresh (should happen shortly)
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 900));
 
-      expect(appauth.tokenRefreshCalls, greaterThanOrEqualTo(1));
+      expect(appauth.tokenRefreshCalls, greaterThanOrEqualTo(2),
+          reason: 'the proactive timer must fire a SECOND refresh — the '
+              'first is the sign-in silent refresh, so >=1 proves nothing');
       expect(idp.currentPrincipal, isNotNull,
           reason: 'principal stays available after refresh');
     });
@@ -288,10 +313,48 @@ void main() {
       expect(idp.currentPrincipal, isNull);
     });
 
-    test('unreadable stored session treated as signed out', () {
-      final store = FakeSecureSessionStore()..corruptData = true;
-      final idp = KeycloakIdentityProvider(config, FakeAppAuth(), store);
+    test('unreadable stored session treated as signed out', () async {
+      final appauth = FakeAppAuth();
+      final store = FakeSecureSessionStore()
+        ..seed(
+          refreshToken: 'r0',
+          accessToken: 'a0',
+          expiry: DateTime.now().add(const Duration(minutes: 30)),
+          displayName: 'Test User',
+        )
+        ..corruptData = true;
+      final idp = KeycloakIdentityProvider(config, appauth, store);
 
+      expect(idp.currentPrincipal, isNull);
+
+      // Fail-closed: the unreadable store must behave as signed-out — signIn
+      // goes interactive, never a phantom silent refresh from corrupt data.
+      await idp.signIn();
+      expect(appauth.tokenRefreshCalls, 0);
+      expect(appauth.interactiveCalls, 1);
+    });
+
+    test('signOut during in-flight sign-in keeps the store cleared', () async {
+      final appauth = FakeAppAuth()..delayTokenRefresh = true;
+      final store = FakeSecureSessionStore()
+        ..seed(
+          refreshToken: 'r0',
+          accessToken: 'a0',
+          expiry: DateTime.now().add(const Duration(minutes: 30)),
+          displayName: 'Test User',
+        );
+      final idp = KeycloakIdentityProvider(config, appauth, store);
+
+      final inFlight = idp.signIn();
+      await Future.delayed(const Duration(milliseconds: 10));
+      await idp.signOut();
+      try {
+        await inFlight;
+      } catch (_) {}
+
+      expect(await store.read(), isNull,
+          reason: 'signOut wins: the losing exchange must not resurrect '
+              'the cleared session (family device)');
       expect(idp.currentPrincipal, isNull);
     });
   });
@@ -304,6 +367,10 @@ class FakeAppAuth implements FlutterAppAuth {
   bool failNextTokenRefresh = false;
   bool failAllTokenRefreshes = false;
   bool delayTokenRefresh = false;
+
+  /// Lifetime of tokens minted by [token] — shorten to just past the 5-minute
+  /// proactive threshold to make the proactive-refresh timer fire in-test.
+  Duration tokenLifetime = const Duration(hours: 1);
 
   final bool _throwsCancel;
   final bool _throwsFailure;
@@ -328,8 +395,11 @@ class FakeAppAuth implements FlutterAppAuth {
     interactiveCalls++;
 
     if (_throwsCancel) {
-      throw FlutterAppAuthPlatformException(
-        code: 'CANCELED',
+      // The REAL SDK type for user cancel (flutter_appauth 8.x): a SIBLING of
+      // FlutterAppAuthPlatformException — the fake must throw what production
+      // throws or the cancel fence test guards nothing.
+      throw FlutterAppAuthUserCancelledException(
+        code: 'USER_CANCELED',
         message: 'User canceled',
         platformErrorDetails: FlutterAppAuthPlatformErrorDetails(),
       );
@@ -373,7 +443,7 @@ class FakeAppAuth implements FlutterAppAuth {
       );
     }
 
-    final expiry = DateTime.now().add(const Duration(hours: 1));
+    final expiry = DateTime.now().add(tokenLifetime);
     return TokenResponse(
       'access_refreshed_$tokenRefreshCalls',
       'refresh_refreshed_$tokenRefreshCalls',
