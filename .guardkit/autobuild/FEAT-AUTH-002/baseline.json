@@ -5,6 +5,6 @@
   "exit_code": 0,
   "failing_node_ids": [],
   "failing_count": 0,
-  "timestamp": "2026-07-17T13:11:46.433570",
+  "timestamp": "2026-07-17T14:26:16.147881",
   "note": "session-scoped observation; NOT the qa/known-failures.yaml ledger; used only to suppress mid-build mis-attribution"
 }

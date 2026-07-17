@@ -4,7 +4,7 @@ consumer_context:
 - consumes: TOKEN_RESOLVER
   driver: click CLI + uvicorn boot
   format_note: select TableTokenResolver in table mode, KeycloakTokenResolver in keycloak
-    mode; inject via HTTPAuthConfig.resolver so app.py/ws.py callsites are unchanged
+    mode; inject via HTTPAuthConfig.resolver so callsites in app.py and ws.py are unchanged
   framework: Starlette boot wiring — HTTPAuthConfig.resolver injected at serve_http
   task: TASK-KCA2-002
 - consumes: OIDC_SETTINGS
@@ -48,7 +48,7 @@ serving. Consumer of both §4 contracts.
    never imports PyJWT and `auth.py` stays keycloak-free (AC-005). Do the selection
    in the boot path (or a small `http` factory) — **never** inside `auth.py`.
 3. Build `HTTPAuthConfig` carrying the selected resolver and pass it to
-   `create_app(...)` exactly as today. app.py/ws.py are untouched — **WS inherits
+   `create_app(...)` exactly as today. app.py and ws.py are untouched — **WS inherits
    the resolver at upgrade time** (binding §2.1).
 4. **Dev-reset pairing:** keep `/__dev__/reset` existence-gated; assert in this
    task's tests that the dev-reset route and keycloak mode never coexist (dev
@@ -61,7 +61,7 @@ monkeypatch (hermetic).
 
 ## Acceptance Criteria
 
-- [ ] Boot selects `TableTokenResolver` in `table` mode and `KeycloakTokenResolver` in `keycloak` mode, injecting it via `HTTPAuthConfig.resolver`; `create_app`/app.py/ws.py callsites are unchanged
+- [ ] Boot selects `TableTokenResolver` in `table` mode and `KeycloakTokenResolver` in `keycloak` mode, injecting it via `HTTPAuthConfig.resolver`; `create_app` callsites in `src/study_tutor/http/app.py` and `src/study_tutor/http/ws.py` are unchanged
 - [ ] `keycloak` mode with a missing issuer or audience, or an unknown `STUDY_TUTOR_AUTH_MODE`, fails fast with `SystemExit(1)` and a clear message; the server does not begin serving
 - [ ] `auth_keycloak`/PyJWT is imported only in the keycloak branch (table-mode boot pulls no JWT import)
 - [ ] `/__dev__/reset` is never mounted in keycloak mode (dev-reset and keycloak never coexist)
@@ -91,7 +91,7 @@ def test_token_resolver_injected_without_callsite_change():
 
     Contract: async resolve(token) -> student_id raising Unauthenticated,
     injected through HTTPAuthConfig so resolve_student_from_token keeps its
-    signature (app.py/ws.py unchanged).
+    signature (app.py and ws.py unchanged).
     Producer: TASK-KCA2-002
     """
     from study_tutor.http.auth import HTTPAuthConfig, TokenResolver
