@@ -28,11 +28,25 @@ Round-trip rt_probe.py: pending launch
 Steady-state memory: pending launch
 Unit files/scripts mirrored to dgx-spark: Y — spark-fcf6:~/s2s-mirror/ {install-s2s.sh, launch-s2s.sh, s2s-realtime.service} (via gb10_to_nodeb key)
 
-## R02 — Pi app version + local-mode support
+## R02 — Pi app version + local-mode support — **PASS 2026-07-17 ~17:05 BST**
 
-Pi host/IP used: 172.30.1.185 (LAN, from Rich; tailscale reachy-mini=100.75.228.107 also seen)
-SSH: pollen@172.30.1.185 — publickey DENIED from GB10; key install one-liner handed to Rich
-  (gb10_to_reachy_ed25519.pub) — PENDING. R02 commands queued to run the moment access lands.
-reachy_mini_conversation_app Version: pending access
-HF_REALTIME keys honoured: pending access
-AC-R02-4 (not silently on cloud): pending access
+Pi host/IP used: 172.30.1.185 (LAN, from Rich; hostname reachy-mini)
+SSH: key auth established — gb10_to_reachy_ed25519 installed by Fable via one-shot
+  password auth (factory default per fleet-gateway runbook:31, confirmed unchanged by Rich).
+  SECURITY FOLLOW-UP for Rich: change the Pi password post-weekend (runbook's own step).
+reachy_mini_conversation_app  Version: 0.6.1   Location: /venvs/apps_venv/.../site-packages
+HF_REALTIME keys honoured: **YES — both.** config.py:360-365 reads
+  HF_REALTIME_CONNECTION_MODE + HF_REALTIME_WS_URL from env;
+  huggingface_realtime.py:125 enforces WS_URL when mode=local; console.py:268-269
+  can persist local mode. HF_REALTIME_SESSION_URL deliberately env-ignored (config.py:363).
+Upgrade needed: NO (AC-R02-2 met; AC-R02-3 moot; Scholar-profile-survival check not required)
+AC-R02-4 (not silently on cloud): UNBLOCKED — migration fence lifts; actual re-point is R03.
+
+### R03-prep findings (read-only, for Batch B)
+- sitecustomize.py present at /venvs/apps_venv/.../site-packages/: sets
+  REACHY_MINI_EXTERNAL_TOOLS_DIRECTORY -> /home/pollen/fleet-gateway/... + 1 NATS_URL line
+  (value not recorded). No HF_REALTIME values persisted anywhere yet.
+- **FENCE DEVIATION (pre-existing):** /etc/environment:2-3 sets BOTH
+  REACHY_MINI_EXTERNAL_TOOLS_DIRECTORY **and REACHY_MINI_EXTERNAL_PROFILES_DIRECTORY** —
+  R03's fence says PROFILES_DIRECTORY must never be set. Left untouched (interacts with
+  Scholar profile loading); reconcile inside the R03/R09 procedure per the task .md.
