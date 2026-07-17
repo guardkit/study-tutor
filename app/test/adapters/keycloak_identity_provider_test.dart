@@ -4,7 +4,6 @@
 /// proactive refresh, sign-out race, unrecoverable refresh, launch scenarios.
 ///
 /// Includes seam tests for STORED_SESSION and SIGNIN_OUTCOME contracts.
-library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/adapters/keycloak_identity_provider.dart';
@@ -51,18 +50,15 @@ void main() {
         store,
       );
 
-      bool cancelThrew = false;
-      bool cancelCorrectType = false;
+      Object? caughtException;
       try {
         await cancelIdp.signIn();
-      } catch (e, stack) {
-        cancelThrew = true;
-        cancelCorrectType = e is SignInCancelled;
-        // If wrong type, let it propagate for debugging
-        if (!cancelCorrectType) rethrow;
+        fail('Expected SignInCancelled to be thrown');
+      } on SignInCancelled catch (e) {
+        caughtException = e;
       }
-      expect(cancelThrew, isTrue, reason: 'Cancel should throw an exception');
-      expect(cancelCorrectType, isTrue, reason: 'Cancel should throw SignInCancelled');
+      expect(caughtException, isNotNull, reason: 'Should have caught SignInCancelled');
+      expect(caughtException, isA<SignInCancelled>());
 
       // Verify failure outcome
       final failIdp = KeycloakIdentityProvider(
@@ -71,18 +67,15 @@ void main() {
         store,
       );
 
-      bool failureThrew = false;
-      bool failureCorrectType = false;
+      Object? caughtFailure;
       try {
         await failIdp.signIn();
-      } catch (e, stack) {
-        failureThrew = true;
-        failureCorrectType = e is SignInFailed;
-        // If wrong type, let it propagate for debugging
-        if (!failureCorrectType) rethrow;
+        fail('Expected SignInFailed to be thrown');
+      } on SignInFailed catch (e) {
+        caughtFailure = e;
       }
-      expect(failureThrew, isTrue, reason: 'Failure should throw an exception');
-      expect(failureCorrectType, isTrue, reason: 'Failure should throw SignInFailed');
+      expect(caughtFailure, isNotNull, reason: 'Should have caught SignInFailed');
+      expect(caughtFailure, isA<SignInFailed>());
     });
   });
 

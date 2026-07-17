@@ -1,17 +1,17 @@
 {
   "phase_4": {
     "status": "passed",
-    "duration_seconds": 80.72598699782975,
+    "duration_seconds": 172.60657300218008,
     "error": null,
-    "tests_run": 15,
+    "tests_run": 371,
     "tests_failed": 1,
-    "coverage_pct": 95.33,
-    "output_summary": "14/15 tests passed, 95.33% coverage on keycloak_identity_provider.dart",
+    "coverage_pct": 6.68,
+    "output_summary": "371 tests run, 1 failed (KeycloakIdentityProvider test), 6.68% coverage",
     "quality_gates_passed": false
   },
   "phase_5": {
     "status": "passed",
-    "duration_seconds": 201.77674476685934,
+    "duration_seconds": 313.9604481360875,
     "error": null,
     "issues": [],
     "quality_score": 0.0,

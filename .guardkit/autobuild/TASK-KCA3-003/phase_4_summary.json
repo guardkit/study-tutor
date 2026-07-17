@@ -1,7 +1,7 @@
 {
-  "tests_run": 15,
+  "tests_run": 371,
   "tests_failed": 1,
-  "coverage_pct": 95.33,
-  "output_summary": "14/15 tests passed, 95.33% coverage on keycloak_identity_provider.dart",
+  "coverage_pct": 6.68,
+  "output_summary": "371 tests run, 1 failed (KeycloakIdentityProvider test), 6.68% coverage",
   "quality_gates_passed": false
 }

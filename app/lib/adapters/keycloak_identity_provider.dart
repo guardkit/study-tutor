@@ -7,7 +7,6 @@
 /// - Unrecoverable refresh degrades gracefully
 ///
 /// Design ref: KC-D7 / KC-D4
-library;
 
 import 'dart:async';
 import 'dart:convert';
