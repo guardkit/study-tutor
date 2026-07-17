@@ -1,20 +1,24 @@
 ---
-id: TASK-KCA3-004
-title: "SignInScreen loading / failure / cancel states + try-again — failure ≠ cancel, driven by the adapter outcome"
-task_type: feature
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 4
-implementation_mode: task-work
 complexity: 5
+consumer_context:
+- consumes: SIGNIN_OUTCOME
+  driver: flutter (Material)
+  format_note: the adapter surfaces cancel (SignInCancelled) and failure (SignInFailed)
+    as distinct outcomes; the screen must render a distinct cancel message vs a failure
+    state, and MUST NOT collapse discovery-unavailable (failure) into the cancel message
+  framework: Flutter StatefulWidget state machine over the adapter's signIn() result
+  task: TASK-KCA3-003
 dependencies:
 - TASK-KCA3-003
-consumer_context:
-  - task: TASK-KCA3-003
-    consumes: SIGNIN_OUTCOME
-    framework: "Flutter StatefulWidget state machine over the adapter's signIn() result"
-    driver: "flutter (Material)"
-    format_note: "the adapter surfaces cancel (SignInCancelled) and failure (SignInFailed) as distinct outcomes; the screen must render a distinct cancel message vs a failure state, and MUST NOT collapse discovery-unavailable (failure) into the cancel message"
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-004
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: feature
+title: SignInScreen loading / failure / cancel states + try-again — failure ≠ cancel,
+  driven by the adapter outcome
+wave: 4
 ---
 
 ## Description

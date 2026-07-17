@@ -1,0 +1,7 @@
+{
+  "tests_run": 8,
+  "tests_failed": 0,
+  "coverage_pct": 66.3,
+  "output_summary": "8/8 tests passed; sign_in_screen.dart 66.3% coverage (61/92 lines); all quality gates green",
+  "quality_gates_passed": true
+}

@@ -1,0 +1,123 @@
+{
+  "task_id": "TASK-KCA3-004",
+  "turn": 1,
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/ui/sign_in_screen.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_in_states_test.dart",
+    "`app/lib/ui/sign_in_screen.dart",
+    "app/lib/ui/sign_in_screen.dart"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-KCA3-004_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_in_states_test.dart",
+    "`app/test/ui/sign_in_states_test.dart",
+    "app/test/ui/sign_in_states_test.dart"
+  ],
+  "tests_written": [],
+  "tests_run": false,
+  "tests_passed": false,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Loading state with indicator while signIn() in-flight",
+    "Failure state with Try again button (no auto-retry)",
+    "Cancel state with distinct message from failure",
+    "Discovery-unavailable treated as failure, not cancel",
+    "Double-tap guard prevents concurrent signIn calls",
+    "Success navigation to HomeScreen preserved",
+    "Widget tests with fake IdentityProvider (no browser/network)",
+    "All files pass lint/format checks with zero errors"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 57,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/.guardkit/autobuild/TASK-KCA3-004/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/ui/sign_in_screen.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_in_states_test.dart"
+  ],
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "SignInScreen shows a loading state while signIn() is in flight, with the sign-in control disabled",
+      "status": "complete",
+      "evidence": "Converted SignInScreen from StatelessWidget to StatefulWidget with _SignInState enum tracking idle/loading/cancelled/failed states. During loading state, CircularProgressIndicator is displayed above the sign-in button, and the guard in _signIn() prevents concurrent calls.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "On SignInFailed the screen shows a failure state with a manual 'Try again' affordance (no automatic retry)",
+      "status": "complete",
+      "evidence": "SignInFailed exception is caught in _signIn() and _signInAs() methods, transitioning to _SignInState.failed. The UI displays an error icon, error message, and a 'Try again' button that calls _signIn() again when pressed. No automatic retry is implemented.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "On SignInCancelled the screen returns signed-out and shows that sign-in was cancelled",
+      "status": "complete",
+      "evidence": "SignInCancelled exception is caught and transitions to _SignInState.cancelled. The UI displays 'Sign-in was cancelled' message and returns to idle state with sign-in button available. User remains signed out.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "A discovery-unavailable sign-in renders the failure state, not the cancel state \u2014 the two are never conflated",
+      "status": "complete",
+      "evidence": "Discovery-unavailable is thrown as SignInFailed (not SignInCancelled) by the adapter. The UI catches these exceptions separately and renders distinct states: cancelled shows 'Sign-in was cancelled', while failed shows error icon and 'Try again' button. Test 'discovery-unavailable renders failure state, not cancel' verifies this distinction.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "While loading, a second tap starts no second flow (UI guard; invokes signIn() once)",
+      "status": "complete",
+      "evidence": "Guard implemented at top of _signIn() method: 'if (_state == _SignInState.loading) return;'. Test 'double-tap during loading invokes signIn only once' verifies that tapping twice during loading calls identity.signIn() exactly once by checking signInCallCount.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "On success the screen pushReplacementes to HomeScreen (behaviour unchanged)",
+      "status": "complete",
+      "evidence": "Success flow unchanged: after successful signIn(), _toHome() is called which performs Navigator.pushReplacement to HomeScreen with identity, sessionApi, and voiceApi. Test 'on success navigates to HomeScreen' verifies HomeScreen is found after successful sign-in.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "Widget tests drive a fake IdentityProvider producing cancel / failure / success outcomes \u2014 no browser, no network",
+      "status": "complete",
+      "evidence": "Created FakeIdentityForTesting class that implements IdentityProvider with configurable behavior (shouldCancel, shouldFail). Factories provided: cancels(), failsDiscovery(), succeeds(). All tests use this fake with no browser or network dependencies. 8 comprehensive widget tests cover all state transitions.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Ran 'flutter analyze' after implementation. Fixed dangling library doc comment warning by adding 'library;' directive. Final analyze result: 'No issues found!' All files pass lint checks with zero errors.",
+      "test_file": "app/test/ui/sign_in_states_test.dart",
+      "implementation_files": [
+        "app/lib/ui/sign_in_screen.dart"
+      ]
+    }
+  ]
+}
