@@ -1,0 +1,97 @@
+{
+  "task_id": "TASK-KCA2-004",
+  "turn": 3,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file src/study_tutor/cli/main.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/cli/main.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file src/study_tutor/http/auth.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file src/study_tutor/http/auth.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file tests/unit/http/test_serve_http.py. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file tests/unit/http/test_serve_http.py",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "test_failure",
+      "severity": "critical",
+      "description": "Evidence gathering aborted with status 'partial_gate_abort' before completing all quality gates. Multiple critical evidence fields are null: independent_tests (no independent verification), coverage_details (all coverage metrics null despite coverage_required: true), tests.tests_run (null test count). Cannot approve based on absent signals.",
+      "requirement": "All acceptance criteria",
+      "suggestion": "The orchestrator's evidence gathering must complete successfully. This is likely an infrastructure issue rather than a Player implementation issue. The null independent_tests suggests the Coach's trust-but-verify pytest run did not complete."
+    },
+    {
+      "type": "code_quality",
+      "severity": "major",
+      "description": "Plan audit gate failed (plan_audit_passed: false when required: true) with message 'no plan on disk; AC names file path(s) that could not be independently verified (no file_existence discrepancy was recorded for the referenced path): /app.py/ws.py'. This appears to be a false positive - AC-001 uses '/app.py/ws.py' as shorthand for 'the app.py and ws.py modules', not as a literal filesystem path. However, the quality gate system requires all gates to pass.",
+      "requirement": "AC-001",
+      "suggestion": "Rephrase AC-001 to avoid ambiguous path notation. Use 'app.py module and ws.py module' or 'the app.py/ws.py modules' instead of the slash notation that the plan audit tool interprets as a filesystem path."
+    },
+    {
+      "type": "code_quality",
+      "severity": "minor",
+      "description": "Honesty verification shows three should_fix discrepancies: Player claimed files_modified (main.py, auth.py, test_serve_http.py) but git status shows no changes for these files in Turn 3. The orchestrator notes this is likely because 'the report writer swept an orchestrator-managed path into files_modified'. This suggests the work was completed in a previous turn, not Turn 3.",
+      "requirement": "All acceptance criteria",
+      "suggestion": "Ensure files_modified only includes files changed in the current turn. If Turn 3 was a verification-only turn with no new file changes, files_modified should only include orchestrator-managed paths like .guardkit/bdd/TASK-KCA2-004_junit.xml."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "rejected",
+      "notes": "Player provides detailed evidence (lines 941-969 for resolver selection, HTTPAuthConfig.from_env accepts resolver parameter) but independent verification is absent (independent_tests: null, gathering_status: partial_gate_abort). Cannot verify without independent confirmation. Plan audit also flagged '/app.py/ws.py' path notation as non-existent (false positive)."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "rejected",
+      "notes": "Player provides specific evidence (lines 925-939 for fail-fast validation, three named subprocess tests) but independent test verification did not complete (independent_tests: null). Cannot confirm fail-fast behavior or subprocess tests without independent verification."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "Player cites line 961 for lazy import within keycloak conditional and names test_table_mode_does_not_import_pyjwt as verification test. Evidence is detailed but cannot be independently confirmed due to absent test verification (independent_tests: null, tests.tests_run: null)."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "Player describes lines 977-978 forcing dev_reset_str to 'false' in keycloak mode and names test_dev_reset_not_mounted_in_keycloak_mode as verification. Cannot independently verify without test results (independent_tests: null)."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "rejected",
+      "notes": "Player claims hermetic tests using subprocess.Popen with os.environ.copy() and explicit env variable pinning. Cannot verify implementation without reading actual test code or independent test execution (independent_tests: null). Hermetic-env guard (#10) would require checking that tests pin the full relevant env-var surface."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "rejected",
+      "notes": "Player claims no linter configured in pyproject.toml, syntax validation passes. Cannot verify without running actual lint/format checks. No evidence of running project-configured checks (ruff, black, mypy, etc.)."
+    }
+  ],
+  "rationale": "Must provide feedback due to Guard #5 (GATHERING-STATUS) violation: gathering_status is 'partial_gate_abort', not 'complete'. Evidence collection aborted before all fields were populated. Multiple null fields (independent_tests, coverage_details with all metrics null, tests.tests_run null) are ABSENT SIGNAL per absence-of-failure guards. Additionally, quality_gates.all_gates_passed is false due to plan_audit failure (appears to be false positive on '/app.py/ws.py' path notation). Cannot approve based on incomplete evidence gathering and failed quality gates. The Player's completion promises provide detailed line-number evidence, but without independent verification (tests, coverage, BDD oracle), these remain unconfirmed claims. Three honesty discrepancies (should_fix severity) indicate files claimed as modified were not changed in Turn 3 per git status."
+}
