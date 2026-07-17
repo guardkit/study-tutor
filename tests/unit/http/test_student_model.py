@@ -23,10 +23,14 @@ UTC = timezone.utc
 
 @pytest.fixture
 def auth_config() -> HTTPAuthConfig:
+    from study_tutor.http.auth import TableTokenResolver
+
     # token-ghost resolves to a student that is never seeded (ASSUM-001 case).
+    token_to_student = {"token-lilymay": "lilymay", "token-ghost": "ghost"}
     return HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay", "token-ghost": "ghost"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
 
 

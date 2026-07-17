@@ -1,0 +1,107 @@
+{
+  "task_id": "TASK-KCA2-001",
+  "turn": 1,
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/pyproject.toml",
+    "pyproject.toml",
+    "src/study_tutor/http/auth.py",
+    "tests/unit/http/test_auth.py"
+  ],
+  "files_created": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/oidc_config.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_oidc_config.py",
+    "src/study_tutor/http/oidc_config.py",
+    "tests/unit/http/test_oidc_config.py"
+  ],
+  "tests_written": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_oidc_config.py"
+  ],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "PyJWT[crypto]>=2.8 dependency added to pyproject.toml",
+    "OIDCSettings frozen dataclass with from_env() parsing all 6 env vars",
+    "Defaults: auth_mode='table', student_claim='student_id', leeway=60",
+    "validate() returns error messages for incomplete keycloak config and invalid auth_mode",
+    "get_effective_jwks_url() derives from issuer or uses explicit override",
+    "All tests hermetic with monkeypatch",
+    "95% test coverage"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 21,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/.guardkit/autobuild/TASK-KCA2-001/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/pyproject.toml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/src/study_tutor/http/oidc_config.py",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-002/tests/unit/http/test_oidc_config.py"
+  ],
+  "tests_passed_count": 12,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "PyJWT[crypto]>=2.8 is declared in pyproject.toml",
+      "status": "complete",
+      "evidence": "Added 'PyJWT[crypto]>=2.8' to the [project] dependencies array in pyproject.toml with explanatory comment documenting the zero-deps-scope event and cryptography extra purpose.",
+      "test_file": "tests/unit/http/test_oidc_config.py",
+      "implementation_files": [
+        "pyproject.toml"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "OIDCSettings.from_env parses the full env surface above with the documented defaults (mode defaults to table; student-claim to student_id; leeway to 60)",
+      "status": "complete",
+      "evidence": "Implemented OIDCSettings.from_env() class method that reads all 6 environment variables (STUDY_TUTOR_AUTH_MODE, STUDY_TUTOR_OIDC_ISSUER, STUDY_TUTOR_OIDC_AUDIENCE, STUDY_TUTOR_OIDC_JWKS_URL, STUDY_TUTOR_OIDC_STUDENT_CLAIM, STUDY_TUTOR_OIDC_LEEWAY) with correct defaults: auth_mode='table', student_claim='student_id', leeway=60. Validated by tests test_table_mode_defaults, test_keycloak_mode_with_full_config, and test_keycloak_mode_with_minimal_config.",
+      "test_file": "tests/unit/http/test_oidc_config.py",
+      "implementation_files": [
+        "src/study_tutor/http/oidc_config.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "validate() returns messages for keycloak mode with a missing issuer and/or audience, and for an unknown STUDY_TUTOR_AUTH_MODE value (ASSUM-002/005/007); returns [] when config is complete",
+      "status": "complete",
+      "evidence": "Implemented validate() method that returns list of error strings. Returns empty list for valid configs (table mode always valid, keycloak mode valid when issuer and audience present). Returns specific error messages for: missing issuer in keycloak mode, missing audience in keycloak mode (can return both), and unknown auth_mode value. Validated by 6 tests covering all validation scenarios.",
+      "test_file": "tests/unit/http/test_oidc_config.py",
+      "implementation_files": [
+        "src/study_tutor/http/oidc_config.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "When STUDY_TUTOR_OIDC_JWKS_URL is absent, the effective JWKS URL is derived from the issuer; when present, it overrides fetch without changing the issuer used for iss validation (KC-D2)",
+      "status": "complete",
+      "evidence": "Implemented get_effective_jwks_url() method that: (1) returns explicit jwks_url when set, (2) derives '{issuer}/protocol/openid-connect/certs' when issuer is set but jwks_url is not, (3) returns None when no issuer. The issuer attribute remains unchanged in all cases for 'iss' claim validation. Validated by 3 JWKS derivation tests.",
+      "test_file": "tests/unit/http/test_oidc_config.py",
+      "implementation_files": [
+        "src/study_tutor/http/oidc_config.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "All tests are hermetic (env pinned via monkeypatch), never reading ambient config",
+      "status": "complete",
+      "evidence": "All 12 tests use pytest monkeypatch fixture to explicitly setenv/delenv for every environment variable read by the implementation. No test reads ambient environment - each test pins its exact env surface before calling from_env().",
+      "test_file": "tests/unit/http/test_oidc_config.py",
+      "implementation_files": [
+        "tests/unit/http/test_oidc_config.py"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Verified all files compile successfully with py_compile. Project does not have ruff or flake8 configured. Code follows Python conventions: type hints, docstrings, proper imports with __future__ annotations, frozen dataclass pattern matching existing codebase style.",
+      "test_file": null,
+      "implementation_files": [
+        "src/study_tutor/http/oidc_config.py",
+        "tests/unit/http/test_oidc_config.py"
+      ]
+    }
+  ]
+}

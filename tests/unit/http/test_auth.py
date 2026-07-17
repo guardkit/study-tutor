@@ -10,7 +10,11 @@ from typing import Protocol
 
 import pytest
 
-from study_tutor.http.auth import HTTPAuthConfig, resolve_student_from_token
+from study_tutor.http.auth import (
+    HTTPAuthConfig,
+    TableTokenResolver,
+    resolve_student_from_token,
+)
 from study_tutor.session.errors import Unauthenticated
 
 
@@ -85,8 +89,11 @@ def test_config_parse_non_dict_json_raises_clear_error():
 @pytest.mark.asyncio
 async def test_missing_authorization_header_raises_unauthenticated():
     """AC-002: Missing token resolves to Unauthenticated."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -101,8 +108,11 @@ async def test_missing_authorization_header_raises_unauthenticated():
 @pytest.mark.asyncio
 async def test_malformed_authorization_header_raises_unauthenticated():
     """AC-002: Non-Bearer auth scheme resolves to Unauthenticated."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -119,8 +129,11 @@ async def test_malformed_authorization_header_raises_unauthenticated():
 @pytest.mark.asyncio
 async def test_unknown_token_raises_unauthenticated():
     """AC-002: Unknown token resolves to Unauthenticated."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -141,8 +154,11 @@ async def test_token_only_from_header_not_body():
     valid token in the header works, while missing header fails regardless of what
     might be in the body/query.
     """
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore({"lilymay"})
 
@@ -170,8 +186,11 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 
     Verified with a fake store: no create_session call should happen.
     """
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     # Fake store has NO students seeded
     fake_store = InMemoryFakeStore(known_students=set())
@@ -190,8 +209,11 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 @pytest.mark.asyncio
 async def test_seeded_student_resolves_successfully():
     """AC-003: Seeded student with valid token resolves successfully."""
+    token_to_student = {"token-lilymay": "lilymay"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student=token_to_student,
+        dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore(known_students={"lilymay"})
 
@@ -215,9 +237,11 @@ async def test_token_derived_student_id_is_authoritative():
     student_id returned from resolve_student_from_token is always the one
     from the token table, not client-provided.
     """
+    token_to_student = {"token-lilymay": "lilymay", "token-alex": "alex"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay", "token-alex": "alex"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore(known_students={"lilymay", "alex"})
 
@@ -261,9 +285,11 @@ def test_no_keycloak_jwt_imports():
 @pytest.mark.asyncio
 async def test_full_auth_flow_valid_token_seeded_student():
     """Integration: Full auth flow with valid token and seeded student."""
+    token_to_student = {"token-lilymay": "lilymay", "token-alex": "alex"}
     config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay", "token-alex": "alex"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
     fake_store = InMemoryFakeStore(known_students={"lilymay", "alex"})
 

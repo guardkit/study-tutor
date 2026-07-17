@@ -173,9 +173,13 @@ async def test_tutor_loop_failure_returns_error_envelope_session_resumable():
     mock_student_store = MagicMock()
     mock_student_store.student_exists = AsyncMock(return_value=True)
 
+    from study_tutor.http.auth import TableTokenResolver
+
+    token_to_student = {"test-token": "test-student"}
     auth_config = HTTPAuthConfig(
-        token_to_student={"test-token": "test-student"},
+        token_to_student=token_to_student,
         dev_reset=False,
+        resolver=TableTokenResolver(token_to_student=token_to_student),
     )
 
     # Create a reply_fn that fails first time, succeeds second time

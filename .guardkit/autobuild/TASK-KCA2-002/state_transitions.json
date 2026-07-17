@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KCA2-002",
+    "pre_path": "tasks/backlog/TASK-KCA2-002-tokenresolver-seam-refactor.md",
+    "post_path": "tasks/design_approved/TASK-KCA2-002-tokenresolver-seam-refactor.md",
+    "timestamp": "2026-07-17T12:11:46.467482+00:00",
+    "kind": "design_approved_transition"
+  }
+]
