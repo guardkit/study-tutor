@@ -4,6 +4,7 @@
 /// proactive refresh, sign-out race, unrecoverable refresh, launch scenarios.
 ///
 /// Includes seam tests for STORED_SESSION and SIGNIN_OUTCOME contracts.
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/adapters/keycloak_identity_provider.dart';

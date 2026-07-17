@@ -7,6 +7,7 @@
 /// - Unrecoverable refresh degrades gracefully
 ///
 /// Design ref: KC-D7 / KC-D4
+library;
 
 import 'dart:async';
 import 'dart:convert';
@@ -59,12 +60,13 @@ class KeycloakIdentityProvider implements IdentityProvider {
       return _signInInFlight!;
     }
 
-    final future = _performSignIn();
-    _signInInFlight = future;
-
-    future.whenComplete(() {
+    // whenComplete is folded into the returned future: a discarded derived
+    // future would re-raise sign-in errors as uncaught zone errors even
+    // though the caller catches them on the original.
+    final future = _performSignIn().whenComplete(() {
       _signInInFlight = null;
     });
+    _signInInFlight = future;
 
     return future;
   }
