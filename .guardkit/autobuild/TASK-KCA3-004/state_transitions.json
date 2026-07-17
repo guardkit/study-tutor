@@ -5,5 +5,12 @@
     "post_path": "tasks/design_approved/TASK-KCA3-004-sign-in-screen-states.md",
     "timestamp": "2026-07-17T16:38:34.855728+00:00",
     "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-KCA3-004",
+    "pre_path": "tasks/backlog/flutter-keycloak-sign-in/TASK-KCA3-004-sign-in-screen-states.md",
+    "post_path": "tasks/design_approved/TASK-KCA3-004-sign-in-screen-states.md",
+    "timestamp": "2026-07-17T16:51:38.612082+00:00",
+    "kind": "design_approved_transition"
   }
 ]

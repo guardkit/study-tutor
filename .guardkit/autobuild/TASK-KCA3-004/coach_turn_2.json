@@ -1,0 +1,126 @@
+{
+  "task_id": "TASK-KCA3-004",
+  "turn": 2,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit, severity=critical): Player claim: Player claimed file `app/lib/ui/sign_in_screen.dart. Actual: Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit",
+        "player_claim": "Player claimed file `app/lib/ui/sign_in_screen.dart",
+        "actual_value": "Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk.",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "must_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit, severity=critical): Player claim: Player claimed file `app/test/ui/sign_in_states_test.dart. Actual: Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit",
+        "player_claim": "Player claimed file `app/test/ui/sign_in_states_test.dart",
+        "actual_value": "Path absent from 'git status --porcelain' so 'git add -A' would not stage it. Probes: path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely cause: the Player claimed work on a file that does not exist on disk.",
+        "severity": "critical"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/lib/ui/sign_in_screen.dart. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/ui/sign_in_screen.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test/ui/sign_in_states_test.dart. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test/ui/sign_in_states_test.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Evidence gathering aborted with status 'partial_honesty_abort' - no test results, coverage, BDD scenarios, or verification data available. All evidence fields are null.",
+      "requirement": "All acceptance criteria",
+      "suggestion": "Investigate why evidence gathering aborted. Ensure any work done is actually committed and visible in git status. Re-run the implementation turn with proper git staging."
+    },
+    {
+      "type": "code_quality",
+      "severity": "critical",
+      "description": "Player claimed files `app/lib/ui/sign_in_screen.dart` and `app/test/ui/sign_in_states_test.dart` in files_modified, but git status shows no changes to these files this turn. The only visible change is to `.guardkit/bdd/TASK-KCA3-004_junit.xml` (orchestrator-managed).",
+      "requirement": "All acceptance criteria",
+      "suggestion": "If work was done in Turn 1, ensure it was properly staged and committed. If work is pending, stage the actual changes with 'git add' before reporting. Remove path typos (backtick characters in file paths)."
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "critical",
+      "description": "No test execution evidence available (tests: null). Cannot verify AC-007 requirement for widget tests driving fake IdentityProvider.",
+      "requirement": "AC-007",
+      "suggestion": "Ensure tests run and results are captured in evidence bundle."
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "critical",
+      "description": "No coverage data available (coverage: null). Cannot verify test coverage of loading/cancelled/failed states.",
+      "requirement": "AC-001 through AC-006",
+      "suggestion": "Run coverage analysis and ensure results are captured."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify loading state implementation without test results or code changes visible in git status."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify failure state with Try again affordance without test results or code changes."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify cancel state handling without test results or code changes."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify discovery-unavailable renders failure (not cancel) without test results."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify double-tap guard without test results or code changes."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify success navigation unchanged without test results."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify widget tests with fake IdentityProvider without test execution results (tests: null)."
+    },
+    {
+      "criterion_id": "AC-008",
+      "result": "rejected",
+      "notes": "No evidence available - evidence gathering aborted (partial_honesty_abort). Cannot verify lint/format compliance without quality gate results."
+    }
+  ],
+  "rationale": "Evidence gathering aborted with status 'partial_honesty_abort' due to honesty verification failures. All evidence fields (tests, coverage, bdd, independent_tests, quality_gates) are null. Per Guard 5 (GATHERING-STATUS GUARD), null fields are ABSENT SIGNAL - cannot approve without evidence. Additionally, honesty verification shows files claimed in files_modified were not actually modified this turn per git status. The Player appears to have listed files from a previous turn or from files that exist but weren't changed. Without test results, code changes, or any verification data, cannot confirm any acceptance criteria are met. This requires investigation and a proper implementation turn with visible, staged changes and captured test results."
+}
