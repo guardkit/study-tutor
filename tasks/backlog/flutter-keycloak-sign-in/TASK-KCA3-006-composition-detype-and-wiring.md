@@ -1,6 +1,7 @@
 ---
 id: TASK-KCA3-006
-title: "Composition seam de-type to the port + real-flavour wiring; preserve Unauthenticated↔TransportError distinction"
+title: "Composition seam de-type to the port + real-flavour wiring; preserve Unauthenticated\u2194\
+  TransportError distinction"
 task_type: refactor
 parent_review: TASK-REV-KCA3
 feature_id: FEAT-AUTH-003
@@ -12,11 +13,31 @@ dependencies:
 - TASK-KCA3-004
 - TASK-KCA3-005
 consumer_context:
-  - task: TASK-KCA3-001
-    consumes: OIDC_CLIENT_CONFIG
-    framework: "composition root (main.dart) constructs KeycloakIdentityProvider(config, appauth, store)"
-    driver: "flutter_appauth + flutter_secure_storage"
-    format_note: "the keycloak flavour builds KeycloakConfig from KEYCLOAK_ISSUER/KEYCLOAK_CLIENT_ID; an empty KEYCLOAK_ISSUER selects the hermetic-fake flavour, which keeps the concrete FakeIdentityProvider"
+- task: TASK-KCA3-001
+  consumes: OIDC_CLIENT_CONFIG
+  framework: composition root (main.dart) constructs KeycloakIdentityProvider(config,
+    appauth, store)
+  driver: flutter_appauth + flutter_secure_storage
+  format_note: the keycloak flavour builds KeycloakConfig from KEYCLOAK_ISSUER/KEYCLOAK_CLIENT_ID;
+    an empty KEYCLOAK_ISSUER selects the hermetic-fake flavour, which keeps the concrete
+    FakeIdentityProvider
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003
+  base_branch: main
+  started_at: '2026-07-17T18:11:18.332844'
+  last_updated: '2026-07-17T18:25:11.222780'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-17T18:11:18.332844'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 
 ## Description
