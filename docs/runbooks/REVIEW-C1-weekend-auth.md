@@ -130,3 +130,32 @@ the KCA3-003 unblock (whenComplete zone-error fix), the realm redirect-URI fix
 ### Queued consequence for Batch C
 Before KC-G3 (C4): patch the **live** NAS `study-tutor-app` client's redirectUris to
 `com.appmilla.studytutor:/oauth2redirect` via admin API (one call, alongside C2).
+
+---
+
+## MERGED — approval record (2026-07-18)
+
+- **A2**: approved by Rich 2026-07-17 → merged `b03cbbf`.
+- **A3**: Mac toolchain-of-record verify (official 3.44.4): analyze 0 issues,
+  338/338, zero delta; 17 independent verifiers, 0 refuted. Approved with one
+  condition (strip committed test-output artifacts) → stripped + gitignored on
+  branch, merged `bf9ed99`. Remote branch deleted; all pushed.
+
+### Post-merge follow-ups (from the Mac verify's PARTIALs — none defects)
+
+1. **AUTH-2 depth**: completer-controlled fake-store `write()` so the post-write
+   re-check + compensating clear (`keycloak_identity_provider.dart:~182-187`)
+   becomes test-reachable; also assert store-cleared (not just principal-null)
+   in the refresh-race test.
+2. **Scopes on the wire**: assert `[openid, offline_access]` on the outgoing
+   Token/Authorization requests, not just the frozen constant.
+3. **Design note**: `SignInCancelled`/`SignInFailed` live beside the adapter but
+   are the port's de-facto error taxonomy — a second IdentityProvider impl must
+   throw the same types (consider moving them portside when one appears).
+4. **Observation**: when signOut wins the race, `_handleTokenResponse` still
+   returns the principal to the awaiting `signIn()` caller (publish suppressed,
+   nothing persists) — cosmetic UI edge, revisit with #1.
+
+### Still queued for Batch C
+Live NAS `study-tutor-app` client redirectUris → `com.appmilla.studytutor:/oauth2redirect`
+(admin API, one call, alongside C2) — realm-as-code already fixed (`fa49ce5`).
