@@ -367,3 +367,9 @@ stderr.log
 # belongs in the main worktree's git index.
 .guardkit/worktrees/
 
+
+# Generated flutter test-run artifacts (machine-local droppings, never commit)
+app/test_output*.txt
+app/test_run_output.txt
+app/test_results.json
+app/app/
