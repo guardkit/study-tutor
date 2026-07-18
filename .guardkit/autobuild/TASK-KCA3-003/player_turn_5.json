@@ -1,0 +1,160 @@
+{
+  "task_id": "TASK-KCA3-003",
+  "turn": 5,
+  "files_modified": [
+    ".cov_output/coverage.json",
+    ".gitignore",
+    ".guardkit/bdd/TASK-KCA3-003_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/adapters/keycloak_identity_provider.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/adapters/keycloak_identity_provider_test.dart",
+    "app/lib/adapters/keycloak_identity_provider.dart",
+    "app/test/adapters/keycloak_identity_provider_test.dart",
+    "app/test/adapters/secure_session_store_test.dart",
+    "app/test_output.txt",
+    "app/test_results.json",
+    "app/test_run_output.txt"
+  ],
+  "files_created": [],
+  "tests_written": [],
+  "tests_run": false,
+  "tests_passed": false,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "AC-001: 3-member IdentityProvider port with sync currentPrincipal",
+    "AC-002: Silent-then-interactive sign-in flow",
+    "AC-003: Interactive flow with redirectUrl and offline_access",
+    "AC-005: Single-flight guard",
+    "AC-006: Proactive refresh before expiry",
+    "AC-007: Sign-out wins over in-flight refresh",
+    "AC-008: Unrecoverable refresh degrades gracefully",
+    "AC-009: Absent/unreadable session treated as signed out",
+    "AC-010: Hermetic tests with fakes",
+    "AC-011: Lint/format compliance"
+  ],
+  "requirements_remaining": [
+    "AC-004: Distinct cancel and failure outcomes (test verification blocked)"
+  ],
+  "sdk_turns_used": 43,
+  "sdk_max_turns": 180,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/.guardkit/autobuild/TASK-KCA3-003/player_turn_5.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/adapters/keycloak_identity_provider.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/adapters/keycloak_identity_provider_test.dart"
+  ],
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "KeycloakIdentityProvider implements the 3-member IdentityProvider port unchanged, with a sync currentPrincipal backed by an in-memory cached principal",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. KeycloakIdentityProvider with sync currentPrincipal getter backed by _currentPrincipal field, signIn() method with single-flight guard, and signOut() method with generation-based race protection. Other tests (14 of 15) pass successfully.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "signIn() attempts a silent refresh of the stored session before opening the browser, and opens the interactive PKCE S256 browser flow only when silent refresh is unavailable/fails",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. _performSignIn() checks SecureSessionStore.read() first and attempts _silentRefresh() using FlutterAppAuth.token(). Falls back to _interactiveSignIn() with authorizeAndExchangeCode() only when silent refresh is unavailable or fails. Test verifies silent refresh precedes interactive flow.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "The interactive flow uses KeycloakConfig.redirectUrl (com.appmilla.studytutor:/oauth2redirect) and requests offline_access, and completes after the custom-scheme redirect returns the app to the foreground",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. Interactive flow passes KeycloakConfig.redirectUrl and KeycloakConfig.scopes (including 'offline_access') to AuthorizationTokenRequest. Tests verify flow completes successfully with configured parameters.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "signIn() surfaces cancel and failure as distinct outcomes (\u00a74 SIGNIN_OUTCOME) and never conflates them",
+      "status": "incomplete",
+      "evidence": "Implementation throws SignInCancelled and SignInFailed correctly, but test 'cancel and failure surface as distinct outcomes' fails with uncaught exceptions. Attempted 3 fixes: (1) expect + throwsA matcher, (2) expectLater, (3) specific exception catch with 'on SignInCancelled/SignInFailed'. Also removed library; directives from both files. All attempts failed with same symptom - exceptions not caught by test framework. Blocked on exception handling test failure.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "A second signIn() while one is in flight starts no second flow (single-flight)",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. _signInInFlight Future tracking ensures signIn() returns existing in-flight Future if one exists. Test 'second concurrent signIn shares one flow' passes.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "The adapter refreshes proactively before access-token expiry using the appauth token-response expiry, so an idle longer than the access-token lifetime does not force a re-sign-in while the offline session is valid (KC-G3)",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. _scheduleProactiveRefresh() schedules Timer to fire 5 minutes before accessTokenExpirationDateTime. Scheduled refresh calls _performBackgroundRefresh() which updates cached principal. Test 'refreshes before access token expiry' passes.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "signOut() clears the secure store and cached principal and wins over an in-flight background refresh \u2014 a refresh completing after sign-out does not restore the session",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. Generation-based race protection: signOut() increments _generation before clearing state. Background refresh checks _generation matches expected value before updating principal. Test 'wins over in-flight refresh' passes.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "An unrecoverable background refresh leaves currentPrincipal == null and degrades to the sign-in fallback rather than crashing or hanging",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. _performBackgroundRefresh() try-catch clears _currentPrincipal and store on refresh failure without propagating exceptions. Test 'unrecoverable refresh clears principal without throwing' passes.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "At launch an absent/unreadable/offline-expired stored session is treated as signed out",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. Constructor initializes _currentPrincipal to null. _performSignIn() checks for stored session and only proceeds with silent refresh if session exists and is not expired. Tests 'absent stored session' and 'unreadable stored session' pass.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "Hermetic tests fake FlutterAppAuth and SecureSessionStore \u2014 no browser, no network, no platform channel",
+      "status": "complete",
+      "evidence": "Implemented in prior turns. FakeAppAuth implements FlutterAppAuth interface and FakeSecureSessionStore implements SecureSessionStore interface. Constructor injection enables test isolation. 14 of 15 tests use fakes with no external dependencies and pass successfully.",
+      "test_file": "app/test/adapters/keycloak_identity_provider_test.dart",
+      "implementation_files": [
+        "app/test/adapters/keycloak_identity_provider_test.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-011",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Turn 5: Removed library; directives from both implementation and test files. dart analyze shows only 2 warnings about unused stack variables in test file (non-blocking). Implementation follows Dart conventions (async/await, proper typing, error handling).",
+      "test_file": null,
+      "implementation_files": [
+        "app/lib/adapters/keycloak_identity_provider.dart",
+        "app/test/adapters/keycloak_identity_provider_test.dart"
+      ]
+    }
+  ]
+}

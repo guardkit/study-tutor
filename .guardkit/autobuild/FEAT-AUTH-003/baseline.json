@@ -1,0 +1,10 @@
+{
+  "command": "set -e\ncd app && flutter analyze && flutter test\n",
+  "expected_exit": 0,
+  "passed": false,
+  "exit_code": 1,
+  "failing_node_ids": [],
+  "failing_count": 0,
+  "timestamp": "2026-07-17T17:13:35.203714",
+  "note": "session-scoped observation; NOT the qa/known-failures.yaml ledger; used only to suppress mid-build mis-attribution"
+}

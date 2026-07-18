@@ -1,0 +1,151 @@
+{
+  "task_id": "TASK-KCA3-003",
+  "turn": 5,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .cov_output/coverage.json. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .cov_output/coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .gitignore. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .gitignore",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test/adapters/secure_session_store_test.dart. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test/adapters/secure_session_store_test.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test_output.txt. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test_output.txt",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test_results.json. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test_results.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test_run_output.txt. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test_run_output.txt",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "missing_requirement",
+      "severity": "critical",
+      "description": "AC-004 incomplete: The test 'cancel and failure surface as distinct outcomes' fails to catch SignInCancelled/SignInFailed exceptions. Implementation appears correct (throws distinct exception types) but test verification is blocked by test framework exception handling issues. Located in app/test/adapters/keycloak_identity_provider_test.dart.",
+      "requirement": "AC-004: signIn() surfaces cancel and failure as distinct outcomes and never conflates them",
+      "suggestion": "Investigate why test matchers (throwsA, expectLater, explicit try-catch) fail to catch these custom exceptions. Verify exceptions are properly exported/visible. Consider checking if flutter_appauth exception wrapping interferes. May need to add explicit exception type checks or use different test approach."
+    },
+    {
+      "type": "code_quality",
+      "severity": "minor",
+      "description": "Runtime parity shows 2 dangling library doc comment warnings in lib/adapters/keycloak_identity_provider.dart:1:1 and test/adapters/keycloak_identity_provider_test.dart:1:1. Flutter analyze exited with code 1. Player's AC-011 evidence inaccurately described these as 'unused stack variables' warnings.",
+      "requirement": "AC-011: All modified files pass lint/format checks with zero errors",
+      "suggestion": "Add 'library;' directives after doc comments or remove doc comments if not needed. Verify flutter analyze returns exit code 0 after fix."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "verified",
+      "notes": "3-member IdentityProvider port implementation with sync currentPrincipal backed by _currentPrincipal field. 14 of 15 tests pass confirming structure."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "verified",
+      "notes": "Silent-then-interactive sign-in flow implemented. _performSignIn() attempts silent refresh via stored session before falling back to interactive authorizeAndExchangeCode()."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "verified",
+      "notes": "Interactive flow configured with KeycloakConfig.redirectUrl and offline_access scope. AuthorizationTokenRequest passes correct parameters."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "Player explicitly marked incomplete. Implementation throws SignInCancelled and SignInFailed correctly, but test to verify distinct outcomes fails with uncaught exceptions. Player attempted 3 fix approaches (throwsA, expectLater, explicit catch) - all blocked by test framework exception handling issue. Blocking."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "verified",
+      "notes": "Single-flight guard implemented via _signInInFlight Future tracking. Test 'second concurrent signIn shares one flow' passes."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "verified",
+      "notes": "Proactive refresh scheduled 5 minutes before access token expiry via _scheduleProactiveRefresh(). Test 'refreshes before access token expiry' passes."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "verified",
+      "notes": "Sign-out wins refresh race via generation counter. signOut() increments _generation before clearing; refresh checks generation match. Test passes."
+    },
+    {
+      "criterion_id": "AC-008",
+      "result": "verified",
+      "notes": "Unrecoverable refresh handled gracefully. _performBackgroundRefresh() try-catch clears _currentPrincipal on failure without propagating. Test 'unrecoverable refresh clears principal without throwing' passes."
+    },
+    {
+      "criterion_id": "AC-009",
+      "result": "verified",
+      "notes": "Absent/unreadable/expired session treated as signed out. Constructor initializes _currentPrincipal to null. Tests for absent and unreadable stored sessions pass."
+    },
+    {
+      "criterion_id": "AC-010",
+      "result": "verified",
+      "notes": "Hermetic tests using FakeAppAuth and FakeSecureSessionStore with constructor injection. 14 of 15 tests pass with no external dependencies."
+    },
+    {
+      "criterion_id": "AC-011",
+      "result": "verified",
+      "notes": "Runtime parity shows 2 'info'-level warnings (dangling library doc comments), not errors. Criterion specifies 'zero errors' which is technically met, though exit code 1 suggests project treats these as blocking. Player evidence inaccurately described warning type. Minor issue but does not block AC-011 verification under strict 'errors' interpretation."
+    }
+  ],
+  "rationale": "Cannot approve: AC-004 explicitly incomplete (1 of 11 criteria unmet). Implementation appears correct but test verification is blocked by test framework exception handling issues preventing confirmation of distinct cancel/failure outcomes. Player made good-faith effort with 3 attempted fixes but remains blocked. Runtime parity also shows lint warnings with exit code 1. Task needs AC-004 test resolution before approval."
+}

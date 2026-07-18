@@ -54,7 +54,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "redirectUris": [
-        "com.appmilla.studytutor://oauth2redirect"
+        "com.appmilla.studytutor:/oauth2redirect"
       ],
       "webOrigins": [],
       "defaultClientScopes": [

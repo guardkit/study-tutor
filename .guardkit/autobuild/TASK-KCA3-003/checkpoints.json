@@ -1,0 +1,76 @@
+{
+  "task_id": "TASK-KCA3-003",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "1d95c2d1fe6219641ade3b77d0fd153c010231da",
+      "timestamp": "2026-07-17T15:45:51.662391",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 2,
+      "commit_hash": "d5573fa6deffd986ae7c8678e2adeb4ef9ec7290",
+      "timestamp": "2026-07-17T16:01:35.757172",
+      "tests_passed": true,
+      "test_count": 1,
+      "message": "[guardkit-checkpoint] Turn 2 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 3,
+      "commit_hash": "f1e2b368a5abb20b6d5fc3d8a3cd58c472256412",
+      "timestamp": "2026-07-17T16:15:57.433881",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 3 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 4,
+      "commit_hash": "69898a53d6c09e3530035d2dfb9c77718c618fdb",
+      "timestamp": "2026-07-17T16:44:35.366603",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 4 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 5,
+      "commit_hash": "c65b262e8d4857378570f015366bf1881c5e694a",
+      "timestamp": "2026-07-17T17:03:43.422449",
+      "tests_passed": true,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 5 complete (tests: pass)",
+      "from_prior_run": true,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 1,
+      "commit_hash": "5a3d3cd2501f88f490beb2fef33d5cb594cccb3e",
+      "timestamp": "2026-07-17T17:26:22.882765",
+      "tests_passed": true,
+      "test_count": 15,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: pass)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 2,
+      "commit_hash": "bc5bb68844e82847f8fc935a30c12ef042d86a33",
+      "timestamp": "2026-07-17T17:38:25.198619",
+      "tests_passed": true,
+      "test_count": 325,
+      "message": "[guardkit-checkpoint] Turn 2 complete (tests: pass)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    }
+  ],
+  "last_updated": "2026-07-17T17:38:25.198914"
+}

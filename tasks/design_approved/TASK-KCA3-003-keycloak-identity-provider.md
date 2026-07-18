@@ -1,79 +1,38 @@
 ---
-id: TASK-KCA3-003
-title: "KeycloakIdentityProvider \u2014 real OIDC adapter behind the unchanged port\
-  \ (silent-then-interactive, PKCE, proactive refresh, sign-out wins)"
-task_type: feature
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 3
-implementation_mode: task-work
 complexity: 8
-dependencies:
-- TASK-KCA3-001
-- TASK-KCA3-002
 consumer_context:
-- task: TASK-KCA3-001
-  consumes: OIDC_CLIENT_CONFIG
-  framework: flutter_appauth (FlutterAppAuth.authorizeAndExchangeCode / token)
+- consumes: OIDC_CLIENT_CONFIG
   driver: flutter_appauth
   format_note: issuer/discovery = KeycloakConfig.issuer; clientId = study-tutor-app;
     scopes = [openid, offline_access]; the interactive flow requests offline_access
     so a refresh token is issued
-- task: TASK-KCA3-001
-  consumes: REDIRECT_URI
-  framework: flutter_appauth redirectUrl argument
+  framework: flutter_appauth (FlutterAppAuth.authorizeAndExchangeCode / token)
+  task: TASK-KCA3-001
+- consumes: REDIRECT_URI
   driver: flutter_appauth
-  format_note: "redirectUrl passed to appauth MUST equal KeycloakConfig.redirectUrl\
-    \ = com.appmilla.studytutor:/oauth2redirect byte-for-byte \u2014 the same string\
-    \ registered in the Android manifest scheme and iOS CFBundleURLSchemes and the\
-    \ Keycloak client"
-- task: TASK-KCA3-002
-  consumes: STORED_SESSION
-  framework: SecureSessionStore.read/write/clear
+  format_note: redirectUrl passed to appauth MUST equal KeycloakConfig.redirectUrl
+    = com.appmilla.studytutor:/oauth2redirect byte-for-byte — the same string registered
+    in the Android manifest scheme and iOS CFBundleURLSchemes and the Keycloak client
+  framework: flutter_appauth redirectUrl argument
+  task: TASK-KCA3-001
+- consumes: STORED_SESSION
   driver: flutter_secure_storage (via the store seam)
-  format_note: "adapter maps appauth TokenResponse \u2194 StoredSession (refreshToken,\
-    \ accessToken, accessTokenExpiry, displayName); read() \u21D2 null means treat\
-    \ as signed out"
-status: in_review
-autobuild_state:
-  current_turn: 2
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003
-  base_branch: main
-  started_at: '2026-07-17T17:13:35.249581'
-  last_updated: '2026-07-17T17:38:25.205917'
-  turns:
-  - turn: 1
-    decision: feedback
-    feedback: "- Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
-      \ Player claim: Player claimed file app/lib/adapters/keycloak_identity_provider.dart.\
-      \ Actual: Path is tracked in git but 'git status --porcelain' shows no change\
-      \ for it \u2014 the Player claimed work on a file it did not actually modify\
-      \ this turn. Most likely cause: the report writer swept an orchestrator-managed\
-      \ path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified.\
-      \ Defence-in-depth for the agent_invoker-side filter; this is a warning, not\
-      \ a turn-rejecting fabrication..\n- Runtime-parity failure: the deliverable\
-      \ passed pytest but its declared runtime entry point FAILED to run (exit=1,\
-      \ expected=0). This is a 'passes tests but does not run' defect \u2014 fix the\
-      \ deliverable so it runs standalone. Command: set -e\ncd app && flutter analyze\
-      \ && flutter test\n:\n  Analyzing app...                                   \
-      \             \n\n   info \u2022 The imported package 'yaml' isn't a dependency\
-      \ of the importing package. Try adding a dependency for 'yaml' in the 'pubspec.yaml'\
-      \ file \u2022 test/voice_runtime_config_test.dart:20:8 \u2022 depend_on_referenced_packages\n\
-      1 issue found. (ran in 0.8s)"
-    timestamp: '2026-07-17T17:13:35.249581'
-    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
-      actual: 0'
-    player_success: true
-    coach_success: true
-  - turn: 2
-    decision: approve
-    feedback: null
-    timestamp: '2026-07-17T17:26:22.883792'
-    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
-      actual: 0'
-    player_success: true
-    coach_success: true
+  format_note: adapter maps appauth TokenResponse ↔ StoredSession (refreshToken, accessToken,
+    accessTokenExpiry, displayName); read() ⇒ null means treat as signed out
+  framework: SecureSessionStore.read/write/clear
+  task: TASK-KCA3-002
+dependencies:
+- TASK-KCA3-001
+- TASK-KCA3-002
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-003
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: feature
+title: KeycloakIdentityProvider — real OIDC adapter behind the unchanged port (silent-then-interactive,
+  PKCE, proactive refresh, sign-out wins)
+wave: 3
 ---
 
 ## Description

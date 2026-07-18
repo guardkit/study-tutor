@@ -1,0 +1,209 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/adapters/keycloak_identity_provider.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 1
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 93.99616072019593,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "No task-specific tests found for TASK-KCA3-003, skipping independent verification",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 11,
+    "criteria_met": 11,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`KeycloakIdentityProvider` implements the 3-member `IdentityProvider` port unchanged, with a **sync** `currentPrincipal` backed by an in-memory cached principal",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "KeycloakIdentityProvider class implements IdentityProvider interface with sync getter currentPrincipal that returns _currentPrincipal (in-memory cached Principal). Implementation at lines 41-54."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`signIn()` attempts a **silent refresh** of the stored session before opening the browser, and opens the interactive **PKCE S256** browser flow only when silent refresh is unavailable/fails",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_performSignIn() method first attempts silent refresh using stored session (lines 76-84), falling through to interactive flow only if silent refresh fails. PKCE S256 is flutter_appauth default for public clients. Test 'a valid stored session refreshes silently' verifies no interactive flow called when silent succeeds."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "The interactive flow uses `KeycloakConfig.redirectUrl` (`com.appmilla.studytutor:/oauth2redirect`) and requests `offline_access`, and completes after the custom-scheme redirect returns the app to the foreground",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_interactiveSignIn() method (line 113-134) uses _config.redirectUrl and _config.scopes in AuthorizationTokenRequest. KeycloakConfig.scopes is frozen to ['openid', 'offline_access'] (per keycloak_config.dart line 51). Custom-scheme redirect completion is handled by flutter_appauth library."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`signIn()` surfaces **cancel** and **failure** as distinct outcomes (\u00a74 `SIGNIN_OUTCOME`) and never conflates them",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Defined two distinct exception types: SignInCancelled (lines 20-27) and SignInFailed (lines 29-38). _interactiveSignIn() catches FlutterAppAuthPlatformException and distinguishes cancel via _isCancelError() (lines 128-133, 136-141). Test 'cancel and failure surface as distinct outcomes' verifies both exception types are thrown correctly."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "A second `signIn()` while one is in flight starts no second flow (single-flight)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "signIn() method implements single-flight guard using _signInInFlight field (lines 57-72). If _signInInFlight is not null, returns the existing future. Test 'second concurrent signIn shares one flow' verifies only 1 interactive call despite 3 concurrent signIn() calls."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "The adapter refreshes proactively before access-token expiry using the appauth token-response expiry, so an idle longer than the access-token lifetime does not force a re-sign-in while the offline session is valid (KC-G3)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_scheduleProactiveRefresh() method (lines 198-213) schedules Timer to refresh 5 minutes before TokenResponse.accessTokenExpirationDateTime. Called after successful sign-in and after each background refresh (line 172, 244). Test 'refreshes before access token expiry' verifies proactive refresh with soon-expiring token."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "`signOut()` clears the secure store and cached principal and **wins over an in-flight background refresh** \u2014 a refresh completing after sign-out does not restore the session",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "signOut() increments _generation counter (line 250) to invalidate in-flight refreshes. _performBackgroundRefresh() captures generation at start (line 216) and checks it again after async operations (lines 239-242), discarding results if generation changed. Test 'wins over in-flight refresh' verifies principal stays null after sign-out despite completing refresh."
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "An unrecoverable background refresh leaves `currentPrincipal == null` and degrades to the sign-in fallback rather than crashing or hanging",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_performBackgroundRefresh() wraps token refresh in try-catch (lines 218-236). On exception, sets _currentPrincipal = null and clears store (lines 231-234), never propagating exception. Test 'unrecoverable refresh clears principal without throwing' verifies degradation without throwing."
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "At launch an absent/unreadable/offline-expired stored session is treated as signed out",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "_currentPrincipal initializes to null (line 48). _performSignIn() checks stored session; if null or expired (lines 76-84), proceeds to interactive flow. SecureSessionStore.read() returns null for absent/unreadable sessions (per secure_session_store.dart). Tests 'absent stored session treated as signed out' and 'unreadable stored session treated as signed out' verify this behavior."
+      },
+      {
+        "criterion_id": "AC-010",
+        "criterion_text": "Hermetic tests fake `FlutterAppAuth` and `SecureSessionStore` \u2014 no browser, no network, no platform channel",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Test file implements FakeAppAuth (lines 301-392) that implements FlutterAppAuth interface and tracks calls without platform channels, and FakeSecureSessionStore (lines 395-428) that implements SecureSessionStore with in-memory storage. All tests use these fakes, ensuring hermetic execution."
+      },
+      {
+        "criterion_id": "AC-011",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Ran 'flutter analyze' on both implementation and test files. Output: 'No issues found! (ran in 0.7s)'. Zero lint errors."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": true,
+    "passed": false,
+    "command": "set -e\ncd app && flutter analyze && flutter test\n",
+    "exit_code": 1,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "1 issue found. (ran in 0.8s)",
+    "skipped_reason": null,
+    "output_tail": "Analyzing app...                                                \n\n   info \u2022 The imported package 'yaml' isn't a dependency of the importing package. Try adding a dependency for 'yaml' in the 'pubspec.yaml' file \u2022 test/voice_runtime_config_test.dart:20:8 \u2022 depend_on_referenced_packages\n1 issue found. (ran in 0.8s)"
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file app/lib/adapters/keycloak_identity_provider.dart. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/adapters/keycloak_identity_provider.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "feature",
+  "profile_name": "feature"
+}

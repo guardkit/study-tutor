@@ -1,96 +1,24 @@
 ---
-id: TASK-KCA3-004
-title: "SignInScreen loading / failure / cancel states + try-again \u2014 failure\
-  \ \u2260 cancel, driven by the adapter outcome"
-task_type: feature
-parent_review: TASK-REV-KCA3
-feature_id: FEAT-AUTH-003
-wave: 4
-implementation_mode: task-work
 complexity: 5
-dependencies:
-- TASK-KCA3-003
 consumer_context:
-- task: TASK-KCA3-003
-  consumes: SIGNIN_OUTCOME
-  framework: Flutter StatefulWidget state machine over the adapter's signIn() result
+- consumes: SIGNIN_OUTCOME
   driver: flutter (Material)
   format_note: the adapter surfaces cancel (SignInCancelled) and failure (SignInFailed)
     as distinct outcomes; the screen must render a distinct cancel message vs a failure
     state, and MUST NOT collapse discovery-unavailable (failure) into the cancel message
-status: in_review
-autobuild_state:
-  current_turn: 3
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003
-  base_branch: main
-  started_at: '2026-07-17T17:38:34.849081'
-  last_updated: '2026-07-17T18:11:18.297794'
-  turns:
-  - turn: 1
-    decision: feedback
-    feedback: '- Deterministic honesty record (claim_audit, severity=critical): Player
-      claim: Player claimed file `app/lib/ui/sign_in_screen.dart. Actual: Path absent
-      from ''git status --porcelain'' so ''git add -A'' would not stage it. Probes:
-      path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely
-      cause: the Player claimed work on a file that does not exist on disk..
-
-      - Deterministic honesty record (claim_audit, severity=critical): Player claim:
-      Player claimed file `app/test/ui/sign_in_states_test.dart. Actual: Path absent
-      from ''git status --porcelain'' so ''git add -A'' would not stage it. Probes:
-      path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely
-      cause: the Player claimed work on a file that does not exist on disk..
-
-      - Evidence gathering aborted at ''partial_honesty_abort'' stage due to path
-      formatting errors in the Player''s report. The report includes malformed paths
-      with leading backticks: ''`app/lib/ui/sign_in_screen.dart'' and ''`app/test/ui/sign_in_states_test.dart''.
-      These paths do not exist on disk (the actual files lack the leading backtick).
-      This triggered honesty checks that aborted before independent test verification,
-      coverage analysis, BDD oracle, and quality gates could run.: Fix the path formatting
-      in files_modified and files_created lists - remove leading backticks. The correct
-      paths are ''app/lib/ui/sign_in_screen.dart'' and ''app/test/ui/sign_in_states_test.dart''
-      (as shown in files_authored). Once corrected, re-run to trigger complete evidence
-      gathering including independent tests, coverage, and quality gates.
-
-      ... and 3 more issues'
-    timestamp: '2026-07-17T17:38:34.849081'
-    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
-      actual: 0'
-    player_success: true
-    coach_success: true
-  - turn: 2
-    decision: feedback
-    feedback: "- Deterministic honesty record (claim_audit, severity=critical): Player\
-      \ claim: Player claimed file `app/lib/ui/sign_in_screen.dart. Actual: Path absent\
-      \ from 'git status --porcelain' so 'git add -A' would not stage it. Probes:\
-      \ path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely\
-      \ cause: the Player claimed work on a file that does not exist on disk..\n-\
-      \ Deterministic honesty record (claim_audit, severity=critical): Player claim:\
-      \ Player claimed file `app/test/ui/sign_in_states_test.dart. Actual: Path absent\
-      \ from 'git status --porcelain' so 'git add -A' would not stage it. Probes:\
-      \ path_exists=False; gitignore_match=no rule matched; tracked=no. Most likely\
-      \ cause: the Player claimed work on a file that does not exist on disk..\n-\
-      \ Deterministic honesty record (claim_audit_unmodified, severity=should_fix):\
-      \ Player claim: Player claimed file app/lib/ui/sign_in_screen.dart. Actual:\
-      \ Path is tracked in git but 'git status --porcelain' shows no change for it\
-      \ \u2014 the Player claimed work on a file it did not actually modify this turn.\
-      \ Most likely cause: the report writer swept an orchestrator-managed path (e.g.\
-      \ a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified.\
-      \ Defence-in-depth for the agent_invoker-side filter; this is a warning, not\
-      \ a turn-rejecting fabrication..\n... and 5 more issues"
-    timestamp: '2026-07-17T17:51:38.605695'
-    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
-      actual: 0'
-    player_success: true
-    coach_success: true
-  - turn: 3
-    decision: approve
-    feedback: null
-    timestamp: '2026-07-17T17:58:34.266155'
-    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
-      actual: 0'
-    player_success: true
-    coach_success: true
+  framework: Flutter StatefulWidget state machine over the adapter's signIn() result
+  task: TASK-KCA3-003
+dependencies:
+- TASK-KCA3-003
+feature_id: FEAT-AUTH-003
+id: TASK-KCA3-004
+implementation_mode: task-work
+parent_review: TASK-REV-KCA3
+status: design_approved
+task_type: feature
+title: SignInScreen loading / failure / cancel states + try-again — failure ≠ cancel,
+  driven by the adapter outcome
+wave: 4
 ---
 
 ## Description

@@ -1,0 +1,9 @@
+[
+  {
+    "task_id": "TASK-KCA3-005",
+    "pre_path": "tasks/backlog/TASK-KCA3-005-sign-out-affordance.md",
+    "post_path": "tasks/design_approved/TASK-KCA3-005-sign-out-affordance.md",
+    "timestamp": "2026-07-17T12:52:28.413136+00:00",
+    "kind": "design_approved_transition"
+  }
+]

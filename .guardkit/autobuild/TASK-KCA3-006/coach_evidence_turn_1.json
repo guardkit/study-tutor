@@ -1,0 +1,174 @@
+{
+  "honesty": {
+    "verified": false,
+    "discrepancies": [
+      {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/ui/error_handling.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix",
+        "ignore_rule": null
+      }
+    ],
+    "honesty_score": 1.0,
+    "resolved_paths": [],
+    "should_fix_count": 1
+  },
+  "gathering_status": "complete",
+  "gathering_error": null,
+  "quality_gates": {
+    "tests_passed": true,
+    "coverage_met": true,
+    "arch_review_passed": true,
+    "plan_audit_passed": true,
+    "tests_required": true,
+    "coverage_required": true,
+    "arch_review_required": false,
+    "plan_audit_required": true,
+    "all_gates_passed": true
+  },
+  "coverage_details": {
+    "coverage_met": null,
+    "line_coverage": null,
+    "branch_coverage": null,
+    "line_threshold": null,
+    "branch_threshold": null,
+    "coverage_required": true
+  },
+  "plan_audit": {
+    "status": "skipped",
+    "severity": null,
+    "violations": 0,
+    "extra_files": [],
+    "missing_files": [],
+    "extra_modifications": [],
+    "missing_modifications": [],
+    "extra_dependencies": [],
+    "missing_dependencies": [],
+    "loc_variance_pct": null,
+    "discrepancies_count": 0,
+    "message": "no implementation plan on disk"
+  },
+  "bdd": null,
+  "bdd_authoring_sweep": null,
+  "arch_review": null,
+  "tests": {
+    "tests_passed": true,
+    "tests_required": true,
+    "tests_run": null,
+    "tests_failed": 0,
+    "all_passed": null,
+    "requires_infrastructure": []
+  },
+  "wiring": null,
+  "mocked_seam": null,
+  "spec_gap": null,
+  "stub_scan": null,
+  "coverage": {
+    "status": "clean",
+    "findings": [],
+    "coverage_percentage": 93.9895412722579,
+    "files_below_threshold": 0
+  },
+  "behavioural_oracle": null,
+  "independent_tests": {
+    "tests_passed": true,
+    "test_command": "skipped",
+    "test_output_summary": "No task-specific tests found for TASK-KCA3-006, skipping independent verification",
+    "duration_seconds": 0.0,
+    "raw_output": null,
+    "signal_absent": false,
+    "tests_skipped": null,
+    "resolved_interpreter": null
+  },
+  "independent_test_classification": null,
+  "requirements": {
+    "criteria_total": 6,
+    "criteria_met": 6,
+    "all_criteria_met": true,
+    "missing": [],
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`composeSessionApi`'s `identity` parameter is typed as the `IdentityProvider` **port** (not the concrete `FakeIdentityProvider`); `composition_test` is green",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Updated composeSessionApi, composeVoiceApi, and composeStudentModelApi signatures to accept IdentityProvider port instead of FakeIdentityProvider. All three composition functions now accept the port interface. composition_test validates this with explicit port typing and all 5 tests pass."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "The **keycloak flavour** composes `KeycloakIdentityProvider` (built from `KeycloakConfig`); the **hermetic-fake flavour** keeps the **concrete** `FakeIdentityProvider` and stays green with no browser and no network (serves \"The hermetic fake flavour still signs in with no browser and no network\")",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added composeIdentity() function that keys on KEYCLOAK_ISSUER: empty issuer (default) returns concrete FakeIdentityProvider; set issuer constructs KeycloakIdentityProvider with KeycloakConfig, FlutterAppAuth, and SecureSessionStore. Tests verify both flavours correctly instantiate the expected adapter types. All 335 tests pass including hermetic tests with no browser/network."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`FakeSessionApi` still receives the concrete fake's `studentIdForToken` introspection hook \u2014 the de-type does not break the fake auth-server wiring",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Composition functions preserve the concrete FakeIdentityProvider where needed: composeSessionApi and composeStudentModelApi cast identity as FakeIdentityProvider when baseUrl is empty (hermetic flavour), allowing FakeSessionApi to access studentIdForToken hook. All contract tests and authentication tests pass, proving the fake auth-server introspection still works."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "A backend-**rejected** token (`Unauthenticated`) routes back to sign-in; a backend-**unreachable** error (`TransportError`) shows a connection problem and does **not** route to sign-in \u2014 the two stay distinct with the real adapter (serves both Group-E routing scenarios)",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "No changes were made to error_handling.dart which implements the routing distinction (routeToSignIn for Unauthenticated, showConnectionProblem for TransportError). The composition wiring change preserves this behavior since both HttpSessionApi and KeycloakIdentityProvider already throw the correct exception types. All 335 tests pass including http_session_api_errors_test.dart which validates the Unauthenticated and TransportError distinctions."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "`composition_test` and the error-routing regression test are green",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "All 335 tests pass including composition_test (5 tests green) and http_session_api_errors_test (validates Unauthenticated vs TransportError routing). Full test suite confirms no regressions in error routing behavior."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "flutter analyze reports 'No issues found!' with 0.9s analysis time. All modified files (main.dart, composition_test.dart, keycloak_identity_provider.dart) pass lint checks."
+      }
+    ]
+  },
+  "runtime_parity": {
+    "ran": true,
+    "passed": true,
+    "command": "set -e\ncd app && flutter analyze && flutter test\n",
+    "exit_code": 0,
+    "expected_exit": 0,
+    "timed_out": false,
+    "stderr_tail": "",
+    "skipped_reason": null,
+    "output_tail": "nd the canned tutor reply\n00:10 +326: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/slice_i_test.dart: one turn round-trip renders the user message and the canned tutor reply\n00:10 +327: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/slice_i_test.dart: one turn round-trip renders the user message and the canned tutor reply\n00:10 +328: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/slice_i_test.dart: one turn round-trip renders the user message and the canned tutor reply\n00:10 +329: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/slice_i_test.dart: one turn round-trip renders the user message and the canned tutor reply\n00:10 +330: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/session_screen_test.dart: Error handling AC-005: mic permission denied shows explanation, typing still works\n00:11 +331: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/session_screen_test.dart: Error handling AC-005: mic permission denied shows explanation, typing still works\n00:11 +332: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_in_states_test.dart: SIGNIN_OUTCOME seam test cancel and failure render distinct states\n00:11 +333: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/session_screen_test.dart: Regression: typing still works AC-008: typing a question works exactly as before\n00:11 +334: /home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/session_screen_test.dart: Regression: typing still works AC-008: typing works after VoiceUnavailable\n00:11 +335: All tests passed!"
+  },
+  "evidence_repo_tests": [],
+  "severity_recommendations": [],
+  "advisory_issues": [
+    {
+      "severity": "warning",
+      "category": "agent_invocations_advisory",
+      "description": "Advisory (non-blocking): task-work produced a report with 2 of 3 expected agent invocations. Missing phases: 3 (Implementation). Consider invoking these agents via the Task tool to strengthen stack-specific quality:\n- Phase 3: `the stack-specific Phase-3 specialist` (Implementation)",
+      "details": {
+        "missing_phases": [
+          "3"
+        ],
+        "expected_phases": 3,
+        "actual_invocations": 2
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "claim_audit",
+      "description": "Player-claimed file is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player likely swept an orchestrator-managed path into files_modified. Player claimed file app/lib/ui/error_handling.dart. Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+      "details": {
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/ui/error_handling.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication."
+      }
+    }
+  ],
+  "task_type": "refactor",
+  "profile_name": "refactor"
+}

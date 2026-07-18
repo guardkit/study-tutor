@@ -1,0 +1,126 @@
+{
+  "task_id": "TASK-KCA3-002",
+  "turn": 2,
+  "decision": "feedback",
+  "issues": [
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .cov_output/coverage.json. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .cov_output/coverage.json",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file .guardkit/bdd/TASK-KCA3-005_junit.xml. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file .guardkit/bdd/TASK-KCA3-005_junit.xml",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/lib/adapters/secure_session_store.dart. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/lib/adapters/secure_session_store.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_gitignored, severity=should_fix): Player claim: Player claimed file app/test/adapters/secure_session_store_test.dart. Actual: Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_gitignored",
+        "player_claim": "Player claimed file app/test/adapters/secure_session_store_test.dart",
+        "actual_value": "Path is on disk but matched a .gitignore rule (.gitignore:304:adapters/); 'git add -A' silently skipped it. Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "severity": "should_fix",
+      "category": "honesty",
+      "description": "Deterministic honesty record (claim_audit_unmodified, severity=should_fix): Player claim: Player claimed file app/test/ui/sign_out_test.dart. Actual: Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication..",
+      "details": {
+        "source": "deterministic_honesty_gate",
+        "claim_type": "claim_audit_unmodified",
+        "player_claim": "Player claimed file app/test/ui/sign_out_test.dart",
+        "actual_value": "Path is tracked in git but 'git status --porcelain' shows no change for it \u2014 the Player claimed work on a file it did not actually modify this turn. Most likely cause: the report writer swept an orchestrator-managed path (e.g. a file under .guardkit/autobuild/ or tasks/<state>/) into files_modified. Defence-in-depth for the agent_invoker-side filter; this is a warning, not a turn-rejecting fabrication.",
+        "severity": "should_fix"
+      }
+    },
+    {
+      "type": "test_failure",
+      "severity": "critical",
+      "description": "Test file app/test/adapters/secure_session_store_test.dart is matched by .gitignore rule '.gitignore:304:adapters/' and was never committed to version control. The per-turn checkpoint commit silently dropped it, preventing independent test verification.",
+      "requirement": "AC-006: Tests inject a fake secure storage",
+      "suggestion": "Fix the .gitignore rule to allow test files under app/test/adapters/, then re-run this turn. The honesty checker suggests: 'Fix the ignore rule (or rebase the worktree onto a branch where the rule is fixed) and re-run the turn.' Without the test file in git, independent verification cannot confirm any of the 7 acceptance criteria."
+    },
+    {
+      "type": "test_failure",
+      "severity": "critical",
+      "description": "Independent test verification reported: 'No task-specific tests found for TASK-KCA3-002, skipping independent verification'. This is because the test file is gitignored and not visible to the test runner.",
+      "requirement": "All ACs (AC-001 through AC-007)",
+      "suggestion": "After fixing the .gitignore rule and committing the test file, the independent test runner will be able to verify your tests. This is required for approval."
+    },
+    {
+      "type": "code_quality",
+      "severity": "major",
+      "description": "Implementation file app/lib/adapters/secure_session_store.dart is tracked in git but shows no changes this turn according to 'git status --porcelain'. This suggests the implementation was done in a previous turn, but the test file was never committed.",
+      "requirement": "AC-001 through AC-007",
+      "suggestion": "Verify that the implementation file from turn 1 is complete and commit the corresponding test file after fixing the .gitignore rule."
+    }
+  ],
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "result": "rejected",
+      "notes": "Cannot verify: test evidence references app/test/adapters/secure_session_store_test.dart which is gitignored. Independent test runner found no tests to run."
+    },
+    {
+      "criterion_id": "AC-002",
+      "result": "rejected",
+      "notes": "Cannot verify: test evidence references gitignored test file. The three tests mentioned ('read() returns null when key is absent', etc.) are not in version control."
+    },
+    {
+      "criterion_id": "AC-003",
+      "result": "rejected",
+      "notes": "Cannot verify: implementation file shows no git changes this turn, and tests verifying flutter_secure_storage usage are gitignored."
+    },
+    {
+      "criterion_id": "AC-004",
+      "result": "rejected",
+      "notes": "Cannot verify: test 'clear() removes the persisted session' is in the gitignored test file."
+    },
+    {
+      "criterion_id": "AC-005",
+      "result": "rejected",
+      "notes": "Cannot verify: without the test file in version control, cannot confirm no flutter_appauth types cross the API boundary."
+    },
+    {
+      "criterion_id": "AC-006",
+      "result": "rejected",
+      "notes": "Cannot verify: the FakeSecureStorage class and all hermetic tests are in the gitignored test file."
+    },
+    {
+      "criterion_id": "AC-007",
+      "result": "rejected",
+      "notes": "Cannot verify: while Player reports 'flutter analyze' passed, the test file that should be linted is not in version control."
+    }
+  ],
+  "rationale": "All 7 acceptance criteria cannot be verified because the test file (app/test/adapters/secure_session_store_test.dart) is gitignored and not in version control. The independent test runner found no task-specific tests to run, preventing trust-but-verify confirmation. The honesty checker identified this as a 'should_fix' issue: the test file matched .gitignore:304:adapters/ and was silently dropped during the per-turn checkpoint commit. The implementation may be correct (the file exists from turn 1), but without tests in git, the quality gates cannot independently verify any AC. Fix the .gitignore rule to allow test files under app/test/adapters/, commit the test file, and re-run the turn."
+}

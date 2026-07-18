@@ -322,6 +322,8 @@ merged-fp16/
 !src/study_tutor/adapters/*.py
 !tests/unit/adapters/
 !tests/unit/adapters/*.py
+!app/test/adapters/
+!app/test/adapters/*.dart
 
 # Flutter app source (ADR-ARCH-025). The unanchored Python-template
 # ``lib/`` rule at the top of this file matches app/lib/ and silently
@@ -366,3 +368,9 @@ stderr.log
 # belongs in the main worktree's git index.
 .guardkit/worktrees/
 
+
+# Generated flutter test-run artifacts (machine-local droppings, never commit)
+app/test_output*.txt
+app/test_run_output.txt
+app/test_results.json
+app/app/

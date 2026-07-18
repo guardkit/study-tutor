@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK-KCA3-004",
+  "checkpoints": [
+    {
+      "turn": 1,
+      "commit_hash": "43239f315ad3550ca151ad423521516e9925e5cb",
+      "timestamp": "2026-07-17T17:51:38.604165",
+      "tests_passed": null,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 1 complete (tests: unknown)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 2,
+      "commit_hash": "97df4dce53a85bd43133defb239390f5cf33bfe2",
+      "timestamp": "2026-07-17T17:58:34.265496",
+      "tests_passed": null,
+      "test_count": 0,
+      "message": "[guardkit-checkpoint] Turn 2 complete (tests: unknown)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    },
+    {
+      "turn": 3,
+      "commit_hash": "26a98e003fb8e6ba3e5f4cc9249f1751157dd1a5",
+      "timestamp": "2026-07-17T18:11:18.287755",
+      "tests_passed": true,
+      "test_count": 1,
+      "message": "[guardkit-checkpoint] Turn 3 complete (tests: pass)",
+      "from_prior_run": false,
+      "evidence_commits": {}
+    }
+  ],
+  "last_updated": "2026-07-17T18:11:18.287888"
+}

@@ -23,6 +23,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // TASK-KCA3-001: flutter_appauth redirect scheme (ASSUM-003 frozen URI)
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.appmilla.studytutor"
     }
 
     buildTypes {

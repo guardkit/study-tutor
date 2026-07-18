@@ -1,0 +1,107 @@
+{
+  "task_id": "TASK-KCA3-001",
+  "turn": 1,
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/android/app/build.gradle.kts",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/android/app/src/main/AndroidManifest.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/ios/Runner/Info.plist",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/pubspec.yaml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/config/keycloak_config_test.dart",
+    "app/android/app/build.gradle.kts",
+    "app/android/app/src/main/AndroidManifest.xml",
+    "app/ios/Runner/Info.plist",
+    "app/pubspec.lock",
+    "app/pubspec.yaml"
+  ],
+  "files_created": [
+    ".guardkit/bdd/TASK-KCA3-001_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/config/keycloak_config.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/config/keycloak_config_test.dart",
+    "app/lib/config/keycloak_config.dart",
+    "app/test/config/keycloak_config_test.dart"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Added flutter_appauth and flutter_secure_storage dependencies with scope event documentation",
+    "Registered com.appmilla.studytutor redirect scheme in Android manifest and iOS Info.plist",
+    "Created KeycloakConfig frozen value object with issuer, clientId, redirectUrl, scopes",
+    "Implemented fromEnvironment factory for compile-time configuration",
+    "Enforced ASSUM-003 byte-identical redirect URI across all surfaces",
+    "Documented zero-added-runtime-dependencies DoD scope event",
+    "Maintained clean analyze and green tests (no behavioral changes)"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 34,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/.guardkit/autobuild/TASK-KCA3-001/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/android/app/build.gradle.kts",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/android/app/src/main/AndroidManifest.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/ios/Runner/Info.plist",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/config/keycloak_config.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/pubspec.yaml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/config/keycloak_config_test.dart"
+  ],
+  "tests_passed_count": 299,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "flutter_appauth and flutter_secure_storage are declared in app/pubspec.yaml and are the **only** two runtime dependencies added by this feature (serves the scope-event scenario)",
+      "status": "complete",
+      "evidence": "Added flutter_appauth: ^8.0.2 and flutter_secure_storage: ^9.2.2 to app/pubspec.yaml dependencies section with scope event documentation comment matching the voice track pattern (TASK-KCA3-001: scope event 2026-07-17). These are the only two runtime dependencies added, documented as a deliberate zero-added-runtime-dependencies DoD break.",
+      "test_file": null,
+      "implementation_files": [
+        "app/pubspec.yaml"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "The redirect scheme com.appmilla.studytutor is registered in the Android manifest (appAuthRedirectScheme) **and** in the iOS Info.plist CFBundleURLSchemes, matching KeycloakConfig.redirectUrl = com.appmilla.studytutor:/oauth2redirect byte-for-byte",
+      "status": "complete",
+      "evidence": "Android: Added manifestPlaceholders[\"appAuthRedirectScheme\"] = \"com.appmilla.studytutor\" to app/android/app/build.gradle.kts defaultConfig and added intent-filter with data android:scheme=\"${appAuthRedirectScheme}\" to AndroidManifest.xml. iOS: Added CFBundleURLTypes with CFBundleURLSchemes containing \"com.appmilla.studytutor\" to app/ios/Runner/Info.plist. KeycloakConfig.redirectUrl is frozen constant \"com.appmilla.studytutor:/oauth2redirect\" ensuring byte-for-byte match per ASSUM-003.",
+      "test_file": "app/test/config/keycloak_config_test.dart",
+      "implementation_files": [
+        "app/android/app/build.gradle.kts",
+        "app/android/app/src/main/AndroidManifest.xml",
+        "app/ios/Runner/Info.plist",
+        "app/lib/config/keycloak_config.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "KeycloakConfig carries issuer, clientId (default study-tutor-app), redirectUrl, and scopes (openid, offline_access); an empty KEYCLOAK_ISSUER selects the hermetic-fake flavour (no Keycloak)",
+      "status": "complete",
+      "evidence": "Created app/lib/config/keycloak_config.dart with immutable KeycloakConfig class containing: issuer (String, required), clientId (String, defaults to 'study-tutor-app'), redirectUrl (frozen constant 'com.appmilla.studytutor:/oauth2redirect'), scopes (frozen constant ['openid', 'offline_access']). Implemented fromEnvironment factory that reads KEYCLOAK_ISSUER (defaults to empty string for hermetic-fake flavour) and KEYCLOAK_CLIENT_ID (defaults to 'study-tutor-app'). Verified via 13 comprehensive tests covering construction, defaults, environment reading, equality, and ASSUM-003 compliance.",
+      "test_file": "app/test/config/keycloak_config_test.dart",
+      "implementation_files": [
+        "app/lib/config/keycloak_config.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "The zero-added-runtime-dependencies DoD scope event is recorded in the task notes / DoD ledger",
+      "status": "complete",
+      "evidence": "Recorded scope event in pubspec.yaml inline comment: '# Keycloak authentication runtime dependencies (TASK-KCA3-001: scope event 2026-07-17)' followed by '# DELIBERATE zero-added-runtime-dependencies DoD break (mirrors voice track pattern)'. This matches the voice track's scope event documentation pattern (TASK-VC-001: scope event 2026-07-08).",
+      "test_file": null,
+      "implementation_files": [
+        "app/pubspec.yaml"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "flutter analyze remains clean; flutter test stays green (no behavioural change yet)",
+      "status": "complete",
+      "evidence": "flutter test: All 299 tests passed (including 13 new KeycloakConfig tests). flutter analyze: One pre-existing issue in voice_runtime_config_test.dart (depend_on_referenced_packages for yaml package) - not introduced by this task. No new analyze issues introduced. git diff confirms voice_runtime_config_test.dart was not modified. All new code follows Dart conventions with proper documentation, immutability patterns, and comprehensive test coverage.",
+      "test_file": "app/test/config/keycloak_config_test.dart",
+      "implementation_files": [
+        "app/lib/config/keycloak_config.dart"
+      ]
+    }
+  ]
+}

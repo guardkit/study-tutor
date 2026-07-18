@@ -1,0 +1,32 @@
+{
+  "id": "TURN-FEAT-AUTH-003-1",
+  "feature_id": "FEAT-AUTH-003",
+  "task_id": "TASK-KCA3-002",
+  "turn_number": 1,
+  "player_summary": "Implementation attempt",
+  "player_decision": "feedback",
+  "coach_decision": "feedback",
+  "coach_feedback": "- Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-001].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.\n- Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-002].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.\n- Deterministic honesty record (promise_file_existence, severity=critical): Player claim: completion_promises[AC-003].status=complete with implementation_files including lib/adapters/secure_session_store.dart. Actual: File does not exist at lib/adapters/secure_session_store.dart.\n... and 12 more issues",
+  "mode": "fresh_start",
+  "blockers_found": [],
+  "progress_summary": "Turn 1: feedback",
+  "acceptance_criteria_status": {},
+  "files_modified": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/adapters/secure_session_store_test.dart",
+    ".guardkit/bdd/TASK-KCA3-002_junit.xml",
+    ".guardkit/bdd/TASK-KCA3-005_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/lib/adapters/secure_session_store.dart",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/adapters/secure_session_store_test.dart",
+    "app/lib/adapters/secure_session_store.dart",
+    "app/test/ui/sign_out_test.dart"
+  ],
+  "tests_passed": null,
+  "tests_failed": null,
+  "coverage": null,
+  "arch_score": null,
+  "started_at": "2026-07-17T14:13:18.841859",
+  "completed_at": "2026-07-17T14:13:18.841859",
+  "duration_seconds": null,
+  "lessons_from_turn": [],
+  "what_to_try_next": null
+}

@@ -1,0 +1,95 @@
+{
+  "task_id": "TASK-KCA3-005",
+  "turn": 1,
+  "files_modified": [],
+  "files_created": [
+    ".guardkit/bdd/TASK-KCA3-005_junit.xml",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_out_test.dart",
+    "app/lib/adapters/secure_session_store.dart",
+    "app/test/ui/sign_out_test.dart"
+  ],
+  "tests_written": [],
+  "tests_run": true,
+  "tests_passed": true,
+  "test_output_summary": "",
+  "implementation_notes": "Implementation via task-work delegation. Files planned: 0, Files actual: 0",
+  "concerns": [],
+  "requirements_addressed": [
+    "Sign-out affordance in HomeScreen app bar (AC-001)",
+    "Sign-out flow: identity.signOut() \u2192 routeToSignIn() (AC-002)",
+    "Session cleared (currentPrincipal null) and navigation to SignInScreen (AC-003)",
+    "Port-driven implementation using FakeIdentityProvider (AC-004)",
+    "No adapter-level refresh-race assertions (AC-005)",
+    "All files pass lint/format checks (AC-006)",
+    "BDD scenario: 'Signing out clears the session and returns to the sign-in screen'"
+  ],
+  "requirements_remaining": [],
+  "sdk_turns_used": 22,
+  "sdk_max_turns": 150,
+  "sdk_ceiling_hit": false,
+  "files_authored": [
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/.guardkit/autobuild/TASK-KCA3-005/player_turn_1.json",
+    "/home/richardwoollcott/Projects/appmilla_github/study-tutor/.guardkit/worktrees/FEAT-AUTH-003/app/test/ui/sign_out_test.dart"
+  ],
+  "tests_passed_count": 4,
+  "completion_promises": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "HomeScreen exposes a sign-out affordance as an app-bar action (ASSUM-006)",
+      "status": "complete",
+      "evidence": "HomeScreen already has a PopupMenuButton in the app bar (lines 198-209 of home_screen.dart) with a 'Sign out' menu item. Widget test 'AC-001: HomeScreen exposes sign-out action in app bar' verifies the overflow menu exists and contains the Sign out action.",
+      "test_file": "app/test/ui/sign_out_test.dart",
+      "implementation_files": [
+        "app/lib/ui/home_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "Tapping it calls identity.signOut() and then routeToSignIn(...), clearing the navigation stack and landing on SignInScreen",
+      "status": "complete",
+      "evidence": "The _signOut() method (lines 182-186 of home_screen.dart) calls await widget.identity.signOut() followed by routeToSignIn(...). The test 'AC-002, AC-003: Tapping sign-out calls identity.signOut() and routes to SignInScreen' verifies the navigation behavior and that HomeScreen is removed from the tree (stack cleared).",
+      "test_file": "app/test/ui/sign_out_test.dart",
+      "implementation_files": [
+        "app/lib/ui/home_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "After sign-out identity.currentPrincipal is null and the sign-in screen is shown (serves 'Signing out clears the session and returns to the sign-in screen')",
+      "status": "complete",
+      "evidence": "FakeIdentityProvider.signOut() sets _current to null (line 50 of fake_identity_provider.dart). Tests verify currentPrincipal is null after sign-out and SignInScreen is displayed. The BDD scenario test '@key-example @smoke' explicitly validates the complete flow.",
+      "test_file": "app/test/ui/sign_out_test.dart",
+      "implementation_files": [
+        "app/lib/ui/home_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "The affordance is driven through the IdentityProvider port \u2014 the widget test uses FakeIdentityProvider, no Keycloak adapter required",
+      "status": "complete",
+      "evidence": "All tests use FakeIdentityProvider (setUp at line 20-24 of sign_out_test.dart). The test 'AC-004: Sign-out is driven through IdentityProvider port' explicitly validates that the port abstraction works without any Keycloak dependency. The implementation only calls the port method widget.identity.signOut().",
+      "test_file": "app/test/ui/sign_out_test.dart",
+      "implementation_files": [
+        "app/lib/ui/home_screen.dart"
+      ]
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "No test in this task asserts adapter-level refresh-race behaviour (owned by TASK-KCA3-003)",
+      "status": "complete",
+      "evidence": "The test suite in sign_out_test.dart contains no assertions about background refresh behavior or race conditions. All tests focus only on the UI affordance and the port-level signOut() contract. No mocking or verification of adapter-internal refresh mechanisms.",
+      "test_file": "app/test/ui/sign_out_test.dart",
+      "implementation_files": []
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero errors",
+      "status": "complete",
+      "evidence": "Ran 'flutter analyze test/ui/sign_out_test.dart' which completed with 'No issues found!' (74.5s runtime). The only file created in this task (sign_out_test.dart) passes all lint checks with zero errors.",
+      "test_file": "app/test/ui/sign_out_test.dart",
+      "implementation_files": [
+        "app/test/ui/sign_out_test.dart"
+      ]
+    }
+  ]
+}
