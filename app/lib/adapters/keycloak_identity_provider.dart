@@ -11,6 +11,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import '../config/keycloak_config.dart';
 import '../domain/principal.dart';
@@ -210,17 +211,35 @@ class KeycloakIdentityProvider implements IdentityProvider {
     }
   }
 
+  /// Proactive-refresh lead cap and delay floor.
+  ///
+  /// A fixed 5-minute lead on a ~5-minute access token (Keycloak's default
+  /// 300 s) computes a near-zero delay: the timer fires immediately, the
+  /// refreshed token again has ~5 min of life, and it reschedules at ~0 —
+  /// a refresh hot-loop (KC-G3 observed ~10/s). [_minRefreshDelay] floors the
+  /// delay so a short-lived token can never busy-loop; [_refreshLeadCap] is the
+  /// normal lead for longer-lived tokens.
+  static const Duration _refreshLeadCap = Duration(minutes: 5);
+  static const Duration _minRefreshDelay = Duration(seconds: 30);
+
+  /// Delay before the next proactive refresh for a token expiring
+  /// [timeUntilExpiry] from now. Leads expiry by up to [_refreshLeadCap], but
+  /// never by more than half the token's remaining life, and never returns less
+  /// than [_minRefreshDelay]. Pure and static so the scheduling policy is unit-
+  /// testable without timers.
+  static Duration computeRefreshDelay(Duration timeUntilExpiry) {
+    final seconds = timeUntilExpiry.inSeconds;
+    final leadSeconds = seconds <= 0 ? 0 : min(_refreshLeadCap.inSeconds, seconds ~/ 2);
+    final delay = timeUntilExpiry - Duration(seconds: leadSeconds);
+    return delay < _minRefreshDelay ? _minRefreshDelay : delay;
+  }
+
   void _scheduleProactiveRefresh(String refreshToken, DateTime? expiry) {
     _refreshTimer?.cancel();
 
     if (expiry == null) return;
 
-    final now = DateTime.now();
-    final timeUntilExpiry = expiry.difference(now);
-
-    // Refresh 5 minutes before expiry (or immediately if <5 min remaining)
-    final refreshIn = timeUntilExpiry - const Duration(minutes: 5);
-    final delay = refreshIn.isNegative ? Duration.zero : refreshIn;
+    final delay = computeRefreshDelay(expiry.difference(DateTime.now()));
 
     _refreshTimer = Timer(delay, () {
       _performBackgroundRefresh(refreshToken);

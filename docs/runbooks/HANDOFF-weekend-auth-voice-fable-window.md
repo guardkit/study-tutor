@@ -205,22 +205,45 @@ no re-auth; sign-out → sign-in screen; cancel reads as cancel. Evidence:
 FEAT-VOICE-004 (code tasks R04–R08 in `../fleet-gateway` verified end-to-end by the
 passing SMK-R live smoke). FEAT-AUTH-002/003 already merged (`b03cbbf`/`bf9ed99`).
 
-**Post-gate follow-ups (defects/observations, NOT blockers):**
-1. **Refresh hot-loop** — proactive scheduler refreshes ~10.7×/s (300 s token,
-   refresh-5-min-before-expiry → ~0 delay). Floor the delay in
-   `app/lib/adapters/keycloak_identity_provider.dart`.
-2. **"Hi, User"** — id_token lacks `name`/`preferred_username`; add a mapper to the app
-   client (beside the audience mapper).
-3. **Custom login theme** — `prompt=login` re-auth page disables Sign In on mobile
-   Chrome; fix theme or drop `promptValues:['login']`. Workaround used at the gate:
-   clear the user's SSO session so re-sign-in gets the fresh form.
-4. **Fix B (robustness)** — switch the redirect to a verified HTTPS App Link
-   (assetlinks.json + client redirect-URI update) so it never depends on Custom-Tab
-   availability.
-5. Keycloak event logging was enabled on the realm for C4 diagnosis (2 h expiry,
-   auto-clears) — includes REFRESH_TOKEN, which the hot-loop floods; disable/trim if it
-   stays noisy.
-6. **Rotate `lilymay`'s password** — it appeared in a screenshot shared during the gate.
+**Post-gate follow-ups — worked through 2026-07-19 (GB10 Fable session):**
+
+RESOLVED:
+1. **Refresh hot-loop — FIXED** (app code). `computeRefreshDelay` in
+   `app/lib/adapters/keycloak_identity_provider.dart` now caps the lead at half the
+   token's remaining life and floors the delay at 30 s, so a 300 s token schedules
+   ~150 s (was ~0 → ~10.7/s). Pure-function + fake_async tests added; `flutter
+   analyze` 0 issues, suite 342/342 on the GB10 arm64 toolchain. **Device/APK
+   verification pending the Mac session** (GB10 has no Android SDK) — build + confirm
+   the Keycloak REFRESH_TOKEN rate drops from ~10/s to ~1 per 2.5 min.
+2. **"Hi, User" — FIXED** (realm). Added a `preferred_username`
+   (`oidc-usermodel-property-mapper`, id.token.claim=true) mapper to the
+   `study-tutor-app` client — live realm + realm-as-code. Next sign-in shows
+   "Hi, lilymay". (Verify on the Mac's next build.)
+5. **Event-log flood — TRIMMED** (ops). Realm events now log
+   LOGIN/LOGOUT/CODE_TO_TOKEN/CLIENT_LOGIN/TOKEN_EXCHANGE (+ error variants), 24 h
+   retention; REFRESH_TOKEN excluded so the hot-loop can't drown the buffer.
+6. **`lilymay` password — ROTATED** (it was visible in a gate screenshot). New value
+   stored ONLY in gitignored `deploy/keycloak/.env.deploy` (`LILYMAY_PASSWORD`), mode
+   600, never printed/committed. Phone needs a fresh interactive sign-in with the new
+   password (its old SSO session had already idle-expired).
+
+OPEN — need a decision, deliberately NOT changed unilaterally:
+3. **Custom login theme `prompt=login` re-auth page** (disabled Sign In on mobile
+   Chrome). Three fixes, each a real tradeoff: (a) **fix the theme** so the re-auth
+   button works — keeps the current "force credentials after sign-out" posture, but
+   needs a NAS-side keycloak theme deploy; (b) **drop `promptValues:['login']`** in
+   `keycloak_identity_provider.dart:124` — simplest, but changes posture: after a
+   local sign-out (ASSUM-004 keeps the IdP session alive) the next sign-in resumes
+   **silently with no credential prompt**, which on a shared device lets anyone back
+   into the previous user's account; (c) **RP-initiated logout** — call the
+   end_session_endpoint on sign-out to kill the IdP session too (strongest security,
+   but contradicts ASSUM-004's local-only sign-out). Gate workaround was clearing the
+   user's SSO session admin-side. **Rich to pick.**
+4. **Fix B — verified HTTPS App Link** (robustness so the redirect never depends on
+   Custom-Tab availability). Deferred: it's a coordinated change (host
+   `assetlinks.json`, add the https redirect URI to the client, Android autoVerify +
+   iOS associated-domains) and the custom-scheme flow works now with the `<queries>`
+   fix. Plan it as its own task if/when App-Link robustness is wanted.
 
 Post-weekend list unchanged: Pi password change, AUTH-2 completer-test follow-up, s2s
 patch upstreaming, dialect-#12 discard, TTS 1.7B trial (ASSUM-003).

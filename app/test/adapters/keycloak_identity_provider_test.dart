@@ -6,6 +6,7 @@
 /// Includes seam tests for STORED_SESSION and SIGNIN_OUTCOME contracts.
 library;
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_tutor_app/adapters/keycloak_identity_provider.dart';
 import 'package:study_tutor_app/adapters/secure_session_store.dart';
@@ -169,12 +170,44 @@ void main() {
     });
   });
 
+  group('computeRefreshDelay (KC-G3 hot-loop fix)', () {
+    test('a ~5-min access token schedules a floored delay, not ~zero', () {
+      final delay = KeycloakIdentityProvider.computeRefreshDelay(
+          const Duration(minutes: 5));
+      expect(delay, greaterThanOrEqualTo(const Duration(seconds: 30)),
+          reason: 'the 300s token that drove the ~10/s hot-loop must now '
+              'schedule well above zero');
+      expect(delay, lessThan(const Duration(minutes: 5)),
+          reason: 'still refreshes before expiry');
+    });
+
+    test('never returns less than the 30s floor (tiny/expired tokens)', () {
+      for (final s in [0, 5, 40, 60, 300]) {
+        expect(
+            KeycloakIdentityProvider.computeRefreshDelay(Duration(seconds: s)),
+            greaterThanOrEqualTo(const Duration(seconds: 30)),
+            reason: 'floor guards the busy-loop for lifetime=${s}s');
+      }
+      expect(
+          KeycloakIdentityProvider.computeRefreshDelay(
+              const Duration(seconds: -10)),
+          greaterThanOrEqualTo(const Duration(seconds: 30)),
+          reason: 'an already-expired token must not busy-loop either');
+    });
+
+    test('a normal-length token keeps the ~5-min-before-expiry lead', () {
+      expect(
+          KeycloakIdentityProvider.computeRefreshDelay(const Duration(hours: 1)),
+          const Duration(minutes: 55));
+    });
+  });
+
   group('proactive refresh', () {
-    test('refreshes before access token expiry', () async {
+    test('does not hot-loop on a short-lived (~5-min) token', () async {
       final appauth = FakeAppAuth()
-        // Refreshed tokens expire just past the 5-minute proactive threshold
-        // so the timer (delay = expiry - now - 5 min) fires ~300 ms in.
-        ..tokenLifetime = const Duration(minutes: 5, milliseconds: 300);
+        // Mirrors Keycloak's real 300s access-token lifetime — the config that
+        // produced the ~10/s refresh flood before the floor was added.
+        ..tokenLifetime = const Duration(minutes: 5);
       final store = FakeSecureSessionStore()
         ..seed(
           refreshToken: 'r0',
@@ -185,14 +218,44 @@ void main() {
       final idp = KeycloakIdentityProvider(config, appauth, store);
 
       await idp.signIn(); // silent refresh #1 schedules the proactive timer
+      expect(appauth.tokenRefreshCalls, 1);
 
       await Future.delayed(const Duration(milliseconds: 900));
 
-      expect(appauth.tokenRefreshCalls, greaterThanOrEqualTo(2),
-          reason: 'the proactive timer must fire a SECOND refresh — the '
-              'first is the sign-in silent refresh, so >=1 proves nothing');
-      expect(idp.currentPrincipal, isNotNull,
-          reason: 'principal stays available after refresh');
+      // Pre-fix this window saw dozens of refreshes (delay ~0). The floored
+      // delay (~150s for a 300s token) must fire NONE within 900 ms.
+      expect(appauth.tokenRefreshCalls, 1,
+          reason: 'floored proactive delay must not busy-loop (KC-G3 fix)');
+      expect(idp.currentPrincipal, isNotNull);
+    });
+
+    test('proactive timer still fires a refresh before expiry', () {
+      // fake_async drives virtual time so we can advance past the floored delay
+      // (~150s for a 300s token) without a real wall-clock wait.
+      fakeAsync((async) {
+        final appauth = FakeAppAuth()..tokenLifetime = const Duration(minutes: 5);
+        final store = FakeSecureSessionStore()
+          ..seed(
+            refreshToken: 'r0',
+            accessToken: 'a0',
+            expiry: DateTime.now().add(const Duration(minutes: 30)),
+            displayName: 'Test User',
+          );
+        final idp = KeycloakIdentityProvider(config, appauth, store);
+
+        idp.signIn(); // silent refresh #1 schedules the proactive timer
+        async.flushMicrotasks();
+        expect(appauth.tokenRefreshCalls, 1);
+
+        // Advance past one floored delay; the proactive timer must fire refresh #2.
+        async.elapse(const Duration(seconds: 160));
+        expect(appauth.tokenRefreshCalls, greaterThanOrEqualTo(2),
+            reason: 'the proactive timer must still fire before expiry');
+        expect(idp.currentPrincipal, isNotNull);
+
+        idp.signOut(); // cancel the pending timer so fakeAsync drains cleanly
+        async.flushMicrotasks();
+      });
     });
 
     test('unrecoverable refresh clears principal without throwing', () async {
