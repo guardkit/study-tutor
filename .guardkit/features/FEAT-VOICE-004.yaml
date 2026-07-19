@@ -2,7 +2,7 @@ id: FEAT-VOICE-004
 name: "Reachy Local Voice Migration"
 description: "Migrate the Reachy Mini voice conversation off HF-cloud Realtime onto a local s2s unit on GB10 :8765, with tutoring turns direct to the study-tutor via ask_tutor (no Jarvis). Closes the D3 minor-voice cloud exception. Code lands in the sibling fleet-gateway repo; R-track is Operator + Opus (NOT study-tutor autobuild)."
 created: "2026-07-07T00:00:00Z"
-status: planned
+status: completed  # closed 2026-07-19: operator set R01/R02/R03/R09/SMK-R live-verified (evidence dirs); code tasks R04-R08 (../fleet-gateway) verified end-to-end by the passing SMK-R live smoke
 complexity: 7
 estimated_tasks: 10
 
@@ -16,7 +16,7 @@ tasks:
     file_path: "tasks/backlog/reachy-local-voice-migration/TASK-VOX-R01-s2s-unit-standup-gb10.md"
     complexity: 8
     dependencies: []
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 180
 
@@ -25,7 +25,7 @@ tasks:
     file_path: "tasks/backlog/reachy-local-voice-migration/TASK-VOX-R02-pi-app-version-repoint-support.md"
     complexity: 4
     dependencies: []
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 60
 
@@ -34,7 +34,7 @@ tasks:
     file_path: "tasks/backlog/reachy-local-voice-migration/TASK-VOX-R04-query-student-model-interface-shape.md"
     complexity: 3
     dependencies: []
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 45
 
@@ -43,7 +43,7 @@ tasks:
     file_path: "tasks/backlog/reachy-local-voice-migration/TASK-VOX-R06-shared-subject-constant.md"
     complexity: 3
     dependencies: []
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 45
 
@@ -54,7 +54,7 @@ tasks:
     dependencies:
       - TASK-VOX-R01
       - TASK-VOX-R02
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 90
 
@@ -64,7 +64,7 @@ tasks:
     complexity: 5
     dependencies:
       - TASK-VOX-R04
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 75
 
@@ -74,7 +74,7 @@ tasks:
     complexity: 6
     dependencies:
       - TASK-VOX-R06
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 90
 
@@ -85,7 +85,7 @@ tasks:
     dependencies:
       - TASK-VOX-R07
       - TASK-VOX-R03
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 45
 
@@ -97,7 +97,7 @@ tasks:
       - TASK-VOX-R05
       - TASK-VOX-R07
       - TASK-VOX-R08
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 60
 
@@ -108,7 +108,7 @@ tasks:
     dependencies:
       - TASK-VOX-R03
       - TASK-VOX-R09
-    status: pending
+    status: completed
     implementation_mode: task-work
     estimated_minutes: 90
 

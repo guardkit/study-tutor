@@ -9,6 +9,10 @@ implementation_mode: task-work
 complexity: 5
 dependencies: [TASK-VOX-R05, TASK-VOX-R07, TASK-VOX-R08]
 repo: fleet-gateway (on-Pi)
+status: completed
+completed: '2026-07-19T14:05:53.704879Z'
+completed_location: tasks/completed/2026-07
+updated: '2026-07-19T14:05:53.704879Z'
 ---
 
 # Ship to the Pi via clean re-clone, not git pull (recon D7)

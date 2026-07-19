@@ -9,6 +9,10 @@ implementation_mode: task-work
 complexity: 8
 dependencies: []
 repo: fleet-gateway/dgx-spark (GB10 host)
+status: completed
+completed: '2026-07-19T14:05:53.704879Z'
+completed_location: tasks/completed/2026-07
+updated: '2026-07-19T14:05:53.704879Z'
 ---
 
 # Stand up the local speech-to-speech unit on GB10 :8765

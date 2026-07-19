@@ -9,6 +9,10 @@ implementation_mode: task-work
 complexity: 6
 dependencies: [TASK-VOX-R03, TASK-VOX-R09]
 repo: fleet-gateway (Pi + GB10)
+status: completed
+completed: '2026-07-19T14:05:53.704879Z'
+completed_location: tasks/completed/2026-07
+updated: '2026-07-19T14:05:53.704879Z'
 ---
 
 # Reachy live smoke — AC-R1..R4 (build-plan §8)

@@ -9,6 +9,10 @@ implementation_mode: task-work
 complexity: 6
 dependencies: [TASK-VOX-R01, TASK-VOX-R02]
 repo: fleet-gateway (on-Pi)
+status: completed
+completed: '2026-07-19T14:05:53.704879Z'
+completed_location: tasks/completed/2026-07
+updated: '2026-07-19T14:05:53.704879Z'
 ---
 
 # Re-point the robot to local s2s and verify tool round-trip (R-G3)

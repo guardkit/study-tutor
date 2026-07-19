@@ -161,3 +161,66 @@ Hosts: NAS `whitestocks.tailebf801.ts.net` = 100.92.74.2 (keycloak :8443, postgr
 2. Fix FEAT-AUTH-003.yaml line 43 (`KCA3-005 implementation_mode: task-work`).
 3. Update stale citations: R06's `session/service.py:218-233` → `:429`; A3 guide's `main.dart:21` → `:27`; KCA3-001's `build.gradle` → `build.gradle.kts`.
 4. After KC-G2: record the keycloak-mode deploy + gate evidence in `docs/runbooks/evidence/` (pattern from the R-track tasks).
+
+## 11. Batch C close-out — auth is LIVE (2026-07-19, GB10 Fable session)
+
+Executed per `docs/runbooks/HANDOFF-batch-c-auth-live.md`. **All gates green; auth
+lane complete end-to-end on a real device.**
+
+**C2 (commit `67f7a63`):** `provision-live-suite.sh --with-alex` created the
+`live-suite` DAG client + `alex` user; the script now also patches the LIVE
+`study-tutor-app` client's redirect URI to the single-slash form
+`com.appmilla.studytutor:/oauth2redirect` (the live realm predated the `fa49ce5`
+fix). Secrets in gitignored env files only. Evidence: `evidence/keycloak-c2-2026-07-19/`.
+
+**C3 + KC-G2 (commit `67f7a63`):** keycloak-mode deploy stood up as a SEPARATE compose
+project `study_tutor_http_kc` on `:8101` (image `study-tutor:kc-a2`, overlay
+`deploy/http/docker-compose.keycloak.yml`, KC-D2 JWKS via `extra_hosts` tailnet-IP
+pin). **Table-mode `:8100` never touched.** KC-G2 (TASK-KCA2-007) ALL PASS: contract
+suite 5/5, e2e 200, hermetic baseline match, ASSUM-001 wall-clock, ASSUM-007 fail-fast,
+unseeded-401, dev-reset-404. Note vs §7 plan: keycloak mode runs on a **new `:8101`
+instance**, not toggled on `:8100` (the batch-c handoff §3.2 decision — protects the
+robot + live phone binding). Evidence: `evidence/keycloak-kcg2-2026-07-19/`.
+
+**C4 + KC-G3 (commits `4336035`, `641c4b8`, `8c438eb`, `c2e3b1a`, `5a5384c`):** live
+sign-in on a real Android device (SM-A236B) as `lilymay` against `:8101`. **GATE PASS,
+all six ACs + cancel.** The gate surfaced and fixed **five** real defects the hermetic
+A3 gates couldn't (analyze+test only, no APK, no live IdP):
+1. `turnBudget` 15 s → 90 s (spark turns 26–80 s) — `641c4b8`.
+2. APK build (flutter_appauth compileSdk-31 vs AGP 9) — `4336035`.
+3. Duplicate OAuth redirect handler (manual MainActivity intent-filter + appauth's
+   receiver) — `8c438eb`.
+4. Missing `aud=study-tutor-app` audience mapper on the app client (KC-G2 masked it via
+   the live-suite client) — `c2e3b1a` (live realm + realm-as-code).
+5. Redirect never completed in-app: missing browser/Custom-Tabs `<queries>` →
+   full-Chrome fallback whose gestureless custom-scheme redirect Chrome drops; and
+   `taskAffinity=""` split the redirect into a new task with no appauth state — `5a5384c`.
+Server-verified: `Token validated successfully: student_id=lilymay`, 200s on
+student-model/sessions/turn/resume; silent refresh on reopen; 12-min-idle resume with
+no re-auth; sign-out → sign-in screen; cancel reads as cancel. Evidence:
+`evidence/keycloak-kcg3-2026-07-19/`.
+
+**C5 (this commit):** completed TASK-KCA2-007, TASK-KCA3-007, and the VOX operator set
+(R01/R02/R03/R09/SMK-R, evidence in `evidence/voice-r0*-batch*`); closed
+FEAT-VOICE-004 (code tasks R04–R08 in `../fleet-gateway` verified end-to-end by the
+passing SMK-R live smoke). FEAT-AUTH-002/003 already merged (`b03cbbf`/`bf9ed99`).
+
+**Post-gate follow-ups (defects/observations, NOT blockers):**
+1. **Refresh hot-loop** — proactive scheduler refreshes ~10.7×/s (300 s token,
+   refresh-5-min-before-expiry → ~0 delay). Floor the delay in
+   `app/lib/adapters/keycloak_identity_provider.dart`.
+2. **"Hi, User"** — id_token lacks `name`/`preferred_username`; add a mapper to the app
+   client (beside the audience mapper).
+3. **Custom login theme** — `prompt=login` re-auth page disables Sign In on mobile
+   Chrome; fix theme or drop `promptValues:['login']`. Workaround used at the gate:
+   clear the user's SSO session so re-sign-in gets the fresh form.
+4. **Fix B (robustness)** — switch the redirect to a verified HTTPS App Link
+   (assetlinks.json + client redirect-URI update) so it never depends on Custom-Tab
+   availability.
+5. Keycloak event logging was enabled on the realm for C4 diagnosis (2 h expiry,
+   auto-clears) — includes REFRESH_TOKEN, which the hot-loop floods; disable/trim if it
+   stays noisy.
+6. **Rotate `lilymay`'s password** — it appeared in a screenshot shared during the gate.
+
+Post-weekend list unchanged: Pi password change, AUTH-2 completer-test follow-up, s2s
+patch upstreaming, dialect-#12 discard, TTS 1.7B trial (ASSUM-003).

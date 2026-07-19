@@ -9,6 +9,10 @@ implementation_mode: task-work
 complexity: 4
 dependencies: []
 repo: fleet-gateway (on-Pi)
+status: completed
+completed: '2026-07-19T14:05:53.704879Z'
+completed_location: tasks/completed/2026-07
+updated: '2026-07-19T14:05:53.704879Z'
 ---
 
 # Verify the Pi app supports the re-point keys; upgrade if not (recon D3)

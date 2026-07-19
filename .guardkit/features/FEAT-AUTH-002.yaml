@@ -133,7 +133,7 @@ tasks:
   complexity: 5
   dependencies:
   - TASK-KCA2-006
-  status: deferred
+  status: completed
   implementation_mode: task-work
   estimated_minutes: 75
   requires_infrastructure: []
