@@ -146,6 +146,7 @@ celerybeat.pid
 .env.deploy
 deploy/**/.env.deploy
 deploy/**/.env.live-suite
+deploy/**/.env.kc
 deploy/**/certs/
 .venv
 env/

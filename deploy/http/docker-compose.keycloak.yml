@@ -1,0 +1,36 @@
+# Keycloak-mode overlay — Batch C3 / KC-G2 (FEAT-AUTH-002 rollout gate).
+#
+# Runs a SECOND, independent compose project on host port 8101 alongside the
+# table-mode :8100 project (`study_tutor_http`), which is the robot + current
+# phone binding and is NEVER touched by this overlay:
+#   - separate compose project name  (-p study_tutor_http_kc)
+#   - separate container name        (study_tutor_http_kc)
+#   - separate image tag             (study-tutor:kc-a2) so `build` here can
+#     never retag the study-tutor:latest the :8100 container was created from
+#
+# Usage (from deploy/http/):
+#   docker compose -p study_tutor_http_kc \
+#     -f docker-compose.yml -f docker-compose.keycloak.yml \
+#     --env-file .env.kc up -d --build
+#
+# .env.kc (gitignored) is a copy of .env with: HTTP_PORT=8101,
+# STUDY_TUTOR_HTTP_TOKENS={} (table unused in keycloak mode), dev-reset unset,
+# plus STUDY_TUTOR_AUTH_MODE / STUDY_TUTOR_OIDC_* below. Same PG DSN and spark
+# LLM env as :8100.
+#
+# KC-D2 (JWKS via tailnet IP): containers on this host don't resolve ts.net
+# MagicDNS names, so the NAS Keycloak hostname is pinned to its tailnet IP via
+# extra_hosts. The OIDC issuer stays the ts.net NAME (iss pinning + TLS
+# hostname match against the tailscale cert); only resolution is overridden —
+# STUDY_TUTOR_OIDC_JWKS_URL stays unset and derives from the issuer.
+services:
+  study_tutor_http:
+    container_name: study_tutor_http_kc
+    image: study-tutor:kc-a2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "whitestocks.tailebf801.ts.net:100.92.74.2"
+    environment:
+      STUDY_TUTOR_AUTH_MODE: ${STUDY_TUTOR_AUTH_MODE:?set STUDY_TUTOR_AUTH_MODE in .env.kc}
+      STUDY_TUTOR_OIDC_ISSUER: ${STUDY_TUTOR_OIDC_ISSUER:?set STUDY_TUTOR_OIDC_ISSUER in .env.kc}
+      STUDY_TUTOR_OIDC_AUDIENCE: ${STUDY_TUTOR_OIDC_AUDIENCE:?set STUDY_TUTOR_OIDC_AUDIENCE in .env.kc}

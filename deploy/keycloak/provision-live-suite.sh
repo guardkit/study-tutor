@@ -134,6 +134,26 @@ PY
   USERS="lilymay,alex"
 fi
 
+echo "== app client study-tutor-app: enforce single-slash redirect URI (ASSUM-003, Batch C2) =="
+# The live realm was imported before the realm-as-code fix (fa49ce5): the app
+# client carried the double-slash form com.appmilla.studytutor://oauth2redirect,
+# which fails KC-G3 with invalid_redirect_uri. Enforce the canonical single-slash
+# form here (GET full representation -> mutate redirectUris -> PUT -> GET verify).
+APP_CID=$(api GET "/clients?clientId=study-tutor-app" | python3 -c 'import sys,json;r=json.load(sys.stdin);print(r[0]["id"] if r else "")')
+[ -n "$APP_CID" ] || { echo "client study-tutor-app not found in realm ${REALM}" >&2; exit 1; }
+APP_BEFORE=$(api GET "/clients/${APP_CID}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["redirectUris"])')
+echo "   redirectUris before: ${APP_BEFORE}"
+APP_PATCHED=$(api GET "/clients/${APP_CID}" | python3 -c '
+import sys, json
+rep = json.load(sys.stdin)
+rep["redirectUris"] = ["com.appmilla.studytutor:/oauth2redirect"]
+print(json.dumps(rep))
+')
+api PUT "/clients/${APP_CID}" "$APP_PATCHED"
+APP_AFTER=$(api GET "/clients/${APP_CID}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["redirectUris"])')
+echo "   redirectUris after:  ${APP_AFTER}"
+[ "$APP_AFTER" = "['com.appmilla.studytutor:/oauth2redirect']" ] || { echo "redirect URI enforcement failed (got: ${APP_AFTER})" >&2; exit 1; }
+
 echo "== writing .env.live-suite (gitignored; secret not echoed) =="
 umask 077
 cat > .env.live-suite <<ENV
