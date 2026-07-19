@@ -221,9 +221,9 @@ void main() {
           api.turn('s-1', 'hello'), throwsA(isA<TransportError>()));
     });
 
-    test('default deadlines sit at the contract budgets (~15s turn, ~5s '
-        'reads — plan p2-wave-4)', () {
-      expect(HttpSessionApi.turnBudget, const Duration(seconds: 15));
+    test('default deadlines sit at the product budgets (90s turn — LLM path '
+        'on the spark topology; 5s reads)', () {
+      expect(HttpSessionApi.turnBudget, const Duration(seconds: 90));
       expect(HttpSessionApi.readBudget, const Duration(seconds: 5));
     });
   });

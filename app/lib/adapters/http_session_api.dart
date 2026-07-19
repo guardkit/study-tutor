@@ -41,18 +41,21 @@ class HttpSessionApi implements SessionApi {
             : baseUrl,
         _client = client ?? http.Client();
 
-  /// Per-request deadlines aligned to the contract budgets (plan p2-wave-4):
-  /// `turn` has a p95 < 10s budget (§5) → 15s; every other verb is a
-  /// fast read / ms-scale write (§6) → 5s. Constructor overrides exist for
-  /// tests only: hermetic tests shrink them; the live contract suite raises
-  /// `turn` above the contract's 30s hard ceiling (SR-07), which the
-  /// product posture deliberately undercuts.
+  /// Per-request deadlines. `turn` rides the LLM path: on the current
+  /// topology (tutor model behind llama-swap on spark) a warm turn takes
+  /// ~26-34s and a cold model load ~90s (observed at the 2026-07-18 D8
+  /// walk), so the deadline sits at 90s — above the contract's 30s hard
+  /// ceiling (SR-07) rather than undercutting it, because a client-side
+  /// timeout on a turn that later commits reads as a failure and invites
+  /// duplicate-appending retries. Every other verb is a fast read /
+  /// ms-scale write (§6) → 5s. Constructor overrides exist for tests only:
+  /// hermetic tests shrink them; the live contract suite sets its own.
   ///
   /// A deadline abandons the request client-side but cannot cancel it: a
   /// timed-out `turn` may still commit on the server, so a retry can append
   /// a duplicate turn. Contract §4 tolerates this (append-only,
   /// last-writer-wins; turn_count lets a client detect the advance).
-  static const turnBudget = Duration(seconds: 15);
+  static const turnBudget = Duration(seconds: 90);
   static const readBudget = Duration(seconds: 5);
 
   final String _base;
