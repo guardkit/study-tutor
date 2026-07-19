@@ -85,6 +85,18 @@
             "access.token.claim": "true",
             "userinfo.token.claim": "true"
           }
+        },
+        {
+          "id": "mapper-aud-study-tutor-app-001",
+          "name": "aud-study-tutor-app",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "study-tutor-app",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
         }
       ]
     },
