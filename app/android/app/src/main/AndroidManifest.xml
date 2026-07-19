@@ -30,13 +30,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- TASK-KCA3-001: OAuth2 redirect handler (ASSUM-003 frozen scheme) -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="${appAuthRedirectScheme}"/>
-            </intent-filter>
+            <!-- The OAuth2 redirect (ASSUM-003 frozen scheme) is handled ONLY by
+                 flutter_appauth's RedirectUriReceiverActivity, registered via the
+                 appAuthRedirectScheme manifest placeholder in build.gradle.kts.
+                 Do not add a VIEW filter for the scheme here: a second handler
+                 makes Android show an app-chooser on every redirect, and routing
+                 to MainActivity strands the pending token exchange. -->
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
