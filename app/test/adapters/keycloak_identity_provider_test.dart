@@ -134,6 +134,22 @@ void main() {
       expect(appauth.interactiveCalls, 1);
     });
 
+    test('interactive sign-in does NOT force a re-auth prompt (KC-G3 decision)',
+        () async {
+      // Dropping promptValues:['login'] lets a surviving SSO session resume
+      // silently instead of hitting the stock-theme re-auth page that disables
+      // Sign In on mobile Chrome (2026-07-20; personal-device tradeoff).
+      final appauth = FakeAppAuth();
+      final store = FakeSecureSessionStore();
+      final idp = KeycloakIdentityProvider(config, appauth, store);
+
+      await idp.signIn();
+
+      expect(appauth.interactiveCalls, 1);
+      expect(appauth.lastInteractivePromptValues, isNull,
+          reason: 'must not force prompt=login — avoids the broken re-auth page');
+    });
+
     test('second concurrent signIn shares one flow', () async {
       final appauth = FakeAppAuth();
       final store = FakeSecureSessionStore();
@@ -427,6 +443,10 @@ void main() {
 class FakeAppAuth implements FlutterAppAuth {
   int interactiveCalls = 0;
   int tokenRefreshCalls = 0;
+
+  /// promptValues on the most recent interactive authorize — lets tests assert
+  /// the flow does NOT force a re-auth prompt (KC-G3 decision, 2026-07-20).
+  List<String>? lastInteractivePromptValues;
   bool failNextTokenRefresh = false;
   bool failAllTokenRefreshes = false;
   bool delayTokenRefresh = false;
@@ -456,6 +476,7 @@ class FakeAppAuth implements FlutterAppAuth {
     AuthorizationTokenRequest request,
   ) async {
     interactiveCalls++;
+    lastInteractivePromptValues = request.promptValues;
 
     if (_throwsCancel) {
       // The REAL SDK type for user cancel (flutter_appauth 8.x): a SIBLING of

@@ -116,13 +116,21 @@ class KeycloakIdentityProvider implements IdentityProvider {
   Future<Principal> _interactiveSignIn() async {
     final currentGeneration = _generation;
     try {
+      // No promptValues:['login']. Sign-out is local-only (ASSUM-004), so a
+      // surviving Keycloak SSO session is reused silently here instead of being
+      // forced through a re-auth prompt — which on mobile Chrome lands on a
+      // stock-theme "re-authenticate" page whose Sign In button never enables
+      // (KC-G3 finding). Accepted tradeoff (2026-07-20, personal-device model):
+      // after a LOCAL sign-out the next sign-in resumes silently, without
+      // credentials, until the 30-min IdP idle timeout. Revisit when the planned
+      // custom login theme lands (re-enable prompt=login) or if shared-device use
+      // grows (full RP-initiated logout on sign-out).
       final response = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           _config.clientId,
           _config.redirectUrl,
           issuer: _config.issuer,
           scopes: _config.scopes,
-          promptValues: ['login'],
         ),
       );
 

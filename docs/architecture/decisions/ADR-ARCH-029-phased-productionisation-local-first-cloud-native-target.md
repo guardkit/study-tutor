@@ -77,6 +77,15 @@ Named so nobody mistakes it for permanent architecture:
 - The `extra_hosts` tailnet-IP JWKS workaround → **disappears** on AWS (normal DNS/service discovery); it is
   a symptom of tailnet DNS, not a design commitment.
 - NAS/DSM deploy runbook → **ECS/Fargate + RDS** deploy in Phase 3.
+- The mobile OAuth **custom-scheme redirect** (`com.appmilla.studytutor:/oauth2redirect`) → candidate
+  replacement by **verified HTTPS App Links / iOS Universal Links** in Phase 3. App Links need a public
+  HTTPS domain on **port 443** serving `/.well-known/assetlinks.json` + `apple-app-site-association`, which
+  the tailnet-only NAS issuer on `:8443` (no WAN) structurally cannot provide (KC-G3 finding, 2026-07-19):
+  they'd auto-open the app from any browser with no chooser/gesture fragility, but only make sense once a
+  public :443 domain and store-distributed builds exist. The custom scheme is the correct **Phase-2** fit
+  (no public domain required) and works today after the KC-G3 handler/`<queries>`/taskAffinity fixes; App
+  Links are the **Phase-3** robustness upgrade. Cross-ref: `HANDOFF-weekend-auth-voice-fable-window.md` §11
+  follow-up #4.
 The `iss`-vs-internal-URL *split itself* (design KC-D2/D6) is **not** transient — it survives to AWS
 (browser-facing issuer vs internal JWKS fetch is the same pattern behind an ALB).
 

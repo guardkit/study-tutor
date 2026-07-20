@@ -227,23 +227,24 @@ RESOLVED:
    600, never printed/committed. Phone needs a fresh interactive sign-in with the new
    password (its old SSO session had already idle-expired).
 
-OPEN — need a decision, deliberately NOT changed unilaterally:
-3. **Custom login theme `prompt=login` re-auth page** (disabled Sign In on mobile
-   Chrome). Three fixes, each a real tradeoff: (a) **fix the theme** so the re-auth
-   button works — keeps the current "force credentials after sign-out" posture, but
-   needs a NAS-side keycloak theme deploy; (b) **drop `promptValues:['login']`** in
-   `keycloak_identity_provider.dart:124` — simplest, but changes posture: after a
-   local sign-out (ASSUM-004 keeps the IdP session alive) the next sign-in resumes
-   **silently with no credential prompt**, which on a shared device lets anyone back
-   into the previous user's account; (c) **RP-initiated logout** — call the
-   end_session_endpoint on sign-out to kill the IdP session too (strongest security,
-   but contradicts ASSUM-004's local-only sign-out). Gate workaround was clearing the
-   user's SSO session admin-side. **Rich to pick.**
-4. **Fix B — verified HTTPS App Link** (robustness so the redirect never depends on
-   Custom-Tab availability). Deferred: it's a coordinated change (host
-   `assetlinks.json`, add the https redirect URI to the client, Android autoVerify +
-   iOS associated-domains) and the custom-scheme flow works now with the `<queries>`
-   fix. Plan it as its own task if/when App-Link robustness is wanted.
+DECIDED 2026-07-20 (Rich):
+3. **Login re-auth page** — went with **Option (b): dropped `promptValues:['login']`**
+   (`keycloak_identity_provider.dart`). NB the "custom theme" was a red herring —
+   `loginTheme` is unset, it's the **stock** Keycloak theme; the disabled Sign In is a
+   stock re-auth-page behaviour on mobile Chrome. Dropping prompt=login lets a
+   surviving SSO session resume silently (avoids that page entirely). Accepted tradeoff
+   for the personal-device model (mostly Lilymay's own phone; occasionally a shared
+   iPad): after a *local* sign-out the next sign-in resumes without credentials until
+   the 30-min IdP idle timeout. Regression test added (asserts no forced prompt); app
+   fixed on the arm64 toolchain (analyze 0, 343/343), **device-verify pending the Mac**.
+   Planned later: a **custom login theme** (re-enable prompt=login once the re-auth page
+   works) — that's the proper fix; consider full RP-initiated logout if shared-device
+   use grows.
+4. **HTTPS App Link redirect** — **deferred to Phase 3 (AWS), documented in
+   ADR-ARCH-029 §D3** as transient-Phase-2-scaffolding. It structurally can't work on
+   the current tailnet-only `:8443`/no-WAN deployment (App Links require a public
+   HTTPS domain on port 443 hosting assetlinks.json / apple-app-site-association). The
+   custom-scheme flow is the correct Phase-2 fit and works after the KC-G3 fixes.
 
 Post-weekend list unchanged: Pi password change, AUTH-2 completer-test follow-up, s2s
 patch upstreaming, dialect-#12 discard, TTS 1.7B trial (ASSUM-003).
