@@ -87,9 +87,9 @@ void main() {
           contentType: capturedContentType,
         );
 
-        // assert: method + path
+        // assert: method + path (binding: hyphenated `voice-turn`)
         expect(seen.method, 'POST');
-        expect(seen.url.path, '/api/sessions/sess-123/voice_turn');
+        expect(seen.url.path, '/api/sessions/sess-123/voice-turn');
 
         // assert: Authorization bearer present
         expect(seen.headers['authorization'], 'Bearer token-lilymay');
@@ -400,8 +400,8 @@ void main() {
 
       expect(seen.headers['authorization'], 'Bearer token-lilymay');
       expect(seen.method, 'GET');
-      expect(seen.url.path, contains('/sess-123/'));
-      expect(seen.url.path, contains('chunk-456'));
+      // binding: GET /api/sessions/{id}/voice-audio/{chunk_id}
+      expect(seen.url.path, '/api/sessions/sess-123/voice-audio/chunk-456');
     });
 
     test('fetchAudioChunk returns audio bytes', () async {

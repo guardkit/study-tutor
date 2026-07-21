@@ -64,7 +64,7 @@ class HttpVoiceApi implements VoiceApi {
     // Build multipart request: field 'audio' with filename extension matching
     // the captured codec (fidelity guarantee per design §6.4).
     final uri = _uri(
-      '/api/sessions/${Uri.encodeComponent(sessionId)}/voice_turn',
+      '/api/sessions/${Uri.encodeComponent(sessionId)}/voice-turn',
     );
     final request = http.MultipartRequest('POST', uri);
     request.headers.addAll(_headers());
@@ -344,7 +344,7 @@ class HttpVoiceApi implements VoiceApi {
   Future<Uint8List> fetchAudioChunk(String sessionId, String chunkId) async {
     // Fetch pre-generated audio chunk via authenticated GET request
     final uri = _uri(
-      '/api/sessions/${Uri.encodeComponent(sessionId)}/audio_chunks/${Uri.encodeComponent(chunkId)}',
+      '/api/sessions/${Uri.encodeComponent(sessionId)}/voice-audio/${Uri.encodeComponent(chunkId)}',
     );
 
     http.Response response;

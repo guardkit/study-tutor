@@ -166,7 +166,9 @@ class _SessionScreenState extends State<SessionScreen>
     try {
       final result = await widget.sessionApi.endSession(widget.sessionId);
       if (!mounted) return;
-      // §4: ended is terminal — the screen goes read-only immediately.
+      // §4: ended is terminal — the screen goes read-only immediately. Stop any
+      // in-progress recording so its 60 s hard-stop timer can't fire post-end.
+      _recorder?.cancel();
       setState(() => _ended = true);
 
       // §6.2: a non-null settlement block celebrates, then returns to Home and
@@ -273,7 +275,7 @@ class _SessionScreenState extends State<SessionScreen>
     if (!_recording) {
       // Start recording.
       try {
-        await recorder.start();
+        await recorder.start(onMaxDuration: _onAutoStopped);
         if (!mounted) return;
         _startRecordingUi();
       } catch (_) {
@@ -304,6 +306,7 @@ class _SessionScreenState extends State<SessionScreen>
 
     if (audio == null || audio.isEmpty) {
       _stopRecordingUi();
+      _showBanner("That recording was too short — try again");
       return;
     }
 
@@ -315,6 +318,36 @@ class _SessionScreenState extends State<SessionScreen>
     });
     _scrollToBottom();
     await _sendVoiceTurn(audio);
+  }
+
+  /// The 60-second hard-stop fired (design §6.1/§6.3): send the captured audio
+  /// on the user's behalf and re-sync the recording UI, instead of dropping the
+  /// recording. Errors from the auto-stop (e.g. an over-cap recording) surface
+  /// as a banner rather than an uncaught async exception.
+  void _onAutoStopped(Uint8List? audio, Object? error) {
+    if (!mounted) return;
+    _stopRecordingUi();
+    // The hard-stop timer fires independently of screen state, so re-apply the
+    // manual-send guards (_toggleMic): never send on an ended session, over an
+    // in-flight send, or once voice has been marked unavailable.
+    if (_ended || _sending || _voiceUnavailable) return;
+    if (error is RecordingTooLarge) {
+      _showBanner(
+        "That recording is too large — keep your questions under a minute",
+      );
+      return;
+    }
+    if (audio == null || audio.isEmpty) {
+      _showBanner("That recording was too short — try again");
+      return;
+    }
+    setState(() {
+      _sending = true;
+      _optimistic = const _Optimistic(isVoice: true);
+      _awaiting = true;
+    });
+    _scrollToBottom();
+    unawaited(_sendVoiceTurn(audio));
   }
 
   DateTime _now() => (widget.clock ?? DateTime.now)();

@@ -239,14 +239,23 @@ class FakeVoiceRecorder implements VoiceRecorder {
   final Object? throwOnStart;
 
   bool _isRecording = false;
+  VoiceAutoStop? _onMaxDuration;
 
   @override
   bool get isRecording => _isRecording;
 
   @override
-  Future<void> start() async {
+  Future<void> start({VoiceAutoStop? onMaxDuration}) async {
     if (throwOnStart != null) throw throwOnStart!;
+    _onMaxDuration = onMaxDuration;
     _isRecording = true;
+  }
+
+  /// Test hook: simulate the 60-second hard-stop firing with the canned bytes.
+  void fireAutoStop() {
+    if (!_isRecording) return;
+    _isRecording = false;
+    _onMaxDuration?.call(_cannedBytes, null);
   }
 
   @override

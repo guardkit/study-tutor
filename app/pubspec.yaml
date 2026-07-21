@@ -41,9 +41,12 @@ dependencies:
   # - record: audio recording from microphone
   # - just_audio: audio playback for TTS responses
   # - web_socket_channel: WebSocket transport for voice streaming
+  # - path_provider: temp-file path for the recorder (record ^5.x requires a
+  #   concrete output path; empty path fails native recorder init)
   record: ^5.1.2
   just_audio: ^0.9.42
   web_socket_channel: ^3.0.1
+  path_provider: ^2.1.4
 
   # Keycloak authentication runtime dependencies (TASK-KCA3-001: scope event 2026-07-17)
   # DELIBERATE zero-added-runtime-dependencies DoD break (mirrors voice track pattern)

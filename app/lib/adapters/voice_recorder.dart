@@ -12,9 +12,27 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
 import '../domain/errors.dart';
+
+/// Raised by [VoiceRecorder.start] when the microphone permission is not
+/// granted. Client-side only (never arrives over the wire), so it is not part
+/// of the §9 [SessionApiException] hierarchy.
+class MicrophonePermissionDenied implements Exception {
+  const MicrophonePermissionDenied();
+
+  @override
+  String toString() => 'MicrophonePermissionDenied';
+}
+
+/// Delivered when the 60-second hard-stop fires: [audio] carries the captured
+/// bytes (null/empty when the capture produced nothing), or [error] is set when
+/// reading/capping the recording failed (e.g. [RecordingTooLarge]). Lets the UI
+/// send the auto-stopped audio and re-sync its recording state instead of
+/// silently dropping the recording.
+typedef VoiceAutoStop = void Function(Uint8List? audio, Object? error);
 
 /// Audio encoder selection for [VoiceRecorder].
 ///
@@ -32,6 +50,10 @@ enum AudioEncoder {
 /// logic can be unit-tested with a fake backend (no real mic). `stop()`
 /// returns the recorded file path, exactly as the record package does.
 abstract interface class RecordingBackend {
+  /// Whether microphone capture is permitted, requesting the runtime permission
+  /// if it has not been decided yet. record ^5.x requires this before [start].
+  Future<bool> hasPermission();
+
   Future<void> start(AudioEncoder encoder);
 
   /// Stop capture and return the temp file path (null if nothing was written).
@@ -46,20 +68,34 @@ abstract interface class RecordingBackend {
 class _RecordPackageBackend implements RecordingBackend {
   final record.AudioRecorder _record = record.AudioRecorder();
 
+  /// The file path the current recording is being written to. record ^5.x
+  /// requires a concrete path (an empty string fails native recorder init).
+  String? _currentPath;
+
   @override
-  Future<void> start(AudioEncoder encoder) {
+  Future<bool> hasPermission() => _record.hasPermission();
+
+  @override
+  Future<void> start(AudioEncoder encoder) async {
     final recordEncoder = encoder == AudioEncoder.aacLc
         ? record.AudioEncoder.aacLc
         : record.AudioEncoder.opus;
-    // Empty path lets the record package pick a temp file.
-    return _record.start(record.RecordConfig(encoder: recordEncoder), path: '');
+    final extension = encoder == AudioEncoder.aacLc ? 'm4a' : 'opus';
+    final dir = await getTemporaryDirectory();
+    _currentPath =
+        '${dir.path}/voice_${DateTime.now().microsecondsSinceEpoch}.$extension';
+    await _record.start(
+      record.RecordConfig(encoder: recordEncoder),
+      path: _currentPath!,
+    );
   }
 
   @override
-  Future<String?> stop() => _record.stop();
+  Future<String?> stop() async => (await _record.stop()) ?? _currentPath;
 
+  // Dedicated cancel() stops AND removes the temp file (no leak on cancel).
   @override
-  Future<void> cancel() => _record.stop().then((_) {});
+  Future<void> cancel() => _record.cancel();
 
   @override
   Future<void> dispose() async => _record.dispose();
@@ -101,34 +137,69 @@ class VoiceRecorder {
   static Future<Uint8List> _readFileBytes(String path) =>
       File(path).readAsBytes();
 
-  /// Start recording with the configured encoder. Throws if already recording.
-  /// Sets up the 60-second auto-stop.
-  Future<void> start() async {
+  /// Start recording with the configured encoder. Throws [StateError] if already
+  /// recording, or [MicrophonePermissionDenied] if the mic permission is not
+  /// granted (the request prompt is shown as part of the check). Arms the
+  /// 60-second hard-stop; when it fires, [onMaxDuration] receives the captured
+  /// audio (or an error) so the caller can send it and re-sync its UI rather
+  /// than losing the recording.
+  Future<void> start({VoiceAutoStop? onMaxDuration}) async {
     if (_isRecording) {
       throw StateError('Already recording');
+    }
+    if (!await _backend.hasPermission()) {
+      throw const MicrophonePermissionDenied();
     }
     await _backend.start(encoder);
     _isRecording = true;
     _autoStopTimer = Timer(maxDuration, () {
-      if (_isRecording) stop();
+      // Fully guarded: never let the captured audio drop silently or an
+      // over-cap/read throw escape as an uncaught async error.
+      unawaited(_handleAutoStop(onMaxDuration));
     });
   }
 
-  /// Stop recording and return the REAL recorded bytes (§5.1). Returns null if
-  /// no recording was in progress or the backend produced no file. Throws
+  Future<void> _handleAutoStop(VoiceAutoStop? onMaxDuration) async {
+    if (!_isRecording) return;
+    try {
+      final bytes = await stop();
+      onMaxDuration?.call(bytes, null);
+    } catch (error) {
+      onMaxDuration?.call(null, error);
+    }
+  }
+
+  /// Stop recording and return the REAL recorded bytes (§5.1). Returns null when
+  /// no recording was in progress or the capture produced nothing usable (no
+  /// file, an empty/absent path, an unreadable file, or zero bytes — all common
+  /// on real hardware for an instant double-tap or a mic glitch). Throws
   /// [RecordingTooLarge] if the captured audio exceeds [maxSizeBytes].
   Future<Uint8List?> stop() async {
     if (!_isRecording) return null;
+    // Claim the stop synchronously, BEFORE any await, so a second concurrent
+    // stop() (e.g. a manual tap racing the 60 s auto-stop) no-ops instead of
+    // reading and sending the same recording twice.
+    _isRecording = false;
 
     _autoStopTimer?.cancel();
     _autoStopTimer = null;
 
     final path = await _backend.stop();
-    _isRecording = false;
 
-    if (path == null) return null;
+    if (path == null || path.isEmpty) return null;
 
-    final bytes = await _readBytes(path);
+    Uint8List bytes;
+    try {
+      bytes = await _readBytes(path);
+    } on FileSystemException {
+      // The capture never produced a usable file — treat as an empty recording
+      // rather than crashing the mic tap.
+      return null;
+    }
+    // Best-effort cleanup: the temp capture file is no longer needed once read
+    // into memory (the bytes are what we upload). Swallow any delete error.
+    unawaited(File(path).delete().then((_) {}, onError: (_) {}));
+    if (bytes.isEmpty) return null;
     if (bytes.length > maxSizeBytes) {
       throw const RecordingTooLarge();
     }
