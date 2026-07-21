@@ -310,6 +310,40 @@ def _build_orchestrator_factory(
     return orchestrator_factory
 
 
+def _build_voice_service(voice_config, *, session_service, reply_fn_factory):
+    """Construct the voice ChunkStore + VoiceTurnService when voice is enabled.
+
+    Returns ``(voice_service, chunk_store)``, or ``(None, None)`` when voice is
+    disabled. Isolated from ``serve_http`` so the AudioClient/ChunkStore/
+    VoiceTurnService construction — the exact call site that crashed boot when it
+    passed AudioClient the wrong kwargs — is unit-testable without a full
+    serve-http boot (which needs Postgres).
+    """
+    if not voice_config.enabled:
+        return None, None
+
+    from study_tutor.voice.client import AudioClient
+    from study_tutor.voice.service import ChunkStore, VoiceTurnService
+
+    # AudioClient reads STT/TTS endpoints, models, voice, and timeout from the
+    # VoiceConfig (its ctor is ``AudioClient(config)``, NOT stt_base_url=... etc.).
+    audio_client = AudioClient(voice_config)
+    chunk_store = ChunkStore(
+        ttl_seconds=voice_config.chunk_ttl_seconds,
+        max_entries=1000,  # Hard cap per spec
+    )
+    # S-R4 §2.7: the REST voice turn drives the real orchestrator via the same
+    # per-request reply factory the JSON turn path uses.
+    voice_service = VoiceTurnService(
+        config=voice_config,
+        audio_client=audio_client,
+        session_service=session_service,
+        chunk_store=chunk_store,
+        reply_fn_factory=reply_fn_factory,
+    )
+    return voice_service, chunk_store
+
+
 @click.group()
 def cli() -> None:
     """study-tutor — fine-tuned English tutoring MCP runtime."""
@@ -1043,42 +1077,14 @@ def serve_http(port: int, host: str, log_level: str) -> None:
         )
         raise SystemExit(1) from exc
 
-    # Wire voice service components when enabled
-    voice_service = None
-    chunk_store = None
-
-    if voice_config.enabled:
-        from study_tutor.voice.client import AudioClient
-        from study_tutor.voice.service import VoiceTurnService, ChunkStore
-
-        # Build AudioClient with config
-        audio_client = AudioClient(
-            stt_base_url=voice_config.stt_base_url,
-            stt_model=voice_config.stt_model,
-            tts_base_url=voice_config.tts_base_url,
-            tts_model=voice_config.tts_model,
-            tts_voice=voice_config.tts_voice,
-            timeout_seconds=voice_config.audio_timeout_seconds,
-        )
-
-        # Build ChunkStore with TTL from config
-        chunk_store = ChunkStore(
-            ttl_seconds=voice_config.chunk_ttl_seconds,
-            max_entries=1000,  # Hard cap per spec
-        )
-
-        # Build VoiceTurnService with all dependencies. S-R4 §2.7: the REST
-        # voice turn now drives the real orchestrator via the same
-        # per-request reply factory the JSON turn path uses — the placeholder
-        # echo is gone.
-        voice_service = VoiceTurnService(
-            config=voice_config,
-            audio_client=audio_client,
-            session_service=get_session_service(),
-            chunk_store=chunk_store,
-            reply_fn_factory=reply_fn_factory,
-        )
-
+    # Wire voice service components when enabled (extracted so the construction
+    # is unit-testable without a full serve-http boot — see _build_voice_service).
+    voice_service, chunk_store = _build_voice_service(
+        voice_config,
+        session_service=get_session_service(),
+        reply_fn_factory=reply_fn_factory,
+    )
+    if voice_service is not None:
         logger.info("event=voice_services_wired enabled=true")
 
     # Create the Starlette app with all production dependencies

@@ -73,6 +73,95 @@ def test_serve_http_boots_and_answers_healthz():
         proc.wait(timeout=5)
 
 
+# -------------------- Voice wiring boot (regression: AudioClient ctor) --------------------
+
+
+def test_build_voice_service_runs_the_cli_construction_when_enabled():
+    """serve-http's voice wiring (_build_voice_service) constructs cleanly.
+
+    Regression guard for the AudioClient-kwargs boot crash: this executes the
+    ACTUAL CLI call site (AudioClient + ChunkStore + VoiceTurnService), not
+    AudioClient() in isolation — reverting cli/main.py to the old
+    ``AudioClient(stt_base_url=..., ...)`` kwargs makes this fail with TypeError,
+    with no Postgres boot required.
+    """
+    from study_tutor.cli.main import _build_voice_service
+    from study_tutor.voice.config import VoiceConfig
+
+    config = VoiceConfig.from_env(enabled="true")
+    voice_service, chunk_store = _build_voice_service(
+        config,
+        session_service=MagicMock(),
+        reply_fn_factory=MagicMock(),
+    )
+    assert voice_service is not None
+    assert chunk_store is not None
+
+
+def test_build_voice_service_returns_none_when_disabled():
+    """Voice disabled → no components built, so the routes stay unmounted."""
+    from study_tutor.cli.main import _build_voice_service
+    from study_tutor.voice.config import VoiceConfig
+
+    config = VoiceConfig.from_env(enabled="false")
+    voice_service, chunk_store = _build_voice_service(
+        config,
+        session_service=MagicMock(),
+        reply_fn_factory=MagicMock(),
+    )
+    assert voice_service is None
+    assert chunk_store is None
+
+
+@pytest.mark.skipif(
+    not os.environ.get("STUDY_TUTOR_PG_DSN"),
+    reason="Requires STUDY_TUTOR_PG_DSN for voice-enabled boot smoke",
+)
+def test_serve_http_boots_and_mounts_voice_when_enabled():
+    """With STUDY_TUTOR_VOICE_ENABLED=true, serve-http boots and mounts voice.
+
+    The full CLI wiring path (AudioClient + ChunkStore + VoiceTurnService +
+    create_app voice-route mount) runs; the old AudioClient-kwargs bug crashed
+    this before /healthz ever bound. STT/TTS are never contacted at boot (only
+    per-turn), so no live voice backend is needed.
+    """
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.path.join(os.getcwd(), "src")
+    env["STUDY_TUTOR_VOICE_ENABLED"] = "true"
+
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "study_tutor.cli.main", "serve-http", "--port=8110"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        cwd=os.getcwd(),
+    )
+    try:
+        start = time.time()
+        healthz_ok = False
+        while time.time() - start < 10.0:
+            try:
+                if httpx.get("http://127.0.0.1:8110/healthz", timeout=1.0).status_code == 200:
+                    healthz_ok = True
+                    break
+            except (httpx.ConnectError, httpx.ReadTimeout):
+                time.sleep(0.5)
+        assert healthz_ok, (
+            "voice-enabled serve-http did not answer /healthz — likely crashed "
+            f"during voice wiring. stderr: {proc.stderr.read().decode() if proc.stderr else ''}"
+        )
+
+        # Voice route is mounted: an unauthenticated POST is rejected by auth
+        # (401), NOT 404 (which would mean the route never mounted).
+        resp = httpx.post(
+            "http://127.0.0.1:8110/api/sessions/probe/voice-turn", timeout=2.0
+        )
+        assert resp.status_code != 404, "voice-turn route was not mounted"
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
+
+
 # -------------------- AC-002: Fail-fast boot --------------------
 
 
