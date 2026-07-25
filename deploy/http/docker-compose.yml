@@ -49,6 +49,16 @@ services:
       LOCAL_BASE_URL: ${TUTOR_LLM_BASE_URL:-http://host.docker.internal:9000}
       LOCAL_COACH_MODEL: ${TUTOR_COACH_MODEL:-qwen36-workhorse}
       OPENAI_API_KEY: ${TUTOR_OPENAI_API_KEY:-local-no-auth-required}
+
+      # Voice (TASK-VOX-006) — routes exist only when STUDY_TUTOR_VOICE_ENABLED
+      # is true in .env. Empty values fall back to the code defaults
+      # (VoiceConfig.from_env: GB10 llama-swap :9000, parakeet-tdt / qwen3-tts).
+      STUDY_TUTOR_VOICE_ENABLED: ${STUDY_TUTOR_VOICE_ENABLED:-}
+      STT_BASE_URL: ${STT_BASE_URL:-}
+      STT_MODEL: ${STT_MODEL:-}
+      TTS_BASE_URL: ${TTS_BASE_URL:-}
+      TTS_MODEL: ${TTS_MODEL:-}
+      TTS_VOICE: ${TTS_VOICE:-}
     ports:
       - "${HTTP_PORT:-8100}:8100"
     healthcheck:
