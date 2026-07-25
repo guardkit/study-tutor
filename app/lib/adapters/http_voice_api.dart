@@ -32,10 +32,14 @@ class HttpVoiceApi implements VoiceApi {
        _client = client ?? http.Client(),
        _voiceTurnDeadline = voiceTurnDeadline ?? _defaultVoiceTurnBudget;
 
-  /// Per-request deadline for voice turns (aligned to contract budget):
-  /// voice processing (STT + LLM + TTS) has higher latency than text turns,
-  /// budget is 30s (design §6.3). Constructor override exists for tests only.
-  static const _defaultVoiceTurnBudget = Duration(seconds: 30);
+  /// Per-request deadline for voice turns. 90s, matching
+  /// HttpSessionApi.turnBudget: the voice turn CONTAINS a full tutor
+  /// completion (STT + LLM + TTS), so it can never budget less than a text
+  /// turn — the design §6.3 30s figure assumed an unloaded GB10, and a
+  /// factory-loaded box was measured at ~40s server-side on 2026-07-25
+  /// (server returned 200 after the app had given up). Constructor override
+  /// exists for tests only.
+  static const _defaultVoiceTurnBudget = Duration(seconds: 90);
 
   final String _base;
   final IdentityProvider _identity;
