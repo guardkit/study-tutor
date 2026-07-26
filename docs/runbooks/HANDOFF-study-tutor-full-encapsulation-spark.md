@@ -1,9 +1,13 @@
 # HANDOFF — Encapsulate ALL study-tutor components on spark-fcf6
 
-**Status:** EXECUTED through Phase C2 on 2026-07-26 — **spark `:8100` is LIVE and
-smoked as alex (independent coach PASS 09:59–10:01 UTC)**. Remaining: phone rebuild
-(MacBook lane), GB10 `:8100` retirement, `:8101` standup, Phase D posture. Evidence
-at the end. Authored by the spark session that ran S0–S2 of
+**Status:** SPARK SIDE COMPLETE 2026-07-26 — `:8100` live+smoked (09:59 UTC),
+**`:8101` keycloak-mode live** (14:47 UTC: healthy, 401 enforcement, NAS OIDC
+discovery 200 via the pinned host), **standing posture rotated and gated PASS**
+(14:44–14:52 UTC: tutor-set preload coach-first, keepalive allowlist rotated and
+self-healing — its first cycle revived the set, next cycle "nothing to revive";
+recruiter-8b co-resides without evicting the pair, +5 GB). Remaining items are
+operator-side: see the **Operator command block** below (GB10 retirement + memory
+handback, fleet-gateway re-point, KC APK). Evidence at the end. Authored by the spark session that ran S0–S2 of
 [HANDOFF-spark-inference-migration.md](HANDOFF-spark-inference-migration.md).
 **Goal:** the Dell ProMax GB10 goes 100% software-factory (4-day PO dataset
 generation planned for the week of 2026-07-27); everything study-tutor serves from
@@ -129,6 +133,44 @@ Then **edit both files on spark** (the values that implicitly meant "the GB10"):
 3. Memory law (measured 2026-07-25): base ~53 + audio ~9 + tutor pair ~36 ≈ 98 GB;
    a concurrent FLUX render (~20–25 GB) does **not** fit — schedule Study-Room
    renders vs tutoring windows, or accept the documented eviction behaviour.
+
+## Operator command block (the remaining GB10/robot-side steps, 2026-07-26)
+
+**1. GB10: retire the study-tutor app containers** (spark `:8100` is live+smoked;
+`:8101` stood up on spark 2026-07-26 — do this once the phone builds point at spark):
+
+```bash
+cd ~/Projects/appmilla_github/study-tutor/deploy/http
+docker compose -p study_tutor_http down            # old :8100
+docker compose -p study_tutor_http_kc down          # old :8101
+```
+
+**2. GB10: hand the factory its memory back** (~50 GB — do before the PO dataset
+generation). Edit `/opt/llama-swap/config/config.yaml` on the GB10 (backup first:
+`cp config.yaml config.yaml.bak-$(date +%Y%m%d)-post-tutor-migration`):
+
+- `hooks.on_startup.preload`: remove `parakeet-tdt-0.6b-v3`, `qwen3-tts-0.6b`,
+  `gemma4-tutor`, `tutor-coach` (keep `embed` if other consumers use it); restore
+  the factory family per the R-G5-era comments.
+- Keepalive allowlist (`/usr/local/bin/llama-swap-keepalive.sh`
+  `MODEL_PROBE_KIND`): mirror the new preload.
+- Then `curl localhost:9000/unload` and let the factory's first requests (or
+  preload after a service restart) load its own set. The audio containers have
+  `Restart=no` — they stay down once stopped. Keep the model entries registered
+  (rollback = re-add to preload).
+- Leave `qav-*` and everything else untouched.
+
+**3. Fleet-gateway (Reachy lane): re-point the tutor URL.** In the fleet-gateway
+config (its own repo/box), change the `ask_tutor` / student-model base URL from
+the GB10 `:8100` to `http://100.105.247.62:8100` (or the spark ts.net name if the
+gateway host resolves MagicDNS). Same static bearer — spark `:8100` runs the same
+table-token mode. Smoke: one `ask_tutor` call from the robot path.
+
+**4. MacBook: KC-flavour APK** (when `:8101` cutover matters):
+`--dart-define=API_BASE_URL=http://spark-fcf6.tailebf801.ts.net:8101` with the
+unchanged `KEYCLOAK_ISSUER` (NAS). Voice on `:8101` is still deliberately OFF —
+enable later via `STUDY_TUTOR_VOICE_ENABLED` + STT/TTS URLs in spark's `.env.kc`
+once the KC phone flow is proven.
 
 ## Decisions needed from the operator
 
