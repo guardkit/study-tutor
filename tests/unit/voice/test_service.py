@@ -24,7 +24,68 @@ from study_tutor.voice.service import (
     ChunkStore,
     VoiceTurnResult,
     VoiceTurnService,
+    split_text_for_tts,
 )
+
+
+# ---------------------------------------------------------------------------
+# split_text_for_tts Tests
+# ---------------------------------------------------------------------------
+
+
+class TestSplitTextForTts:
+    """Tests for the TTS sentence-splitting helper (60s-cap fix)."""
+
+    def test_short_text_returns_single_piece_verbatim(self) -> None:
+        text = "What is photosynthesis? It happens in the chloroplasts."
+        assert split_text_for_tts(text) == [text]
+
+    def test_empty_and_whitespace_return_empty_list(self) -> None:
+        assert split_text_for_tts("") == []
+        assert split_text_for_tts("   \n  ") == []
+
+    def test_long_text_splits_on_sentence_boundaries(self) -> None:
+        sentence = "Plants use sunlight to convert carbon dioxide into sugar."
+        text = " ".join([sentence] * 30)  # 270 words at 9 words/sentence
+        pieces = split_text_for_tts(text, max_words=50)
+
+        assert len(pieces) > 1
+        for piece in pieces:
+            assert len(piece.split()) <= 50
+            # Pieces break at sentence boundaries, never mid-sentence
+            assert piece.endswith(".")
+        # No sentence lost or reordered
+        assert " ".join(pieces) == text
+
+    def test_every_word_preserved_in_order_for_varied_prose(self) -> None:
+        text = (
+            "Photosynthesis is remarkable! How do plants manage it? "
+            "They capture light with chlorophyll. The energy splits water "
+            "molecules. Oxygen escapes through the stomata. Glucose fuels "
+            "growth… And the cycle repeats every single day."
+        )
+        pieces = split_text_for_tts(text, max_words=10)
+        assert len(pieces) > 1
+        assert " ".join(pieces).split() == text.split()
+
+    def test_oversized_single_sentence_hard_splits_at_word_boundaries(self) -> None:
+        text = "word " * 130  # one 130-word "sentence", no punctuation
+        pieces = split_text_for_tts(text.strip(), max_words=50)
+
+        assert len(pieces) == 3  # 50 + 50 + 30
+        assert [len(p.split()) for p in pieces] == [50, 50, 30]
+        assert " ".join(pieces).split() == text.split()
+
+    def test_default_limit_keeps_pieces_under_tts_ceiling(self) -> None:
+        # ~240 words of varied prose — the investigation's truncating case
+        sentences = [
+            f"Sentence number {i} adds a handful of ordinary words here." for i in range(30)
+        ]
+        pieces = split_text_for_tts(" ".join(sentences))
+        assert len(pieces) >= 2
+        for piece in pieces:
+            # Investigation ceiling is ~170-180 words; default leaves headroom
+            assert len(piece.split()) <= 120
 
 
 # ---------------------------------------------------------------------------
@@ -413,6 +474,200 @@ class TestVoiceTurnService:
         assert result.transcript == "Hello tutor"
         assert result.tutor_response == "Great question! Let me help."
         assert result.audio == []
+
+    @pytest.mark.asyncio
+    async def test_long_reply_returns_multiple_chunks_with_contiguous_seq(
+        self,
+        voice_config: VoiceConfig,
+        chunk_store: ChunkStore,
+        mock_audio_client: AudioClient,
+        mock_session_service: SessionService,
+        mock_request_factory: Any,
+    ) -> None:
+        """60s-cap fix: a two-piece reply gets full audio, one chunk per piece."""
+        long_reply = " ".join(
+            f"Sentence number {i} carries a few ordinary words along." for i in range(22)
+        )  # ~200 words -> exactly 2 pieces at the 120-word default
+        pieces = split_text_for_tts(long_reply)
+        assert len(pieces) == 2
+        mock_session_service.turn = AsyncMock(
+            return_value=Mock(tutor_response=long_reply, turn_index=1, metadata=None)
+        )
+        synth_inputs: list[str] = []
+
+        async def record_synthesize(text: str, response_format: str = "wav") -> bytes:
+            synth_inputs.append(text)
+            return b"wav:" + text[:30].encode()
+
+        mock_audio_client.synthesize = AsyncMock(side_effect=record_synthesize)
+
+        service = VoiceTurnService(
+            config=voice_config,
+            audio_client=mock_audio_client,
+            session_service=mock_session_service,
+            chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+        )
+
+        result = await service.voice_turn(
+            "sess123", "student1", mock_request_factory(b"fake audio bytes")
+        )
+
+        assert len(result.audio) == 2
+        # seq ascending, contiguous, starting at 0 (the app sorts by seq)
+        assert [ref.seq for ref in result.audio] == [0, 1]
+        # Every synthesis input stayed under the TTS ceiling; all pieces sent
+        assert all(len(text.split()) <= 120 for text in synth_inputs)
+        assert synth_inputs == pieces
+        # Each chunk maps to its piece (seq order == text order) and fetches
+        for ref, piece in zip(result.audio, pieces):
+            assert chunk_store.get("sess123", ref.chunk_id) == b"wav:" + piece[
+                :30
+            ].encode()
+            assert ref.url == f"/api/sessions/sess123/voice-audio/{ref.chunk_id}"
+
+    @pytest.mark.asyncio
+    async def test_very_long_reply_capped_at_max_pieces(
+        self,
+        voice_config: VoiceConfig,
+        chunk_store: ChunkStore,
+        mock_audio_client: AudioClient,
+        mock_session_service: SessionService,
+        mock_request_factory: Any,
+    ) -> None:
+        """Replies beyond the piece cap speak only the first pieces (the
+        wall-time bound); the tail stays text-only."""
+        very_long_reply = " ".join(
+            f"Sentence number {i} carries a few ordinary words along." for i in range(40)
+        )  # ~360 words -> 3+ pieces, above TTS_MAX_PIECES_PER_TURN=2
+        pieces = split_text_for_tts(very_long_reply)
+        assert len(pieces) >= 3
+        mock_session_service.turn = AsyncMock(
+            return_value=Mock(
+                tutor_response=very_long_reply, turn_index=1, metadata=None
+            )
+        )
+        synth_inputs: list[str] = []
+
+        async def record_synthesize(text: str, response_format: str = "wav") -> bytes:
+            synth_inputs.append(text)
+            return b"wav:" + text[:30].encode()
+
+        mock_audio_client.synthesize = AsyncMock(side_effect=record_synthesize)
+
+        service = VoiceTurnService(
+            config=voice_config,
+            audio_client=mock_audio_client,
+            session_service=mock_session_service,
+            chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+        )
+
+        result = await service.voice_turn(
+            "sess123", "student1", mock_request_factory(b"fake audio bytes")
+        )
+
+        # Only the first two pieces synthesize; full text still returned
+        assert result.tutor_response == very_long_reply
+        assert [ref.seq for ref in result.audio] == [0, 1]
+        assert synth_inputs == pieces[:2]
+
+    @pytest.mark.asyncio
+    async def test_partial_tts_failure_returns_pieces_synthesized_so_far(
+        self,
+        voice_config: VoiceConfig,
+        chunk_store: ChunkStore,
+        mock_audio_client: AudioClient,
+        mock_session_service: SessionService,
+        mock_request_factory: Any,
+    ) -> None:
+        """ASSUM-005 partial policy: contiguous prefix of successes is kept."""
+        long_reply = " ".join(
+            f"Sentence number {i} carries a few ordinary words along." for i in range(22)
+        )
+        pieces = split_text_for_tts(long_reply)
+        assert len(pieces) == 2
+        mock_session_service.turn = AsyncMock(
+            return_value=Mock(tutor_response=long_reply, turn_index=1, metadata=None)
+        )
+
+        async def fail_second_piece(text: str, response_format: str = "wav") -> bytes:
+            # Keyed on input, not call order
+            if text == pieces[1]:
+                raise VoiceUnavailable("TTS died mid-reply")
+            return b"wav:" + text[:30].encode()
+
+        mock_audio_client.synthesize = AsyncMock(side_effect=fail_second_piece)
+
+        service = VoiceTurnService(
+            config=voice_config,
+            audio_client=mock_audio_client,
+            session_service=mock_session_service,
+            chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+        )
+
+        result = await service.voice_turn(
+            "sess123", "student1", mock_request_factory(b"fake audio bytes")
+        )
+
+        # Full text still returned; only the contiguous prefix survives,
+        # so playback never has a gap
+        assert result.tutor_response == long_reply
+        assert [ref.seq for ref in result.audio] == [0]
+        assert (
+            chunk_store.get("sess123", result.audio[0].chunk_id)
+            == b"wav:" + pieces[0][:30].encode()
+        )
+
+    @pytest.mark.asyncio
+    async def test_chunks_stored_only_after_all_synthesis_completes(
+        self,
+        voice_config: VoiceConfig,
+        chunk_store: ChunkStore,
+        mock_audio_client: AudioClient,
+        mock_session_service: SessionService,
+        mock_request_factory: Any,
+    ) -> None:
+        """TTL fix: no chunk is stored until every piece has synthesized,
+        so the 120s ChunkStore TTL starts at response time."""
+        long_reply = " ".join(
+            f"Sentence number {i} carries a few ordinary words along." for i in range(40)
+        )
+        mock_session_service.turn = AsyncMock(
+            return_value=Mock(tutor_response=long_reply, turn_index=1, metadata=None)
+        )
+        events: list[str] = []
+
+        async def record_synthesize(text: str, response_format: str = "wav") -> bytes:
+            events.append("synthesize")
+            return b"wav bytes"
+
+        mock_audio_client.synthesize = AsyncMock(side_effect=record_synthesize)
+        original_put = chunk_store.put
+
+        def recording_put(session_id: str, wav_bytes: bytes) -> str:
+            events.append("put")
+            return original_put(session_id, wav_bytes)
+
+        chunk_store.put = recording_put  # type: ignore[method-assign]
+
+        service = VoiceTurnService(
+            config=voice_config,
+            audio_client=mock_audio_client,
+            session_service=mock_session_service,
+            chunk_store=chunk_store,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+        )
+
+        result = await service.voice_turn(
+            "sess123", "student1", mock_request_factory(b"fake audio bytes")
+        )
+
+        assert len(result.audio) >= 2
+        synth_count = events.count("synthesize")
+        # Every synthesize event precedes every put event
+        assert events == ["synthesize"] * synth_count + ["put"] * len(result.audio)
 
     @pytest.mark.asyncio
     async def test_no_audio_bytes_in_logs(

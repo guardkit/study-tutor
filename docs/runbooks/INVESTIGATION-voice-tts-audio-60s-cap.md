@@ -1,7 +1,10 @@
 # Investigation — voice replies get their spoken audio cut off (~60s cap)
 
 **For:** the study-tutor session on **spark** · **From:** the MacBook/app leg · **Date:** 2026-07-26
-**Status:** Root cause found and evidenced. No fix applied — options laid out for the backend/inference lane to weigh. **No app change needed.**
+**Status:** **RESOLVED 2026-07-26 — Option A implemented (v3: serial chunked synthesis,
+piece cap 2, TTL-deferred storage), deployed on spark `:8100`, final E2E PASS.** See
+the Resolution section at the end. **No app change needed** (confirmed again in the wild:
+multi-chunk `audio[]` played as designed).
 
 ---
 
@@ -104,6 +107,69 @@ Confirmed by a read of the client: a backend that emits `[{seq,chunk_id,url}, �
 ## Contract note (no re-pin needed)
 
 The voice Rev 1 response shape is `{ transcript, tutor_response, audio: [{seq, chunk_id, url}] }` and `audio` was **always an array**. Emitting more than one element is the N>1 case of the existing shape — **additive-safe, and it does not disturb the frozen voice `CONTRACT_SHA`/`BINDING_SHA`** (binding `docs/design/contracts/API-session-http-binding.md`). No field renames, no new fields, no status-code changes.
+
+---
+
+## Resolution (spark session, 2026-07-26 — Option A, three iterations)
+
+Implemented in `src/study_tutor/voice/service.py` (`split_text_for_tts` +
+capped serial synthesis loop + deferred chunk storage) with tests in
+`tests/unit/voice/test_service.py` (148 green across the voice surface). Every
+iteration was gated by an independent workflow coach; the two intermediate
+FAILs below are why the final shape is what it is.
+
+**Refined root-cause model:** the ceiling is **~170–180 *words*, not 60 s of
+wall-clock** — 120-word pieces render fully at 45–68 s of audio; a 360-word
+single call truncated to 42 s. Splitting at 120 words leaves real headroom.
+
+- **v1 — serial chunking, store-as-you-go.** Correct (574-word reply → 6
+  chunks, 259.8 s of audio at 2.21 words/s, seqs 0..5, every chunk an
+  independent RIFF WAV) but the E2E gate FAILED it: 6 serial syntheses ≈
+  105 s → 127 s wall vs the 90 s deadline, and chunk 0 had burned ~80% of its
+  120 s ChunkStore TTL before the response even returned.
+- **v2 — bounded-concurrency (2) + TTL-deferred storage.** The adversarial
+  review REFUTED concurrency with live measurements: **the TTS server
+  serializes generation behind its model lock**, so a queued request streams
+  no bytes until the active one finishes — the client's 10 s httpx **read**
+  timeout (which serial calls dodge because the WAV streams progressively)
+  then kills it, the freed semaphore admits the next piece against a
+  still-busy backend, abandoned streams hold llama-swap slots (429s), and
+  failures cascade: 4-piece reply → 1 chunk; deployed E2E: 526-word reply →
+  1 of 5 chunks (52 s of audio). Strictly worse than the original bug.
+- **v3 (FINAL) — serial + `TTS_MAX_PIECES_PER_TURN = 2` + TTL-deferred
+  storage.** Serial is the reliable path (streaming keeps the read timeout
+  fed; v1 proved 6/6 pieces). The piece cap bounds wall time deterministically
+  (~2 × 17–30 s TTS + LLM ≈ 60–75 s worst): replies ≤ ~240 words get **full
+  audio** (this covers the 182- and 242-word cases that motivated this
+  investigation); longer replies speak their first ~240 words (≈ 99 s of
+  audio — still ~1.7× the old cap) with the tail on screen as text, logged
+  (`"Voice reply of N pieces capped to 2"`). Chunks store only after all
+  synthesis, so the 120 s TTL starts at response time.
+
+**Final E2E evidence (PASS, 12:33–12:44 UTC, as alex):** 160-word reply →
+2 chunks (46.5 + 20.5 s), 38.4 s wall · 224-word reply → 2 full chunks
+(49.8 + 49.1 s), 50.3 s wall · **509-word reply → capped 2 chunks, 99.0 s of
+audio, 59.8 s wall** with the cap log line present. Zero TTS failures, zero
+429s, zero tracebacks; chunk 0 re-fetched at +61 s → 200 (and a +140 s fetch
+correctly 404'd — TTL expiry works); co-tenants and kernel log clean; contract
+shape unchanged.
+
+**ASSUM-005 partial-failure policy (documented choice):** the contiguous
+prefix of successfully synthesized pieces is returned — partial audio, never
+a gap; a first-piece failure yields `audio=[]` exactly as before.
+
+**Recommended follow-ups (not blocking):**
+1. **Option C remains the product-level companion**: capping voice-mode
+   replies at ~240 words would make the piece cap moot and cut latency.
+   Until then, >240-word replies are deliberately part-spoken.
+2. `audio_timeout_seconds` (10 s) survives long syntheses only because the
+   server streams; a >10 s stall mid-stream would still kill a piece
+   (pre-existing exposure, unchanged by this fix).
+3. Disclosure: during v2 verification the review agent's live TTS probes
+   followed the code-default URL and exercised the **GB10's** qwen3-tts
+   container (same image/config as spark's — conclusions transfer), leaving
+   it needing a ~2 min drain. Transient, no lasting effect; the GB10 audio
+   pair is slated for decommission post-soak anyway.
 
 ## Related (already landed on `main`, for context)
 
