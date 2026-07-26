@@ -71,9 +71,8 @@ void main() {
           seen = request;
           return jsonResponse({
             'transcript': 'What is two plus two?',
-            'answer_parts': [
-              {'seq': 0, 'text': 'Two plus two equals four.'},
-            ],
+            'tutor_response': 'Two plus two equals four.',
+            'audio': <Map<String, dynamic>>[],
           });
         });
 
@@ -113,13 +112,23 @@ void main() {
       },
     );
 
-    test('voiceTurn returns transcript first, then answer parts', () async {
+    test('voiceTurn maps tutor_response + audio[] into answer parts', () async {
+      // Binding §5 shape: { transcript, tutor_response, audio: [{seq, chunk_id, url}] }.
       final api = apiWith((request) async {
         return jsonResponse({
           'transcript': 'Explain fractions',
-          'answer_parts': [
-            {'seq': 0, 'text': 'A fraction represents'},
-            {'seq': 1, 'text': ' part of a whole.'},
+          'tutor_response': 'A fraction represents part of a whole.',
+          'audio': [
+            {
+              'seq': 0,
+              'chunk_id': 'chunk-a',
+              'url': '/api/sessions/sess-456/voice-audio/chunk-a',
+            },
+            {
+              'seq': 1,
+              'chunk_id': 'chunk-b',
+              'url': '/api/sessions/sess-456/voice-audio/chunk-b',
+            },
           ],
         });
       });
@@ -131,15 +140,16 @@ void main() {
       );
 
       expect(result.transcript, 'Explain fractions');
-      expect(result.answerParts.length, 2);
+      // The tutor's text reply renders first…
       expect(
-        (result.answerParts[0] as TextAnswerPart).text,
-        'A fraction represents',
+        result.answerParts.whereType<TextAnswerPart>().single.text,
+        'A fraction represents part of a whole.',
       );
-      expect(
-        (result.answerParts[1] as TextAnswerPart).text,
-        ' part of a whole.',
-      );
+      // …then the audio chunks, in seq order, for sequential playback.
+      final audioParts =
+          result.answerParts.whereType<AudioAnswerPart>().toList();
+      expect(audioParts.map((p) => p.chunkId), ['chunk-a', 'chunk-b']);
+      expect(audioParts.map((p) => p.seq), [0, 1]);
     });
   });
 

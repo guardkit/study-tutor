@@ -113,27 +113,27 @@ class HttpVoiceApi implements VoiceApi {
       throw const TransportError('malformed response body');
     }
 
-    // Map response to VoiceTurnResult
+    // Map response to VoiceTurnResult. Binding §5 (Rev 1): the voice_turn
+    // response is { transcript, tutor_response, audio: [{seq, chunk_id, url}] }.
+    // The tutor's text reply renders as the answer; the audio chunks are
+    // fetched + played in seq order. `audio` may be empty (TTS degraded to
+    // text-only, ASSUM-005).
     try {
       final map = json as Map<String, dynamic>;
       final transcript = map['transcript'] as String;
-      final answerPartsJson = map['answer_parts'] as List<dynamic>;
+      final tutorResponse = map['tutor_response'] as String;
+      final audioJson = (map['audio'] as List<dynamic>?) ?? const [];
 
-      final answerParts = answerPartsJson.map((part) {
-        final partMap = part as Map<String, dynamic>;
-        final seq = partMap['seq'] as int;
-
-        if (partMap.containsKey('text')) {
-          return TextAnswerPart(seq: seq, text: partMap['text'] as String);
-        } else if (partMap.containsKey('chunk_id')) {
+      final answerParts = <AnswerPart>[
+        TextAnswerPart(seq: 0, text: tutorResponse),
+        ...audioJson.map((part) {
+          final partMap = part as Map<String, dynamic>;
           return AudioAnswerPart(
-            seq: seq,
+            seq: partMap['seq'] as int,
             chunkId: partMap['chunk_id'] as String,
           );
-        } else {
-          throw const TransportError('answer part missing text or chunk_id');
-        }
-      }).toList();
+        }),
+      ];
 
       return VoiceTurnResult(transcript: transcript, answerParts: answerParts);
     } on TypeError {
