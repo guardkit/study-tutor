@@ -31,9 +31,24 @@ for a in "$@"; do
   esac
 done
 
-[ -f .env.deploy ] || { echo "missing deploy/keycloak/.env.deploy (admin creds)" >&2; exit 1; }
-# shellcheck disable=SC1091
-set -a; source .env.deploy; set +a
+# --- config load (DF-022 Wave 2b: sops/age-aware, dual-mode) ------------------
+# Post-cutover the admin creds live sops-encrypted at the secrets root; pre-cutover
+# (and during a rollback window) a plaintext .env.deploy sits here and is PREFERRED,
+# keeping behavior unchanged. sops runs FROM the root (custody run-from-root law).
+SOPS_BIN="${SOPS_BIN:-$HOME/.local/bin/sops}"
+SECRETS_ROOT="${SECRETS_ROOT:-$HOME/.config/fleet-secrets}"
+ENC_ENV="${ENC_ENV:-study-tutor/keycloak-env-deploy.enc.env}"
+if [ -f .env.deploy ]; then
+    # shellcheck disable=SC1091
+    set -a; source .env.deploy; set +a
+elif [ -x "${SOPS_BIN}" ] && [ -f "${SECRETS_ROOT}/${ENC_ENV}" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    source <( cd "${SECRETS_ROOT}" && "${SOPS_BIN}" -d "${ENC_ENV}" )
+    set +a
+else
+    echo "missing both deploy/keycloak/.env.deploy and ${SECRETS_ROOT}/${ENC_ENV} (admin creds)" >&2; exit 1
+fi
 : "${KC_BOOTSTRAP_ADMIN_USERNAME:?not in .env.deploy}"
 : "${KC_BOOTSTRAP_ADMIN_PASSWORD:?not in .env.deploy}"
 
