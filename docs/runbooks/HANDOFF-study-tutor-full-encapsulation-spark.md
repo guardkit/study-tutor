@@ -172,6 +172,26 @@ unchanged `KEYCLOAK_ISSUER` (NAS). Voice on `:8101` is still deliberately OFF �
 enable later via `STUDY_TUTOR_VOICE_ENABLED` + STT/TTS URLs in spark's `.env.kc`
 once the KC phone flow is proven.
 
+## Dell GB10 handback — COMPLETE (operator, 2026-07-26 evening)
+
+Executed and verified on the GB10 (operator report): keepalive allowlist was
+already factory-rotated (`qwen36-workhorse`/`coach-ft-v4`/`embed`) and the trio
+already resident; the tutor pair was already unloaded. Preload block replaced
+(backup `config.yaml.bak-20260726-pre-preload-rotation`); the `-watch-config`
+hot-reload stopped every running model — the audio containers went down via
+`cmdStop` and, being `--rm`, were removed entirely — then re-ran the new
+preload; trio ready within minutes. Live probes: coach-ft-v4 answers, embed
+returns 1024-dim, workhorse answers (note: `--reasoning auto` eats tiny
+max_tokens probes — use ~200 tokens). Memory: used 94→79 GB, available
+27→42 GB (the ~15 GB delta = audio pair + churn; the tutor pair was already
+out). Rollback: restore the dated `.bak` (audio entries stay registered).
+Both boxes now satisfy the preload==keepalive discipline in their new postures.
+
+**The GB10 is fully out of study-tutor serving. Cutover complete end-to-end:**
+phone tap-to-talk verified against spark 18:26 UTC (auth alex → STT → tutor →
+2-chunk TTS → both chunks fetched by the device; phone appears as the docker
+bridge IP `172.19.0.1` in container logs).
+
 ## Decisions needed from the operator
 
 1. Approve the spark standing-posture rotation (D2) — entangled with recruiter-lane
