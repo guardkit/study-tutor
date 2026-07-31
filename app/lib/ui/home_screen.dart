@@ -13,6 +13,7 @@ import 'formatting.dart';
 import 'gamification/progress_header_card.dart';
 import 'gamification/progress_screen.dart';
 import 'history_screen.dart';
+import 'live_session_screen.dart';
 import 'progress_store.dart';
 import 'session_screen.dart';
 
@@ -113,6 +114,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       await showConnectionProblem(context);
     }
+  }
+
+  /// Open the read-only LIVE mirror of an active session (the one the Reachy
+  /// robot may be driving). A pure read — it never touches the session — so no
+  /// re-list is needed on return and no `_busy` guard is held.
+  void _watchLive(SessionSummary summary) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LiveSessionScreen(
+          identity: widget.identity,
+          sessionApi: widget.sessionApi,
+          voiceApi: widget.voiceApi,
+          sessionId: summary.sessionId,
+          subject: summary.subject,
+        ),
+      ),
+    );
   }
 
   /// Push the session screen, then re-list on return — an ended session must
@@ -296,9 +314,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        trailing: FilledButton.tonal(
-          onPressed: _busy ? null : () => _resume(summary),
-          child: const Text('Resume'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Watch live',
+              icon: const Icon(Icons.sensors, semanticLabel: 'Watch live'),
+              onPressed: () => _watchLive(summary),
+            ),
+            const SizedBox(width: 4),
+            FilledButton.tonal(
+              onPressed: _busy ? null : () => _resume(summary),
+              child: const Text('Resume'),
+            ),
+          ],
         ),
       ),
     );
