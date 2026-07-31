@@ -5,8 +5,10 @@ seams. The **default flavour** composes an in-process fake backend — no
 network, no Keycloak (v1 scope §1), and the hermetic test gate only ever
 runs this flavour. Phase 2 added an opt-in **real-transport flavour**
 (`--dart-define=API_BASE_URL=…` → `HttpSessionApi`, see §Phase-2 flavours).
-The verified target is **Android**; iOS/web folders exist but carry no boot
-claim.
+The device-walked target is **Android** (see Definition of done). **iOS**
+compiles and runs the hermetic slice green; a live simulator walk is pending an
+attended run — see [§iOS](#ios-compiles--hermetic-green-live-walk-pending). The
+web folder still carries no boot claim.
 
 **Contract pin:** `docs/design/contracts/API-session-cross-device.md` at
 `CONTRACT_SHA=22791afbcdb3b71abbe6bd2f1b8e18218988942f` (ratified 2026-07-03).
@@ -82,6 +84,40 @@ voice plugin) to named backend hosts, but it does not constrain
 (fail-closed Dart-side enforcement is an open question in `QUESTIONS.md`).
 Identity stays the fake IdP in both flavours; its constant token is the
 binding doc's dev-table entry #1.
+
+## iOS: compiles + hermetic green, live walk pending
+
+This repo is checked out on a Mac, so iOS is brought to a real (honest) boot
+claim — no simulator walk is asserted that was not run.
+
+**What is claimed now:**
+
+- The app **compiles for iOS**: every adapter that touches native code
+  (`voice_recorder.dart`, `audio_playback.dart`, `http_voice_api.dart`) sits on
+  cross-platform `dart:io` (`File`, `Directory.systemTemp`, `WebSocket`) with no
+  Android-only paths. `record`'s default encoder is AAC-LC/m4a — the iOS/Android
+  shared codec.
+- The **hermetic suite is platform-agnostic**: `flutter test` runs entirely
+  against the in-process fakes (`FakeVoiceRecorder`, injected `AudioPlayback`
+  mocks) and passes under the same gate regardless of host OS — screens never
+  reach a real mic or player in tests.
+- `ios/Runner/Info.plist` carries the usage strings the bundled plugins need on
+  iOS: **`NSMicrophoneUsageDescription`** (for `record`) and the intact
+  **`com.appmilla.studytutor`** URL scheme under `CFBundleURLTypes` (the
+  Keycloak OAuth2 redirect, ASSUM-003 frozen scheme — used by `flutter_appauth`).
+  `just_audio`, `flutter_secure_storage`, `web_socket_channel`, and
+  `path_provider` need no additional plist strings for our foreground use.
+- The Xcode **deployment target is iOS 13.0**, which satisfies the minimum of
+  every runtime plugin (`record` / `just_audio` / `flutter_appauth` /
+  `flutter_secure_storage`). `AppDelegate.swift` registers the generated plugin
+  set; `SceneDelegate` is in place.
+
+**What is NOT yet verified:** a **live simulator/device walk** — signing in,
+recording a real turn, hearing TTS playback, and resuming on an iOS simulator.
+That requires an attended run (`cd app && flutter run` with a booted simulator,
+after `pod install`) and has not been performed from this environment. Treat the
+iOS claim as "compiles + hermetic suite green"; promote it to a device claim
+only after that attended walk (mirror the Android entry in Definition of done).
 
 ## Architecture: two ports, two fakes (scope §2)
 
