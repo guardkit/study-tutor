@@ -41,6 +41,10 @@ class _NullBlockSessionApi implements SessionApi {
       _inner.resumeSession(sessionId);
 
   @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) =>
+      _inner.turnsSince(sessionId, since);
+
+  @override
   Future<TurnResult> turn(String sessionId, String userMessage) =>
       _inner.turn(sessionId, userMessage);
 

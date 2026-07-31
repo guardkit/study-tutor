@@ -197,6 +197,10 @@ class _FlakyStatusApi implements SessionApi {
       _inner.resumeSession(sessionId);
 
   @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) =>
+      _inner.turnsSince(sessionId, since);
+
+  @override
   Future<StartSessionResult> startSession({
     String? subject,
     String? topic,

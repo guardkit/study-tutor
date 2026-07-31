@@ -43,6 +43,10 @@ class GatedSessionApi implements SessionApi {
       _inner.resumeSession(sessionId);
 
   @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) =>
+      _inner.turnsSince(sessionId, since);
+
+  @override
   Future<SessionStatusResult> sessionStatus(String sessionId) =>
       _inner.sessionStatus(sessionId);
 

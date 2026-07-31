@@ -170,17 +170,36 @@ class FakeSessionApi implements SessionApi {
     final studentId = _requireStudentId();
     final session = _requireSession(sessionId);
     _requireOwner(session, studentId);
-    // §5 resume_session is a transcript READ: it returns the ordered turns and
-    // the current status. Terminality (§4 "no re-open") is enforced on the
-    // WRITE verbs (turn/end → SessionEnded), not here — so a Session-History
-    // view can load an ended session's transcript read-only. The response shape
-    // is unchanged (status simply carries `ended`); the HTTP adapter already
-    // parses an ended resume result.
+    // §5/§4: resume is an ACTIVE-session verb — `ended` is terminal, so resume
+    // on an ended session → SessionEnded (matches the real backend + the port
+    // doc "Active sessions only"). Session-History reads an ended transcript
+    // through the additive `turns_since` verb instead, which reads ended too.
+    _requireActive(session);
     return ResumeSessionResult(
       sessionId: session.id,
       status: session.status,
       turns: _transcript(session.id),
       studentId: studentId,
+    );
+  }
+
+  @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) async {
+    final studentId = _requireStudentId();
+    final session = _requireSession(sessionId);
+    _requireOwner(session, studentId);
+    // Binding §2.4: the additive delta read. Reads ENDED sessions too — do NOT
+    // _requireActive here, so a poll survives the active→ended transition and
+    // History can load an ended transcript. `next` is the RAW total row count;
+    // `since >= total` yields an empty tail (never an error).
+    final rows = _transcript(session.id);
+    final total = rows.length;
+    final start = since < total ? since : total;
+    return TurnsSinceResult(
+      sessionId: session.id,
+      status: session.status,
+      turns: List.unmodifiable(rows.sublist(start)),
+      next: total,
     );
   }
 

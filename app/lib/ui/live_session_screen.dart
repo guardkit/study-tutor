@@ -17,11 +17,15 @@ import 'transcript_view.dart';
 /// The robot's `ask_tutor` uses `start(resume_if_active: true, subject: english)`,
 /// so its turns land on the student's ONE active `(student, english)` session
 /// (contract §5). The phone — the SAME student — can WATCH that session without
-/// touching it: this screen [resumeSession]s to load the current transcript,
-/// then POLLS [sessionStatus] on [pollInterval]; when `turn_count` grows it
-/// re-[resumeSession]s and appends the new turns to the same [TranscriptView],
-/// auto-scrolling to the newest exchange. Purely a READ — it never starts,
-/// turns, or ends a session, and adds no contract shapes.
+/// touching it: this screen [turnsSince]s (from row 0) to load the current
+/// transcript, then POLLS [sessionStatus] on [pollInterval]; when `turn_count`
+/// grows it re-reads via [turnsSince] and appends the new turns to the same
+/// [TranscriptView], auto-scrolling to the newest exchange. Purely a READ — it
+/// never starts, turns, or ends a session, and adds no contract shapes.
+///
+/// `turns_since` (binding §2.4 addendum) is the ended-tolerant transcript read:
+/// unlike `resume_session` (active-only, §4 terminal), it reads ENDED sessions
+/// too, so the poll survives the active→ended transition without a SessionEnded.
 ///
 /// The active→ended transition is graceful: polling stops, the last transcript
 /// is kept, and a "session ended" note is shown. The poll timer is cancelled on
@@ -92,12 +96,12 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   /// begin polling. An already-ended session is shown read-only with no timer.
   Future<void> _initialLoad() async {
     try {
-      final resumed = await widget.sessionApi.resumeSession(widget.sessionId);
+      final result = await widget.sessionApi.turnsSince(widget.sessionId, 0);
       if (!mounted) return;
       setState(() {
-        _turns = resumed.turns;
-        _knownTurnCount = resumed.turns.length ~/ 2;
-        _ended = resumed.status == SessionStatus.ended;
+        _turns = result.turns;
+        _knownTurnCount = result.turns.length ~/ 2;
+        _ended = result.status == SessionStatus.ended;
         _loading = false;
       });
       _scrollToBottom(animate: false);
@@ -114,7 +118,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       await showConnectionProblem(context);
     } on SessionApiException {
       // SessionForbidden / SessionNotFoundError — the shared "can't open"
-      // surface (resume never throws SessionEnded: it reads ended transcripts).
+      // surface (turns_since never throws SessionEnded: it reads ended too).
       if (!mounted) return;
       setState(() => _loading = false);
       await showCantOpenSession(context);
@@ -168,12 +172,13 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   }
 
   /// Re-read the (grown) transcript and append it into the SAME [TranscriptView]
-  /// — resume works on active and ended sessions alike (contract §5).
+  /// — turns_since works on active and ended sessions alike (binding §2.4), so a
+  /// final turn that lands as the session ends is still fetched.
   Future<void> _refreshTranscript(int newTurnCount) async {
-    final resumed = await widget.sessionApi.resumeSession(widget.sessionId);
+    final result = await widget.sessionApi.turnsSince(widget.sessionId, 0);
     if (!mounted) return;
     setState(() {
-      _turns = resumed.turns;
+      _turns = result.turns;
       _knownTurnCount = newTurnCount;
     });
     _scrollToBottom();
