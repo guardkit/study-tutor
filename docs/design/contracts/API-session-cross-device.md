@@ -49,6 +49,7 @@ Everything else (the tutor loop, the Coach, the events, the AO rubric) is unchan
 ```
 
 - **States:** `active` | `ended`. `ended` is terminal (no re-open). **`active` is resumable** from any device authenticated as the owning student.
+  - **Note (addendum 2026-07-31, live robot-session mirror Stage 0):** "no re-open" is enforced on the **write** verbs (`turn` / streamed `turn` / `end_session` / `voice_turn` → `SessionEnded`). The **`resume_session` READ** is widened to serve `ended` sessions too — it returns the ordered transcript with `status: "ended"` rather than raising. Reading a finished conversation is not re-opening it: no write verb accepts an `ended` session, so the state machine above is unchanged. See the §9 addendum.
 - **Per-turn durability:** each `(user, tutor)` pair is committed to Postgres **as the turn completes**, not only at session end — this is what makes mid-session device switching lossless.
 - **Concurrency (single-user reality):** last-writer-wins on turns; the contract does **not** attempt real-time multi-device co-editing. A `session_version` (monotonic turn count) lets a client detect it resumed a session another device advanced, and re-fetch. (Open question §11.)
 
@@ -133,6 +134,10 @@ Flat dict per [API-tutoring.md §4](API-tutoring.md). Closed set extended by:
 | `VoiceUnavailable` | **Rev 1 (voice)** — STT/TTS unreachable; the text `turn` path is unaffected (degradation is a feature with copy — no cloud failover exists, [ADR-ARCH-024](../../architecture/decisions/ADR-ARCH-024-voice-stt-cache-aware-streaming-multilingual-deferred.md) D3) |
 
 Voice `error_type` values are exception class names, matching the original four. They occur only on the Rev 1 voice verbs/frames — the four original types remain the complete set for the six original verbs.
+
+**Addendum 2026-07-31 (live robot-session mirror, Stage 0) — the `SessionEnded` trigger row, read vs write.** `SessionEnded` reads "verb on an `ended` session (except `session_status`)". As of this addendum the exception list also includes **`resume_session`**: the resume **READ** serves `ended` sessions, returning the ordered transcript with `status: "ended"` (HTTP 200), because the phone's **Session-History** screen reads a finished conversation that way (handoff `docs/runbooks/HANDOFF-spark-live-robot-session-mirror.md` Stage 0). **Write-verb terminality is unchanged:** `turn`, the streamed `turn`, `end_session` and `voice_turn` still raise `SessionEnded` on an `ended` session (§4 "no re-open" — see the §4 note). Ownership is still derived from the token, never client-asserted (§3).
+
+This is an **additive-safe widening**, not a revision: the `resume_session` **response shape in §5 is unchanged** (no new field; `status` already carried `"ended"`), no input shape changes, no error type is added or removed, and *previously-errored → now-returns* cannot break a pinned client's success path. It is therefore recorded as a **dated addendum** on the S-R2 additive-addendum precedent, with **no `CONTRACT_SHA`/`BINDING_SHA` re-pin** — unlike Revision 2, which changed an original verb's *shape*. The sole pinned consumer (this monorepo's `app/`) requested the widening and its shared contract test `app/test/contract/s4_lifecycle_test.dart` already expects it. The owner may still re-pin on push at his discretion. Bound in [API-session-http-binding.md](API-session-http-binding.md) (2026-07-31 Stage-0 header addendum + §4.1 annotation).
 
 ## 10. Contract changes requiring `/design-refine`
 

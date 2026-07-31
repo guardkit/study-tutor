@@ -15,6 +15,9 @@
 
 **Addendum 2026-07-31 (live robot-session mirror, Stage 2):** additive read **stream** `GET /api/sessions/{session_id}/turns/stream` (SSE, `text/event-stream`) bound in §2.5. Same additive posture as Stage 1 — a one-way push of the §2.4 envelope, **no `CONTRACT_SHA`/`BINDING_SHA` re-pin**; the six session verbs, the voice Rev 1 routes (including the §2.1 WebSocket and its frozen contract-§7 frame vocabulary) and every status code are untouched. It is deliberately **not** an extension of `/ws`: `/ws` is mounted only behind `STUDY_TUTOR_VOICE_ENABLED`, and the mirror is a read-only viewer that must work with voice off.
 
+**Addendum 2026-07-31 (live robot-session mirror, Stage 0) — `resume` reads *ended* sessions:** the **read** `GET /api/sessions/{session_id}/resume` (§2 table) is widened to serve **ended** sessions as well as active ones — an ended session now returns its ordered transcript with `status: "ended"` (200) instead of `SessionEnded` (410). **Response shape is unchanged** — no new fields; `status` already carried `"ended"`. **Terminality (contract §4 "no re-open") is unchanged and stays enforced on the WRITE verbs:** `turn`, the streamed `turn`, `end_session` and `voice_turn` still raise `SessionEnded` → **410** on an ended session. Ownership is still resolved from the bearer only. `session_status`, the §2.4 `turns` read and the §2.5 stream are untouched, as is ephemeral/no-audio-at-rest (§6).
+**No `CONTRACT_SHA`/`BINDING_SHA` re-pin** — this is an **additive-safe widening**, recorded here on the S-R2 additive-addendum precedent, on three grounds: (1) the response **shape** is unchanged, so no pinned client's parser changes; (2) *previously-errored → now-returns* cannot break a pinned client's **success** path (only an error path a client had no reason to depend on); (3) the sole pinned consumer — the app in this monorepo's `app/` directory — **requested** the widening, and its shared contract test `app/test/contract/s4_lifecycle_test.dart` already expects "resume on ended returns the transcript (status ended)". The owner may still re-pin on push at his discretion; until then the header pins stand as-is. Consumer: the phone's **Session-History** screen's transcript read (handoff `docs/runbooks/HANDOFF-spark-live-robot-session-mirror.md` Stage 0). Note also that §2.4's phrase "unlike `resume_session`, this read works for active *and* ended sessions" is, as of this addendum, true of `resume_session` too — §2.4's own behaviour is unchanged.
+
 **Addendum 2026-07-12 (Phase-R S-R2):** additive **enrichment** of `GET /api/student-model` (§2.2) and additive **start_session response fields** (§2.1) — both additive, so **no `CONTRACT_SHA`/`BINDING_SHA` re-pin for these two** (only the `end_session` gamification block, being an original-verb shape change, drives the Revision 2 re-pin above). Every pre-existing field keeps its exact name and semantics; `data_available` unchanged.
 
 ---
@@ -223,7 +226,7 @@ The contract defines a closed set of four domain errors (contract §9, `src/stud
 | `error_type` | HTTP Status | Trigger |
 |---|---|---|
 | `SessionNotFoundError` | 404 Not Found | `session_id` unknown |
-| `SessionEnded` | 410 Gone | Verb on an `ended` session (except `session_status`) |
+| `SessionEnded` | 410 Gone | Verb on an `ended` session (except `session_status` — and `resume_session`, per the 2026-07-31 Stage-0 addendum; the §2.4/§2.5 reads never raise it either) |
 | `SessionForbidden` | 403 Forbidden | Session's `student_id` ≠ caller's `student_id` |
 | `Unauthenticated` | 401 Unauthorized | Missing/invalid Keycloak token or unseeded student (ASSUM-001) |
 | `RecordingTooLarge` *(Rev 1, voice)* | 413 Payload Too Large | `voice_turn` upload exceeds the 10 MB byte cap |

@@ -167,13 +167,14 @@ Feature: Durable Cross-Device Sessions
     When lilymay tries to act on rowan's session
     Then the action should be forbidden because the session is not hers
 
-  # Why: Resume only works while active — resuming an ended session is refused
+  # Why: Resume is a READ — History reads a finished conversation's transcript
+  # (Stage 0, 2026-07-31). Terminality stays on the write verbs above.
   @task:TASK-SMP3-06
-  @negative @guard @resume
-  Scenario: Resuming an ended session is refused
+  @guard @resume
+  Scenario: Resuming an ended session returns its transcript read-only
     Given lilymay has a session that has ended
     When she tries to resume that session
-    Then the action should be refused because the session has ended
+    Then it should return the transcript with the session marked ended
 
   # Why: Sessions and their learner-state writes are keyed to a real student (FK)
   @task:TASK-SMP3-05

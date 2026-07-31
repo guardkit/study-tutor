@@ -316,8 +316,9 @@ class TurnsSinceResult:
     ``turns`` are the SAME ordered rows :class:`ResumeResult` carries, sliced
     from the 0-based row offset ``since``; ``total`` is the RAW row count (never
     the ``// 2`` pairs projection the status/list verbs surface), so a client
-    polls with ``since=total`` next time. Unlike resume this reads **ended**
-    sessions too, so a poll survives the active→ended transition.
+    polls with ``since=total`` next time. This reads **ended** sessions too
+    (as :meth:`SessionService.resume_session` now does, Stage 0), so a poll
+    survives the active→ended transition.
     """
 
     session_id: str
@@ -608,9 +609,22 @@ class SessionService:
     async def resume_session(
         self, *, student_id: str, session_id: str
     ) -> ResumeResult:
-        """Rehydrate an owned active session's transcript for a new device."""
+        """Rehydrate an owned session's transcript — **active OR ended**.
+
+        The mirror/History read (Stage 0, 2026-07-31 binding addendum): the
+        phone's Session-History screen reads a finished conversation by
+        resuming it, so ``allow_ended=True`` and ``SessionEnded`` is impossible
+        on this path — an ended session returns its ordered transcript with
+        ``status: "ended"``. The response shape is unchanged (``status``
+        already carried ``ended``).
+
+        Terminality (contract §4 "no re-open") stays enforced on the **write**
+        verbs: :meth:`turn`, :meth:`turn_stream`, :meth:`end_session` and the
+        voice turn keep ``allow_ended=False`` and still raise ``SessionEnded``.
+        Only this read is widened.
+        """
         record = await self._load_owned_session(
-            student_id, session_id, allow_ended=False
+            student_id, session_id, allow_ended=True
         )
         store = self._resolve_store()
         turns = tuple(await store.get_turns(session_id))
@@ -627,8 +641,9 @@ class SessionService:
         """Owned session's transcript rows at index ≥ ``since`` (Stage 1 delta read).
 
         ``allow_ended=True`` — the mirror keeps reading after the robot ends the
-        session (unlike :meth:`resume_session`, so ``SessionEnded`` is impossible
-        here). ``since`` is a plain 0-based row offset into the same ordered rows
+        session (as :meth:`resume_session` also does since Stage 0, so
+        ``SessionEnded`` is impossible on either read). ``since`` is a plain
+        0-based row offset into the same ordered rows
         :meth:`resume_session` returns, never a timestamp; a ``since`` at or past
         the end yields an empty slice (not an error). Service-level slice only —
         the store port is untouched.

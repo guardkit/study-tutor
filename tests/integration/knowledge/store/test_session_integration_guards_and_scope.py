@@ -144,7 +144,12 @@ async def test_fake_store_session_ended_guard(
     fake_store: FakeStudentStore,
     fake_service: SessionService,
 ) -> None:
-    """Acting on ended session raises SessionEnded."""
+    """WRITING to an ended session raises SessionEnded (§4 terminality).
+
+    Stage 0 (2026-07-31) widened the ``resume`` READ to ended sessions — see
+    ``test_fake_store_resume_reads_ended_session`` — so terminality is pinned
+    here on the write verbs, where it still holds.
+    """
     # Create and end a session
     result = await fake_service.start_session(
         student_id="lilymay",
@@ -153,12 +158,59 @@ async def test_fake_store_session_ended_guard(
     session_id = result.session_id
     await fake_store.end_session(session_id)
 
-    # Try to resume it
+    async def _never_called(_: str) -> str:  # pragma: no cover - guard fires first
+        raise AssertionError("reply_fn must not run on an ended session")
+
     with pytest.raises(SessionEnded):
-        await fake_service.resume_session(
+        await fake_service.turn(
+            student_id="lilymay",
+            session_id=session_id,
+            user_message="one more?",
+            reply_fn=_never_called,  # type: ignore[arg-type]
+        )
+
+    with pytest.raises(SessionEnded):
+        await fake_service.end_session(
             student_id="lilymay",
             session_id=session_id,
         )
+
+
+@pytest.mark.asyncio
+async def test_fake_store_resume_reads_ended_session(
+    fake_store: FakeStudentStore,
+    fake_service: SessionService,
+) -> None:
+    """Stage 0: resuming an ENDED owned session returns its transcript.
+
+    The phone's Session-History read (handoff Stage 0, 2026-07-31 binding
+    addendum): a READ widening only — ``status`` carries ``"ended"`` and the
+    shape is unchanged.
+    """
+    result = await fake_service.start_session(
+        student_id="lilymay",
+        subject="english-literature",
+    )
+    session_id = result.session_id
+    await fake_store.append_turn(
+        session_id=session_id,
+        role="user",
+        content="Question 1",
+    )
+    await fake_store.append_turn(
+        session_id=session_id,
+        role="tutor",
+        content="Answer 1",
+    )
+    await fake_store.end_session(session_id)
+
+    resume = await fake_service.resume_session(
+        student_id="lilymay",
+        session_id=session_id,
+    )
+
+    assert resume.status == "ended"
+    assert [t.content for t in resume.turns] == ["Question 1", "Answer 1"]
 
 
 @pytest.mark.asyncio

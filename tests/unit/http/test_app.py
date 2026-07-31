@@ -327,8 +327,61 @@ def test_resume_session_forbidden(test_client, fake_service):
     assert data["error_type"] == "SessionForbidden"
 
 
-def test_resume_session_ended(test_client, fake_service):
-    """AC-002: SessionEnded → 410."""
+def test_resume_session_ended_returns_transcript(test_client, fake_service):
+    """Stage 0 (2026-07-31): resume of an ENDED session → 200 + transcript.
+
+    The read is widened (History's transcript read); the shape is unchanged —
+    ``status`` simply carries ``"ended"``. Terminality stays on the write verbs
+    (see ``test_turn_session_ended`` / ``test_end_session_already_ended``).
+    """
+    fake_service.resume_session.return_value = ResumeResult(
+        session_id="sess-ended",
+        student_id="test-student",
+        status="ended",
+        turns=(
+            SessionTurn(
+                session_id="sess-ended",
+                role="user",
+                content="What drives Macbeth?",
+                ts=datetime.now(),
+                turn_index=0,
+            ),
+            SessionTurn(
+                session_id="sess-ended",
+                role="tutor",
+                content="Let's look at Act 1...",
+                ts=datetime.now(),
+                turn_index=1,
+            ),
+        ),
+    )
+
+    response = test_client.get(
+        "/api/sessions/sess-ended/resume",
+        headers={"Authorization": "Bearer token-test"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    # Shape unchanged — no new fields; ``status`` carries "ended".
+    assert set(data) == {"session_id", "student_id", "status", "turns"}
+    assert data["session_id"] == "sess-ended"
+    assert data["student_id"] == "test-student"
+    assert data["status"] == "ended"
+    assert [t["role"] for t in data["turns"]] == ["user", "tutor"]
+    assert [t["content"] for t in data["turns"]] == [
+        "What drives Macbeth?",
+        "Let's look at Act 1...",
+    ]
+    assert set(data["turns"][0]) == {"role", "content", "ts"}
+
+
+def test_resume_session_retained_ended_clause_still_maps_410(test_client, fake_service):
+    """The handler keeps its ``except SessionEnded`` clause (handoff Stage 0).
+
+    The service can no longer raise it on this path, so this is a defensive pin
+    on the error mapping itself — not a claim that resume rejects ended sessions.
+    """
     fake_service.resume_session.side_effect = SessionEnded("Session has ended")
 
     response = test_client.get(

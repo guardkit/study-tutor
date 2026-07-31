@@ -240,6 +240,13 @@ async def resume_session(request: Request) -> JSONResponse:
 
     Path param: session_id
     Response: {session_id, status, turns, student_id}
+
+    Reads **active AND ended** sessions (Stage 0, 2026-07-31 binding addendum):
+    the phone's Session-History screen reads a finished conversation here, so an
+    ended session returns its ordered transcript with ``status: "ended"`` (200),
+    never 410. The response shape is unchanged. The ``SessionEnded`` clause
+    below is retained deliberately — it simply stops firing on this path, while
+    the write verbs (turn / end / voice-turn) still map it to 410.
     """
     try:
         student_id = await _resolve_student_id(request)
