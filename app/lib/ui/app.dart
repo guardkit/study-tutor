@@ -10,6 +10,7 @@ import 'home_screen.dart';
 import 'progress_store.dart';
 import 'sign_in_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme_controller.dart';
 
 /// App shell: the screens behind Navigator 1.0 pushes. The composition root
 /// (main.dart) injects the ports; they are exposed to the tree via [AppScope]
@@ -20,7 +21,9 @@ import 'theme/app_theme.dart';
 /// S-A3: [studentModelApi] and [progressStore] are optional — a test that
 /// pumps `StudyTutorApp` with only the three v1 ports gets a default fake
 /// student-model read and a store over it, so pre-S-A3 widget tests compile
-/// and run unchanged.
+/// and run unchanged. [themeController] is optional the same way: absent, the
+/// shell creates one defaulting to [ThemeMode.system] (the prior hardcoded
+/// behaviour), so pre-Settings tests are unaffected.
 class StudyTutorApp extends StatefulWidget {
   const StudyTutorApp({
     super.key,
@@ -29,6 +32,7 @@ class StudyTutorApp extends StatefulWidget {
     required this.voiceApi,
     this.studentModelApi,
     this.progressStore,
+    this.themeController,
   });
 
   final IdentityProvider identity;
@@ -36,6 +40,7 @@ class StudyTutorApp extends StatefulWidget {
   final VoiceApi voiceApi;
   final StudentModelApi? studentModelApi;
   final ProgressStore? progressStore;
+  final ThemeController? themeController;
 
   @override
   State<StudyTutorApp> createState() => _StudyTutorAppState();
@@ -46,11 +51,14 @@ class _StudyTutorAppState extends State<StudyTutorApp> {
       widget.studentModelApi ?? FakeStudentModelApi(identity: widget.identity);
   late final ProgressStore _progressStore = widget.progressStore ??
       ProgressStore(api: _studentModelApi, subject: defaultSubject);
+  late final ThemeController _themeController =
+      widget.themeController ?? ThemeController();
 
   @override
   void dispose() {
-    // Only dispose a store we created; an injected one is owned by the caller.
+    // Only dispose objects we created; injected ones are owned by the caller.
     if (widget.progressStore == null) _progressStore.dispose();
+    if (widget.themeController == null) _themeController.dispose();
     super.dispose();
   }
 
@@ -62,15 +70,21 @@ class _StudyTutorAppState extends State<StudyTutorApp> {
       voiceApi: widget.voiceApi,
       studentModelApi: _studentModelApi,
       progressStore: _progressStore,
-      child: MaterialApp(
-        title: 'Study Tutor',
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        home: SignInScreen(
-          identity: widget.identity,
-          sessionApi: widget.sessionApi,
-          voiceApi: widget.voiceApi,
+      themeController: _themeController,
+      // The shell rebuilds when the theme mode changes so `MaterialApp`
+      // re-reads `themeMode` from the controller (spec §7 Settings surface).
+      child: ListenableBuilder(
+        listenable: _themeController,
+        builder: (context, _) => MaterialApp(
+          title: 'Study Tutor',
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: _themeController.mode,
+          home: SignInScreen(
+            identity: widget.identity,
+            sessionApi: widget.sessionApi,
+            voiceApi: widget.voiceApi,
+          ),
         ),
       ),
     );

@@ -16,6 +16,8 @@ import 'history_screen.dart';
 import 'live_session_screen.dart';
 import 'progress_store.dart';
 import 'session_screen.dart';
+import 'settings_screen.dart';
+import 'theme_controller.dart';
 
 /// Default subject for v1 — English (AQA 8700/8702), matching the tutor's
 /// fine-tune, the Scholar persona, and query_student_model's default. A subject
@@ -82,6 +84,25 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openProgress(ProgressStore store) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ProgressScreen(store: store)),
+    );
+  }
+
+  /// Open the Settings / Profile surface (scope §7). The app-wide
+  /// [ThemeController] is resolved from the ambient [AppScope]; when Home is
+  /// pumped without a scope (widget tests that don't exercise Settings), a
+  /// local throwaway controller keeps the push from crashing.
+  void _openSettings() {
+    final themeController =
+        AppScope.maybeOf(context)?.themeController ?? ThemeController();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen(
+          identity: widget.identity,
+          sessionApi: widget.sessionApi,
+          voiceApi: widget.voiceApi,
+          themeController: themeController,
+        ),
+      ),
     );
   }
 
@@ -234,11 +255,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (value) {
               if (value == 'sign_out') _signOut();
               if (value == 'history') _openHistory();
+              if (value == 'settings') _openSettings();
             },
             itemBuilder: (context) => const [
               PopupMenuItem<String>(
                 value: 'history',
                 child: Text('Session history'),
+              ),
+              PopupMenuItem<String>(
+                value: 'settings',
+                child: Text('Settings'),
               ),
               PopupMenuItem<String>(
                 value: 'sign_out',
