@@ -170,7 +170,12 @@ class FakeSessionApi implements SessionApi {
     final studentId = _requireStudentId();
     final session = _requireSession(sessionId);
     _requireOwner(session, studentId);
-    _requireActive(session);
+    // §5 resume_session is a transcript READ: it returns the ordered turns and
+    // the current status. Terminality (§4 "no re-open") is enforced on the
+    // WRITE verbs (turn/end → SessionEnded), not here — so a Session-History
+    // view can load an ended session's transcript read-only. The response shape
+    // is unchanged (status simply carries `ended`); the HTTP adapter already
+    // parses an ended resume result.
     return ResumeSessionResult(
       sessionId: session.id,
       status: session.status,

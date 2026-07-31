@@ -16,6 +16,7 @@ import 'formatting.dart';
 import 'gamification/celebration_sheet.dart';
 import 'progress_store.dart';
 import 'theme/motion.dart';
+import 'transcript_view.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({
@@ -30,12 +31,21 @@ class SessionScreen extends StatefulWidget {
     this.player,
     this.clock,
     this.progressStore,
+    this.streamVoice = false,
   });
 
   final IdentityProvider identity;
   final SessionApi sessionApi;
   final String sessionId;
   final VoiceApi voiceApi;
+
+  /// Streaming-vs-batch gate (TASK-STREAM-001). When true, a voice turn is sent
+  /// over [VoiceApi.voiceTurnStream] so the transcript, answer text, and audio
+  /// arrive live instead of after a 40–90 s "Recording sent…" wall. The batch
+  /// [VoiceApi.voiceTurn] path stays the default AND the safety net: it runs
+  /// whenever streaming is off, or whenever the stream errors out. Defaults to
+  /// false so batch is the default; the composed app opts in (main → home).
+  final bool streamVoice;
 
   /// The app-wide student-model store (spec §6.2). Refreshed after a settled
   /// end so the Home header/Progress screen reflect the new totals. Null in
@@ -81,9 +91,6 @@ class _SessionScreenState extends State<SessionScreen>
   final _scroll = ScrollController();
   late final VoiceRecorder? _recorder = widget.voiceRecorder;
 
-  /// Confirmed-turn indices whose timestamp is revealed (long-press, spec §3).
-  final Set<int> _revealedTimestamps = {};
-
   bool _sending = false;
   bool _ended = false;
   bool _recording = false;
@@ -95,6 +102,23 @@ class _SessionScreenState extends State<SessionScreen>
 
   /// Whether to show the tutor "typing" indicator while awaiting a reply.
   bool _awaiting = false;
+
+  /// The finalized STT transcript of the in-flight STREAMING voice turn, shown
+  /// as the user bubble once the transcript event finalizes (null when no
+  /// streaming turn is mid-flight). Nothing is committed to [_turns] until
+  /// `turn_complete` — so a mid-stream error can roll back cleanly and hand off
+  /// to the batch safety net without leaving a half-turn behind.
+  String? _streamTranscript;
+
+  /// The tutor answer text accumulating token-by-token during a streaming turn
+  /// (null before the first token / when no streaming turn is mid-flight).
+  String? _streamingAnswer;
+
+  /// Fetched audio chunks awaiting sequential playback during a streaming turn,
+  /// with a single-drainer guard so overlapping [AudioPartEvent]s still play
+  /// back-to-back through the existing [AudioPlayback.playSequential].
+  final List<Uint8List> _streamAudioQueue = [];
+  bool _streamDraining = false;
 
   /// Dismissible banner state (spec §3: themed MaterialBanner replaces the
   /// hardcoded amber/red containers).
@@ -317,8 +341,13 @@ class _SessionScreenState extends State<SessionScreen>
       _awaiting = true;
     });
     _scrollToBottom();
-    await _sendVoiceTurn(audio);
+    await _sendVoice(audio);
   }
+
+  /// Route the captured audio to the streaming path when the gate is on, else
+  /// the batch path (the default). Streaming falls back to batch on any error.
+  Future<void> _sendVoice(Uint8List audio) =>
+      widget.streamVoice ? _sendVoiceTurnStreaming(audio) : _sendVoiceTurn(audio);
 
   /// The 60-second hard-stop fired (design §6.1/§6.3): send the captured audio
   /// on the user's behalf and re-sync the recording UI, instead of dropping the
@@ -347,7 +376,7 @@ class _SessionScreenState extends State<SessionScreen>
       _awaiting = true;
     });
     _scrollToBottom();
-    unawaited(_sendVoiceTurn(audio));
+    unawaited(_sendVoice(audio));
   }
 
   DateTime _now() => (widget.clock ?? DateTime.now)();
@@ -449,6 +478,127 @@ class _SessionScreenState extends State<SessionScreen>
     }
   }
 
+  /// The streaming voice send (TASK-STREAM-001): consume [voiceTurnStream] and
+  /// paint the turn as it arrives — transcript finalizes into the user bubble,
+  /// answer tokens accumulate into a live tutor bubble, audio parts start
+  /// playing on arrival. `turn_complete` commits the exchange to [_turns]. Any
+  /// stream error rolls the partial UI back and hands off to the batch
+  /// [voiceTurn] safety net (the existing, fully-tested path).
+  Future<void> _sendVoiceTurnStreaming(Uint8List audio) async {
+    final stream = widget.voiceApi.voiceTurnStream(
+      widget.sessionId,
+      audio,
+      contentType: 'audio/m4a',
+    );
+    try {
+      await for (final event in stream) {
+        if (!mounted) return;
+        switch (event) {
+          case TranscriptEvent(:final transcript, :final isFinal):
+            // Show the transcript as the user bubble once the STT finalizes;
+            // interim hypotheses keep the neutral "Recording sent…" bubble.
+            if (isFinal) {
+              setState(() {
+                _optimistic = null;
+                _streamTranscript = transcript;
+              });
+              _scrollToBottom();
+            }
+          case TextTokenEvent(:final token):
+            setState(() {
+              _awaiting = false;
+              _streamingAnswer = (_streamingAnswer ?? '') + token;
+            });
+            _scrollToBottom();
+          case AudioPartEvent(:final chunkId):
+            // Start playing this part now — do not block token consumption.
+            unawaited(_enqueueStreamAudio(chunkId));
+          case TurnCompleteEvent():
+            _commitStreamedTurn();
+        }
+      }
+    } catch (_) {
+      // Stream error / unavailability: fall back to the batch safety net.
+      if (!mounted) return;
+      await _fallbackToBatch(audio);
+      return;
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// Commit a fully-streamed turn to the transcript: the finalized user
+  /// utterance then the accumulated tutor answer, clearing all streaming state.
+  void _commitStreamedTurn() {
+    if (!mounted) return;
+    setState(() {
+      final now = DateTime.now();
+      if (_streamTranscript != null) {
+        _turns.add(
+          TurnEntry(role: TurnRole.user, content: _streamTranscript!, ts: now),
+        );
+      }
+      _turns.add(
+        TurnEntry(
+          role: TurnRole.tutor,
+          content: _streamingAnswer ?? '',
+          ts: now,
+        ),
+      );
+      _streamTranscript = null;
+      _streamingAnswer = null;
+      _optimistic = null;
+      _awaiting = false;
+    });
+    _scrollToBottom();
+  }
+
+  /// Roll the partial streaming UI back and re-run the turn over the batch
+  /// [voiceTurn] path — the safety net. Nothing was committed to [_turns]
+  /// during streaming, so a clean reset is enough before the batch send takes
+  /// over (its own success/error handling paints the final result).
+  Future<void> _fallbackToBatch(Uint8List audio) async {
+    setState(() {
+      _streamTranscript = null;
+      _streamingAnswer = null;
+      _optimistic = const _Optimistic(isVoice: true);
+      _awaiting = true;
+    });
+    await _sendVoiceTurn(audio);
+  }
+
+  /// Fetch a streamed audio part and play it back through the existing
+  /// [AudioPlayback.playSequential]. A single drainer coalesces parts that
+  /// arrive while a chunk is still playing so they are heard back-to-back; a
+  /// failed fetch or playback never breaks the turn (the text is already shown).
+  Future<void> _enqueueStreamAudio(String chunkId) async {
+    final player = widget.player;
+    if (player == null) return;
+    Uint8List bytes;
+    try {
+      bytes = await widget.voiceApi.fetchAudioChunk(widget.sessionId, chunkId);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    _streamAudioQueue.add(bytes);
+    if (_streamDraining) return;
+    _streamDraining = true;
+    setState(() => _playing = true);
+    try {
+      while (_streamAudioQueue.isNotEmpty) {
+        final batch = List<Uint8List>.of(_streamAudioQueue);
+        _streamAudioQueue.clear();
+        await player.playSequential(batch);
+      }
+    } catch (_) {
+      // Playback failure must not break the turn — the text is already shown.
+    } finally {
+      _streamDraining = false;
+      if (mounted) setState(() => _playing = false);
+    }
+  }
+
   void _voiceError(String message) {
     if (!mounted) return;
     _clearPending();
@@ -493,49 +643,6 @@ class _SessionScreenState extends State<SessionScreen>
   double _bubbleMaxWidth(BuildContext context) {
     // Spec §4: 76% of screen width, capped at 560 (replaces the 320 hardcode).
     return math.min(560.0, MediaQuery.of(context).size.width * 0.76);
-  }
-
-  Widget _bubble(BuildContext context, int index, TurnEntry turn) {
-    final isUser = turn.role == TurnRole.user;
-    final colors = Theme.of(context).colorScheme;
-    final revealed = _revealedTimestamps.contains(index);
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: () => setState(() {
-          revealed
-              ? _revealedTimestamps.remove(index)
-              : _revealedTimestamps.add(index);
-        }),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(context)),
-          decoration: BoxDecoration(
-            color: isUser ? colors.primaryContainer : colors.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment:
-                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(turn.content),
-              if (revealed)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    _formatClock(turn.ts),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _optimisticBubble(BuildContext context, _Optimistic pending) {
@@ -597,11 +704,29 @@ class _SessionScreenState extends State<SessionScreen>
     );
   }
 
-  String _formatClock(DateTime ts) {
-    final local = ts.toLocal();
-    final hh = local.hour.toString().padLeft(2, '0');
-    final mm = local.minute.toString().padLeft(2, '0');
-    return '$hh:$mm';
+  /// The tutor bubble that grows token-by-token during a streaming turn
+  /// (spec: stream the answer text into the tutor bubble). Left-aligned like a
+  /// confirmed tutor turn; a live region so the accumulating text is announced.
+  Widget _streamingAnswerBubble(BuildContext context, String text) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Tutor is answering',
+      liveRegion: true,
+      child: Align(
+        key: const Key('streaming-answer'),
+        alignment: Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(context)),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(text),
+        ),
+      ),
+    );
   }
 
   String _formatElapsed() {
@@ -612,10 +737,6 @@ class _SessionScreenState extends State<SessionScreen>
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final pendingCount =
-        (_optimistic != null ? 1 : 0) + (_awaiting ? 1 : 0);
-    final itemCount = _turns.length + pendingCount;
-    final isEmpty = itemCount == 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -631,29 +752,37 @@ class _SessionScreenState extends State<SessionScreen>
       body: Column(
         children: [
           Expanded(
-            child: isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'Ask your first question below — type it or tap the '
-                        'mic to speak.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scroll,
-                    itemCount: itemCount,
-                    itemBuilder: (context, i) {
-                      if (i < _turns.length) return _bubble(context, i, _turns[i]);
-                      final offset = i - _turns.length;
-                      if (_optimistic != null && offset == 0) {
-                        return _optimisticBubble(context, _optimistic!);
-                      }
-                      return _typingIndicator(context);
-                    },
+            child: TranscriptView(
+              turns: _turns,
+              controller: _scroll,
+              // The optimistic user bubble + typing indicator are the live
+              // session's pending items, appended after the confirmed turns.
+              trailing: [
+                if (_optimistic != null) _optimisticBubble(context, _optimistic!),
+                // Streaming voice: the finalized transcript shows as the user
+                // bubble, then the tutor answer accumulates live (or the typing
+                // indicator holds the space until the first token lands).
+                if (_streamTranscript != null)
+                  _optimisticBubble(
+                    context,
+                    _Optimistic(text: _streamTranscript, isVoice: false),
                   ),
+                if (_streamingAnswer != null)
+                  _streamingAnswerBubble(context, _streamingAnswer!)
+                else if (_awaiting)
+                  _typingIndicator(context),
+              ],
+              emptyState: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Ask your first question below — type it or tap the '
+                    'mic to speak.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
           ),
           if (_bannerMessage != null)
             MaterialBanner(

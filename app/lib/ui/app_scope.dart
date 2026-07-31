@@ -5,6 +5,7 @@ import '../ports/session_api.dart';
 import '../ports/student_model_api.dart';
 import '../ports/voice_api.dart';
 import 'progress_store.dart';
+import 'theme_controller.dart';
 
 /// Root [InheritedWidget] composing the app's ports (spec §2) so screens read
 /// them via `AppScope.of(context)` instead of constructor prop-drilling. The
@@ -13,7 +14,8 @@ import 'progress_store.dart';
 /// tests can inject fakes directly without an ambient scope.
 ///
 /// S-A3 adds the `StudentModelApi` port and the app-wide [ProgressStore]
-/// (owning the student-model snapshot) to the scope.
+/// (owning the student-model snapshot) to the scope. The Settings surface adds
+/// the app-wide [ThemeController] (theme-mode selection) alongside them.
 class AppScope extends InheritedWidget {
   const AppScope({
     super.key,
@@ -22,6 +24,7 @@ class AppScope extends InheritedWidget {
     required this.voiceApi,
     required this.studentModelApi,
     required this.progressStore,
+    required this.themeController,
     required super.child,
   });
 
@@ -30,6 +33,7 @@ class AppScope extends InheritedWidget {
   final VoiceApi voiceApi;
   final StudentModelApi studentModelApi;
   final ProgressStore progressStore;
+  final ThemeController themeController;
 
   /// The nearest enclosing scope. Throws if none is present — screens that
   /// opt into scope reading must live under an [AppScope].
@@ -50,5 +54,6 @@ class AppScope extends InheritedWidget {
       sessionApi != oldWidget.sessionApi ||
       voiceApi != oldWidget.voiceApi ||
       studentModelApi != oldWidget.studentModelApi ||
-      progressStore != oldWidget.progressStore;
+      progressStore != oldWidget.progressStore ||
+      themeController != oldWidget.themeController;
 }
