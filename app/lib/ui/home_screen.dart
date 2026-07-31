@@ -159,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
         voiceRecorder: VoiceRecorder(),
         player: JustAudioPlayback(),
         progressStore: _store,
+        streamVoice: true,
       ));
     } on Unauthenticated {
       if (!mounted) return;
@@ -190,6 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
         voiceRecorder: VoiceRecorder(),
         player: JustAudioPlayback(),
         progressStore: _store,
+        streamVoice: true,
       ));
     } on Unauthenticated {
       if (!mounted) return;
