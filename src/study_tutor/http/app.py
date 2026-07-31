@@ -274,6 +274,48 @@ async def resume_session(request: Request) -> JSONResponse:
         return _map_error_to_response(e)
 
 
+def parse_since(raw: str | None) -> int:
+    """The shared ``since`` validator: a plain 0-based ROW offset (binding §2.4).
+
+    ``None``/absent ⇒ ``0``. Non-integer or negative raises ``ValueError`` — the
+    caller turns that into a 400 with no ``error_type`` (§4.2). Shared by the
+    Stage-1 poll route and the Stage-2 SSE mirror stream so the two reject the
+    same inputs identically.
+    """
+    if raw is None:
+        return 0
+    try:
+        since = int(raw)
+    except (TypeError, ValueError):
+        raise ValueError(f"since must be an integer, got {raw!r}")
+    if since < 0:
+        raise ValueError(f"since must be >= 0, got {since}")
+    return since
+
+
+def turns_since_payload(result: Any) -> dict[str, Any]:
+    """The bound ``{session_id, status, turns, next}`` envelope (binding §2.4).
+
+    The row projection is byte-identical to ``resume_session``'s, so the app's
+    existing transcript parser is reused unchanged. Shared verbatim with the
+    Stage-2 SSE stream's ``turn_appended`` event data — one function, so the two
+    surfaces cannot drift.
+    """
+    return {
+        "session_id": result.session_id,
+        "status": result.status,
+        "turns": [
+            {
+                "role": turn.role,
+                "content": turn.content,
+                "ts": turn.ts.isoformat(),
+            }
+            for turn in result.turns
+        ],
+        "next": result.total,
+    }
+
+
 async def turns_since(request: Request) -> JSONResponse:
     """GET /api/sessions/{session_id}/turns?since={n} — delta transcript read.
 
@@ -296,13 +338,7 @@ async def turns_since(request: Request) -> JSONResponse:
         student_id = await _resolve_student_id(request)
         session_id = request.path_params["session_id"]
 
-        since_param = request.query_params.get("since", "0")
-        try:
-            since = int(since_param)
-        except (TypeError, ValueError):
-            raise ValueError(f"since must be an integer, got {since_param!r}")
-        if since < 0:
-            raise ValueError(f"since must be >= 0, got {since}")
+        since = parse_since(request.query_params.get("since", "0"))
 
         service: SessionService = request.app.state.service
         result = await service.turns_since(
@@ -311,23 +347,7 @@ async def turns_since(request: Request) -> JSONResponse:
             since=since,
         )
 
-        # Row projection byte-identical to resume_session's (binding §2.4) so
-        # the app's existing transcript parser is reused unchanged.
-        response_data = {
-            "session_id": result.session_id,
-            "status": result.status,
-            "turns": [
-                {
-                    "role": turn.role,
-                    "content": turn.content,
-                    "ts": turn.ts.isoformat(),
-                }
-                for turn in result.turns
-            ],
-            "next": result.total,
-        }
-
-        return JSONResponse(response_data, status_code=200)
+        return JSONResponse(turns_since_payload(result), status_code=200)
 
     # SessionEnded is deliberately absent: the service reads ended sessions
     # (allow_ended=True), so 410 cannot arise on this route.
@@ -592,6 +612,7 @@ def create_app(
     voice_config: Any | None = None,
     voice_service: Any | None = None,
     chunk_store: Any | None = None,
+    turn_notifier: Any | None = None,
 ) -> Starlette:
     """Create Starlette app with the six session routes and optional voice routes.
 
@@ -613,6 +634,11 @@ def create_app(
             are mounted.
         voice_service: Optional VoiceTurnService for voice routes.
         chunk_store: Optional ChunkStore for voice audio retrieval.
+        turn_notifier: Optional in-process ``TurnNotifier`` (live robot-session
+            mirror Stage 2) — the SAME instance the wired ``SessionService``
+            pings, so the SSE mirror stream wakes the moment a row is persisted.
+            ``None`` ⇒ the stream degrades to timeout ticking (still correct,
+            just at the poll cadence).
 
     Returns:
         Configured Starlette application.
@@ -645,6 +671,11 @@ def create_app(
 
             return _single_chunk_stream
 
+    # Live robot-session mirror Stage 2 (binding §2.5). Imported here rather than
+    # at module scope because the SSE module imports this one's shared helpers —
+    # a deferred import (the voice-routes pattern) keeps that one-directional.
+    from study_tutor.http.turn_stream_sse import turns_stream
+
     # Route table exactly per binding doc §2 (frozen contract). Typed as
     # list[BaseRoute] so the conditional voice WebSocketRoute append typechecks
     # alongside the Route entries (both subclass BaseRoute).
@@ -666,6 +697,15 @@ def create_app(
         # the voice routes, or their status codes — so no CONTRACT_SHA/BINDING_SHA
         # re-pin.
         Route("/api/sessions/{session_id:str}/turns", turns_since, methods=["GET"]),
+        # Live robot-session mirror Stage 2: additive SSE read stream (binding
+        # §2.5). Always mounted — deliberately NOT behind the voice flag that
+        # gates /ws, because the mirror is a one-way viewer with no voice
+        # dependency. Additive: no CONTRACT_SHA/BINDING_SHA re-pin.
+        Route(
+            "/api/sessions/{session_id:str}/turns/stream",
+            turns_stream,
+            methods=["GET"],
+        ),
     ]
 
     # TASK-APP1-05: Mount /__dev__/reset ONLY when dev_reset flag is set
@@ -701,6 +741,8 @@ def create_app(
     app.state.reply_stream_fn_factory = reply_stream_fn_factory
     app.state.auth_config = auth_config
     app.state.student_store = student_store
+    # Stage 2: the mirror stream's wake-up source (None ⇒ timeout ticking only).
+    app.state.turn_notifier = turn_notifier
 
     # TASK-VOX-006: Inject voice dependencies when available
     if voice_config is not None and voice_config.enabled:

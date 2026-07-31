@@ -13,6 +13,8 @@
 
 **Addendum 2026-07-31 (live robot-session mirror, Stage 1):** additive read verb `GET /api/sessions/{session_id}/turns?since={n}` bound in §2.4. Additive only — the six session verbs, the voice Rev 1 routes, and their status codes are unchanged, so there is **no `CONTRACT_SHA`/`BINDING_SHA` re-pin** (same posture as the `GET /api/student-model` addendum below). It is a delta *read* over the transcript `resume_session` already returns, not a session verb, so the transport-neutral session contract SHA is unaffected.
 
+**Addendum 2026-07-31 (live robot-session mirror, Stage 2):** additive read **stream** `GET /api/sessions/{session_id}/turns/stream` (SSE, `text/event-stream`) bound in §2.5. Same additive posture as Stage 1 — a one-way push of the §2.4 envelope, **no `CONTRACT_SHA`/`BINDING_SHA` re-pin**; the six session verbs, the voice Rev 1 routes (including the §2.1 WebSocket and its frozen contract-§7 frame vocabulary) and every status code are untouched. It is deliberately **not** an extension of `/ws`: `/ws` is mounted only behind `STUDY_TUTOR_VOICE_ENABLED`, and the mirror is a read-only viewer that must work with voice off.
+
 **Addendum 2026-07-12 (Phase-R S-R2):** additive **enrichment** of `GET /api/student-model` (§2.2) and additive **start_session response fields** (§2.1) — both additive, so **no `CONTRACT_SHA`/`BINDING_SHA` re-pin for these two** (only the `end_session` gamification block, being an original-verb shape change, drives the Revision 2 re-pin above). Every pre-existing field keeps its exact name and semantics; `data_available` unchanged.
 
 ---
@@ -41,6 +43,7 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 | `voice_audio` *(Rev 1)* | GET | `/api/sessions/{session_id}/voice-audio/{chunk_id}` | Path params: `session_id`, `chunk_id` | **`audio/wav`** bytes (binary response) |
 | `student_model` *(read, R05)* | GET | `/api/student-model` | Query params: `subject` (required), `student_name?` (hint, ignored) | `{ student_name, streak_days, level_name, recent_xp, near_achievements:[], topic_confidence:{topic:conf}, data_available }` (§2.2) |
 | `turns_since` *(read, 2026-07-31)* | GET | `/api/sessions/{session_id}/turns` | Path param: `session_id`; query param: `since?` (int row offset, default `0`) | `{ session_id, status, turns:[{role,content,ts}], next:int }` (§2.4) |
+| `turns_stream` *(read stream, 2026-07-31)* | GET | `/api/sessions/{session_id}/turns/stream` | Path param: `session_id`; query param: `since?` (int row offset, default `0`) | **`text/event-stream`** — `turn_appended` events carrying the §2.4 envelope, a terminal `session_ended`, and `: keepalive` comments (§2.5) |
 
 **Note:** Request and response JSON shapes are defined in contract §5. This binding table maps verbs to HTTP methods and paths; the payload semantics are unchanged from the contract.
 
@@ -166,6 +169,36 @@ Serves the phone's **read-only live mirror** of the tutoring session the Reachy 
 - **Beyond the end:** `since >= next` returns `turns: []` with `next` = the total, **200 — not an error**.
 - **Ended sessions:** unlike `resume_session`, this read works for **active *and* ended** sessions (service-side `allow_ended=True`, the same carve-out `session_status` uses), so the poll survives the active→ended transition. **`SessionEnded` (410) is therefore impossible on this route.**
 - **Errors:** `SessionNotFoundError` → 404, `SessionForbidden` → 403, `Unauthenticated` → 401 (§4.1 envelope); malformed `since` → 400 with `{"error": "Validation failed: …"}` and no `error_type` (§4.2).
+
+---
+
+### 2.5 Turns Stream Binding — SSE (additive — live robot-session mirror Stage 2, 2026-07-31)
+
+**Endpoint:** `GET /api/sessions/{session_id}/turns/stream` (**always mounted, never flag-gated**; bearer-authed like the six session verbs).
+
+Real-time push for the same read-only mirror §2.4 serves by polling: the robot's turn reaches the phone the instant it is persisted, with no poll lag. `text/event-stream` (Server-Sent Events), `Cache-Control: no-cache`.
+
+**Not an extension of the §2.1 WebSocket — deliberately.** `/api/sessions/{session_id}/ws` is mounted **only** when `STUDY_TUTOR_VOICE_ENABLED` is set and carries the frozen contract-§7 streamed-**write** frame vocabulary. The mirror is a one-way **read** viewer that must work with voice off, so it is its own route. `/ws`, its frames, its flag gating, and its status codes are **unchanged by this addendum**.
+
+**Additive read stream:** it does **not** alter the six session verbs, the voice Rev 1 routes, or any status code, so there is **no `CONTRACT_SHA`/`BINDING_SHA` re-pin** (same posture as §2.2 and §2.4). It carries the §2.4 envelope verbatim, so it introduces no new payload shape. Ephemeral/no-audio-at-rest (§6 Rev 1) is unaffected — text turns only.
+
+- **Path param:** `session_id`. **Query param:** `since` (optional, default `0`) — the identical 0-based **row offset** §2.4 takes, with the identical validation.
+- **Auth/ownership — resolved BEFORE any byte streams.** `_resolve_student_id` runs first, then one `turns_since` read; a failure returns the ordinary **JSON** envelope with its ordinary status code (401/403/404, or 400 for a malformed `since`), **never** a 200 stream carrying an error. A rejected caller never opens a stream.
+- **`SessionEnded` (410) is impossible**, for the same reason as §2.4: the mirror streams **active *and* ended** sessions. An ended session is a normal, terminal stream.
+
+**Event vocabulary** (frames are `event: <name>\ndata: <json>\n\n`; the JSON is always a single line):
+
+| Event | Data | When |
+|---|---|---|
+| `turn_appended` | the **§2.4 envelope verbatim** — `{session_id, status, turns:[{role,content,ts}], next}` | once on connect (catch-up: every row at index ≥ `since`, so the client's first frame always carries the current `status` and cursor even when `turns` is empty), then whenever new rows appear |
+| `session_ended` | `{session_id, status: "ended"}` | the **terminal** frame — emitted after any final `turn_appended`, then the server closes |
+| *(comment)* `: keepalive` | — | while idle, at least every heartbeat interval, so proxies do not reap the connection |
+
+- **Client cursor:** each `turn_appended`'s `next` is the client's cursor; the server advances it internally, so a reconnect just re-presents the last `next` as `since`.
+- **Delta only:** after the catch-up frame, `turn_appended` is emitted **only when there are new rows** — an idle stream carries nothing but keepalives.
+- **Already ended at connect:** catch-up `turn_appended`, then `session_ended`, then close.
+- **Freshness:** an in-process signal wakes the stream the moment a row is persisted (per row in `turn`/`turn_stream`, and once after `end_session`'s finalize commits). A poll-interval timeout tick re-reads regardless, so a write from another worker process still surfaces within ~one interval. Intervals default to 3 s (poll) and 15 s (heartbeat).
+- **Disconnect:** the client simply closes; the server exits the stream quietly (no error).
 
 ---
 

@@ -42,7 +42,7 @@ import click
 from study_tutor.cli.rag_wiring import build_rag_providers
 from study_tutor.knowledge.store.wiring import build_student_store
 from study_tutor.session.provider import get_session_service
-from study_tutor.session.wiring import build_session_service
+from study_tutor.session.wiring import build_session_service, get_turn_notifier
 from study_tutor.knowledge.coach_handover import apply_quote_verification
 from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.knowledge.retrieval import (
@@ -1099,6 +1099,9 @@ def serve_http(port: int, host: str, log_level: str) -> None:
         voice_config=voice_config,
         voice_service=voice_service,
         chunk_store=chunk_store,
+        # The SAME notifier instance build_session_service handed the service —
+        # so the SSE mirror stream wakes on the row the robot's turn just wrote.
+        turn_notifier=get_turn_notifier(),
     )
 
     click.echo(

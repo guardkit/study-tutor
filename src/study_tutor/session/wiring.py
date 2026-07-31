@@ -23,10 +23,28 @@ from __future__ import annotations
 import logging
 import os
 
+from study_tutor.session.notifier import TurnNotifier
 from study_tutor.session.provider import set_session_service
 from study_tutor.session.service import SessionService
 
 logger = logging.getLogger(__name__)
+
+# The ONE process-wide TurnNotifier (live robot-session mirror Stage 2), owned by
+# this wiring exactly like ``provider._session_service`` owns the service. Both
+# ends must be the SAME object — the service pings it after each persisted row,
+# the HTTP app's SSE mirror stream parks on it — so it is built here, next to the
+# service, and handed to ``create_app`` via :func:`get_turn_notifier`.
+_turn_notifier: TurnNotifier | None = None
+
+
+def get_turn_notifier() -> TurnNotifier | None:
+    """Return the wired notifier, or ``None`` when no service has been built.
+
+    ``None`` is a supported state, not a fault: a DSN-less boot never calls
+    :func:`build_session_service`, and the SSE stream degrades to timeout
+    ticking when ``app.state.turn_notifier`` is ``None``.
+    """
+    return _turn_notifier
 
 
 def resolve_student_id() -> str:
@@ -76,10 +94,18 @@ def build_session_service() -> None:
     The function logs a structured event (``event=session_service_wired``)
     without logging any DSN credentials (AC-004).
     """
-    # Construct the SessionService (it resolves the store via provider internally)
-    service = SessionService()
+    global _turn_notifier
 
-    # Register it in the provider slot
+    # One TurnNotifier per boot (Stage 2): the service pings it, the HTTP app's
+    # SSE mirror stream parks on it. Constructing it here — rather than in each
+    # adapter — is what guarantees both ends share the SAME instance.
+    notifier = TurnNotifier()
+
+    # Construct the SessionService (it resolves the store via provider internally)
+    service = SessionService(turn_notifier=notifier)
+
+    # Register both in their slots
+    _turn_notifier = notifier
     set_session_service(service)
 
     logger.info("event=session_service_wired")

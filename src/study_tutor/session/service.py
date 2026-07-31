@@ -83,6 +83,7 @@ from study_tutor.session.errors import (
     SessionForbidden,
     SessionNotFoundError,
 )
+from study_tutor.session.notifier import TurnNotifierPort
 from study_tutor.tutoring.adapters.session_state import (
     SessionState,
     TranscriptTurn,
@@ -394,6 +395,7 @@ class SessionService:
         *,
         store: StudentStore | None = None,
         event_bus: EventBus | None = None,
+        turn_notifier: TurnNotifierPort | None = None,
     ) -> None:
         """Hold an explicit store (tests) or resolve the wired one per call.
 
@@ -403,9 +405,34 @@ class SessionService:
         both transports emit identically (D14); ``None`` ⇒ no emission (the bus
         has zero subscribers today). The MCP adapter shares its bus into the
         service at construction so its subscribers still see the event.
+
+        ``turn_notifier`` (optional, live robot-session mirror Stage 2) is the
+        in-process signal the SSE mirror stream parks on: it is pinged after
+        **each persisted row** and once after ``end_session``'s finalize commits,
+        so a watching phone renders the robot's turn without waiting out a poll
+        tick. ``None`` ⇒ no signalling (the stream degrades to timeout ticking).
+        It is a notification only — never a write path, never load-bearing.
         """
         self._store = store
         self._event_bus = event_bus
+        self._turn_notifier = turn_notifier
+
+    def _notify_turn_change(self, session_id: str) -> None:
+        """Ping the mirror's change signal — best-effort, never into the caller.
+
+        A notification is a courtesy to a read-only viewer; a failure here must
+        never surface as a failed turn, so everything is swallowed and logged at
+        debug. Fires only *after* the row is durably persisted.
+        """
+        notifier = self._turn_notifier
+        if notifier is None:
+            return
+        try:
+            notifier.notify(session_id)
+        except Exception:
+            logger.debug(
+                "event=turn_notify_failed session_id=%s", session_id, exc_info=True
+            )
 
     def _resolve_store(self) -> StudentStore:
         store = self._store if self._store is not None else get_student_store()
@@ -640,6 +667,9 @@ class SessionService:
             ao_scaffolded=None,
             quotes_embedded=0,
         )
+        # Mirror signal after EACH persisted row (Stage 2) — the watching phone
+        # sees the learner's question land before the tutor has answered it.
+        self._notify_turn_change(session_id)
         reply = await reply_fn(user_message)
         # Per-turn capture signals ride the reply metadata (S-E4 §4.3/§4.4).
         ao_scaffolded, quotes_embedded = _per_turn_signals(reply.metadata)
@@ -650,6 +680,7 @@ class SessionService:
             ao_scaffolded=ao_scaffolded,
             quotes_embedded=quotes_embedded,
         )
+        self._notify_turn_change(session_id)
         return TurnResult(
             tutor_response=reply.response,
             turn_index=tutor_turn.turn_index,
@@ -690,6 +721,8 @@ class SessionService:
             ao_scaffolded=None,
             quotes_embedded=0,
         )
+        # Same per-row mirror signal as the non-streaming path (Stage 2).
+        self._notify_turn_change(session_id)
 
         # Accumulate response while streaming tokens
         accumulated_response = []
@@ -724,6 +757,7 @@ class SessionService:
                 ao_scaffolded=None,
                 quotes_embedded=0,
             )
+            self._notify_turn_change(session_id)
             yield TurnEvent(type="done", turn_index=tutor_turn.turn_index)
 
     async def build_turn_session_state(
@@ -885,6 +919,11 @@ class SessionService:
             aos_scaffolded=aos_scaffolded,
             topic=topic,
         )
+
+        # One mirror signal after the finalize transaction commits (Stage 2), so
+        # a watching stream reads ``status="ended"`` immediately and closes,
+        # rather than sitting out a poll tick on a session that is over.
+        self._notify_turn_change(session_id)
 
         # Emit-after-commit (D8). Zero-turn sessions settle but do not emit.
         if self._event_bus is not None and result.had_turns:
