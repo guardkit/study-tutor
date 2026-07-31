@@ -16,6 +16,7 @@ import 'formatting.dart';
 import 'gamification/celebration_sheet.dart';
 import 'progress_store.dart';
 import 'theme/motion.dart';
+import 'transcript_view.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({
@@ -80,9 +81,6 @@ class _SessionScreenState extends State<SessionScreen>
   final _input = TextEditingController();
   final _scroll = ScrollController();
   late final VoiceRecorder? _recorder = widget.voiceRecorder;
-
-  /// Confirmed-turn indices whose timestamp is revealed (long-press, spec §3).
-  final Set<int> _revealedTimestamps = {};
 
   bool _sending = false;
   bool _ended = false;
@@ -495,49 +493,6 @@ class _SessionScreenState extends State<SessionScreen>
     return math.min(560.0, MediaQuery.of(context).size.width * 0.76);
   }
 
-  Widget _bubble(BuildContext context, int index, TurnEntry turn) {
-    final isUser = turn.role == TurnRole.user;
-    final colors = Theme.of(context).colorScheme;
-    final revealed = _revealedTimestamps.contains(index);
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: () => setState(() {
-          revealed
-              ? _revealedTimestamps.remove(index)
-              : _revealedTimestamps.add(index);
-        }),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(context)),
-          decoration: BoxDecoration(
-            color: isUser ? colors.primaryContainer : colors.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment:
-                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(turn.content),
-              if (revealed)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    _formatClock(turn.ts),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _optimisticBubble(BuildContext context, _Optimistic pending) {
     final colors = Theme.of(context).colorScheme;
     return Align(
@@ -597,13 +552,6 @@ class _SessionScreenState extends State<SessionScreen>
     );
   }
 
-  String _formatClock(DateTime ts) {
-    final local = ts.toLocal();
-    final hh = local.hour.toString().padLeft(2, '0');
-    final mm = local.minute.toString().padLeft(2, '0');
-    return '$hh:$mm';
-  }
-
   String _formatElapsed() {
     if (_recordingStartTime == null) return '0s';
     return '${_now().difference(_recordingStartTime!).inSeconds}s';
@@ -612,10 +560,6 @@ class _SessionScreenState extends State<SessionScreen>
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final pendingCount =
-        (_optimistic != null ? 1 : 0) + (_awaiting ? 1 : 0);
-    final itemCount = _turns.length + pendingCount;
-    final isEmpty = itemCount == 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -631,29 +575,26 @@ class _SessionScreenState extends State<SessionScreen>
       body: Column(
         children: [
           Expanded(
-            child: isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'Ask your first question below — type it or tap the '
-                        'mic to speak.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scroll,
-                    itemCount: itemCount,
-                    itemBuilder: (context, i) {
-                      if (i < _turns.length) return _bubble(context, i, _turns[i]);
-                      final offset = i - _turns.length;
-                      if (_optimistic != null && offset == 0) {
-                        return _optimisticBubble(context, _optimistic!);
-                      }
-                      return _typingIndicator(context);
-                    },
+            child: TranscriptView(
+              turns: _turns,
+              controller: _scroll,
+              // The optimistic user bubble + typing indicator are the live
+              // session's pending items, appended after the confirmed turns.
+              trailing: [
+                if (_optimistic != null) _optimisticBubble(context, _optimistic!),
+                if (_awaiting) _typingIndicator(context),
+              ],
+              emptyState: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Ask your first question below — type it or tap the '
+                    'mic to speak.',
+                    textAlign: TextAlign.center,
                   ),
+                ),
+              ),
+            ),
           ),
           if (_bannerMessage != null)
             MaterialBanner(

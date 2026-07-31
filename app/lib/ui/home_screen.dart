@@ -12,6 +12,7 @@ import 'error_handling.dart';
 import 'formatting.dart';
 import 'gamification/progress_header_card.dart';
 import 'gamification/progress_screen.dart';
+import 'history_screen.dart';
 import 'progress_store.dart';
 import 'session_screen.dart';
 
@@ -80,6 +81,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openProgress(ProgressStore store) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ProgressScreen(store: store)),
+    );
+  }
+
+  /// Open the read-only Session-History screen (spec §3). Reuses Home's already
+  /// injected ports; nothing new needs composing in main.dart.
+  void _openHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HistoryScreen(
+          identity: widget.identity,
+          sessionApi: widget.sessionApi,
+          voiceApi: widget.voiceApi,
+        ),
+      ),
     );
   }
 
@@ -198,8 +213,13 @@ class _HomeScreenState extends State<HomeScreen> {
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'sign_out') _signOut();
+              if (value == 'history') _openHistory();
             },
             itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'history',
+                child: Text('Session history'),
+              ),
               PopupMenuItem<String>(
                 value: 'sign_out',
                 child: Text('Sign out'),

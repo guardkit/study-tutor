@@ -53,9 +53,15 @@ void runLifecycleTests(ContractBackend Function() newBackend) {
           b.api.turn(endedId, 'again?'), throwsA(isA<SessionEnded>()));
     });
 
-    test('resume_session on ended → SessionEnded', () async {
-      await expectLater(
-          b.api.resumeSession(endedId), throwsA(isA<SessionEnded>()));
+    test('resume_session on ended returns the transcript read-only (status '
+        'ended) — terminality is enforced on the write verbs, not the read',
+        () async {
+      final resumed = await b.api.resumeSession(endedId);
+      expect(resumed.status, SessionStatus.ended);
+      // The single 'hello' turn from the group setUp: (user, tutor) pair.
+      expect(resumed.turns, hasLength(2));
+      expect(resumed.turns.first.role, TurnRole.user);
+      expect(resumed.turns.first.content, 'hello');
     });
 
     test('end_session on ended → SessionEnded (no re-end, no re-open)',
