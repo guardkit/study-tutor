@@ -44,7 +44,7 @@ void main() {
       );
 
   // Fire one poll cycle: advance the fake clock to the periodic tick, then let
-  // the status + resume futures resolve and the tree rebuild.
+  // the turnsSince delta future resolve and the tree rebuild.
   Future<void> tick(WidgetTester tester) async {
     await tester.pump(interval);
     await tester.pump();
@@ -105,6 +105,48 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets(
+      'polls turnsSince for DELTAS — since advances past rendered rows, only '
+      'the new tail is fetched and appended', (tester) async {
+    final started = await robot.startSession(subject: 'english');
+    await robot.turn(started.sessionId, 'q0'); // 2 rows before watching
+
+    final spy = _RecordingTurnsApi(phone);
+    await tester.pumpWidget(wrap(started.sessionId, api: spy));
+    await tester.pump();
+    await tester.pump();
+
+    // Initial load read from row 0 and mirrored the two existing rows.
+    expect(spy.sinceCalls, [0]);
+    expect(find.text('q0'), findsOneWidget);
+    final transcriptState = tester.state(find.byType(TranscriptView));
+
+    // Robot adds q1 (rows 2..3). The next poll must ask from row 2 (knownRows =
+    // the prior `next`), NOT row 0 — and receive only the 2 new rows.
+    await robot.turn(started.sessionId, 'q1');
+    await tick(tester);
+
+    expect(spy.sinceCalls, [0, 2],
+        reason: 'the delta poll asks from the raw row count, not from 0');
+    expect(spy.lastReturnedCount, 2,
+        reason: 'only the new tail is fetched — O(new rows), not O(whole)');
+    expect(find.text('q0'), findsOneWidget, reason: 'old rows kept');
+    expect(find.text('q1'), findsOneWidget, reason: 'new tail appended');
+    expect(
+      identical(transcriptState, tester.state(find.byType(TranscriptView))),
+      isTrue,
+      reason: 'the tail appends into the SAME TranscriptView',
+    );
+
+    // A quiet tick still polls, from the advanced offset, and returns nothing.
+    await tick(tester);
+    expect(spy.sinceCalls, [0, 2, 4]);
+    expect(spy.lastReturnedCount, 0, reason: 'no new rows on a quiet beat');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('opens an already-ended session read-only, without polling',
       (tester) async {
     final started = await robot.startSession(subject: 'english');
@@ -132,14 +174,14 @@ void main() {
     final started = await robot.startSession(subject: 'english');
     await robot.turn(started.sessionId, 'q0');
 
-    final flaky = _FlakyStatusApi(phone);
+    final flaky = _FlakyTurnsApi(phone);
     await tester.pumpWidget(wrap(started.sessionId, api: flaky));
     await tester.pump();
     await tester.pump();
     expect(find.text('q0'), findsOneWidget);
 
-    // Next status poll throws TransportError: no dialog, transcript unchanged.
-    flaky.failNextStatus = true;
+    // Next delta poll throws TransportError: no dialog, transcript unchanged.
+    flaky.failNextTurns = true;
     await robot.turn(started.sessionId, 'q1');
     await tick(tester);
     expect(find.text('Connection problem'), findsNothing,
@@ -175,21 +217,21 @@ void main() {
 }
 
 /// A [SessionApi] decorator over a real [FakeSessionApi] that can be told to
-/// throw a [TransportError] on the very next [sessionStatus] — modelling a
-/// single dropped poll beat. Every other verb delegates unchanged.
-class _FlakyStatusApi implements SessionApi {
-  _FlakyStatusApi(this._inner);
+/// throw a [TransportError] on the very next [turnsSince] — modelling a single
+/// dropped delta-poll beat. Every other verb delegates unchanged.
+class _FlakyTurnsApi implements SessionApi {
+  _FlakyTurnsApi(this._inner);
 
   final SessionApi _inner;
-  bool failNextStatus = false;
+  bool failNextTurns = false;
 
   @override
-  Future<SessionStatusResult> sessionStatus(String sessionId) {
-    if (failNextStatus) {
-      failNextStatus = false;
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) {
+    if (failNextTurns) {
+      failNextTurns = false;
       throw const TransportError();
     }
-    return _inner.sessionStatus(sessionId);
+    return _inner.turnsSince(sessionId, since);
   }
 
   @override
@@ -197,8 +239,59 @@ class _FlakyStatusApi implements SessionApi {
       _inner.resumeSession(sessionId);
 
   @override
-  Future<TurnsSinceResult> turnsSince(String sessionId, int since) =>
-      _inner.turnsSince(sessionId, since);
+  Future<SessionStatusResult> sessionStatus(String sessionId) =>
+      _inner.sessionStatus(sessionId);
+
+  @override
+  Future<StartSessionResult> startSession({
+    String? subject,
+    String? topic,
+    bool resumeIfActive = false,
+  }) =>
+      _inner.startSession(
+          subject: subject, topic: topic, resumeIfActive: resumeIfActive);
+
+  @override
+  Future<List<SessionSummary>> listSessions({
+    SessionStatus? status,
+    int? limit,
+  }) =>
+      _inner.listSessions(status: status, limit: limit);
+
+  @override
+  Future<TurnResult> turn(String sessionId, String userMessage) =>
+      _inner.turn(sessionId, userMessage);
+
+  @override
+  Future<EndSessionResult> endSession(String sessionId) =>
+      _inner.endSession(sessionId);
+}
+
+/// A [SessionApi] decorator that records the `since` offset of every
+/// [turnsSince] call and the size of the tail it returned — so a test can prove
+/// the poll fetches DELTAS (advancing `since`) rather than re-reading from 0.
+class _RecordingTurnsApi implements SessionApi {
+  _RecordingTurnsApi(this._inner);
+
+  final SessionApi _inner;
+  final List<int> sinceCalls = [];
+  int lastReturnedCount = -1;
+
+  @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) async {
+    sinceCalls.add(since);
+    final result = await _inner.turnsSince(sessionId, since);
+    lastReturnedCount = result.turns.length;
+    return result;
+  }
+
+  @override
+  Future<ResumeSessionResult> resumeSession(String sessionId) =>
+      _inner.resumeSession(sessionId);
+
+  @override
+  Future<SessionStatusResult> sessionStatus(String sessionId) =>
+      _inner.sessionStatus(sessionId);
 
   @override
   Future<StartSessionResult> startSession({

@@ -18,14 +18,17 @@ import 'transcript_view.dart';
 /// so its turns land on the student's ONE active `(student, english)` session
 /// (contract §5). The phone — the SAME student — can WATCH that session without
 /// touching it: this screen [turnsSince]s (from row 0) to load the current
-/// transcript, then POLLS [sessionStatus] on [pollInterval]; when `turn_count`
-/// grows it re-reads via [turnsSince] and appends the new turns to the same
-/// [TranscriptView], auto-scrolling to the newest exchange. Purely a READ — it
-/// never starts, turns, or ends a session, and adds no contract shapes.
+/// transcript, then POLLS [turnsSince] on [pollInterval] for DELTAS — each poll
+/// asks for the rows at index `>= knownRows`, appends just the returned tail to
+/// the same [TranscriptView], and advances `knownRows` to the response's `next`
+/// (the raw total row count). Update cost is O(new rows), never O(whole
+/// conversation): there is no status probe and no full re-fetch. Purely a READ —
+/// it never starts, turns, or ends a session, and adds no contract shapes.
 ///
 /// `turns_since` (binding §2.4 addendum) is the ended-tolerant transcript read:
 /// unlike `resume_session` (active-only, §4 terminal), it reads ENDED sessions
 /// too, so the poll survives the active→ended transition without a SessionEnded.
+/// The ended transition is read straight off the poll response's `status`.
 ///
 /// The active→ended transition is graceful: polling stops, the last transcript
 /// is kept, and a "session ended" note is shown. The poll timer is cancelled on
@@ -63,12 +66,14 @@ class LiveSessionScreen extends StatefulWidget {
 }
 
 class _LiveSessionScreenState extends State<LiveSessionScreen> {
-  List<TurnEntry> _turns = const [];
+  final List<TurnEntry> _turns = <TurnEntry>[];
   final _scroll = ScrollController();
 
-  /// The turn_count we have already rendered — poll fetches the growing
-  /// transcript only when the cheap status read reports a higher count.
-  int _knownTurnCount = 0;
+  /// The number of transcript ROWS we have already appended — the `since` we
+  /// hand to the next [turnsSince] poll. Advanced to the response's `next` (the
+  /// raw total row count) after each successful delta so the poll only ever
+  /// fetches rows we have not yet rendered.
+  int _knownRows = 0;
 
   bool _loading = true;
   bool _ended = false;
@@ -99,8 +104,8 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       final result = await widget.sessionApi.turnsSince(widget.sessionId, 0);
       if (!mounted) return;
       setState(() {
-        _turns = result.turns;
-        _knownTurnCount = result.turns.length ~/ 2;
+        _turns.addAll(result.turns);
+        _knownRows = result.next;
         _ended = result.status == SessionStatus.ended;
         _loading = false;
       });
@@ -135,32 +140,40 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     _timer = null;
   }
 
-  /// One poll cycle: a cheap status read; on growth, re-pull the transcript; on
-  /// the active→ended transition, stop and mark ended (keeping the transcript).
+  /// One poll cycle: a DELTA read of the rows at index `>= _knownRows`. Any
+  /// returned tail is appended into the SAME [TranscriptView] and `_knownRows`
+  /// advances to `next`; the active→ended transition is read straight off the
+  /// response `status` (turns_since reads ended too, binding §2.4), so a final
+  /// turn that lands as the session ends arrives in the same delta and is
+  /// appended before we stop — no last turn is missed.
   Future<void> _poll() async {
     if (_polling || !mounted) return;
     _polling = true;
     try {
-      final status = await widget.sessionApi.sessionStatus(widget.sessionId);
+      final result =
+          await widget.sessionApi.turnsSince(widget.sessionId, _knownRows);
       if (!mounted) return;
-      // Growth (including a final turn that lands as the session ends) is pulled
-      // before we act on the ended flag, so no last turn is missed.
-      if (status.turnCount != _knownTurnCount) {
-        await _refreshTranscript(status.turnCount);
+      final hasNew = result.turns.isNotEmpty;
+      final ended = result.status == SessionStatus.ended;
+      if (ended) _stopPolling();
+      if (hasNew || ended) {
+        setState(() {
+          _turns.addAll(result.turns);
+          _knownRows = result.next;
+          if (ended) _ended = true;
+        });
       }
-      if (mounted && status.status == SessionStatus.ended) {
-        _stopPolling();
-        setState(() => _ended = true);
-      }
+      if (hasNew) _scrollToBottom();
     } on Unauthenticated {
       _stopPolling();
       if (!mounted) return;
       routeToSignIn(
           context, widget.identity, widget.sessionApi, widget.voiceApi);
     } on TransportError {
-      // Transient: a dropped status poll is not fatal to a live mirror. Keep the
-      // last transcript on screen and keep polling — the next tick may recover.
-      // No dialog: a watcher must not be nagged on every flaky beat.
+      // Transient: a dropped delta poll is not fatal to a live mirror. `_knownRows`
+      // is left un-advanced (only a success moves it), so the next tick re-asks
+      // from the same offset and catches up. Keep the last transcript on screen
+      // and keep polling — no dialog: a watcher must not be nagged on a flaky beat.
     } on SessionApiException {
       // SessionForbidden / SessionNotFoundError — stop and surface once.
       _stopPolling();
@@ -169,19 +182,6 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     } finally {
       _polling = false;
     }
-  }
-
-  /// Re-read the (grown) transcript and append it into the SAME [TranscriptView]
-  /// — turns_since works on active and ended sessions alike (binding §2.4), so a
-  /// final turn that lands as the session ends is still fetched.
-  Future<void> _refreshTranscript(int newTurnCount) async {
-    final result = await widget.sessionApi.turnsSince(widget.sessionId, 0);
-    if (!mounted) return;
-    setState(() {
-      _turns = result.turns;
-      _knownTurnCount = newTurnCount;
-    });
-    _scrollToBottom();
   }
 
   /// Keep the newest exchange in view as turns append (mirrors the session
