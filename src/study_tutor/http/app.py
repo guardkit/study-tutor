@@ -274,6 +274,76 @@ async def resume_session(request: Request) -> JSONResponse:
         return _map_error_to_response(e)
 
 
+async def turns_since(request: Request) -> JSONResponse:
+    """GET /api/sessions/{session_id}/turns?since={n} — delta transcript read.
+
+    Additive read verb behind the phone's live robot-session mirror (binding
+    §2.4). Returns only the rows at index ≥ ``since`` — a plain 0-based offset
+    into the SAME ordered rows ``resume_session`` returns, never a timestamp —
+    plus ``next``, the RAW total row count for the client's next poll (NOT the
+    ``// 2`` pairs projection ``status``/``list`` surface).
+
+    Path param: session_id. Query param: ``since`` (optional, default 0;
+    non-integer or negative → 400 with no error_type, §4.2).
+    Response: {session_id, status, turns:[{role,content,ts}], next}
+
+    ``since`` at or past the end returns ``turns: []`` with ``next = total`` —
+    a 200, not an error. Reads **ended** sessions too (allow_ended=True in the
+    service), so ``SessionEnded`` (410) is impossible here and the poll survives
+    the active→ended transition.
+    """
+    try:
+        student_id = await _resolve_student_id(request)
+        session_id = request.path_params["session_id"]
+
+        since_param = request.query_params.get("since", "0")
+        try:
+            since = int(since_param)
+        except (TypeError, ValueError):
+            raise ValueError(f"since must be an integer, got {since_param!r}")
+        if since < 0:
+            raise ValueError(f"since must be >= 0, got {since}")
+
+        service: SessionService = request.app.state.service
+        result = await service.turns_since(
+            student_id=student_id,
+            session_id=session_id,
+            since=since,
+        )
+
+        # Row projection byte-identical to resume_session's (binding §2.4) so
+        # the app's existing transcript parser is reused unchanged.
+        response_data = {
+            "session_id": result.session_id,
+            "status": result.status,
+            "turns": [
+                {
+                    "role": turn.role,
+                    "content": turn.content,
+                    "ts": turn.ts.isoformat(),
+                }
+                for turn in result.turns
+            ],
+            "next": result.total,
+        }
+
+        return JSONResponse(response_data, status_code=200)
+
+    # SessionEnded is deliberately absent: the service reads ended sessions
+    # (allow_ended=True), so 410 cannot arise on this route.
+    except (SessionNotFoundError, SessionForbidden, Unauthenticated) as e:
+        return _map_error_to_response(e)
+    except (ValueError, KeyError, TypeError) as e:
+        # Malformed since → 400 validation error (no error_type, §4.2)
+        logger.warning("Validation error in turns_since: %s", e)
+        return JSONResponse(
+            {"error": f"Validation failed: {e}"},
+            status_code=400,
+        )
+    except Exception as e:
+        return _map_error_to_response(e)
+
+
 async def turn(request: Request) -> JSONResponse:
     """POST /api/sessions/{session_id}/turn — process user turn (contract §5.4).
 
@@ -591,6 +661,11 @@ def create_app(
         # bearer-authed like the six session verbs (binding §2.2). Does NOT touch
         # the frozen voice CONTRACT_SHA/BINDING_SHA.
         Route("/api/student-model", student_model, methods=["GET"]),
+        # Live robot-session mirror Stage 1: additive delta read (binding §2.4).
+        # Always mounted, never flag-gated; does NOT touch the six session verbs,
+        # the voice routes, or their status codes — so no CONTRACT_SHA/BINDING_SHA
+        # re-pin.
+        Route("/api/sessions/{session_id:str}/turns", turns_since, methods=["GET"]),
     ]
 
     # TASK-APP1-05: Mount /__dev__/reset ONLY when dev_reset flag is set

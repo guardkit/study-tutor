@@ -11,6 +11,8 @@
 
 **Addendum 2026-07-09 (FEAT-VOICE-004 R05):** additive read verb `GET /api/student-model` bound in §2.2. Additive only — the six session verbs, the voice Rev 1 routes, and their status codes are unchanged; the frozen voice `CONTRACT_SHA`/`BINDING_SHA` are **not** disturbed. This is a student-model read, not a session verb, so the transport-neutral session contract SHA is unaffected.
 
+**Addendum 2026-07-31 (live robot-session mirror, Stage 1):** additive read verb `GET /api/sessions/{session_id}/turns?since={n}` bound in §2.4. Additive only — the six session verbs, the voice Rev 1 routes, and their status codes are unchanged, so there is **no `CONTRACT_SHA`/`BINDING_SHA` re-pin** (same posture as the `GET /api/student-model` addendum below). It is a delta *read* over the transcript `resume_session` already returns, not a session verb, so the transport-neutral session contract SHA is unaffected.
+
 **Addendum 2026-07-12 (Phase-R S-R2):** additive **enrichment** of `GET /api/student-model` (§2.2) and additive **start_session response fields** (§2.1) — both additive, so **no `CONTRACT_SHA`/`BINDING_SHA` re-pin for these two** (only the `end_session` gamification block, being an original-verb shape change, drives the Revision 2 re-pin above). Every pre-existing field keeps its exact name and semantics; `data_available` unchanged.
 
 ---
@@ -38,6 +40,7 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 | `voice_turn` *(Rev 1)* | POST | `/api/sessions/{session_id}/voice-turn` | **`multipart/form-data`**, file field **`audio`** (filename + full content-type incl. codec params forwarded); `stream` reserved-and-ignored on HTTP (whole-response variant, like `turn`) | `{ transcript, tutor_response, audio: [{seq, chunk_id, url}] }` (contract §5 Rev 1) |
 | `voice_audio` *(Rev 1)* | GET | `/api/sessions/{session_id}/voice-audio/{chunk_id}` | Path params: `session_id`, `chunk_id` | **`audio/wav`** bytes (binary response) |
 | `student_model` *(read, R05)* | GET | `/api/student-model` | Query params: `subject` (required), `student_name?` (hint, ignored) | `{ student_name, streak_days, level_name, recent_xp, near_achievements:[], topic_confidence:{topic:conf}, data_available }` (§2.2) |
+| `turns_since` *(read, 2026-07-31)* | GET | `/api/sessions/{session_id}/turns` | Path param: `session_id`; query param: `since?` (int row offset, default `0`) | `{ session_id, status, turns:[{role,content,ts}], next:int }` (§2.4) |
 
 **Note:** Request and response JSON shapes are defined in contract §5. This binding table maps verbs to HTTP methods and paths; the payload semantics are unchanged from the contract.
 
@@ -132,6 +135,37 @@ When planning moves into `SessionService.start_session` (spec §2.1, [ADR-ARCH-0
 - `focus_aos` (array of AO strings, e.g. `["AO2","AO3"]`) — the assessment objectives the plan focuses on (from the persisted plan facts). Empty array when the planner produced none / degraded to baseline.
 
 The MCP `tutor_start_session` keeps its existing `plan_summary` shape, now sourced from the same service-side plan (spec §2.1); this HTTP enrichment is the transport-neutral plan surfaced on the HTTP verb.
+
+---
+
+### 2.4 Turns-Since Delta Read Binding (additive — live robot-session mirror Stage 1, 2026-07-31)
+
+**Endpoint:** `GET /api/sessions/{session_id}/turns` (always mounted, never flag-gated; bearer-authed like the six session verbs).
+
+Serves the phone's **read-only live mirror** of the tutoring session the Reachy Mini robot is driving (handoff `docs/runbooks/HANDOFF-spark-live-robot-session-mirror.md` Stage 1). The phone polls this in place of `status` + `resume`, so an update costs O(new rows) rather than O(whole conversation).
+
+**Additive read verb:** it does **not** alter the six session verbs, the voice Rev 1 routes, or their status codes, and it does **not** disturb the frozen `CONTRACT_SHA`/`BINDING_SHA` (no re-pin — same posture as §2.2's `GET /api/student-model`). It is a delta read over the transcript `resume_session` already returns; the transport-neutral session contract is unchanged. Ephemeral/no-audio-at-rest (§6 Rev 1) is unaffected — these are text turns only.
+
+- **Path param:** `session_id`.
+- **Query param:** `since` (optional, default `0`) — a plain **0-based row offset** into the same ordered rows `resume_session` returns, **not** a timestamp and **not** the `turn_count // 2` pairs number that `list_sessions`/`session_status` project. Non-integer or negative → 400 (§4.2, no `error_type`).
+- **Auth/ownership:** the same `Authorization: Bearer <token>` → `_resolve_student_id`; the session's `student_id` must equal the caller's, else `SessionForbidden` (403). Identity is never client-asserted.
+- **Response (200):**
+  ```json
+  {
+    "session_id": "sess-123",
+    "status": "active",
+    "turns": [
+      {"role": "user", "content": "What drives Macbeth?", "ts": "2026-07-31T10:15:00+00:00"},
+      {"role": "tutor", "content": "Let's look at Act 1...", "ts": "2026-07-31T10:15:04+00:00"}
+    ],
+    "next": 8
+  }
+  ```
+  - `turns` — only the rows at index ≥ `since`. The row shape is **byte-identical** to `resume_session`'s (`{role, content, ts}`, `ts` an ISO-8601 `datetime.isoformat()`), so the app's existing transcript parser is reused unchanged.
+  - `next` — the **raw total row count** of the session's transcript (again, never the `// 2` pairs number). The client passes it back as `since` on the next poll.
+- **Beyond the end:** `since >= next` returns `turns: []` with `next` = the total, **200 — not an error**.
+- **Ended sessions:** unlike `resume_session`, this read works for **active *and* ended** sessions (service-side `allow_ended=True`, the same carve-out `session_status` uses), so the poll survives the active→ended transition. **`SessionEnded` (410) is therefore impossible on this route.**
+- **Errors:** `SessionNotFoundError` → 404, `SessionForbidden` → 403, `Unauthenticated` → 401 (§4.1 envelope); malformed `since` → 400 with `{"error": "Validation failed: …"}` and no `error_type` (§4.2).
 
 ---
 

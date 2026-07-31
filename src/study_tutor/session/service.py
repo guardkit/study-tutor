@@ -309,6 +309,24 @@ class ResumeResult:
 
 
 @dataclass(frozen=True)
+class TurnsSinceResult:
+    """The delta slice behind the live robot-session mirror (Stage 1).
+
+    ``turns`` are the SAME ordered rows :class:`ResumeResult` carries, sliced
+    from the 0-based row offset ``since``; ``total`` is the RAW row count (never
+    the ``// 2`` pairs projection the status/list verbs surface), so a client
+    polls with ``since=total`` next time. Unlike resume this reads **ended**
+    sessions too, so a poll survives the active→ended transition.
+    """
+
+    session_id: str
+    student_id: str
+    status: SessionStatus
+    turns: tuple[SessionTurn, ...]
+    total: int
+
+
+@dataclass(frozen=True)
 class TurnResult:
     tutor_response: str
     turn_index: int
@@ -574,6 +592,31 @@ class SessionService:
             student_id=record.student_id,
             status=record.status,
             turns=turns,
+        )
+
+    async def turns_since(
+        self, *, student_id: str, session_id: str, since: int
+    ) -> TurnsSinceResult:
+        """Owned session's transcript rows at index ≥ ``since`` (Stage 1 delta read).
+
+        ``allow_ended=True`` — the mirror keeps reading after the robot ends the
+        session (unlike :meth:`resume_session`, so ``SessionEnded`` is impossible
+        here). ``since`` is a plain 0-based row offset into the same ordered rows
+        :meth:`resume_session` returns, never a timestamp; a ``since`` at or past
+        the end yields an empty slice (not an error). Service-level slice only —
+        the store port is untouched.
+        """
+        record = await self._load_owned_session(
+            student_id, session_id, allow_ended=True
+        )
+        store = self._resolve_store()
+        rows = tuple(await store.get_turns(session_id))
+        return TurnsSinceResult(
+            session_id=record.session_id,
+            student_id=record.student_id,
+            status=record.status,
+            turns=rows[since:],
+            total=len(rows),
         )
 
     async def turn(
@@ -886,5 +929,6 @@ __all__ = [
     "StartSessionResult",
     "TurnEvent",
     "TurnResult",
+    "TurnsSinceResult",
     "TutorReply",
 ]
