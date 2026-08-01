@@ -20,7 +20,7 @@ Quick facts a session always needs:
 - Monorepo: Python backend `src/study_tutor/` + Flutter app `app/`. Robot integration lives
   in the `fleet-gateway` repo on the robot's own host (not a sibling checkout here).
 - Hermetic test run: `uv run pytest -m "not integration and not live and not keycloak" -q`
-  (one named pre-existing failure is allowed — see the plan's Suites row).
+  (fully green as of 2026-08-01 — 0 failures expected; see the plan's Suites row).
 - App-facing HTTP surface is a frozen contract at pinned SHAs:
   `docs/design/contracts/API-session-http-binding.md` §7 — additive or re-pin, never silent
   edits.
