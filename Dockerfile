@@ -67,7 +67,11 @@ WORKDIR /workspace/study-tutor
 # installing study-tutor itself (its src/ isn't in the image yet) but
 # still installs nats-core via the path source above.
 COPY study-tutor/pyproject.toml study-tutor/uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+# Lane 2 step 1a (plan of record): include the [rag] extra (chromadb +
+# sentence-transformers + openai) so build_rag_providers can wire the
+# shipped data/chroma corpus instead of degrading with
+# ``rag_disabled reason=chromadb_missing``.
+RUN uv sync --frozen --no-dev --no-install-project --extra rag
 
 # ---------------------------------------------------------------------------
 # Layer 2 — application source + editable install
