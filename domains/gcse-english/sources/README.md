@@ -81,9 +81,10 @@ Me*) are deliberately **not** sourced this way — see §3 below.
 
 ## 3. What the loader refuses to ingest
 
-The loader (TASK-PRV-002, `study_tutor.knowledge.corpus`) refuses two
-classes of material at the folder boundary, so no ChromaDB write ever sees
-them:
+The loader (TASK-PRV-002, `study_tutor.knowledge.corpus`) refuses one
+class of material at the folder boundary, so no ChromaDB write ever sees
+it. (A second gate — the in-copyright deny-list — was removed on
+2026-05-09; see §3.2.)
 
 ### 3.1 AQA assessment material — refused unconditionally
 
@@ -112,25 +113,39 @@ treat it the same way any textbook publisher references it. See
 [../GOAL.md §2](../GOAL.md) for the distinction between specification and
 assessment materials.
 
-### 3.2 In-copyright modern set texts — deny-list
+### 3.2 In-copyright modern set texts — deny-list REMOVED 2026-05-09
 
-Modern set texts where the digital edition is gated behind a publisher
-licence are matched against an in-copyright deny-list and refused at the
-loader. Per-student access for these texts goes via the Phase 2 path
-(an authenticated per-student episode) rather than bulk ingestion into
-the shared corpus. This is the load-bearing reason `primary_text/` is
-canonically populated from Standard Ebooks: every text that's free to
-ingest is also free to redistribute as a typeset edition, and every text
-that isn't free to ingest is handled out-of-band.
+An earlier version of the loader matched modern set texts against an
+in-copyright deny-list (`INCOPYRIGHT_TITLES`) and refused them. **That
+deny-list was removed on 2026-05-09** (TASK-RAG-CC1, commit `1f728bf`)
+when the docling ingestion workflow landed: the deny-list was designed
+for a hypothetical open-source redistribution scenario that does not
+apply to a personal-use tool whose corpus never leaves the operator's
+machine. The loader now accepts legitimately-acquired copies of
+in-copyright set texts — e.g. a scanned owned paperback of *An
+Inspector Calls*, processed through docling VLM mode — under the
+personal-use posture documented in
+[CONTRIBUTING-CORPUS.md §3/§3a](./CONTRIBUTING-CORPUS.md).
+
+Standard Ebooks (§2) remains the recommended source for public-domain
+primary texts because its structural markers feed the citation-anchor
+inferer cleanly — but it is a quality preference now, not a legal gate.
+The only content gate the loader enforces is the AQA refusal in §3.1.
+
+For the pilot's *upload* surface (per-account private corpora of
+user-owned scans), the governing posture is
+[ADR-ARCH-031](../../../docs/architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md).
 
 ### 3.3 What this means in practice
 
 Do **not** drop the following into any subfolder, even for private use:
 
 - AQA past papers, mark schemes, examiner reports — refused.
-- Scanned or downloaded copies of print-only study guides where you do
-  not own the digital edition. The pipeline requires a legitimately
-  acquired source; DRM circumvention is out of scope.
+- Downloaded copies of books or study guides you have not bought.
+  Scanning a print copy you own (docling VLM mode — see
+  [CONTRIBUTING-CORPUS.md §3a](./CONTRIBUTING-CORPUS.md)) is the
+  supported path; acquiring someone else's digital copy or
+  circumventing DRM is not.
 - Anything you have not paid for or been licensed to use.
 
 Refusals are emitted as structured log lines (`logger.warning` with
@@ -173,10 +188,11 @@ handles the synthetic-training-data side.
   (`.PDF` vs `.pdf` — the gitignore is case-sensitive) and the path. Add
   a more specific ignore line before committing.
 - **The loader logs `corpus_refusal` for a file I expected to ingest.**
-  The filename matches either the AQA pattern (`past_paper`,
-  `mark_scheme`, `examiner_report`) or the in-copyright deny-list. If
-  the match is a false positive (e.g. a critical essay whose title
-  happens to contain "mark scheme"), rename the file before ingesting.
+  The filename matches the AQA pattern (`past_paper`, `mark_scheme`,
+  `examiner_report`) — the only content gate since the in-copyright
+  deny-list was removed (§3.2). If the match is a false positive (e.g.
+  a critical essay whose title happens to contain "mark scheme"),
+  rename the file before ingesting.
 - **The loader logs `unknown_folder_skipped`.** A subfolder name doesn't
   match any of the four canonical buckets in §1. Move the file into one
   of `primary_text/`, `secondary_study_guide/`, `secondary_critical/`,

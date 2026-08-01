@@ -1,5 +1,16 @@
 # Copyright, Training Data & Hackathon Compliance Analysis
 
+> **Superseded-in-part (2026-08-01):** for the friends-pilot scope — user uploads, cloud
+> hosting, multi-account tenancy — the governing document is now
+> [ADR-ARCH-031](../../architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md)
+> (the Lane 4 copyright posture ADR). This analysis was UK-only, purchased-materials +
+> household-deployment only, and predates uploads/cloud/tenancy; it remains the record for
+> the fine-tune's training-data provenance and the fuller AQA/Mr Bruff analysis. Note also
+> that §7.3's "don't distribute the weights" recommendation was later consciously
+> overridden: the weights were uploaded to Hugging Face as a requirement of the Kaggle
+> Gemma 4 Good hackathon entry (fact + reason recorded in ADR-ARCH-031 D4 and
+> `docs/licensing.md` §3).
+
 **Date:** 12 April 2026
 **Author:** Rich Woollcott
 **Repo:** study-tutor
