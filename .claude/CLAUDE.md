@@ -1,5 +1,11 @@
 # GuardKit - Default Template
 
+> **PROJECT TRUTH LIVES ELSEWHERE — read the root [`CLAUDE.md`](../CLAUDE.md) first.** It
+> routes every session to this repo's two sources of truth: the mission
+> (`docs/study-tutor-mission-statement-2026-08-01.md`) and THE PLAN
+> (`docs/study-tutor-plan-of-record.md`). The rest of this file is GuardKit template
+> boilerplate about the task workflow, not study-tutor content.
+
 ## When to Use This Template
 
 The **default** template is a **language-agnostic** starting point for projects that don't fit GuardKit's specialized templates.
