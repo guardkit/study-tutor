@@ -53,6 +53,10 @@ class FlakySessionApi implements SessionApi {
       _call('resumeSession', () => _inner.resumeSession(sessionId));
 
   @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) =>
+      _call('turnsSince', () => _inner.turnsSince(sessionId, since));
+
+  @override
   Future<TurnResult> turn(String sessionId, String userMessage) =>
       _call('turn', () => _inner.turn(sessionId, userMessage));
 

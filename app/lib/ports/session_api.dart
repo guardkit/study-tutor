@@ -49,6 +49,33 @@ class ResumeSessionResult {
   final String studentId;
 }
 
+/// Binding §2.4 (additive addendum) `turns_since` output:
+/// `{session_id, status, turns, next}`.
+///
+/// The additive delta read: [turns] are the ordered transcript ROWS at index
+/// `>= since` (0-based ROW offset into the same rows `resume_session` returns —
+/// NOT the `//2` pair count), and [next] is the RAW total row count to feed the
+/// next poll's `since`. Reads active AND ended sessions (`allow_ended`), so it
+/// NEVER throws SessionEnded — a poll survives the active→ended transition.
+class TurnsSinceResult {
+  const TurnsSinceResult({
+    required this.sessionId,
+    required this.status,
+    required this.turns,
+    required this.next,
+  });
+
+  final String sessionId;
+  final SessionStatus status;
+
+  /// The tail of the ordered transcript at row index `>= since` (§6 order,
+  /// never re-sorted). Empty when `since >= next`.
+  final List<TurnEntry> turns;
+
+  /// The RAW total row count — the `since` value for the next poll.
+  final int next;
+}
+
 /// §5 `turn` output (HTTP variant): `{tutor_response}`.
 class TurnResult {
   const TurnResult({required this.tutorResponse});
@@ -117,6 +144,13 @@ abstract interface class SessionApi {
   /// §5 `resume_session` — loads the ordered transcript. Active sessions only
   /// (§4: ended is terminal → SessionEnded).
   Future<ResumeSessionResult> resumeSession(String sessionId);
+
+  /// Binding §2.4 (additive addendum) `turns_since` — the delta read: the
+  /// ordered transcript rows at 0-based ROW index `>= since` plus the raw
+  /// total row count in [TurnsSinceResult.next]. Reads active AND ended
+  /// sessions, so it NEVER throws SessionEnded — a poll survives the
+  /// active→ended transition. Additive: NOT one of the §5 six verbs.
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since);
 
   /// §5 `turn` — appends the `(user, tutor)` pair durably, bumps turn_count.
   Future<TurnResult> turn(String sessionId, String userMessage);

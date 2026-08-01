@@ -95,6 +95,27 @@ void main() {
       expect(urls[1].queryParameters, {'status': 'active', 'limit': '2'});
     });
 
+    test('turns_since: GET /api/sessions/{id}/turns?since={n} under the bearer '
+        '(binding §2.4 additive read)', () async {
+      late http.Request seen;
+      final api = apiWith((request) async {
+        seen = request;
+        return jsonResponse({
+          'session_id': 's-7',
+          'status': 'active',
+          'turns': <Object>[],
+          'next': 0,
+        });
+      });
+
+      await api.turnsSince('s-7', 4);
+
+      expect(seen.method, 'GET');
+      expect(seen.url.path, '/api/sessions/s-7/turns');
+      expect(seen.url.queryParameters, {'since': '4'});
+      expect(seen.headers['authorization'], 'Bearer token-lilymay');
+    });
+
     test('turn: POST /api/sessions/{id}/turn with {user_message}, no stream '
         'field (HTTP is the whole-response variant)', () async {
       late http.Request seen;
@@ -272,6 +293,55 @@ void main() {
           [TurnRole.user, TurnRole.tutor, TurnRole.user, TurnRole.tutor]);
       expect(resumed.turns.map((t) => t.content).toList(),
           ['one', 'reply one', 'two', 'reply two']);
+    });
+
+    test('turns_since: {session_id,status,turns,next} → TurnsSinceResult; '
+        'next is the raw total row count', () async {
+      final api = apiWith((_) async => jsonResponse({
+            'session_id': 's-7',
+            'status': 'ended',
+            'turns': [
+              {'role': 'user', 'content': 'two', 'ts': '2026-07-05T10:01:00Z'},
+              {
+                'role': 'tutor',
+                'content': 'reply two',
+                'ts': '2026-07-05T10:01:03Z'
+              },
+            ],
+            'next': 4,
+          }));
+
+      final result = await api.turnsSince('s-7', 2);
+
+      expect(result.sessionId, 's-7');
+      // Reads an ended session — turns_since NEVER throws SessionEnded.
+      expect(result.status, SessionStatus.ended);
+      expect(result.next, 4,
+          reason: 'next is the raw total row count, not turns.length');
+      expect(result.turns, [
+        TurnEntry(
+            role: TurnRole.user,
+            content: 'two',
+            ts: DateTime.utc(2026, 7, 5, 10, 1)),
+        TurnEntry(
+            role: TurnRole.tutor,
+            content: 'reply two',
+            ts: DateTime.utc(2026, 7, 5, 10, 1, 3)),
+      ]);
+    });
+
+    test('turns_since: since >= total → empty turns, next=total', () async {
+      final api = apiWith((_) async => jsonResponse({
+            'session_id': 's-7',
+            'status': 'active',
+            'turns': <Object>[],
+            'next': 6,
+          }));
+
+      final result = await api.turnsSince('s-7', 6);
+
+      expect(result.turns, isEmpty);
+      expect(result.next, 6);
     });
 
     test('turn: {tutor_response} maps to TurnResult', () async {

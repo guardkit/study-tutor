@@ -235,6 +235,27 @@ class HttpSessionApi implements SessionApi {
       });
 
   @override
+  Future<TurnsSinceResult> turnsSince(String sessionId, int since) =>
+      _send(_readDeadline, () {
+        return _client.get(
+          _uri('/api/sessions/${Uri.encodeComponent(sessionId)}/turns',
+              {'since': '$since'}),
+          headers: _headers(hasJsonBody: false),
+        );
+      }, (json) {
+        final m = json as Map<String, dynamic>;
+        // Binding §2.4: the additive delta read. Same row projection as
+        // resume_session (reuse `_turns`); reads ended sessions too, so this
+        // verb NEVER yields SessionEnded — `next` is the raw total row count.
+        return TurnsSinceResult(
+          sessionId: m['session_id'] as String,
+          status: SessionStatus.values.byName(m['status'] as String),
+          turns: _turns(m['turns'] as List<dynamic>),
+          next: m['next'] as int,
+        );
+      });
+
+  @override
   Future<TurnResult> turn(String sessionId, String userMessage) =>
       _send(_turnDeadline, () {
         return _client.post(

@@ -10,12 +10,14 @@ import 'formatting.dart';
 import 'transcript_view.dart';
 
 /// Session-History screen (spec §3): a read-only list of the student's ENDED
-/// sessions. Tapping one loads its ordered transcript via `resume_session` and
-/// opens it read-only in a [TranscriptView] — no input bar, nothing to send.
+/// sessions. Tapping one loads its ordered transcript via `turns_since` (from
+/// row 0) and opens it read-only in a [TranscriptView] — no input bar, nothing
+/// to send.
 ///
-/// The three reads it uses (`list_sessions` with the status filter, then
-/// `resume_session`) are the existing contract verbs; History never starts,
-/// turns, or ends a session.
+/// The two reads it uses (`list_sessions` with the status filter, then
+/// `turns_since`) never mutate a session: History never starts, turns, or ends
+/// one. `turns_since` reads ended sessions (unlike `resume_session`), so it is
+/// the verb that loads a finished transcript.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({
     super.key,
@@ -74,13 +76,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final resumed = await widget.sessionApi.resumeSession(summary.sessionId);
+      final result = await widget.sessionApi.turnsSince(summary.sessionId, 0);
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => _TranscriptScreen(
             subject: summary.subject,
-            turns: resumed.turns,
+            turns: result.turns,
           ),
         ),
       );
