@@ -35,7 +35,11 @@ Both routes are always mounted, bearer-authed, ownership from the token only, ad
 - **Store read is O(whole transcript) per poll** — only the wire payload is O(new rows), by design (store port fence). Revisit only if per-poll DB cost ever matters.
 - **Per-viewer tick load:** even with the notifier, each open stream re-reads every 3 s — the notifier buys latency, not DB load. Fine at one-viewer scale.
 
-## Stage 0 review (2026-07-31, after the merge word — coordinator-driven like the rest)
+## ⚠️ Stage 0 SUPERSEDED — reverted 2026-08-01 (`96baad2`)
+
+The app lane's `0e4c33e` (Rich, 2026-08-01) rewired **both** History and the live mirror onto the §2.4 `turnsSince` read and deliberately restored `resume` to **active-only** ("resume is active-only again"), re-pinning `SessionEnded`-on-ended in the shared contract test `s4_lifecycle_test.dart`. That vacated Stage 0's seat (amendment 5) and re-pinned the strictness S0 had widened, leaving `main` self-contradictory. The coordinator reverted `833f6de` cleanly (`96baad2`): suite back to 1634 green + the known failure; smoke confirms resume-ended → 410 (matching the app) while `turns?since=` remains the one ended-tolerant read. The §4/§9 Stage-0 addenda in both contract docs are gone with the revert; ruling 3 above stands as history only. Net design: **`resume` = active-only rehydrate; `turns?since=` = the ended-tolerant read; `turns/stream` = the push** — one verb per job.
+
+## Stage 0 review (2026-07-31, after the merge word — coordinator-driven like the rest; superseded above)
 
 - Suite re-run by the coordinator's hand: **1643 passed**, 31 skipped, only the known pre-existing failure.
 - S0 diff read: the sole behavior change is the `allow_ended=True` flip at the service; `app.py` gained docstring lines only (zero deletions); 410 mapping retained and pinned by a new test.
