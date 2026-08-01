@@ -9,6 +9,7 @@ No WebSocket streaming this wave — turn_stream stays NotImplementedError per A
 from __future__ import annotations
 
 import logging
+from importlib import metadata
 from typing import Any, Awaitable, Callable
 
 from starlette.applications import Starlette
@@ -552,6 +553,28 @@ async def student_model(request: Request) -> JSONResponse:
         return _map_error_to_response(e)
 
 
+async def version(request: Request) -> JSONResponse:
+    """GET /api/version — additive read verb (TASK-STV1-001).
+
+    Returns the installed package version via importlib.metadata.
+    Bearer-authed like the six session verbs (binding §2.2).
+    """
+    try:
+        await _resolve_student_id(request)
+
+        pkg_version = metadata.version("study-tutor")
+
+        return JSONResponse(
+            {"service": "study-tutor", "version": pkg_version},
+            status_code=200,
+        )
+
+    except Unauthenticated as e:
+        return _map_error_to_response(e)
+    except Exception as e:
+        return _map_error_to_response(e)
+
+
 async def healthz(request: Request) -> JSONResponse:
     """GET /healthz — READY health check (TASK-APP1-04 AC-001).
 
@@ -692,6 +715,9 @@ def create_app(
         # bearer-authed like the six session verbs (binding §2.2). Does NOT touch
         # the frozen voice CONTRACT_SHA/BINDING_SHA.
         Route("/api/student-model", student_model, methods=["GET"]),
+        # TASK-STV1-001: additive read verb — package version endpoint. Always
+        # mounted and bearer-authed like the six session verbs (binding §2.2).
+        Route("/api/version", version, methods=["GET"]),
         # Live robot-session mirror Stage 1: additive delta read (binding §2.4).
         # Always mounted, never flag-gated; does NOT touch the six session verbs,
         # the voice routes, or their status codes — so no CONTRACT_SHA/BINDING_SHA
