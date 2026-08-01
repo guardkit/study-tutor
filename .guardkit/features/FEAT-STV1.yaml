@@ -1,0 +1,22 @@
+id: FEAT-STV1
+name: "GET /api/version (additive read verb)"
+description: "The service reports its own version and name on a read-only additive route, per the API-session-http-binding §2.2 additive-read-verb precedent (the student-model route's shape). The Study Tutor's FIRST factory-built feature."
+created: "2026-08-01T17:10:00Z"
+status: planned
+complexity: 3
+estimated_tasks: 1
+evidence_repos: []
+tasks:
+  - id: TASK-STV1-001
+    name: "Add GET /api/version with tests"
+    file_path: "tasks/backlog/version-endpoint/TASK-STV1-001-add-version-endpoint.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 30
+orchestration:
+  parallel_groups:
+    - - TASK-STV1-001
+  estimated_duration_minutes: 30
+  recommended_parallel: 1
