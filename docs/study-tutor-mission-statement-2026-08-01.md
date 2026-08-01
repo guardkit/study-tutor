@@ -172,3 +172,25 @@ convention there.
 code, then adversarially critiqued (three lenses) before commit; every load-bearing claim
 above cites an in-repo receipt or is marked not-yet-real. **RATIFIED by Rich the same day.**
 Amendments by dated note, never silent edits.*
+
+---
+
+**Dated note — 2026-08-01 (Rich, in-session, same day as ratification):**
+
+1. **Dulcie joins "Who it serves"** as the second in-house student — Lilymay's sister,
+   Year 8 from September 2026, with her own phone and her own Reachy Mini. Her content is
+   KS3-level, so subject packs carry a level dimension when hers land. **Lilymay remains the
+   primary use case**, and the outcome this product exists for, in Rich's words: that it
+   helps her actually achieve better results and find the final school year more enjoyable.
+2. **Law 4's named casualty softens:** the family owns printed study guides, bought from the
+   school, across all Lilymay's subjects. Scanned via the proven docling path (the
+   architect-fine-tune precedent), they give every subject — French and Spanish included — a
+   law-4-compliant corpus. The specimen-paper gap now limits only assessment-style material,
+   which law 4 excludes anyway.
+3. **Study Room optionality (agreed with Lilymay today):** multi-subject + RAG come first so
+   the tutor is usable for real; the Study Room is a subsequent, **optional** phase —
+   AI-generated art won't suit everyone, and the room concept fits a particular cohort (a
+   different engagement angle for other cohorts, e.g. boys, stays an open design question).
+4. The Hugging Face weights upload was deliberate — the Kaggle Gemma 4 Good hackathon entry
+   required it; the licensing.md fix (plan Lane 5) records the fact and reason rather than
+   walking it back.

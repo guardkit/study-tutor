@@ -16,6 +16,11 @@ their own books, on a system whose privacy and legal posture is written down and
 well, RAG is bottomed out subject-scoped, the AWS pilot with uploads exists, and the
 copyright position is settled, "we have probably most of the MVP/v1 ready."
 
+**Lilymay is the primary use case** — the win is her achieving better results and actually
+enjoying her final school year with it (Rich, 2026-08-01). **Dulcie** (her sister, Year 8
+from September 2026, own phone + own Reachy Mini) is the second in-house student — KS3-level
+content, so subject packs carry a level dimension when hers land (mission dated note 1).
+
 ## Current state — the honest map (verified 2026-08-01, receipts named)
 
 Hosts, cashed out once: **the spark** = the household DGX Spark inference/app box
@@ -38,15 +43,18 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 
 **Known contradictions to burn down (Lane 5):**
 - `licensing.md` says the fine-tuned weights are "not distributed" but the Hugging Face
-  upload happened (AWS research §1 License row / §6c); model identity also stale ("31B
-  Dense" vs the real 26B-A4B).
+  upload happened (AWS research §1 License row / §6c) — **context recorded 2026-08-01
+  (Rich): the upload was deliberate, required for the Kaggle Gemma 4 Good hackathon entry.**
+  The fix is to record the fact and reason, not to walk it back. Model identity also stale
+  ("31B Dense" vs the real 26B-A4B).
 - `docs/submission/technical-writeup.md` claims AQA mark schemes/examiner reports are in the
   RAG store — **false** (the corpus is primary texts only; `corpus.py`'s AQA refusal gate
   forbids exactly that) and law-4-violating as written; correct the writeup.
 - **The multi-subject ADR's own RAG-source table lists mark schemes/past papers per subject**
-  — it predates the hardened law 4 and must be amended to exclude assessment material;
-  French/Spanish (specimen-paper-only specs) consequently have **no compliant corpus path**
-  until other materials are acquired.
+  — it predates the hardened law 4 and must be amended to exclude assessment material. The
+  French/Spanish no-compliant-corpus worry is **resolved in prospect (Rich, 2026-08-01)**:
+  the family owns school-bought printed study guides across all Lilymay's subjects — scan →
+  docling → corpora (Lane 1 step 3).
 - `sources/README.md` §3.2 still documents the in-copyright deny-list dropped 2026-05-09
   (`1f728bf`).
 - MCP adapter writes `subject=student_id` ('lilymay') while HTTP writes 'english' (or `''`
@@ -82,23 +90,27 @@ The recorded sequencing rule stands: *grounding before subject expansion* (rag-g
 ### Lane 1 — multiple subjects working well *(moves S1; Rich's ask #1)*
 Eval-first, then plumbing, then content packs:
 1. **Subject-suitability evals** (Rich, 2026-08-01: "we could do some further evals?" — yes):
-   re-run the 17-prompt protocol **scored** (fix the Chemistry-preset labeling), and extend
-   the existing blind eval harness (`scripts/eval/`, the 2026-05-18 runbook pattern) with
-   per-subject golden sets — serving fine-tune vs base under subject prompts. This doubles
-   as the overdue revisit of the 2026-05-18 result (base won 15–1 single-turn AND 2–0–1
-   multi-turn, the fine-tune ahead only on the Socratic-stance dimension — yet the fine-tune
-   serves). *Gate: Rich rules the serving story on the receipts, per subject.*
+   re-run the 17-prompt protocol **scored** (fix the Chemistry-preset labeling), and build
+   per-subject golden sets — serving fine-tune vs base under subject prompts, blind-judged.
+   **Venue ruled 2026-08-01 (Rich): the multi-subject eval harness lands in the sibling
+   `fleet-evals` repo** (the factory's judging estate), seeded from this repo's
+   `scripts/eval/` + the 2026-05-18 runbook pattern — and doubles as YouTube content. This
+   is also the overdue revisit of the 2026-05-18 result (base won 15–1 single-turn AND
+   2–0–1 multi-turn, the fine-tune ahead only on the Socratic-stance dimension — yet the
+   fine-tune serves). *Gate: Rich rules the serving story on the receipts, per subject —
+   with Lane 7's refreshed candidates in the field.*
 2. **Close the subject seams**: app subject picker (`SUBJECT_DEFAULT` becomes the fallback,
    as its §4 designed); server normalises omitted subject (today persists `''`); fix the MCP
    `subject=student_id` quirk or mark MCP superseded; `student-model` actually filters by
    its subject param; subject dimension on `topic_confidence`/chests/catalogs from the first
    migration (study-room §14: "a schema-day-one concern").
 3. **Per-subject content packs**: prompts + Coach rubric + curriculum seed + assessment-
-   objective framework per subject (only English AO1–AO6 is documented today). Pick the
-   first second subject by **compliant corpus availability** (History if suitable guides are
-   owned — operator-confirmed only, no repo receipt names them; French/Spanish are blocked
-   by the specimen-paper-only gap noted above).
-   *Receipt per subject: the S1 parity definition, ending in a real session.*
+   objective framework per subject (only English AO1–AO6 is documented today).
+   **Corpus source ruled 2026-08-01 (Rich): the family owns printed study guides, bought
+   from the school, across ALL Lilymay's subjects** — scan → docling (standard/vision
+   modes, the architect-fine-tune precedent) → per-subject corpora. Every subject now has a
+   law-4-compliant corpus path; pick the first second subject by scan effort + Lilymay's
+   need. *Receipt per subject: the S1 parity definition, ending in a real session.*
 
 ### Lane 4 — the copyright/fair-use posture *(gates Lane 3's uploads; S3 rung 1 — ratifies before the residency rung)*
 A decision doc, not code. Update `copyright-training-data-analysis.md` (2026-04-12 — UK-only,
@@ -125,6 +137,10 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
 2. **The multi-user ADR**: pilot accounts on the existing `student_id` partition + Keycloak
    provisioning (both already multi-user-shaped); concurrency posture (the spark cannot
    serve a concurrent cohort — cloud sizing is part of this); voice-on-Keycloak-mode flip.
+   **Consent is part of onboarding (Rich's 2026-08-01 direction):** the parental-consent
+   record ADR-029 D4 names is captured in the pilot onboarding flow itself — a signed step
+   before a friend's first session, not paperwork on the side — so the pilot is covered for
+   friends' usage by construction.
 3. **The spike → deploy**: reuse is high (stateless app container, compose, alembic
    migrations, realm-as-code, the model file + llama-swap config verbatim); new =
    TLS/domain (app base-URL rebuild, cleartext-HTTP fix), hosted Postgres/Keycloak, secrets
@@ -154,6 +170,21 @@ than a hand-deployed integration.
    already serve any client that authenticates). *Gate: the design pass comes back to Rich
    before any build.*
 
+### Lane 7 — model refresh & bake-off *(feeds Lane 1's serving ruling; added by Rich 2026-08-01)*
+**Ruled IN (Rich, 2026-08-01: "we should definitely re-run the fine-tune"):** re-run the
+fine-tune on Google's **updated Gemma 4 base** (better tool-call handling + other fixes).
+Options riding with it, assessed on receipts:
+1. **Dataset re-creation from a stronger teacher** — DeepSeek v4 Flash in a teacher role on
+   the 2×Spark (standup in prospect); do it if the eval receipts say it helps.
+2. **Side-by-side bake-off**: fine-tune the updated Gemma 4 AND Qwen 3.6 on the same
+   dataset, judge blind via `fleet-evals` — the winner enters Lane 1's serving ruling, and
+   the run makes good YouTube content either way.
+Venue: `agentic-dataset-factory` (pipeline) + `fleet-evals` (judging); study-tutor consumes
+the winner. Sequencing: the bake-off should land **before or with** Lane 1's serving ruling
+so Rich rules once, over the full candidate field (old fine-tune, base, refreshed tunes).
+*Gate: Rich's word on the teacher-dataset option and the bake-off scope once the 2×Spark
+standup and updated-base availability are confirmed.*
+
 ### Lane 5 — truth & hygiene *(moves S4; cheap, continuous)*
 1. **✅ DONE 2026-08-01**: root `CLAUDE.md` now routes every session to the two sources of
    truth (this was the pair's own enforcement gap — closed the day the pair was drafted).
@@ -173,20 +204,25 @@ Lane 2 step 1a (the RAG image receipt — ungated), Lane 1 step 1 (evals), and L
 (the robot re-point — the one thing currently *broken*) start immediately and in parallel;
 Lane 4 (a writing lane) runs alongside and **its ADR ratifies before Lane 3's residency ADR
 does**; Lane 3 must not touch student data in the cloud before both are ratified; Lane 6's
-app-distribution work waits on its design pass; Lane 5 runs continuously.
+app-distribution work waits on its design pass; Lane 7 runs in the sibling repos and lands
+its receipts before Lane 1's serving ruling; Lane 5 runs continuously. The Study Room stays
+a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
 
 ## Rich's open ruling queue (the genuine owner acts, consolidated)
 
 1. ~~Ratify the mission~~ **✅ RATIFIED 2026-08-01 (Rich, in-session)**; ratify this plan's
    lane order — the plan flips from DRAFT on his word.
 2. Lane 2: the `[rag]` extra go (the 1a receipt arrives attached).
-3. Lane 1: the serving ruling once the subject evals land (fine-tune vs base, per subject).
+3. Lane 1: the serving ruling once the subject evals land — over the full field including
+   Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
+   2026-08-01.)*
 4. Lane 4: the copyright posture ADR.
 5. Lane 3: the residency/governance ADR + multi-user scope + upload vehicle (web vs in-app).
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
-7. Housekeeping: push the Stage-0-revert commits (GitKraken or register the spark's SSH
-   key); execute the fleet-gateway re-point (Lane 6 step 1); ratify-or-revert the 90s
-   deadlines.
+7. Lane 7: the teacher-dataset option + bake-off scope, once the 2×Spark DeepSeek standup
+   and the updated Gemma 4 base availability are confirmed.
+8. Housekeeping: push the local commits (GitKraken or register the spark's SSH key);
+   execute the fleet-gateway re-point (Lane 6 step 1); ratify-or-revert the 90s deadlines.
 
 ## Standing rules (how work runs here — already the convention, now written)
 
@@ -199,8 +235,13 @@ pre-registered; claims carry receipts; sessions end by updating THIS doc.
 
 ## Named deferrals (parked on purpose — not silently)
 
-The Study Room (Lilymay's own design — coins/rooms/pets/shop; needs contract Rev 3, a
-navigation shell, and the art pipeline; build order coins+shop+bedroom per the designer);
+**The Study Room — sequencing agreed with Lilymay, 2026-08-01 (Rich):** multi-subject + RAG
+come first so the tutor is "usable for real"; the Study Room is a **subsequent phase and
+optional** — AI-generated art won't suit everyone, and the room concept fits a particular
+cohort (a different engagement angle for other cohorts, e.g. boys, is an open design
+question). The design itself stands (Lilymay's own — coins/rooms/pets/shop; needs contract
+Rev 3, a navigation shell, and the art pipeline; build order coins+shop+bedroom per the
+designer);
 Boss Battles / daily challenges / weekly quests (designed, promised by live unlock gates,
 unbuilt) and the 7 content-gated achievements behind them; the ~150-word voice-mode reply
 cap (Option C of the TTS investigation) + the 1.7B TTS trial; the iOS attended walk;
