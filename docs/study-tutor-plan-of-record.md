@@ -42,7 +42,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Suites | **Hermetic python suite FULLY GREEN as of 2026-08-01: 1640 passed, 31 skipped, 0 failures** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
 
 **Known contradictions to burn down (Lane 5) — five of eight burned down 2026-08-01
-(the Lane 4 pass `5c1ddaa` + hygiene commits `262ce95`/`10cc802`):**
+(the Lane 4 pass `5c1ddaa` + hygiene commits `5102874`/`10cc802`):**
 - ~~`licensing.md` weights claim + stale model identity~~ **✅ FIXED 2026-08-01** — §3/§4
   now record the deliberate HF upload + the Kaggle reason (per ADR-ARCH-031 D4); "31B
   Dense" → 26B-A4B with dated corrections; the dead Bedrock-CMI destination removed.
@@ -58,7 +58,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 - ~~`sources/README.md` §3.2 deny-list ghost~~ **✅ FIXED 2026-08-01** — rewritten as
   "deny-list REMOVED 2026-05-09 (`1f728bf`)".
 - ~~Root README + pyproject describe an MCP-only English runtime~~ **✅ FIXED 2026-08-01**
-  (`262ce95`) — README leads with the monorepo/HTTP reality, MCP demoted to a legacy
+  (`5102874`) — README leads with the monorepo/HTTP reality, MCP demoted to a legacy
   section.
 - MCP adapter writes `subject=student_id` ('lilymay') while HTTP writes 'english' (or `''`
   when the client omits it) — parallel-session divergence between front doors. (Code —
@@ -219,7 +219,7 @@ standup and updated-base availability are confirmed.*
 ### Lane 5 — truth & hygiene *(moves S4; cheap, continuous)*
 1. **✅ DONE 2026-08-01**: root `CLAUDE.md` now routes every session to the two sources of
    truth (this was the pair's own enforcement gap — closed the day the pair was drafted).
-2. **Mostly DONE 2026-08-01** (commits `262ce95`, `10cc802`, merge `5c1ddaa`): the
+2. **Mostly DONE 2026-08-01** (commits `5102874`, `10cc802`, merge `5c1ddaa`): the
    Known-contradictions list above is five-of-eight burned down; known-issues.md
    refreshed into the repo-wide ledger (fixture-ordering artifact + mirror advisories
    adopted; the `whitestocks` failure was **fixed outright** rather than adopted —
