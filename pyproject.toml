@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "study-tutor"
 version = "0.1.0"
-description = "Fine-tuned English tutoring runtime (MCP adapter + LLM client) for GCSE literature tutoring"
+description = "GCSE study-tutoring backend — session HTTP API + Player/Coach loop + student model (English-first; multi-subject per ADR-TUTOR-MULTI-SUBJECT; legacy MCP adapter retained)"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 dependencies = [
