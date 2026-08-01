@@ -78,6 +78,9 @@ rag = [
     "chromadb>=0.5",
     "sentence-transformers>=3.0",
     "openai>=1.0",
+    # Declared (not just transitive via sentence-transformers) so the
+    # [tool.uv.sources] pin below can route it to the CPU wheel index.
+    "torch>=2",
 ]
 dev = [
     "pytest>=9.0.2",
@@ -113,6 +116,16 @@ dev = [
 # runtime dep above will resolve from PyPI cleanly.
 [tool.uv.sources]
 nats-core = { path = "../nats-core", editable = true }
+# Lane 2 step 1a (2026-08-01): the [rag] extra's reranker runs CPU-only
+# (retrieval.py pins CrossEncoder(device="cpu")), so resolve torch from
+# the PyTorch CPU wheel index — the default PyPI resolution pulls the
+# CUDA stack (~4.3GB of nvidia/triton wheels) that nothing imports.
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/study_tutor"]
