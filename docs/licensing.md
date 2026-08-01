@@ -41,11 +41,15 @@ This covers:
 
 ## 2. Gemma 4 base model
 
-The Gemma 4 31B Dense base model, published by Google DeepMind, is
+The Gemma 4 26B-A4B base model (MoE, ~27B total / ~4B active;
+`unsloth/gemma-4-26b-a4b-it`), published by Google DeepMind, is
 distributed under **Google's Gemma Terms of Use** (an Apache-2.0-style
-licence with a use-policy addendum). This project does not redistribute
-the Gemma base weights — they are pulled from the official registries
-(Hugging Face, Ollama, AWS Bedrock) at runtime by the operator.
+licence with a use-policy addendum). *(Corrected 2026-08-01: this file
+previously said "31B Dense" — stale and wrong per the 2026-07-06 AWS
+hosting research §1; the fine-tune has always been the 26B-A4B MoE.)*
+This project does not redistribute the Gemma base weights — they are
+pulled from the official registries (Hugging Face, Ollama, AWS Bedrock)
+at runtime by the operator.
 
 Operators are responsible for accepting Google's Gemma terms in the
 registry of their choice before running the tutor.
@@ -55,40 +59,57 @@ registry of their choice before running the tutor.
 
 ---
 
-## 3. Fine-tuned adapter and merged weights — NOT distributed
+## 3. Fine-tuned adapter and merged weights — distribution status (corrected 2026-08-01)
 
-The LoRA adapter and merged 16-bit fine-tuned weights used by the
-reference tutor deployment are **not distributed in this repository**. They
-exist privately on the developer's GB10 workstation (and, once
-FEAT-PO-004 completes, on the operator's AWS S3 bucket as a Bedrock Custom
-Model Import artefact).
+The fine-tuned weights are **not distributed in this repository**, but —
+correcting the earlier "NOT distributed" claim of this section — they
+**were deliberately uploaded to the Hugging Face Hub**: the merged 16-bit
+weights and the GGUF export live at
+`RichWoollcott/gcse-tutor-gemma4-26b-moe` (+ `-GGUF`), linked from the
+hackathon submission writeup §11 and verified on the Hub in the
+2026-07-06 AWS hosting research §1. The upload was a **requirement of the
+Kaggle "Gemma 4 Good" hackathon entry** — a conscious decision, not a
+leak (Rich, recorded 2026-08-01; mission dated note 4). This file
+previously contradicted that fact; the record now stands as fact +
+reason, per [ADR-ARCH-031 D4](architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md).
+(The FEAT-PO-004 Bedrock Custom Model Import destination this section
+once named is dead — CMI cannot import Gemma at all, per the 2026-07-06
+research §2.)
 
-This is a deliberate choice, not an oversight:
+Context that still holds:
 
 - The fine-tune was trained on synthetic data generated with reference to
-  commercially purchased, DRM-free study guides (see §5). While the
-  training output is original synthetic content, distributing the derived
-  weights publicly would invite provenance questions that the project is
-  not resourced to adjudicate.
-- The adapter is approximately 600 MB and the merged 16-bit weights are
-  approximately 62 GB; both exceed what belongs in a git repository
-  regardless of licensing posture.
-- The hackathon demo shows the model's *behaviour* via the MCP server.
-  It does not require the model's *weights* to leave the developer's
-  controlled infrastructure.
+  commercially purchased, DRM-free study guides (see §5). The training
+  output is original synthetic content; the 2026-04-12 analysis §7.2
+  rated public weight distribution "Medium" risk with the mitigation that
+  weights are numerical behaviour, several transformative steps from any
+  source text. That assessment stands; the hackathon entry was the
+  decision to accept it.
+- The adapter (~600 MB) and merged 16-bit weights (~49 GB safetensors)
+  exceed what belongs in a git repository regardless of licensing
+  posture — the Hub, not this repo, is where they live.
+- Any **further** distribution decision is blocked on resolving the
+  base-model licence identity conflict (Apache 2.0 in the writeup vs
+  Gemma Terms of Use here — AWS research §1/§6c), tracked in
+  ADR-ARCH-031 D4.2.
 
 Reproducing the fine-tune requires the separate
 [`agentic-dataset-factory`](https://github.com/appmilla/agentic-dataset-factory)
 pipeline, an operator-acquired study-guide corpus (see §5), and GB10-scale
-compute. The pipeline is open; the weights are not.
+compute. The pipeline is open; the weights live on the Hub (above), not
+in this repository.
 
 ---
 
-## 4. GGUF / Ollama deployment artefacts — NOT distributed
+## 4. GGUF / Ollama deployment artefacts — distribution status (corrected 2026-08-01)
 
-The `gemma-4-26b-a4b-it.Q4_K_M.gguf` and equivalent 31B quantised exports
-used for local inference are derivatives of the fine-tuned weights
-described in §3 and are subject to the same non-distribution policy.
+The `gemma-4-26b-a4b-it.Q4_K_M.gguf` quantised export used for local
+inference is a derivative of the fine-tuned weights described in §3 and
+shares their status: not in this repository, but published to the Hub in
+the `-GGUF` companion repo as part of the same hackathon upload (the
+BF16 GGUF there is unusable — shard 1 missing, per the AWS research §1).
+*(The "equivalent 31B quantised exports" this section previously named
+never existed — the 31B identity was stale, see §2.)*
 
 The `Modelfile` that wraps them (with the GCSE English system prompt and
 sampling parameters) is considered configuration, not model weight, and
@@ -162,7 +183,7 @@ show <name>`) if they need exhaustive licence provenance.
 - Adapt the `roles/tutor/` configuration and the `GOAL.md` template for
   other subjects or specifications.
 - Run the tutor against their own fine-tune, against the stock Gemma 4
-  31B base model, or against any other LLM provider supported by the
+  26B-A4B base model, or against any other LLM provider supported by the
   `llm/client.py` factory.
 - Acquire their own study-guide corpus, run the
   `agentic-dataset-factory` pipeline, produce their own `train.jsonl`,
@@ -171,7 +192,10 @@ show <name>`) if they need exhaustive licence provenance.
 **Cannot:**
 
 - Obtain the fine-tuned weights, LoRA adapter, GGUF exports, or
-  `train.jsonl` from this repository — they are not here.
+  `train.jsonl` from this repository — they are not here. (The merged
+  weights and Q4_K_M GGUF are on the Hugging Face Hub under Rich's
+  account — see §3 — subject to the Hub repo's own terms, not this
+  repository's MIT licence.)
 - Expect AQA-branded assessment content anywhere in the pipeline.
 - Assume that a derivative using AQA materials as training data would be
   acceptable under AQA's policy — it would not, and AQA's policy is a
@@ -188,12 +212,15 @@ building a tutor for one student is navigating constraints that the
 frontier model providers have not themselves resolved.
 
 This project's posture is conservative and transparent: the *pipeline* is
-open, the *data* is private, the fine-tuned *weights* are private, and
-the *assessment-board-prohibited content* (AQA) is excluded from the
-pipeline entirely. If that posture needs to tighten further once the
-Kaggle rules are read in full, this document will be updated in lockstep
-with the change.
+open, the *data* is private, the fine-tuned *weights* are published on
+the Hub as a recorded hackathon-entry decision (§3), and the
+*assessment-board-prohibited content* (AQA) is excluded from the
+pipeline entirely. The pilot-uploads posture (per-account private
+retrieval of user-owned scans) is governed by
+[ADR-ARCH-031](architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md).
+If the posture needs to change again, this document is updated in
+lockstep with the change.
 
 ---
 
-*Licensing summary: 20 April 2026. Revisit when the Bedrock import lands, when the Kaggle IP rules are read in full, or when the Phase 1 RAG grounding layer starts ingesting source material in anger.*
+*Licensing summary: 20 April 2026. Amended 2026-08-01 (Lane 4): recorded the deliberate Hugging Face weights upload (Kaggle Gemma 4 Good entry requirement) and corrected the stale "31B Dense" model identity to the real fine-tuned Gemma 4 26B-A4B. Revisit when the base-model licence identity conflict (ADR-ARCH-031 D4.2) is resolved or when the Lane 3 upload surface lands.*

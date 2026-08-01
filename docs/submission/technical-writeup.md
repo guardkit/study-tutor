@@ -29,6 +29,23 @@ StudyTutor is built on a four-layer architecture where each layer is independent
 
 **Layer 2 — RAG knowledge store.** Curriculum content lives in a ChromaDB vector store — 581 embedded chunks across three GCSE set texts (Macbeth, An Inspector Calls, and the AQA Power & Conflict poetry anthology), plus Mr Bruff study guides, AQA mark schemes, and examiner reports. A per-turn decision selectively retrieves primary-text passages to ground the tutor's answer, and a post-hoc verifier checks every quotation against the source text, correcting or stripping anything not verbatim. When the student moves to a new text or topic, the knowledge layer updates without retraining the model.
 
+> **Correction (2026-08-01) — the paragraph above misstates the store's contents.** This
+> writeup is preserved as submitted (a historical record of the 2026-05-18 hackathon
+> entry), but the "plus Mr Bruff study guides, AQA mark schemes, and examiner reports"
+> clause was false at submission time and remains false. What the RAG store actually
+> holds: the `gcse-english-v1` collection's **581 chunks are the three primary set texts
+> only** — no study guides, no AQA assessment material of any kind. Mr Bruff guides
+> informed the *synthetic training-data* pipeline in the separate `agentic-dataset-factory`
+> repo; they are not in the tutor's retrieval store. AQA mark schemes and examiner reports
+> have **never** been in any pipeline and cannot be: the corpus loader refuses them
+> unconditionally at ingest (`AQA_REFUSAL_PATTERN`,
+> `src/study_tutor/knowledge/corpus.py`), with a duplicate defence-in-depth filter at
+> retrieval (`AQA_FILENAME_PATTERN`, `src/study_tutor/knowledge/retrieval.py`) — AQA's
+> policy prohibits AI use of assessment material, and the mission (law 4,
+> `docs/study-tutor-mission-statement-2026-08-01.md`) excludes it absolutely. Recorded as
+> part of the Lane 4 contradiction burn-down
+> ([ADR-ARCH-031](../architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md) D5).
+
 **Layer 3 — Player-Coach orchestration.** Each tutoring turn runs through a Player-Coach loop at inference time. The Player (fine-tuned Gemma 4) generates a response; the Coach validates it against quality criteria before it reaches the student. This provides a runtime quality gate beyond what fine-tuning alone achieves. The detailed harness mechanics — protocols, the bounded revision loop, the prose-injection invariant, and fallback policy — are documented in [implementation_notes.md § Player–Coach harness](implementation_notes.md#playercoach-harness--how-it-actually-runs).
 
 **Layer 4 — Graphiti memory.** A temporal knowledge graph in FalkorDB persists the student's profile and per-topic confidence scores. At session start, a deterministic planner reads the student model and selects the session's focus — the weakest topic outside a 48-hour cooldown window. At session end, outcomes write back and shift confidence scores. Topic selection measurably adapts across sessions — verified live across four sessions with topic confidence progressing 55% → 56% → 57% → 58%.
@@ -112,6 +129,8 @@ The system runs entirely on home hardware connected via Tailscale mesh networkin
 
 1. Clone the study-tutor and agentic-dataset-factory repos
 2. Acquire GCSE source materials (Mr Bruff guides ~£25, AQA past papers free)
+   *(Correction 2026-08-01: do **not** acquire AQA past papers for the pipeline — the
+   loader refuses all AQA assessment material unconditionally; see the §2 correction note.)*
 3. Run Docling ingestion pipeline
 4. Run Player-Coach generation loop (overnight, ~8 hours)
 5. Fine-tune Gemma 4 26B using provided training script
