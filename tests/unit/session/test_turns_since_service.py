@@ -130,8 +130,8 @@ async def test_since_beyond_total_returns_empty_with_total() -> None:
 
 
 async def test_ended_session_still_returns_its_rows() -> None:
-    """This reads ended sessions (as ``resume_session`` also does since Stage 0)
-    — the poll survives the active→ended transition (no ``SessionEnded``)."""
+    """Unlike ``resume_session`` this reads ended sessions — the poll survives
+    the active→ended transition (no ``SessionEnded``)."""
     rows = _turns(4)
     service = _service(
         FakeTurnsStore(record=_record(status="ended"), turns=rows)

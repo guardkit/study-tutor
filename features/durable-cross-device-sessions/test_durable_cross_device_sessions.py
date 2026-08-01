@@ -651,14 +651,18 @@ def _when_tries_to_resume_ended(
     service: SessionService,
     context: dict,
 ) -> None:
-    """Resume an ended session — a READ, allowed since Stage 0 (2026-07-31)."""
+    """Try to resume ended session."""
     session_id = context["session_id"]
-    context["resume_result"] = asyncio.run(
-        service.resume_session(
-            student_id="lilymay",
-            session_id=session_id,
+    try:
+        asyncio.run(
+            service.resume_session(
+                student_id="lilymay",
+                session_id=session_id,
+            )
         )
-    )
+        context["error"] = None
+    except SessionEnded as e:
+        context["error"] = e
 
 
 @when(parsers.parse('a completed session is recorded for "{student_id}"'))
@@ -972,17 +976,9 @@ def _then_ended_not_resumable(context: dict) -> None:
 
 @then("the action should be refused because the session has ended")
 def _then_refused_session_ended(context: dict) -> None:
-    """Assert SessionEnded error (write verbs — §4 terminality)."""
+    """Assert SessionEnded error."""
     error = context["error"]
     assert isinstance(error, SessionEnded)
-
-
-@then("it should return the transcript with the session marked ended")
-def _then_resume_returns_ended_transcript(context: dict) -> None:
-    """Stage 0: the resume READ serves ended sessions (shape unchanged)."""
-    result = context["resume_result"]
-    assert result.status == "ended"
-    assert isinstance(result.turns, tuple)
 
 
 @then("it should report that the session was not found")
