@@ -29,7 +29,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Student model + gamification | **LIVE** — Postgres on the NAS `:5434`, nightly dumps; W1+W2 economy (33 achievements) settling per ADR-ARCH-030; real session receipted 2026-07-26 (`904ad0f`) | ADR-ARCH-030; `docs/gamification/design.md` §13.1 |
 | App (Flutter, monorepo `app/`) | **Android device-walked** (sessions, voice tap-to-talk, streaming, sign-in, history, live robot mirror, gamification UI, settings). **iOS: compiles + hermetic-suite green only** (live walk pending). **Web: no boot claim** | `RESULTS-study-tutor-p2-live-acceptance-2026-07-05.md`; `app/README.md`; honest-iOS commit `29a320f` |
 | Auth | **LIVE end-to-end** — Keycloak on the NAS `:8443`; server gate (KC-G2) and real-device gate (KC-G3) passed 2026-07-19; interim table mode retained for the robot | `HANDOFF-weekend-auth-voice-fable-window.md` §11 |
-| Robot (Reachy "Scholar") | `ask_tutor` + student-model reads over `:8100`; **⚠ the GB10→spark URL re-point has NO completion record** — verify, else the robot is calling a downed host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3 |
+| Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01 |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
 | RAG / retrieval | **Code-complete, DEAD in prod** — the image lacks the `[rag]` optional dependency ⇒ `rag_disabled reason=chromadb_missing`; the English corpus (`gcse-english-v1`, 581 chunks, 3 texts) ships unused in the image; retrieval-off also idles the Coach revise loop | `Dockerfile:70`; `cli/rag_wiring.py`; TASK-RVP-001 |
 | Multi-subject | **Mechanism decided + informally validated, not built**: ADR-TUTOR-MULTI-SUBJECT (Accepted 2026-05-05) — ONE fine-tune + per-subject prompts + per-subject corpora; 17/17 Open WebUI probes (raw transcript, unscored); ratified load-bearing 2026-07-19 (Rich — `study-room-cosy-progression.md` §2 line 32). Everything behavioural is English-only today | the ADR; `multi-subject-validation-{prompts,results}.md` |
@@ -138,6 +138,22 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    guards.
 5. **The pilot**: friends provisioned (runbook exists), first external session = S3 top rung.
 
+### Lane 6 — robot app distribution & switching *(moves S0's robot leg; added by Rich 2026-08-01)*
+Rich's ask, same day as this plan: the **Reachy Mini desktop or mobile app should be able to
+download the study-tutor custom app onto the robot, so the user can switch between the study
+tutor and other robot apps** — the tutor becomes one installable app among several rather
+than a hand-deployed integration.
+1. **Immediate, independent of the rest:** execute the GB10→spark re-point (the robot's
+   tutor path is down until then — see the state map) and smoke `ask_tutor` live.
+2. **Investigation/design pass first, build second:** how Pollen's Reachy Mini app
+   packaging/distribution actually works (the app hub/store mechanism and its
+   install-from-companion-app flow); what the Scholar integration in fleet-gateway must
+   become to be a switchable, installable app (clean install/uninstall, config carried with
+   the app — backend URL + bearer, voice pins); where the work lands (mostly the
+   fleet-gateway repo + robot host, with study-tutor's surface unchanged — the contracts
+   already serve any client that authenticates). *Gate: the design pass comes back to Rich
+   before any build.*
+
 ### Lane 5 — truth & hygiene *(moves S4; cheap, continuous)*
 1. **✅ DONE 2026-08-01**: root `CLAUDE.md` now routes every session to the two sources of
    truth (this was the pair's own enforcement gap — closed the day the pair was drafted).
@@ -148,24 +164,29 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    note. Re-run the live contract suite against the spark (the 35-green receipt is from
    2026-07-05, pre-`turnsSince`).
 3. **Push the local Stage-0-revert commits** (`96baad2` + successors — origin is
-   self-contradictory until then) and **confirm the fleet-gateway re-point**.
+   self-contradictory until then). The fleet-gateway re-point moved to Lane 6 step 1
+   (confirmed outstanding, Rich 2026-08-01).
 
 ## Sequencing, in one line
 
-Lane 2 step 1a (the RAG image receipt — ungated) and Lane 1 step 1 (evals) start
-immediately and in parallel; Lane 4 (a writing lane) runs alongside and **its ADR ratifies
-before Lane 3's residency ADR does**; Lane 3 must not touch student data in the cloud before
-both are ratified; Lane 5 runs continuously.
+Lane 2 step 1a (the RAG image receipt — ungated), Lane 1 step 1 (evals), and Lane 6 step 1
+(the robot re-point — the one thing currently *broken*) start immediately and in parallel;
+Lane 4 (a writing lane) runs alongside and **its ADR ratifies before Lane 3's residency ADR
+does**; Lane 3 must not touch student data in the cloud before both are ratified; Lane 6's
+app-distribution work waits on its design pass; Lane 5 runs continuously.
 
 ## Rich's open ruling queue (the genuine owner acts, consolidated)
 
-1. Ratify the mission (red-pen welcome) and this plan's lane order — both flip from DRAFT.
+1. ~~Ratify the mission~~ **✅ RATIFIED 2026-08-01 (Rich, in-session)**; ratify this plan's
+   lane order — the plan flips from DRAFT on his word.
 2. Lane 2: the `[rag]` extra go (the 1a receipt arrives attached).
 3. Lane 1: the serving ruling once the subject evals land (fine-tune vs base, per subject).
 4. Lane 4: the copyright posture ADR.
 5. Lane 3: the residency/governance ADR + multi-user scope + upload vehicle (web vs in-app).
-6. Housekeeping: push the Stage-0-revert commits (GitKraken or register the spark's SSH
-   key); confirm/execute the fleet-gateway re-point; ratify-or-revert the 90s deadlines.
+6. Lane 6: the robot app-distribution design pass (comes back to him before build).
+7. Housekeeping: push the Stage-0-revert commits (GitKraken or register the spark's SSH
+   key); execute the fleet-gateway re-point (Lane 6 step 1); ratify-or-revert the 90s
+   deadlines.
 
 ## Standing rules (how work runs here — already the convention, now written)
 

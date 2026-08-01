@@ -1,5 +1,5 @@
 # Study Tutor — mission statement (source of truth #1 for this repo)
-## 2026-08-01 · living · DRAFT for Rich's red-pen — ratification flips this to BINDING
+## 2026-08-01 · living · **RATIFIED — Rich, 2026-08-01 ("happy to sign off", in-session). This document is BINDING; amendments by dated note, never silent edits.**
 
 > **THE TWO SOURCES OF TRUTH for study-tutor (read these first, every session; everything
 > else in this repo is subordinate):**
@@ -170,5 +170,5 @@ convention there.
 
 *Drafted 2026-08-01 from a receipted eight-area review of this repo's docs, git history, and
 code, then adversarially critiqued (three lenses) before commit; every load-bearing claim
-above cites an in-repo receipt or is marked not-yet-real. Amendments by dated note after
-ratification, never silent edits.*
+above cites an in-repo receipt or is marked not-yet-real. **RATIFIED by Rich the same day.**
+Amendments by dated note, never silent edits.*
