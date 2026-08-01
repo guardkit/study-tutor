@@ -1,5 +1,5 @@
 # Study Tutor — PLAN OF RECORD (source of truth #2; the concrete roadmap)
-## 2026-08-01 · living · DRAFT until Rich ratifies the lane order (ruling-queue item 1) · pairs with the mission ([`study-tutor-mission-statement-2026-08-01.md`](study-tutor-mission-statement-2026-08-01.md))
+## 2026-08-01 · living · **RATIFIED — Rich, 2026-08-01 ("approved", in-session): the lane order is the plan of record** · pairs with the mission ([`study-tutor-mission-statement-2026-08-01.md`](study-tutor-mission-statement-2026-08-01.md))
 
 > **This is THE plan for the product. When something is decided or moves state, update THIS
 > doc — do not write a new orphan doc the next session overlooks. ADRs, contracts, runbooks,
@@ -161,6 +161,10 @@ tutor and other robot apps** — the tutor becomes one installable app among sev
 than a hand-deployed integration.
 1. **Immediate, independent of the rest:** execute the GB10→spark re-point (the robot's
    tutor path is down until then — see the state map) and smoke `ask_tutor` live.
+   **Runbook written 2026-08-01:** [`RUNBOOK-reachy-repoint-spark.md`](runbooks/RUNBOOK-reachy-repoint-spark.md)
+   — preflight from the gateway host, the one URL change (same bearer), the three-part
+   smoke (student-model read / spoken ask_tutor / mirror cross-check), rollback, and the
+   completion ticks. Runs on the fleet-gateway host, not from here.
 2. **Investigation/design pass first, build second:** how Pollen's Reachy Mini app
    packaging/distribution actually works (the app hub/store mechanism and its
    install-from-companion-app flow); what the Scholar integration in fleet-gateway must
@@ -210,8 +214,8 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
 
 ## Rich's open ruling queue (the genuine owner acts, consolidated)
 
-1. ~~Ratify the mission~~ **✅ RATIFIED 2026-08-01 (Rich, in-session)**; ratify this plan's
-   lane order — the plan flips from DRAFT on his word.
+1. ~~Ratify the mission and this plan's lane order~~ **✅ BOTH RATIFIED 2026-08-01 (Rich,
+   in-session — mission "happy to sign off"; plan "approved").**
 2. Lane 2: the `[rag]` extra go (the 1a receipt arrives attached).
 3. Lane 1: the serving ruling once the subject evals land — over the full field including
    Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
