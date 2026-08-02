@@ -75,10 +75,14 @@ class StudentStore(Protocol):
         ...
 
     async def get_topic_confidences(
-        self, student_id: str
+        self, student_id: str, subject: str | None = None
     ) -> list[TopicConfidence]:
         """Per-topic confidence entities the planner ranks over
-        (``PlannerContext.topic_confidences``). Empty list when unknown."""
+        (``PlannerContext.topic_confidences``). Empty list when unknown.
+
+        ``subject`` (ADR-ARCH-032 / study-room §14): when given, only that
+        subject's mastery rows; ``None`` keeps whole-student consumers
+        (the planner) unchanged."""
         ...
 
     async def get_recent_misconceptions(

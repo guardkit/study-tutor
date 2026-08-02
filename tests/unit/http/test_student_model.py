@@ -165,3 +165,36 @@ def test_seeded_but_empty_is_data_available_false(client: TestClient) -> None:
     assert body["topic_confidence"] == {}
     assert body["near_achievements"] == []
     assert body["streak_days"] == 0
+
+
+def test_subject_param_filters_the_mastery_read(
+    client: TestClient, store: FakeStudentStore
+) -> None:
+    """ADR-ARCH-032 / study-room §14: the required subject param now filters
+    topic_confidence server-side; whole-student gamification stays unscoped."""
+    now = datetime.now(UTC)
+    store.add_ended_session(
+        "lilymay", started_at=now - timedelta(minutes=20), last_activity=now
+    )
+    store.add_topic_confidence("lilymay", "macbeth", 70)
+    store.add_topic_confidence("lilymay", "subjonctif", 40, subject="french")
+
+    english = client.get(
+        "/api/student-model?subject=english",
+        headers={"Authorization": "Bearer token-lilymay"},
+    )
+    french = client.get(
+        "/api/student-model?subject=french",
+        headers={"Authorization": "Bearer token-lilymay"},
+    )
+    chemistry = client.get(
+        "/api/student-model?subject=chemistry",
+        headers={"Authorization": "Bearer token-lilymay"},
+    )
+
+    assert english.status_code == french.status_code == chemistry.status_code == 200
+    assert english.json()["topic_confidence"] == {"macbeth": 0.7}
+    assert french.json()["topic_confidence"] == {"subjonctif": 0.4}
+    assert chemistry.json()["topic_confidence"] == {}
+    # Whole-student surfaces are identical across subjects (unscoped by design).
+    assert english.json()["total_xp"] == french.json()["total_xp"] == 120

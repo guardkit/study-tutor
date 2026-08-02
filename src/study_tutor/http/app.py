@@ -522,16 +522,20 @@ async def student_model(request: Request) -> JSONResponse:
     try:
         student_id = await _resolve_student_id(request)
 
-        # subject is required by the binding (§2.2). It is not yet used to filter
-        # server-side — the Phase-1 record is single-subject — but it is a hard
-        # contract param, so its absence is a 400, consistent with other verbs.
+        # subject is required by the binding (§2.2), and — as of 2026-08-02
+        # (ADR-ARCH-032 / study-room §14, Lane 1 step 2) — it now actually
+        # filters the mastery read: topic_confidence rows come back for the
+        # requested subject only. Whole-student surfaces (gamification XP /
+        # streak / level) stay unscoped by design.
         subject = request.query_params.get("subject")
         if not subject:
             raise ValueError("subject query parameter is required")
 
         store = request.app.state.student_store
         gamification = await store.get_gamification_state(student_id)
-        topic_confidences = await store.get_topic_confidences(student_id)
+        topic_confidences = await store.get_topic_confidences(
+            student_id, subject=subject
+        )
 
         response_data = build_student_model_response(
             gamification,

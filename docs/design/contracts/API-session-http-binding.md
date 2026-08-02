@@ -67,6 +67,7 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 Serves the Reachy robot's `query_student_model` tool (sibling `fleet-gateway`, FEAT-VOICE-004 R05) — the durable learner record previously read from the now-frozen Graphiti graph (recon D2). **Additive read verb:** it does not alter the six session verbs, the voice Rev 1 routes, or their status codes, and it does **not** disturb the frozen voice `CONTRACT_SHA`/`BINDING_SHA`.
 
 - **Query params:** `subject` (required — absent → 400), `student_name` (optional hint, **ignored**; identity is derived server-side from the token, never client-asserted).
+  > **Dated annotation 2026-08-02 (ADR-ARCH-032 / Lane 1 step 2 — in-place, per the §4.1 precedent):** `subject` now **filters the mastery read server-side**: `topic_confidence` returns the requested subject's rows only. It was previously required-but-unused (single-subject Phase 1). Whole-student fields (XP, streak, level, achievements) stay unscoped by design (study-room §14). Semantics for existing consumers are unchanged in practice — fleet-gateway and the app both send `english`, whose rows are exactly what the unfiltered read returned. No shape change, no status-code change, no re-pin.
 - **Auth:** the same `Authorization: Bearer <token>` → `_resolve_student_id`. Unseeded/invalid token → `Unauthenticated` (401), never 500 (§3, ASSUM-001).
 - **Response (200):**
   ```json

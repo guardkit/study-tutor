@@ -161,15 +161,20 @@ async def _upsert_confidence(
         "topic_confidence",
         metadata,
         Column("student_id", String),
+        Column("subject", String),
         Column("topic_name", String),
         Column("percentage", Integer),
         Column("band", String),
         Column("last_revised_at", DateTime(timezone=True)),
     )
 
-    # Build INSERT ... ON CONFLICT DO UPDATE
+    # Build INSERT ... ON CONFLICT DO UPDATE. The conflict key is the
+    # widened (student_id, subject, topic_name) primary key (rev
+    # d5a9c2e7f814, ADR-ARCH-032) — the same topic name carries an
+    # independent confidence per subject.
     stmt = postgresql.insert(topic_confidence).values(
         student_id=student_id,
+        subject=update.subject,
         topic_name=update.topic_name,
         percentage=update.percentage,
         band=band,
@@ -177,7 +182,7 @@ async def _upsert_confidence(
     )
 
     upsert_stmt = stmt.on_conflict_do_update(
-        index_elements=["student_id", "topic_name"],
+        index_elements=["student_id", "subject", "topic_name"],
         set_={
             "percentage": stmt.excluded.percentage,
             "band": stmt.excluded.band,
@@ -189,7 +194,11 @@ async def _upsert_confidence(
 
 
 async def _insert_misconception(
-    conn: AsyncConnection, student_id: str, topic_name: str, text: str
+    conn: AsyncConnection,
+    student_id: str,
+    topic_name: str,
+    text: str,
+    subject: str = "english",
 ) -> None:
     """Insert misconception at connection level (reused by record_session_completion).
 
@@ -201,6 +210,9 @@ async def _insert_misconception(
         student_id: Student identifier (FK to student table).
         topic_name: Topic the misconception relates to.
         text: Raw misconception text from observation.
+        subject: Mastery dimension the observation lands under
+            (ADR-ARCH-032); callers on the settlement/completion paths
+            pass the session row's subject.
 
     Raises:
         ValueError: If topic_name or text (after sanitisation) is blank.
@@ -221,14 +233,16 @@ async def _insert_misconception(
 
     # Build parameterised INSERT statement
     insert_stmt = sql_text(
-        "INSERT INTO misconception (student_id, topic_name, text, observed_at) "
-        "VALUES (:student_id, :topic_name, :text, :observed_at)"
+        "INSERT INTO misconception "
+        "(student_id, subject, topic_name, text, observed_at) "
+        "VALUES (:student_id, :subject, :topic_name, :text, :observed_at)"
     )
 
     await conn.execute(
         insert_stmt,
         {
             "student_id": student_id,
+            "subject": subject,
             "topic_name": topic_name,
             "text": sanitised_text,
             "observed_at": observed_at,
@@ -470,6 +484,7 @@ async def _bank_settlement(
     session_facts: SessionFacts,
     confidence_updates: list[ConfidenceUpdate],
     misconceptions: list[Misconception],
+    subject: str = "english",
 ) -> GamificationDecision:
     """Run the engine and bank its result inside the caller's savepoint.
 
@@ -484,16 +499,26 @@ async def _bank_settlement(
     the winner and a later replay the same W2 snapshot. Both stay inside the
     savepoint, so a fault still rolls the whole settlement back.
     """
+    # ADR-ARCH-032: the session row's subject is authoritative for every
+    # mastery write banked here — stamp it over whatever the caller set.
+    confidence_updates = [
+        update.model_copy(update={"subject": subject})
+        for update in confidence_updates
+    ]
+
     for update in confidence_updates:
         await _upsert_confidence(conn, student_id, update)
         await conn.execute(
             sql_text(
                 "INSERT INTO topic_confidence_history "
-                "(student_id, topic_name, percentage, session_id, recorded_at, source) "
-                "VALUES (:sid, :topic, :pct, :session_id, :now, 'session')"
+                "(student_id, subject, topic_name, percentage, session_id, "
+                "recorded_at, source) "
+                "VALUES (:sid, :subject, :topic, :pct, :session_id, :now, "
+                "'session')"
             ),
             {
                 "sid": student_id,
+                "subject": update.subject,
                 "topic": update.topic_name,
                 "pct": update.percentage,
                 "session_id": session_id,
@@ -531,7 +556,9 @@ async def _bank_settlement(
         )
 
     for misc in misconceptions:
-        await _insert_misconception(conn, student_id, misc.topic_ref, misc.text)
+        await _insert_misconception(
+            conn, student_id, misc.topic_ref, misc.text, subject
+        )
 
     return decision
 
@@ -785,7 +812,8 @@ class PostgresStudentStore:
             # 2. Read topic_confidence rows → TopicConfidenceSnapshot[]
             confidence_result = await conn.execute(
                 sql_text(
-                    "SELECT topic_name, percentage, band, last_revised_at "
+                    "SELECT topic_name, percentage, band, last_revised_at, "
+                    "subject "
                     "FROM topic_confidence "
                     "WHERE student_id = :sid "
                     "ORDER BY last_revised_at DESC"
@@ -800,6 +828,7 @@ class PostgresStudentStore:
                     percentage=row[1],
                     band=row[2],
                     last_revised_at=row[3],
+                    subject=row[4],
                 )
                 for row in confidence_rows
             ]
@@ -930,7 +959,9 @@ class PostgresStudentStore:
             today=london_date(datetime.now(timezone.utc)),
         )
 
-    async def get_topic_confidences(self, student_id: str) -> list[TopicConfidence]:
+    async def get_topic_confidences(
+        self, student_id: str, subject: str | None = None
+    ) -> list[TopicConfidence]:
         """Read per-topic confidence entities from Postgres (TASK-SMP2-01).
 
         Returns one TopicConfidence domain entity per topic_confidence row for
@@ -938,6 +969,10 @@ class PostgresStudentStore:
 
         Args:
             student_id: Student identifier to query.
+            subject: When given, only that subject's rows (ADR-ARCH-032 /
+                study-room §14 — the mastery surfaces filter by subject).
+                ``None`` returns every subject's rows (whole-student
+                consumers, e.g. the planner, unchanged).
 
         Returns:
             List of TopicConfidence entities. Empty list if student has no rows
@@ -954,6 +989,11 @@ class PostgresStudentStore:
         else:  # pragma: no cover
             raise RuntimeError("No engine or pool configured")
 
+        subject_clause = "AND subject = :subject " if subject is not None else ""
+        params: dict[str, Any] = {"sid": student_id}
+        if subject is not None:
+            params["subject"] = subject
+
         # Read-only connection (no transaction needed)
         async with engine.connect() as conn:
             # Parameterised SELECT with ORDER BY last_revised_at DESC
@@ -962,9 +1002,10 @@ class PostgresStudentStore:
                     "SELECT topic_name, percentage, band, last_revised_at "
                     "FROM topic_confidence "
                     "WHERE student_id = :sid "
-                    "ORDER BY last_revised_at DESC"
+                    + subject_clause
+                    + "ORDER BY last_revised_at DESC"
                 ),
-                {"sid": student_id},
+                params,
             )
 
             rows = result.fetchall()
@@ -1122,7 +1163,11 @@ class PostgresStudentStore:
             stmt = postgresql.insert(session_table).values(
                 session_id=session_id,
                 student_id=student_id,
-                subject="",  # Required field, empty for now (cross-device contract)
+                # ADR-ARCH-032 D4: a session row minted by this legacy
+                # end-first path gets the shared default (this previously
+                # wrote '' — the empty-subject writer the plan's
+                # contradiction list named).
+                subject="english",
                 topic=topic,
                 status="ended",
                 started_at=now_utc,
@@ -1134,7 +1179,10 @@ class PostgresStudentStore:
             )
 
             # ON CONFLICT: update only if not already ended (idempotency gate)
-            # RETURNING session_id tells us if this call performed the transition
+            # RETURNING session_id tells us if this call performed the
+            # transition; RETURNING subject gives the row's REAL subject (an
+            # existing row keeps its own — set_ never touches subject) so the
+            # mastery child-writes below land under it (ADR-ARCH-032).
             upsert_stmt = stmt.on_conflict_do_update(
                 index_elements=["session_id"],
                 set_={
@@ -1146,22 +1194,32 @@ class PostgresStudentStore:
                 },
                 # Only update if not already ended (idempotency gate)
                 where=session_table.c.status != "ended",
-            ).returning(session_table.c.session_id)
+            ).returning(session_table.c.session_id, session_table.c.subject)
 
             result = await conn.execute(upsert_stmt)
-            transition_happened = result.fetchone() is not None
+            returned = result.fetchone()
+            transition_happened = returned is not None
+            row_subject = returned[1] if returned else "english"
+            # Defensive: rows persisted before the service-boundary
+            # normalisation may still carry '' — mastery writes never do.
+            if not row_subject:
+                row_subject = "english"
 
             # Only write children if this call performed the active→ended transition
             # (or inserted a new row). Replays see status='ended' already and skip.
             if transition_happened:
-                # Upsert confidence updates
+                # Upsert confidence updates under the session's subject
                 for update in confidence_updates:
-                    await _upsert_confidence(conn, student_id, update)
+                    await _upsert_confidence(
+                        conn,
+                        student_id,
+                        update.model_copy(update={"subject": row_subject}),
+                    )
 
                 # Insert misconceptions
                 for misc in misconceptions:
                     await _insert_misconception(
-                        conn, student_id, misc.topic_ref, misc.text
+                        conn, student_id, misc.topic_ref, misc.text, row_subject
                     )
 
     async def finalize_session(
@@ -1220,6 +1278,10 @@ class PostgresStudentStore:
                 )
 
             started_at, subject, sess_topic, aos_col, _sess_text_name = gate
+            # Defensive (ADR-ARCH-032): rows persisted before the
+            # service-boundary normalisation may carry '' — mastery
+            # writes and the settlement result never do.
+            subject = subject or "english"
             engagement, last_turn_at, had_turns = await _engagement_facts(
                 conn, session_id
             )
@@ -1241,6 +1303,7 @@ class PostgresStudentStore:
                         session_facts=session_facts,
                         confidence_updates=confidence_updates,
                         misconceptions=misconceptions,
+                        subject=subject,
                     )
             except Exception:  # noqa: BLE001 — settlement is best-effort (D4)
                 logger.error(
