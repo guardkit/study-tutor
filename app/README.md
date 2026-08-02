@@ -202,8 +202,10 @@ Navigator 1.0 stays.
   voice adapter and played sequentially through `just_audio`
   (`lib/adapters/audio_playback.dart`), with a stop control; answer text renders
   alongside.
-- The WebSocket streaming client (`voiceTurnStream`) stays **unwired**
-  (TASK-STREAM-001) — the adapter and its tests are kept, not deleted.
+- The WebSocket streaming client (`voiceTurnStream`) is **wired** — the
+  session screen's streaming voice send consumes it
+  (`lib/ui/session_screen.dart`, TASK-STREAM-001; this note previously
+  said "stays unwired", stale since the wiring landed).
 
 ### Gamification surfaces (`lib/ui/gamification/`)
 

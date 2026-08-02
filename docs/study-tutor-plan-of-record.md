@@ -36,32 +36,39 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Auth | **LIVE end-to-end** — Keycloak on the NAS `:8443`; server gate (KC-G2) and real-device gate (KC-G3) passed 2026-07-19; interim table mode retained for the robot | `HANDOFF-weekend-auth-voice-fable-window.md` §11 |
 | Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01 |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
-| RAG / retrieval | **Code-complete, DEAD in prod** — the image lacks the `[rag]` optional dependency ⇒ `rag_disabled reason=chromadb_missing`; the English corpus (`gcse-english-v1`, 581 chunks, 3 texts) ships unused in the image; retrieval-off also idles the Coach revise loop | `Dockerfile:70`; `cli/rag_wiring.py`; TASK-RVP-001 |
-| Multi-subject | **Mechanism decided + informally validated, not built**: ADR-TUTOR-MULTI-SUBJECT (Accepted 2026-05-05) — ONE fine-tune + per-subject prompts + per-subject corpora; 17/17 Open WebUI probes (raw transcript, unscored); ratified load-bearing 2026-07-19 (Rich — `study-room-cosy-progression.md` §2 line 32). Everything behavioural is English-only today | the ADR; `multi-subject-validation-{prompts,results}.md` |
+| RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
+| Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), app picker + remaining seams (Lane 1 step 2), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
-| Suites | 1634 hermetic python tests green (+1 named pre-existing failure: the `whitestocks`-string scope guard), 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run due — the app's 2026-08-01 `turnsSince` change realigned it) | mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
+| Suites | **Hermetic python suite FULLY GREEN — 1671 passed, 0 failures as of 2026-08-02 (was 1640 on 2026-08-01)** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
 
-**Known contradictions to burn down (Lane 5):**
-- `licensing.md` says the fine-tuned weights are "not distributed" but the Hugging Face
-  upload happened (AWS research §1 License row / §6c) — **context recorded 2026-08-01
-  (Rich): the upload was deliberate, required for the Kaggle Gemma 4 Good hackathon entry.**
-  The fix is to record the fact and reason, not to walk it back. Model identity also stale
-  ("31B Dense" vs the real 26B-A4B).
-- `docs/submission/technical-writeup.md` claims AQA mark schemes/examiner reports are in the
-  RAG store — **false** (the corpus is primary texts only; `corpus.py`'s AQA refusal gate
-  forbids exactly that) and law-4-violating as written; correct the writeup.
-- **The multi-subject ADR's own RAG-source table lists mark schemes/past papers per subject**
-  — it predates the hardened law 4 and must be amended to exclude assessment material. The
-  French/Spanish no-compliant-corpus worry is **resolved in prospect (Rich, 2026-08-01)**:
-  the family owns school-bought printed study guides across all Lilymay's subjects — scan →
-  docling → corpora (Lane 1 step 3).
-- `sources/README.md` §3.2 still documents the in-copyright deny-list dropped 2026-05-09
-  (`1f728bf`).
-- MCP adapter writes `subject=student_id` ('lilymay') while HTTP writes 'english' (or `''`
-  when the client omits it) — parallel-session divergence between front doors.
-- Root README + pyproject still describe an MCP-only English runtime.
-- The 15s→90s turn-deadline change was never ratified against the contract's latency section.
-- Citation anchors broken on 581/581 corpus chunks since 2026-05-10.
+**Known contradictions to burn down (Lane 5) — five of eight burned down 2026-08-01
+(the Lane 4 pass `5c1ddaa` + hygiene commits `5102874`/`10cc802`):**
+- ~~`licensing.md` weights claim + stale model identity~~ **✅ FIXED 2026-08-01** — §3/§4
+  now record the deliberate HF upload + the Kaggle reason (per ADR-ARCH-031 D4); "31B
+  Dense" → 26B-A4B with dated corrections; the dead Bedrock-CMI destination removed.
+- ~~`docs/submission/technical-writeup.md` false RAG-store claim~~ **✅ FIXED 2026-08-01** —
+  dated correction blockquote (store = 581 chunks of the three primary set texts only;
+  AQA material never in any pipeline, refused by named code gates); original preserved as
+  the historical submission.
+- ~~The multi-subject ADR's RAG-source table~~ **✅ AMENDED 2026-08-01** — dated amendment
+  section striking assessment material per law 4, naming the compliant source set
+  (school-bought guides → docling). The French/Spanish no-compliant-corpus worry stays
+  resolved in prospect (Rich, 2026-08-01: the family owns school-bought printed study
+  guides across all Lilymay's subjects — scan → docling → corpora, Lane 1 step 3).
+- ~~`sources/README.md` §3.2 deny-list ghost~~ **✅ FIXED 2026-08-01** — rewritten as
+  "deny-list REMOVED 2026-05-09 (`1f728bf`)".
+- ~~Root README + pyproject describe an MCP-only English runtime~~ **✅ FIXED 2026-08-01**
+  (`5102874`) — README leads with the monorepo/HTTP reality, MCP demoted to a legacy
+  section.
+- ~~MCP adapter `subject=student_id` quirk + server persisting `''`~~ **✅ FIXED
+  2026-08-02** (ADR-ARCH-032 D4, annexed into Lane 2 step 2 as load-bearing): the MCP
+  door sends the shared default and the service normalises empty subjects at the
+  boundary — all front doors now share one `(student, subject)` resume key. Six of
+  eight contradictions burned down.
+- The 15s→90s turn-deadline change was never ratified against the contract's latency
+  section. (Rich — ruling queue item 8.)
+- Citation anchors broken on 581/581 corpus chunks since 2026-05-10 — **explicitly
+  deferred again** by the Lane 2 1a receipt; Lane 2 step 3 owns fix-or-defer.
 
 ## The lanes
 
@@ -71,15 +78,34 @@ measurable it moves and Rich's gate.*
 ### Lane 2 first — RAG bottomed out, subject-scoped *(moves S2; enables Lane 1's quality bar)*
 The recorded sequencing rule stands: *grounding before subject expansion* (rag-grounding §5 —
 "every subject added without grounding multiplies the hallucination surface").
-1. **(1a — ungated, the plan's FIRST action)** Build the `--extra rag` image variant on a
-   branch, measure the image-size delta and spark memory/cost, run the golden-quote smoke
-   against it locally, and attach the receipt to ruling-queue item 2.
-   **(1b — gated on Rich's go)** Redeploy with the extra; prove `event=rag_enabled` live +
-   the smoke on the deployed host.
-2. **Subject-scope the layer** — per-subject collections via the reserved `role_config` seam
-   in `build_rag_providers` (or a subject metadata field — one design decision), subject-keyed
-   primary-text registry, `session.subject` threaded into the coach-handover closure,
-   per-subject ingest roots (`domains/<subject>/sources/`).
+1. **(1a — ungated, the plan's FIRST action) ✅ DONE 2026-08-01**
+   (`RESULTS-lane2-rag-image-1a-2026-08-01.md` in runbooks — attached to ruling-queue
+   item 2). Built on branch `lane2/rag-image-1a`; quote-retrieval smoke PASS 3/3 on the
+   full runtime path (there is no golden-quote harness to run — ADR-ARCH-022's
+   fabrication eval was never built; the receipt defines the smoke it ran instead).
+   Found: the extra alone would NOT light RAG in prod (768-dim shipped store vs the
+   spark's 1024-dim `embed`; re-embed demonstrated, 581/581 in ~2 min); image cost
+   measured at three points — naive 10.3GB → 5.28GB (cache-mount fix) → **1.4GB with
+   the CPU-torch pin** (the CUDA wheels were dead weight; smoke passes on the CPU
+   image) vs 443MB deployed; and the reranker is re-constructed per call (~6.6–9s/turn
+   warm — a named pre-1b fix).
+   **(1b) ✅ DONE 2026-08-02** (Rich's go given + executed same session — receipt
+   postscript in the 1a RESULTS doc): store decision = bake (1024-dim re-embed in the
+   image); reranker instance cache landed with tests (suite 1642 green); compose gained
+   the RAG env block + persistent pre-warmed HF cache volume; both containers recreated
+   on the 1.4GB image; `event=rag_wired` proven in both deployed logs; smoke PASS 3/3
+   inside the deployed `:8100` container; rollback tags kept (`pre-rag-20260802`).
+2. **Subject-scope the layer** — **✅ DONE 2026-08-02** (Rich's spec word in-session;
+   ADR-ARCH-032; merge on main; suite 1666 green, 24 new tests). The design decision:
+   **per-subject collections** (`gcse-<subject>-v1`; `gcse-english-v1` grandfathered — no
+   re-ingest), discovered at boot with per-subject sidecars + a `rag_subject_coverage`
+   boot log; `session.subject` threaded into the closure with the mandatory coverage
+   check (`no_corpus_for_subject` — never cross-subject fallback); ingest gained
+   `--subject` (derives root/collection/sidecar). Two Lane 1 seams annexed as
+   load-bearing (ADR-032 D4): the MCP `subject=student_id` quirk fixed (all front doors
+   now share one `(student, subject)` resume key) and server-boundary subject
+   normalisation (`''` never persists). New-subject path is now content-only: docling →
+   `domains/gcse-<subject>/sources/` → `ingest_corpus.py --subject <slug>` → redeploy.
 3. **Honesty constraints carried in:** selective retrieval stays (ADR-FLEET-002 — always-on
    RAG degrades the tutor); a **corpus-coverage check per subject** is mandatory (the
    partial-corpus degradation finding); AQA refusal patterns inherited at ingest AND
@@ -99,11 +125,25 @@ Eval-first, then plumbing, then content packs:
    2–0–1 multi-turn, the fine-tune ahead only on the Socratic-stance dimension — yet the
    fine-tune serves). *Gate: Rich rules the serving story on the receipts, per subject —
    with Lane 7's refreshed candidates in the field.*
-2. **Close the subject seams**: app subject picker (`SUBJECT_DEFAULT` becomes the fallback,
-   as its §4 designed); server normalises omitted subject (today persists `''`); fix the MCP
-   `subject=student_id` quirk or mark MCP superseded; `student-model` actually filters by
-   its subject param; subject dimension on `topic_confidence`/chests/catalogs from the first
-   migration (study-room §14: "a schema-day-one concern").
+2. **Close the subject seams — backend DONE 2026-08-02, one app leg remains:**
+   ~~server normalisation~~ + ~~MCP quirk~~ (ADR-ARCH-032 D4, via Lane 2 step 2);
+   ~~subject dimension on the mastery schema~~ **✅ DONE** — migration `d5a9c2e7f814`
+   run against the LIVE NAS store (safety dump first; backfill verified:
+   `topic_confidence` keyed `(student, subject, topic)`, history/misconception
+   subject-stamped, achievement NULLable per §14's W1-whole-student rule; future
+   chest/catalog tables inherit the dimension from their own first migration, as §14
+   wrote); settlement + completion bank mastery writes under the session's subject;
+   ~~`student-model` filters by its subject param~~ **✅ DONE + LIVE-PROVEN** (english
+   → real rows, french → `{}`, whole-student XP identical; binding §2.2 carries a
+   dated in-place annotation, no re-pin). Suite 1671 green.
+   **Still open: the app subject picker** (`SUBJECT_DEFAULT` becomes the fallback, as
+   its §4 designed) — **blocked on the spark: no Flutter toolchain here**; the full
+   design pass + fences + gates for the Mac session are written up in
+   [`HANDOFF-mac-app-subject-picker.md`](runbooks/HANDOFF-mac-app-subject-picker.md)
+   (2026-08-02 — start there; it grounds back to this cell and ends by updating it).
+   Also still open: subject on `topic_confidence` *reads* the planner ranks over
+   (deliberately unfiltered — whole-student until the content-pack lane decides
+   per-subject planning).
 3. **Per-subject content packs**: prompts + Coach rubric + curriculum seed + assessment-
    objective framework per subject (only English AO1–AO6 is documented today).
    **Corpus source ruled 2026-08-01 (Rich): the family owns printed study guides, bought
@@ -112,7 +152,20 @@ Eval-first, then plumbing, then content packs:
    law-4-compliant corpus path; pick the first second subject by scan effort + Lilymay's
    need. *Receipt per subject: the S1 parity definition, ending in a real session.*
 
-### Lane 4 — the copyright/fair-use posture *(gates Lane 3's uploads; S3 rung 1 — ratifies before the residency rung)*
+### Lane 4 — the copyright/fair-use posture *(gated Lane 3's uploads; S3 rung 1)* — **✅ LANE DONE: RATIFIED 2026-08-02 (Rich)**
+The ADR below is Accepted; Lane 3's residency ADR may now draft and ratify (rung 2).
+**Draft delivered 2026-08-01; ratified 2026-08-02:**
+[`ADR-ARCH-031-pilot-uploads-copyright-posture.md`](architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md)
+(merge `5c1ddaa`) — honest UK-law framing (no fair-use doctrine; s29A non-commercial
+TDM only; private-copying quashed 2015; the US Bartz/Kadrey rulings recorded as
+persuasive context that does not govern), five enforced posture legs
+(user-owns-the-source attestation in onboarding, per-account private retrieval, no
+redistribution, AQA gates inherited per account, non-commercial/small/removable), the
+HF-upload fact + Kaggle reason recorded (D4), the Apache-2.0-vs-Gemma-ToU licence
+conflict carried as a named open item (D4.2), and an explicit "what would change this
+posture" list. The four standing contradictions were burned down in the same pass
+(see the list above). Remaining lane work: Rich's red pen + ratification word.
+The original brief, for reference:
 A decision doc, not code. Update `copyright-training-data-analysis.md` (2026-04-12 — UK-only,
 purchased-materials + household-deployment only; silent on uploads, cloud hosting, and
 multi-account tenancy) into a **posture ADR covering the pilot**: user-uploaded scans of
@@ -192,21 +245,25 @@ standup and updated-base availability are confirmed.*
 ### Lane 5 — truth & hygiene *(moves S4; cheap, continuous)*
 1. **✅ DONE 2026-08-01**: root `CLAUDE.md` now routes every session to the two sources of
    truth (this was the pair's own enforcement gap — closed the day the pair was drafted).
-2. Burn down the Known-contradictions list above, plus: known-issues.md (stale at
-   2026-05-18 — adopt the `whitestocks`-string suite failure, the fixture-ordering artifact,
-   the mirror advisories); ARCHITECTURE.md model identity + the missing ADR-ARCH-030 index
-   row; the voice wave/gate ledger's formal closure; app/README's stale `voiceTurnStream`
-   note. Re-run the live contract suite against the spark (the 35-green receipt is from
-   2026-07-05, pre-`turnsSince`).
-3. **Push the local Stage-0-revert commits** (`96baad2` + successors — origin is
-   self-contradictory until then). The fleet-gateway re-point moved to Lane 6 step 1
+2. **Mostly DONE 2026-08-01** (commits `5102874`, `10cc802`, merge `5c1ddaa`): the
+   Known-contradictions list above is five-of-eight burned down; known-issues.md
+   refreshed into the repo-wide ledger (fixture-ordering artifact + mirror advisories
+   adopted; the `whitestocks` failure was **fixed outright** rather than adopted —
+   hermetic suite now fully green); ARCHITECTURE.md model identity + ADR-ARCH-030
+   index row done; app/README `voiceTurnStream` note fixed. **Still open:** the voice
+   wave/gate ledger's formal closure; the live contract suite re-run against the spark
+   (operator-attended — the 35-green receipt is from 2026-07-05, pre-`turnsSince`).
+3. ~~Push the local Stage-0-revert commits~~ **✅ DONE 2026-08-01** — `gh` CLI 2.97.0
+   installed + authenticated on the spark; the 6-commit backlog (incl. `96baad2`)
+   pushed (`dad738a..f056b5c`). The fleet-gateway re-point stays in Lane 6 step 1
    (confirmed outstanding, Rich 2026-08-01).
 
 ## Sequencing, in one line
 
-Lane 2 step 1a (the RAG image receipt — ungated), Lane 1 step 1 (evals), and Lane 6 step 1
-(the robot re-point — the one thing currently *broken*) start immediately and in parallel;
-Lane 4 (a writing lane) runs alongside and **its ADR ratifies before Lane 3's residency ADR
+~~Lane 2 step 1a~~ (**done 2026-08-01** — the receipt sits on ruling-queue item 2), Lane 1
+step 1 (evals), and Lane 6 step 1 (the robot re-point — the one thing currently *broken*)
+were the immediate parallel starts; of them the evals and the re-point remain; Lane 4's
+ADR is **drafted, awaiting ratification** and **ratifies before Lane 3's residency ADR
 does**; Lane 3 must not touch student data in the cloud before both are ratified; Lane 6's
 app-distribution work waits on its design pass; Lane 7 runs in the sibling repos and lands
 its receipts before Lane 1's serving ruling; Lane 5 runs continuously. The Study Room stays
@@ -216,17 +273,23 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
 
 1. ~~Ratify the mission and this plan's lane order~~ **✅ BOTH RATIFIED 2026-08-01 (Rich,
    in-session — mission "happy to sign off"; plan "approved").**
-2. Lane 2: the `[rag]` extra go (the 1a receipt arrives attached).
+2. ~~Lane 2: the `[rag]` extra go~~ **✅ GO GIVEN + 1b EXECUTED 2026-08-02 (Rich,
+   in-session: "1b go")** — RAG is live in prod; receipts in
+   [`RESULTS-lane2-rag-image-1a-2026-08-01.md`](runbooks/RESULTS-lane2-rag-image-1a-2026-08-01.md)
+   incl. the 1b postscript.
 3. Lane 1: the serving ruling once the subject evals land — over the full field including
    Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
    2026-08-01.)*
-4. Lane 4: the copyright posture ADR.
+4. ~~Lane 4: the copyright posture ADR~~ **✅ RATIFIED 2026-08-02 (Rich, in-session:
+   "ratify ADR-ARCH-031")** — Lane 4 is done; Lane 3's residency ADR is unblocked per
+   the S3 ladder.
 5. Lane 3: the residency/governance ADR + multi-user scope + upload vehicle (web vs in-app).
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
 7. Lane 7: the teacher-dataset option + bake-off scope, once the 2×Spark DeepSeek standup
    and the updated Gemma 4 base availability are confirmed.
-8. Housekeeping: push the local commits (GitKraken or register the spark's SSH key);
-   execute the fleet-gateway re-point (Lane 6 step 1); ratify-or-revert the 90s deadlines.
+8. Housekeeping: ~~push the local commits~~ **✅ DONE 2026-08-01 (gh CLI installed +
+   authenticated on the spark; backlog pushed)**; execute the fleet-gateway re-point
+   (Lane 6 step 1 — runbook ready); ratify-or-revert the 90s deadlines.
 
 ## Standing rules (how work runs here — already the convention, now written)
 

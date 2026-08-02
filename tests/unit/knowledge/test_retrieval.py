@@ -821,6 +821,79 @@ def test_reranker_model_constant_is_bge_v2_m3() -> None:
     assert RERANKER_MODEL == "BAAI/bge-reranker-v2-m3"
 
 
+def test_load_reranker_caches_production_instance(monkeypatch) -> None:
+    """The production path constructs the CrossEncoder once per process.
+
+    Constructing the reranker loads ~2.3GB of weights (~3.5s measured on
+    the spark — Lane 2 1a receipt, 2026-08-01); an uncached production
+    path pays that on every retrieval turn.
+    """
+    import sys
+    import types
+
+    from study_tutor.knowledge import retrieval as retrieval_module
+
+    constructed: list[object] = []
+
+    class _CountingCrossEncoder:
+        def __init__(self, model_name: str, device: str | None = None) -> None:
+            constructed.append(self)
+
+    fake_module = types.ModuleType("sentence_transformers")
+    fake_module.CrossEncoder = _CountingCrossEncoder  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "sentence_transformers", fake_module)
+
+    first = retrieval_module._load_reranker()
+    second = retrieval_module._load_reranker()
+
+    assert first is second
+    assert len(constructed) == 1
+
+
+def test_factory_path_stays_uncached_and_clears_production_cache(monkeypatch) -> None:
+    """Installing a factory drops the cached instance; the factory path is uncached.
+
+    A factory that raises ``ImportError`` per call must keep raising on
+    every call (the degradation branch is exercised per retrieve), and
+    reset must return the module to its import-time state so the next
+    production load constructs fresh.
+    """
+    import sys
+    import types
+
+    from study_tutor.knowledge import retrieval as retrieval_module
+
+    constructed: list[object] = []
+
+    class _CountingCrossEncoder:
+        def __init__(self, model_name: str, device: str | None = None) -> None:
+            constructed.append(self)
+
+    fake_module = types.ModuleType("sentence_transformers")
+    fake_module.CrossEncoder = _CountingCrossEncoder  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "sentence_transformers", fake_module)
+
+    retrieval_module._load_reranker()  # warm the production cache
+    assert len(constructed) == 1
+
+    calls: list[int] = []
+
+    def _raising_factory() -> Any:
+        calls.append(1)
+        raise ImportError("simulated: sentence_transformers not installed")
+
+    set_reranker_factory(_raising_factory)
+    with pytest.raises(ImportError):
+        retrieval_module._load_reranker()
+    with pytest.raises(ImportError):
+        retrieval_module._load_reranker()
+    assert len(calls) == 2  # factory consulted per call, never cached
+
+    reset_reranker_factory()
+    retrieval_module._load_reranker()
+    assert len(constructed) == 2  # cache was dropped, fresh construction
+
+
 # ---------------------------------------------------------------------------
 # Seam test (from task spec): SourceTypedCorpus contract for retrieve()
 # ---------------------------------------------------------------------------

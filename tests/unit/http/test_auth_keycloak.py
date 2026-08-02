@@ -56,9 +56,9 @@ def oidc_settings():
     """OIDC settings for testing."""
     return OIDCSettings(
         auth_mode="keycloak",
-        issuer="https://whitestocks.tailebf801.ts.net:8443/realms/study-tutor",
+        issuer="https://idp-test.tail0000.ts.net:8443/realms/study-tutor",
         audience="study-tutor-app",
-        jwks_url="https://100.92.74.2:8443/realms/study-tutor/protocol/openid-connect/certs",
+        jwks_url="https://100.100.100.100:8443/realms/study-tutor/protocol/openid-connect/certs",
         student_claim="student_id",
         leeway=60
     )
@@ -430,9 +430,9 @@ class TestKeycloakTokenResolverIssuerPinning:
         # Settings with JWKS URL override (tailnet IP)
         settings = OIDCSettings(
             auth_mode="keycloak",
-            issuer="https://whitestocks.tailebf801.ts.net:8443/realms/study-tutor",
+            issuer="https://idp-test.tail0000.ts.net:8443/realms/study-tutor",
             audience="study-tutor-app",
-            jwks_url="https://100.92.74.2:8443/realms/study-tutor/protocol/openid-connect/certs",
+            jwks_url="https://100.100.100.100:8443/realms/study-tutor/protocol/openid-connect/certs",
             student_claim="student_id",
             leeway=60
         )
@@ -443,7 +443,7 @@ class TestKeycloakTokenResolverIssuerPinning:
             # Verify PyJWKClient was instantiated with the JWKS URL (tailnet IP)
             assert mock_cls.call_count == 1
             call_args = mock_cls.call_args
-            assert "100.92.74.2" in call_args[0][0]  # JWKS URL contains IP
+            assert "100.100.100.100" in call_args[0][0]  # JWKS URL contains IP
 
             # Token with issuer as ts.net name (NOT the IP)
             token = mint_token(
@@ -460,7 +460,7 @@ class TestKeycloakTokenResolverIssuerPinning:
             # Token with issuer as IP should FAIL
             token_with_ip_issuer = mint_token(
                 rsa_keypair,
-                issuer="https://100.92.74.2:8443/realms/study-tutor",  # IP, not ts.net
+                issuer="https://100.100.100.100:8443/realms/study-tutor",  # IP, not ts.net
                 audience=settings.audience,
                 student_id="alice"
             )
@@ -484,9 +484,9 @@ class TestOIDCSettingsIntegrationContract:
         """
         settings = OIDCSettings(
             auth_mode="keycloak",
-            issuer="https://whitestocks.tailebf801.ts.net:8443/realms/study-tutor",
+            issuer="https://idp-test.tail0000.ts.net:8443/realms/study-tutor",
             audience="study-tutor-app",
-            jwks_url="https://100.92.74.2:8443/realms/study-tutor/protocol/openid-connect/certs",
+            jwks_url="https://100.100.100.100:8443/realms/study-tutor/protocol/openid-connect/certs",
             student_claim="student_id",
             leeway=60
         )

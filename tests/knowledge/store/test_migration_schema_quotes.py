@@ -31,7 +31,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 
 #: The revision under test and the revision it downgrades to.
-_HEAD_REVISION = "c3f8a1b6d2e4"
+_HEAD_REVISION = "d5a9c2e7f814"
 _PREVIOUS_REVISION = "b7d1e4f92a3c"
 
 #: Dedicated container + port for this module's throwaway Postgres. Port 55437 is

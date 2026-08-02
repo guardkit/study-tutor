@@ -12,7 +12,8 @@
 
 Study Tutor is a GCSE English AI tutor for Year 10/11 students preparing for
 AQA 8700 (Language) and 8702 (Literature). It combines a fine-tuned Gemma 4
-31B (Layer 1 — tutoring behaviour), a ChromaDB curriculum RAG (Layer 2 —
+26B-A4B (Layer 1 — tutoring behaviour; earlier drafts of this doc said "31B
+Dense" — the served fine-tune is the 26B-A4B MoE), a ChromaDB curriculum RAG (Layer 2 —
 knowledge), and a study-tutor-owned Postgres (JSONB) per-student model (Layer 3 — progress,
 topic confidence, misconceptions, gamification state) orchestrated by a
 DeepAgents harness with a Player-Coach quality monitor. The architecture
@@ -184,12 +185,18 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-027 | Quote verification under streaming: verify at the sentence-chunk boundary | Accepted (extends ADR-ARCH-026 D3) |
 | ADR-ARCH-028 | Self-hosted Keycloak IdP on the NAS; tailscale-cert https issuer; tailnet-only (KC-D1/D2) | Accepted (ratified 2026-07-08, `/arch-refine`; new decision, supersedes none; phase-scoped by ADR-ARCH-029) |
 | ADR-ARCH-029 | Phased productionisation: local-first build (Phase 2), cloud-native AWS + data governance (Phase 3) | Accepted (2026-07-08; annotates ADR-ARCH-015/028 with the cloud trajectory + Phase-2 portability guardrails) |
+| ADR-ARCH-030 | Gamification settlement: pure `decide()` + one `finalize_session` transaction, banked-facts model, notification-only bus | Accepted (2026-07-12; supersedes ADR-ARCH-013 — the FEAT-PO-007 runtime-shape call) |
+| ADR-ARCH-031 | Copyright posture for the friends pilot: per-account private retrieval of user-owned scans, judged under UK law | Accepted (RATIFIED by Rich 2026-08-02; gates Lane 3's uploads; ratified before the residency ADR per the S3 ladder) |
+| ADR-ARCH-032 | Subject-scoped RAG: per-subject collections (`gcse-<subject>-v1`), subject-keyed wiring, closure-level coverage check | Accepted (built + deployed 2026-08-02 on Rich's Lane 2 step 2 spec word; annexes two Lane 1 seam fixes) |
 | ADR-TUTOR-MULTI-SUBJECT | Single fine-tune, multi-subject architecture | Accepted |
 
 ## 10. Assumptions
 
 18 assumptions captured — see `assumptions.yaml`. Highest-risk:
-- ASSUM-007: Bedrock Custom Model Import supports Gemma 4 31B natively.
+- ASSUM-007: Bedrock Custom Model Import supports Gemma 4 natively —
+  **FALSIFIED 2026-07-06** (three independent blockers; see the AWS
+  deployment research doc — the cloud default is EC2 + llama-swap).
+  Model identity note: the fine-tune is Gemma 4 26B-A4B, not "31B".
 - ASSUM-009: Gemini 2.5 Pro latency 1–3s per extraction call (DEC-08
   monitored).
 - ASSUM-014: deepagents 0.5.x API stable through Phase 1 build.
@@ -212,7 +219,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 - `system-context.md` — C4 Level 1 diagram
 - `container.md` — C4 Level 2 diagram
 - `assumptions.yaml` — 18 captured assumptions
-- `decisions/ADR-ARCH-*.md` — 30 ADRs (through ADR-ARCH-029 + ADR-TUTOR-MULTI-SUBJECT)
+- `decisions/ADR-ARCH-*.md` — 33 ADRs (through ADR-ARCH-032 + ADR-TUTOR-MULTI-SUBJECT)
 
 ---
 

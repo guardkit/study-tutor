@@ -1,7 +1,11 @@
 # ADR: Single Fine-Tune, Multi-Subject Architecture
 
 **Date:** 2026-05-05
-**Status:** Accepted
+**Status:** Accepted — **amended 2026-08-01**: the RAG-source references to mark schemes /
+past papers / examiner reports below are struck; AQA assessment material is excluded
+absolutely per mission law 4. See [Amendment 2026-08-01](#amendment-2026-08-01--aqa-assessment-material-excluded-from-all-rag-sources-mission-law-4)
+at the end of this document. The core decision (one fine-tune + per-subject prompts +
+per-subject corpora) is unchanged.
 **Decision maker:** Rich
 **Context:** Multi-subject expansion of the GCSE study tutor
 
@@ -30,11 +34,16 @@ One fine-tuned model (`gemma4-tutor` — Gemma 4 26B A4B MoE fine-tuned on Engli
   └────────────────┘   └──────────────────────────┘
 ```
 
+> ⚠ **Struck by the 2026-08-01 amendment:** the RAG box in the diagram above lists
+> "mark schemes, examiner reports, past papers — per subject" as sources. That is AQA
+> assessment material and is **excluded absolutely** (mission law 4); it predates the
+> hardened law and must not be built from. See the amendment section at the end.
+
 **Serving:** llama-swap on GB10 (:9000), single model alias `gemma4-tutor`.
 
 **Access:** Open WebUI subject presets (dropdown selector) — each preset maps to the same model with a different system prompt.
 
-**RAG:** One ChromaDB collection per subject, seeded via Docling from CGP guides and AQA materials. 768-dim embeddings (nomic-embed-text-v1.5).
+**RAG:** One ChromaDB collection per subject, seeded via Docling from CGP guides and ~~AQA materials~~ *(amended 2026-08-01: AQA **specification** documents only — factual curriculum structure; AQA assessment material is refused at ingest and retrieval)*. 768-dim embeddings (nomic-embed-text-v1.5).
 
 ## Why this works
 
@@ -109,3 +118,44 @@ Relying on the model's training knowledge for all subjects. Rejected because cur
 - Fine-tuning principle: Daniel Bourke (Queensland AI Meetup, March 2026)
 - ADR-FLEET-002: Selective retrieval over always-on RAG
 - Dataset factory domain config: `agentic-dataset-factory/domains/`
+
+---
+
+## Amendment 2026-08-01 — AQA assessment material excluded from all RAG sources (mission law 4)
+
+*Added as part of the Lane 4 contradiction burn-down
+([ADR-ARCH-031](ADR-ARCH-031-pilot-uploads-copyright-posture.md) D5). The original text
+above is deliberately left legible (annotated, not rewritten) — ADR hygiene.*
+
+This ADR predates the hardened law 4 of the ratified mission
+(`docs/study-tutor-mission-statement-2026-08-01.md`, 2026-08-01): **AQA assessment
+material — past papers, mark schemes, examiner reports, specimen papers — is excluded
+absolutely: never trained on, never ingested, never retrieved.** AQA's policy prohibits AI
+use of its material, and the guard is also pedagogical (mark schemes short-circuit
+Socratic behaviour).
+
+**What is struck in the original text:**
+
+1. The architecture diagram's RAG box: "CGP guides, **mark schemes, examiner reports,
+   past papers** — per subject" — the bolded items are struck.
+2. The "RAG:" serving line's "seeded via Docling from CGP guides and AQA materials" —
+   "AQA materials" is narrowed to AQA **specification** documents only (factual paper
+   structure and AO definitions — the same distinction drawn in
+   `docs/research/ideas/copyright-training-data-analysis.md` §6).
+3. The "Single model, no RAG" rejected-alternative's rationale ("exact AQA mark scheme
+   criteria… needs to be retrievable") — the *rejection* stands, but retrievable
+   curriculum knowledge means study-guide and primary-text content plus specification
+   facts, never mark-scheme wording.
+
+**What per-subject collections are actually seeded from** (Rich's 2026-08-01 corpus
+ruling, plan Lane 1 step 3): the family's school-bought printed study guides
+(scan → docling, standard/VLM modes), public-domain primary texts (Standard Ebooks), and
+AQA specification facts. Every subject has a law-4-compliant corpus path on this basis.
+
+**Enforcement receipts:** ingest refusal `AQA_REFUSAL_PATTERN`
+(`src/study_tutor/knowledge/corpus.py`) + retrieval defence-in-depth
+`AQA_FILENAME_PATTERN` (`src/study_tutor/knowledge/retrieval.py`) — both inherited into
+every per-subject (and, come the pilot, per-account) pipeline per ADR-ARCH-031 D3.4.
+
+The core decision of this ADR — one fine-tune, per-subject system prompts, per-subject
+corpora — is unchanged by this amendment.

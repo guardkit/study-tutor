@@ -65,3 +65,20 @@ def test_subject_default_is_single_source():
             "Scholar persona must be an English tutor consistent with "
             f"SUBJECT_DEFAULT={SHARED_DEFAULT_SUBJECT!r}"
         )
+
+
+@pytest.mark.seam
+@pytest.mark.integration_contract("SUBJECT_DEFAULT")
+def test_backend_subject_constants_match_the_contract():
+    """ADR-ARCH-032 D4: the backend's own copies of the default subject.
+
+    ``session.service.SUBJECT_DEFAULT`` (boundary normalisation) and
+    ``knowledge.retrieval.DEFAULT_SUBJECT`` (subject-keyed seams) are
+    separate literals by layering design — this test is what keeps them
+    from drifting apart or from the contract's one value.
+    """
+    from study_tutor.knowledge.retrieval import DEFAULT_SUBJECT
+    from study_tutor.session.service import SUBJECT_DEFAULT
+
+    assert SUBJECT_DEFAULT == SHARED_DEFAULT_SUBJECT
+    assert DEFAULT_SUBJECT == SHARED_DEFAULT_SUBJECT

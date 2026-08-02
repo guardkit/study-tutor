@@ -69,12 +69,18 @@ class _Record(BaseModel):
 
 
 class TopicConfidenceSnapshot(_Record):
-    """Read projection of a per-topic confidence row."""
+    """Read projection of a per-topic confidence row.
+
+    ``subject`` is the ADR-ARCH-032 / study-room §14 mastery dimension —
+    the default keeps pre-multi-subject constructors valid (every row
+    predating the dimension is English).
+    """
 
     topic_name: str
     band: ConfidenceBand
     percentage: int = Field(ge=0, le=100)
     last_revised_at: datetime | None = None
+    subject: str = "english"
 
 
 class MisconceptionSnapshot(_Record):
@@ -189,10 +195,16 @@ class ConfidenceUpdate(_Record):
     (capped ±10 points per gamification §6.2) has been applied — the store
     persists the resolved value, not the delta, so the write is idempotent on
     replay. The band is derived via ``confidence_band_for`` at write time.
+
+    ``subject`` (ADR-ARCH-032): the mastery dimension the write lands
+    under. The settlement/completion paths stamp it from the session
+    row's subject — the session is authoritative — so callers rarely set
+    it; the default keeps pre-multi-subject constructors valid.
     """
 
     topic_name: str
     percentage: int = Field(ge=0, le=100)
+    subject: str = "english"
 
 
 class SessionRecord(_Record):

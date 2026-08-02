@@ -26,16 +26,18 @@ CREATE TABLE student (
 -- (confidence_band_for, ASSUM-001) and stored for cheap dashboard reads.
 CREATE TABLE topic_confidence (
     student_id       TEXT NOT NULL REFERENCES student(student_id) ON DELETE CASCADE,
+    subject          TEXT NOT NULL DEFAULT 'english',  -- mastery dimension (rev d5a9c2e7f814, ADR-ARCH-032 / study-room §14)
     topic_name       TEXT NOT NULL,
     percentage       SMALLINT NOT NULL CHECK (percentage BETWEEN 0 AND 100),
     band             TEXT NOT NULL,               -- struggling|developing|secure|mastered
     last_revised_at  TIMESTAMPTZ NOT NULL,        -- EPOCH_NEVER_REVISED sentinel for baselines
-    PRIMARY KEY (student_id, topic_name)
+    PRIMARY KEY (student_id, subject, topic_name)
 );
 
 CREATE TABLE misconception (
     id           BIGSERIAL PRIMARY KEY,
     student_id   TEXT NOT NULL REFERENCES student(student_id) ON DELETE CASCADE,
+    subject      TEXT NOT NULL DEFAULT 'english',  -- rev d5a9c2e7f814 (ADR-ARCH-032)
     topic_name   TEXT NOT NULL,
     text         TEXT NOT NULL,
     observed_at  TIMESTAMPTZ NOT NULL
@@ -80,6 +82,7 @@ CREATE TABLE achievement (
     unlocked_at     TIMESTAMPTZ NOT NULL,
     xp_awarded      INTEGER NOT NULL CHECK (xp_awarded >= 0),
     session_id      TEXT REFERENCES session(session_id),  -- replay support (rev b7d1e4f92a3c, D1)
+    subject         TEXT,                          -- NULL = whole-student (W1); subject-pack rows stamp theirs when the per-subject catalog refactor lands (rev d5a9c2e7f814)
     PRIMARY KEY (student_id, achievement_id)
 );
 
@@ -88,6 +91,7 @@ CREATE TABLE achievement (
 CREATE TABLE topic_confidence_history (
     id           BIGSERIAL PRIMARY KEY,
     student_id   TEXT NOT NULL REFERENCES student(student_id) ON DELETE CASCADE,
+    subject      TEXT NOT NULL DEFAULT 'english',  -- rev d5a9c2e7f814 (ADR-ARCH-032)
     topic_name   TEXT NOT NULL,
     percentage   INTEGER NOT NULL CHECK (percentage BETWEEN 0 AND 100),
     session_id   TEXT,

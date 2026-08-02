@@ -57,8 +57,8 @@ def _session_facts(store: FakeStudentStore) -> dict:
 
 def _confidence_facts(store: FakeStudentStore) -> dict:
     return {
-        topic: (row["percentage"], row["band"])
-        for (_student, topic), row in store._confidences.items()
+        (subject, topic): (row["percentage"], row["band"])
+        for (_student, subject, topic), row in store._confidences.items()
     }
 
 
@@ -75,7 +75,7 @@ async def test_http_and_mcp_end_session_write_identically(
     store_http = _seeded_store()
     svc_http = SessionService(store=store_http)
     start_http = await svc_http.start_session(
-        student_id="lilymay", subject="lilymay", topic="Macbeth"
+        student_id="lilymay", subject="english", topic="Macbeth"
     )
     await svc_http.turn(
         student_id="lilymay",
@@ -132,7 +132,7 @@ async def test_end_session_bootstraps_first_seen_topic_confidence_row() -> None:
     svc = SessionService(store=store)
 
     start = await svc.start_session(
-        student_id="lilymay", subject="lilymay", topic="Poetry"
+        student_id="lilymay", subject="english", topic="Poetry"
     )
     await svc.turn(
         student_id="lilymay",
@@ -142,11 +142,11 @@ async def test_end_session_bootstraps_first_seen_topic_confidence_row() -> None:
     )
 
     # No confidence row exists for "Poetry" before settlement.
-    assert ("lilymay", "Poetry") not in store._confidences
+    assert ("lilymay", "english", "Poetry") not in store._confidences
 
     await svc.end_session(student_id="lilymay", session_id=start.session_id)
 
     # The row was created at the baseline (single turn ⇒ delta 0 ⇒ 50).
-    row = store._confidences[("lilymay", "Poetry")]
+    row = store._confidences[("lilymay", "english", "Poetry")]
     assert row["percentage"] == 50
     assert row["band"] == "developing"

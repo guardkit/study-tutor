@@ -1,18 +1,76 @@
-# Known issues — study-tutor NATS fleet integration
+# Known issues — study-tutor
 
-**Audience**: operators running the study-tutor MCP server in the
-NATS-fleet topology (jarvis as commander, study-tutor as agent).
-**Last updated**: 2026-05-18.
-**Related**: `tasks/backlog/nats-fleet-integration/TASK-NATS-PH2-003-stale-registry-runbook.md`,
-`tasks/backlog/nats-fleet-integration/TASK-NATS-PH3-004-runbook-and-results-template.md`.
+**Audience**: anyone working this repo (operators and build lanes).
+**Last updated**: 2026-08-01 (Lane 5 refresh — this file was stale at
+2026-05-18 and scoped to the NATS fleet only; it is now the repo-wide
+ledger the plan of record's Lane 5 points at).
 
-This file collects known operational issues that are **deferred fixes** —
-behaviours that are understood, have a documented manual workaround, and
-are tracked against a follow-up task for a permanent fix. When the
-fleet demo runbook (`RUNBOOK-study-tutor-nats-fleet-demo.md`, produced
-by TASK-NATS-PH3-004) lands, these sections should be migrated into
-that runbook's "Known issues" appendix and this file shrunk
-accordingly.
+This file collects known issues that are **understood and deferred on
+purpose** — each with its receipt and its exit path. Fix one, delete its
+section.
+
+## Current (2026-08-01)
+
+### Test-suite artifacts
+
+- ~~The hermetic suite's one standing failure~~ **CLOSED 2026-08-01**:
+  `test_no_whitestocks_connection_in_tests` tripped on the real NAS
+  hostname baked into `tests/unit/http/test_auth_keycloak.py` issuer
+  fixtures (left by the auth lane; named in the plan's Suites row). The
+  auth tests now use neutral tailnet-shaped literals
+  (`idp-test.tail0000.ts.net` / `100.100.100.100`), which also honours
+  the guard's actual point — unit tests shouldn't name production
+  hosts.
+- **Fixture-ordering artifact (open)**: running the durable-cross-device
+  feature file **standalone** fails
+  `test_redelivering_the_same_completed_session…`; green in full-suite
+  order and reproduces at the pre-S0 baseline — not a product bug
+  (receipt: `RESULTS-spark-live-robot-session-mirror-2026-07-31.md`,
+  Stage 0 review). Exit: make the fixture order-independent in that
+  feature file's scope.
+- **Live contract suite re-run due**: the 35-test live suite was last
+  receipted green 2026-07-05; the app's 2026-08-01 `turnsSince` change
+  realigned it. Exit: an operator-attended re-run against the spark
+  (plan Lane 5 step 2).
+
+### Mirror-lane advisories (2026-07-31, non-blocking coach notes)
+
+Adopted from the mirror RESULTS' Stage 0 review: the binding's §4.1
+trigger cell carries a dated **in-place** annotation while its
+cross-device twin was handled by addendum (method inconsistency only —
+semantics correct); a stale §2.4 phrase ("unlike `resume_session`…") is
+corrected by addendum text rather than rewritten; the §7
+freeze-discipline point feeds the ruling-3 re-pin discretion on push.
+Exit: fold at the next contract re-pin.
+
+### Retrieval (Lane 2 receipts, 2026-08-01)
+
+- **Citation anchors broken on 581/581 corpus chunks** since 2026-05-10
+  — explicitly deferred again by Lane 2 step 1a's receipt (Lane 2 step
+  3 owns "fix or explicitly defer").
+- ~~Reranker constructed per call~~ **CLOSED 2026-08-02**: production
+  instance cache landed with the 1b merge (two hermetic tests pin it);
+  warm retrieval ~5.3s in the deployed container.
+- **Deploy env files went missing (mostly closed, low)**: the gitignored
+  `deploy/http/.env` / `.env.kc` (scp'd from the GB10 2026-07-26) were
+  absent from the spark checkout on 2026-08-02; reconstructed from the
+  running containers' env (docker inspect) for the 1b redeploy.
+  **Verified 2026-08-02**: Rich scp'd the GB10's `.env.kc` back as
+  `.env.kc.gb10-orig` — key-by-key diff clean, every meaningful value
+  identical (incl. DSN + token table); only cosmetic empty-vs-omitted
+  deltas. The kc reconstruction is faithful; the same method produced
+  `.env`, so confidence carries over. Residual: the GB10's table-mode
+  `.env` copy never arrived (the first scp likely errored — check it
+  still exists on the GB10); diff it if it ever lands, else done.
+
+---
+
+## Historical: NATS fleet integration (pre-2026-05-18 scope)
+
+The sections below date from the NATS-fleet demo era (jarvis as
+commander, study-tutor as agent) and are retained as written; the NATS
+fleet surface's disposition (live transport or formally dormant) is a
+named deferral in the plan of record.
 
 ---
 
