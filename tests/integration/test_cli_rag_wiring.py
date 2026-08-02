@@ -87,6 +87,10 @@ class _FakeCollection:
         self._chunks = chunks
         self.query_calls = 0
 
+    def count(self) -> int:
+        # The ADR-ARCH-032 per-subject coverage log reads this at wiring.
+        return len(self._chunks)
+
     def query(
         self,
         *,
@@ -219,6 +223,13 @@ class _FakePersistentClient:
 
     def install_collection(self, collection: Any) -> None:
         self._collection = collection
+
+    def list_collections(self) -> list[Any]:
+        # ADR-ARCH-032 D2 subject discovery consults this at wiring time;
+        # an empty listing means only the env-resolved default-subject
+        # collection gets wired — the pre-scoping behaviour these tests
+        # pin.
+        return []
 
     def get_or_create_collection(
         self, *, name: str, embedding_function: Any
@@ -481,3 +492,82 @@ def test_verifier_exception_regression(
         "verifier-exception path must pass through the raw response"
     )
     assert metadata.verifier_exception is True
+
+
+# ---------------------------------------------------------------------------
+# ADR-ARCH-032 D2 — subject discovery at wiring time
+# ---------------------------------------------------------------------------
+
+
+class _ListingFakePersistentClient(_FakePersistentClient):
+    """Fake client whose ``list_collections`` surfaces named collections."""
+
+    def __init__(self, path: str) -> None:
+        super().__init__(path)
+        self.listed: list[Any] = []
+        self.opened_names: list[str] = []
+
+    def list_collections(self) -> list[Any]:
+        return self.listed
+
+    def get_or_create_collection(
+        self, *, name: str, embedding_function: Any
+    ) -> Any:
+        self.opened_names.append(name)
+        return super().get_or_create_collection(
+            name=name, embedding_function=embedding_function
+        )
+
+
+class _NamedCollectionStub:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def test_subject_discovery_wires_every_matching_collection(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
+    macbeth_corpus: list[CorpusChunk],
+) -> None:
+    """A ``gcse-french-v1`` collection in the store wires a french provider,
+    and its suffixed sidecar replays into french's registry (the legacy
+    unsuffixed sidecar stays english's)."""
+    persist_dir = tmp_path / "chroma"
+    persist_dir.mkdir()
+    # Legacy sidecar → english; suffixed sidecar → french.
+    (persist_dir / ".primary_text_index").write_text("macbeth\n", encoding="utf-8")
+    (persist_dir / ".primary_text_index.french").write_text(
+        "candide\n", encoding="utf-8"
+    )
+
+    fake_collection = _FakeCollection(macbeth_corpus)
+    fake_client = _ListingFakePersistentClient(path=str(persist_dir))
+    fake_client.install_collection(fake_collection)
+    fake_client.listed = [
+        _NamedCollectionStub("gcse-english-v1"),
+        _NamedCollectionStub("gcse-french-v1"),
+        _NamedCollectionStub("unrelated-store"),  # must NOT wire a subject
+    ]
+    _install_fake_chromadb_module(monkeypatch, fake_client)
+
+    monkeypatch.setenv(RAG_PERSIST_DIR_ENV, str(persist_dir))
+    monkeypatch.delenv(RAG_COLLECTION_ENV, raising=False)
+
+    role_config = load_role("tutor")
+    build_rag_providers(role_config)
+
+    assert get_collection_provider() is not None  # english (default)
+    assert get_collection_provider("french") is not None
+    assert get_collection_provider("unrelated") is None
+    assert get_collection_provider("store") is None
+    # Registry replay went to the right subjects' indexes.
+    from study_tutor.knowledge.retrieval import has_primary_text
+
+    assert has_primary_text("macbeth")
+    assert not has_primary_text("candide")
+    assert has_primary_text("candide", "french")
+    assert not has_primary_text("macbeth", "french")
+    # Both scheme collections were opened; the unrelated one was not.
+    assert "gcse-english-v1" in fake_client.opened_names
+    assert "gcse-french-v1" in fake_client.opened_names
+    assert "unrelated-store" not in fake_client.opened_names

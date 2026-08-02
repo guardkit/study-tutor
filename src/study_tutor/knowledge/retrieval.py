@@ -90,6 +90,19 @@ REASON_AO3_ONLY: str = "ao3_only:training_first"
 REASON_EMBEDDER_TIMEOUT: str = "analysis_mode:embedder_timeout"
 REASON_RETRIEVE_PRIMARY: str = "retrieve:primary_present"
 REASON_RETRIEVE_MIXED: str = "retrieve:mixed_ao3"
+# ADR-ARCH-032 D3: the session's subject has no wired collection. Emitted
+# by the orchestrator's closure-level coverage check, not by the pure
+# four-branch tree — a subject without a corpus must skip retrieval
+# honestly (never fall back to another subject's collection).
+REASON_NO_SUBJECT_CORPUS: str = "analysis_mode:no_corpus_for_subject"
+
+# Default subject for every subject-keyed seam in this module
+# (ADR-ARCH-032). Deliberately equal to the SUBJECT_DEFAULT contract's one
+# value (docs/design/contracts/SUBJECT_DEFAULT.md) and to
+# ``session.service.SUBJECT_DEFAULT`` — duplicated rather than imported
+# because the knowledge layer must not depend on the session layer; the
+# SUBJECT_DEFAULT seam test pins all copies to the same string.
+DEFAULT_SUBJECT: str = "english"
 
 # Wall-clock budget for the embedder availability probe. Sourced from the
 # 23-Apr OpenWebUI session — anything beyond this is treated as unavailable.
@@ -137,42 +150,48 @@ class RetrievalDecision(NamedTuple):
 # cost. The set is mutated only through the public registration helpers
 # below; tests use them to install fixtures and tear them down.
 
-_PRIMARY_TEXT_INDEX: set[str] = set()
+_PRIMARY_TEXT_INDEX: dict[str, set[str]] = {}
 
 
-def register_primary_text(text_name: str) -> None:
-    """Mark ``text_name`` as having primary-text chunks in the corpus.
+def register_primary_text(
+    text_name: str, subject: str = DEFAULT_SUBJECT
+) -> None:
+    """Mark ``text_name`` as having primary-text chunks in ``subject``'s corpus.
 
     Called by the corpus loader (TASK-PRV-002) once per distinct
     ``text_name`` that yields at least one ``SourceType.PRIMARY_TEXT``
-    chunk. Tests use this to install fixtures.
+    chunk. Tests use this to install fixtures. Subject-keyed per
+    ADR-ARCH-032 — the default keeps every pre-multi-subject caller
+    registering into the English index unchanged.
 
     Raises
     ------
     ValueError
-        If ``text_name`` is empty. The corpus contract guarantees a
-        non-empty ``text_name`` (``CorpusChunk.text_name`` has
-        ``min_length=1``); rejecting empty input here surfaces upstream
-        bugs rather than silently registering a sentinel value.
+        If ``text_name`` or ``subject`` is empty. The corpus contract
+        guarantees a non-empty ``text_name`` (``CorpusChunk.text_name``
+        has ``min_length=1``); rejecting empty input here surfaces
+        upstream bugs rather than silently registering a sentinel value.
     """
     if not text_name:
         raise ValueError("text_name must be a non-empty string")
-    _PRIMARY_TEXT_INDEX.add(text_name)
+    if not subject:
+        raise ValueError("subject must be a non-empty string")
+    _PRIMARY_TEXT_INDEX.setdefault(subject, set()).add(text_name)
 
 
 def clear_primary_text_index() -> None:
-    """Reset the primary-text corpus index.
+    """Reset the primary-text corpus index (all subjects).
 
     Called by tests between cases and by the loader on full reload. We
     expose this as a named helper rather than letting callers reach into
-    the underscore-prefixed set directly so the contract stays narrow.
+    the underscore-prefixed dict directly so the contract stays narrow.
     """
     _PRIMARY_TEXT_INDEX.clear()
 
 
-def has_primary_text(text_name: str) -> bool:
-    """Return ``True`` if ``text_name`` has primary-text chunks indexed."""
-    return text_name in _PRIMARY_TEXT_INDEX
+def has_primary_text(text_name: str, subject: str = DEFAULT_SUBJECT) -> bool:
+    """Return ``True`` if ``text_name`` has primary chunks in ``subject``'s index."""
+    return text_name in _PRIMARY_TEXT_INDEX.get(subject, ())
 
 
 # ---------------------------------------------------------------------------
@@ -260,7 +279,11 @@ def embedder_available_within(timeout_s: float) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def should_retrieve(text_name: str, focus_aos: set[str]) -> RetrievalDecision:
+def should_retrieve(
+    text_name: str,
+    focus_aos: set[str],
+    subject: str = DEFAULT_SUBJECT,
+) -> RetrievalDecision:
     """Pure four-branch retrieval decision (R2 + R3).
 
     Does NOT probe the embedder — that override is composed on top by
@@ -280,6 +303,9 @@ def should_retrieve(text_name: str, focus_aos: set[str]) -> RetrievalDecision:
         branch. Defensively coerced to ``set`` so callers passing
         ``frozenset`` / ``list`` / ``tuple`` are not silently mis-routed
         through the ``==`` comparison.
+    subject : str
+        Which subject's primary-text index to consult (ADR-ARCH-032).
+        Defaults to English so pre-multi-subject callers are unchanged.
     """
     focus_aos_set = set(focus_aos)
 
@@ -290,7 +316,7 @@ def should_retrieve(text_name: str, focus_aos: set[str]) -> RetrievalDecision:
 
     # Branch 2: no primary text indexed — fall back to AnalysisMode.
     # Player runs against secondary/context corpora downstream.
-    if not has_primary_text(text_name):
+    if not has_primary_text(text_name, subject):
         return RetrievalDecision(False, REASON_NO_PRIMARY, "analysis_mode")
 
     # Branch 3: mixed AO3 + non-AO3 — retrieve, but tag mode="mixed" so
@@ -307,6 +333,7 @@ def decide_retrieval(
     text_name: str,
     focus_aos: set[str],
     *,
+    subject: str = DEFAULT_SUBJECT,
     timeout_s: float = EMBEDDER_TIMEOUT_SECONDS,
 ) -> RetrievalDecision:
     """Composed decision: embedder-timeout override + four-branch logic.
@@ -314,7 +341,8 @@ def decide_retrieval(
     This is the entry point the orchestrator calls. It first probes the
     embedder; if the probe takes longer than ``timeout_s`` (or raises),
     it forces analysis-mode regardless of the four-branch outcome.
-    Otherwise it delegates to ``should_retrieve``.
+    Otherwise it delegates to ``should_retrieve`` (with the subject
+    passthrough per ADR-ARCH-032).
 
     Existing pure callers can keep using ``should_retrieve`` directly;
     this wrapper exists so the parametrised test of all five decision
@@ -324,7 +352,7 @@ def decide_retrieval(
         return RetrievalDecision(
             False, REASON_EMBEDDER_TIMEOUT, "analysis_mode"
         )
-    return should_retrieve(text_name, focus_aos)
+    return should_retrieve(text_name, focus_aos, subject)
 
 
 # ---------------------------------------------------------------------------
@@ -423,43 +451,60 @@ def get_last_retrieval_mode() -> str:
     return _last_retrieval_mode
 
 
-# Collection-provider injection. The provider is a zero-arg callable that
-# returns the ChromaDB collection (or any duck-typed object with a
-# ``query`` method matching the chromadb API). ``None`` means "no
-# collection wired" — ``retrieve`` returns ``[]`` rather than raising,
+# Collection-provider injection, subject-keyed (ADR-ARCH-032 D2). Each
+# provider is a zero-arg callable that returns the subject's ChromaDB
+# collection (or any duck-typed object with a ``query`` method matching
+# the chromadb API). An absent subject key means "no collection wired for
+# that subject" — ``retrieve`` returns ``[]`` rather than raising,
 # matching the AC for ``text_name`` with no primary edition available.
 
-_collection_provider: Callable[[], Any] | None = None
+_collection_providers: dict[str, Callable[[], Any]] = {}
 
 
-def set_collection_provider(provider: Callable[[], Any]) -> None:
-    """Install the ChromaDB collection provider.
+def set_collection_provider(
+    provider: Callable[[], Any], subject: str = DEFAULT_SUBJECT
+) -> None:
+    """Install the ChromaDB collection provider for ``subject``.
 
     The provider is a zero-arg callable returning the collection (or
-    ``None``). Real systems wire it once at orchestrator startup; tests
-    install fakes per case. We keep this dependency-injected rather than
-    importing ``chromadb`` here so the dev path stays free of the binary
-    dependency.
+    ``None``). Real systems wire one per discovered subject at startup;
+    tests install fakes per case. We keep this dependency-injected rather
+    than importing ``chromadb`` here so the dev path stays free of the
+    binary dependency. The default subject keeps every
+    pre-multi-subject caller wiring English unchanged.
     """
-    global _collection_provider
-    _collection_provider = provider
+    if not subject:
+        raise ValueError("subject must be a non-empty string")
+    _collection_providers[subject] = provider
 
 
 def reset_collection_provider() -> None:
-    """Remove the installed collection provider (test teardown helper)."""
-    global _collection_provider
-    _collection_provider = None
+    """Remove all installed collection providers (test teardown helper)."""
+    _collection_providers.clear()
 
 
-def get_collection_provider() -> Callable[[], Any] | None:
-    """Return the currently-installed collection provider, or ``None``.
+def get_collection_provider(
+    subject: str = DEFAULT_SUBJECT,
+) -> Callable[[], Any] | None:
+    """Return the installed collection provider for ``subject``, or ``None``.
 
     Inverse of :func:`set_collection_provider`. The orchestrator's boot
     smoke (TASK-RAG-002 / TASK-LCA-004 extension) calls this once at
     ``MCPAdapter.__init__`` time to verify the collection is wired
     before serving any traffic.
     """
-    return _collection_provider
+    return _collection_providers.get(subject)
+
+
+def has_corpus(subject: str) -> bool:
+    """Return ``True`` if a collection provider is wired for ``subject``.
+
+    The runtime half of ADR-ARCH-032's mandatory per-subject coverage
+    check: the coach-handover closure consults this before the
+    four-branch decision and skips retrieval with
+    :data:`REASON_NO_SUBJECT_CORPUS` when it returns ``False``.
+    """
+    return subject in _collection_providers
 
 
 # Reranker-factory injection. The factory is a zero-arg callable that
@@ -713,6 +758,7 @@ def retrieve(
     text_name: str,
     focus_aos: set[str],
     top_k: int = DEFAULT_TOP_K,
+    subject: str = DEFAULT_SUBJECT,
 ) -> list[CorpusChunk]:
     """Source-filtered retrieval with reranker degradation.
 
@@ -730,6 +776,10 @@ def retrieve(
         and so future AO-aware filters have a place to land.
     top_k : int, optional
         Maximum chunks to return. Defaults to :data:`DEFAULT_TOP_K` (6).
+    subject : str, optional
+        Which subject's collection to query (ADR-ARCH-032). Defaults to
+        English; an unwired subject returns ``[]`` (the closure-level
+        coverage check normally skips retrieval before reaching here).
 
     Returns
     -------
@@ -758,12 +808,14 @@ def retrieve(
 
     global _last_retrieval_mode
 
-    if _collection_provider is None:
-        # No collection wired. Treat as empty corpus per the AC.
+    provider = _collection_providers.get(subject)
+    if provider is None:
+        # No collection wired for this subject. Treat as empty corpus
+        # per the AC (and ADR-ARCH-032: never another subject's corpus).
         _last_retrieval_mode = MODE_RERANK
         return []
 
-    collection = _collection_provider()
+    collection = provider()
     if collection is None:
         _last_retrieval_mode = MODE_RERANK
         return []
@@ -808,6 +860,7 @@ def retrieve(
 __all__ = [
     "AQA_FILENAME_PATTERN",
     "CHUNK_PAYLOAD_KEY",
+    "DEFAULT_SUBJECT",
     "DEFAULT_TOP_K",
     "EMBEDDER_TIMEOUT_SECONDS",
     "MODE_NO_RERANK",
@@ -816,6 +869,7 @@ __all__ = [
     "REASON_AO3_ONLY",
     "REASON_EMBEDDER_TIMEOUT",
     "REASON_NO_PRIMARY",
+    "REASON_NO_SUBJECT_CORPUS",
     "REASON_RETRIEVE_MIXED",
     "REASON_RETRIEVE_PRIMARY",
     "RERANKER_MODEL",
@@ -826,6 +880,7 @@ __all__ = [
     "embedder_available_within",
     "get_collection_provider",
     "get_last_retrieval_mode",
+    "has_corpus",
     "has_primary_text",
     "register_primary_text",
     "reset_collection_provider",
