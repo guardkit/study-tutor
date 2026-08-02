@@ -32,14 +32,14 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Tutoring core (Player + async Coach + planner + quote verifier) | **LIVE** on the spark `:8100` (static-token "table" auth mode, voice ON) and `:8101` (Keycloak auth mode, voice OFF pending the Keycloak phone-flow proof) | `HANDOFF-study-tutor-full-encapsulation-spark.md` (2026-07-26) |
 | Model serving | **LIVE** — `gemma4-tutor` (fine-tuned Gemma 4 26B-A4B) + coach + speech models + embedder on the spark's llama-swap `:9000`; the GB10 handed back to the factory (Reachy speech unit `:8765` excepted) | same handoff; `/opt/llama-swap/config/config.yaml` |
 | Student model + gamification | **LIVE** — Postgres on the NAS `:5434`, nightly dumps; W1+W2 economy (33 achievements) settling per ADR-ARCH-030; real session receipted 2026-07-26 (`904ad0f`) | ADR-ARCH-030; `docs/gamification/design.md` §13.1 |
-| App (Flutter, monorepo `app/`) | **Android device-walked** (sessions, voice tap-to-talk, streaming, sign-in, history, live robot mirror, gamification UI, settings). **iOS: compiles + hermetic-suite green only** (live walk pending). **Web: no boot claim** | `RESULTS-study-tutor-p2-live-acceptance-2026-07-05.md`; `app/README.md`; honest-iOS commit `29a320f` |
+| App (Flutter, monorepo `app/`) | **Android device-walked** (sessions, voice tap-to-talk, streaming, sign-in, history, live robot mirror, gamification UI, settings). **iOS: slice SIMULATOR-WALKED 2026-08-02** (iPhone 17 / iOS 26.2 / Xcode 26.3 — `integration_test/slice_walk_test.dart` drives the real composition root through sign-in → picker → start → two turns → away → resume → end → celebration; **voice walk still pending**: mic permission + TTS audibility need human attendance). **Web: no boot claim** | `RESULTS-study-tutor-p2-live-acceptance-2026-07-05.md`; `app/README.md`; honest-iOS commit `29a320f`; walk commit `dd4bbed` (2026-08-02; re-walked green after the FEAT-FLV1 rebase) |
 | Auth | **LIVE end-to-end** — Keycloak on the NAS `:8443`; server gate (KC-G2) and real-device gate (KC-G3) passed 2026-07-19; interim table mode retained for the robot | `HANDOFF-weekend-auth-voice-fable-window.md` §11 |
 | Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01 |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
 | RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
 | Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **App picker + seams CLOSED 2026-08-02** (Lane 1 step 2 — `3a08bfa`: visible picker, `defaultSubject` now the fallback per SUBJECT_DEFAULT §4). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
-| Suites | **Hermetic python suite FULLY GREEN — 1671 passed, 0 failures as of 2026-08-02 (was 1640 on 2026-08-01)** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); **400 dart tests (2026-08-02, +14 with the subject-picker leg, `3a08bfa`)**; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
+| Suites | **Hermetic python suite FULLY GREEN — 1671 passed, 0 failures as of 2026-08-02 (was 1640 on 2026-08-01)** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); **402 dart tests (2026-08-02: +14 subject-picker leg `3a08bfa`, +2 FEAT-FLV1 `f1dec8e`; Mac re-verified analyze clean + 402/402 + apk-debug ✓ post-rebase — the apk leg the spark could not run)**; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
 
 **Known contradictions to burn down (Lane 5) — five of eight burned down 2026-08-01
 (the Lane 4 pass `5c1ddaa` + hygiene commits `5102874`/`10cc802`):**
@@ -156,8 +156,11 @@ Eval-first, then plumbing, then content packs:
    `test_subject_default.py` 2/2 (`defaultSubject = 'english'` verbatim); zero
    contract-file edits. A French selection today honestly yields an empty mastery
    map and a no-corpus session — correct until Lane 1 step 3's content packs.
-   The Mac-only extras (iOS attended walk, APK install to Lilymay's phone, live
-   contract suite re-run) were NOT run — separate acts awaiting Rich's word.
+   Of the Mac-only extras: **the iOS walk RAN 2026-08-02 on Rich's word** (see the
+   App row — slice walked on the iPhone 17 simulator via `integration_test`, picker
+   visible and threading; voice remains the pending human-attended piece); APK
+   install to Lilymay's phone + the live contract suite re-run still await Rich's
+   word.
    Still open: subject on `topic_confidence` *reads* the planner ranks over
    (deliberately unfiltered — whole-student until the content-pack lane decides
    per-subject planning).
@@ -328,7 +331,9 @@ Rev 3, a navigation shell, and the art pipeline; build order coins+shop+bedroom 
 designer);
 Boss Battles / daily challenges / weekly quests (designed, promised by live unlock gates,
 unbuilt) and the 7 content-gated achievements behind them; the ~150-word voice-mode reply
-cap (Option C of the TTS investigation) + the 1.7B TTS trial; the iOS attended walk;
+cap (Option C of the TTS investigation) + the 1.7B TTS trial; ~~the iOS attended walk~~
+(**slice leg done 2026-08-02** — simulator walk via `integration_test`; the VOICE leg on
+iOS still needs a human ear and stays deferred);
 token-streaming ledger closure (voiceTurnStream is wired — close TASK-STREAM-001's record);
 Reachy `celebrate_achievement` conformance confirmation; NATS fleet surface disposition
 (live transport or formally dormant); the hackathon-era FEAT-PO roadmap IDs (historical
