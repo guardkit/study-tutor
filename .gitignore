@@ -335,6 +335,16 @@ merged-fp16/
 !app/lib/
 !app/lib/**
 
+# The app's TEST tree needs the same rescue as its source tree (the
+# FEAT-39E1 / TASK-INV-AB1 silent-swallow class, third instance). The
+# unanchored Python-template rules above (models/, build/, var/, env/,
+# downloads/, target/) match plausible new Dart test directories —
+# app/test/models/ IS ignored today and a study-tutor feature is likely
+# to mint exactly that name. Verified by git check-ignore before and
+# after (monorepo/Flutter design pass 2026-08-01 §C.2; rescued 2026-08-02).
+!app/test/
+!app/test/**
+
 # Local inference scratch
 ollama_models/
 .ollama/
