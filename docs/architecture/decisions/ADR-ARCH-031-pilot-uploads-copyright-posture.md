@@ -2,7 +2,11 @@
 
 ## Status
 
-**Proposed — DRAFT for Rich's ratification (Lane 4 gate).**
+**Accepted — RATIFIED by Rich, 2026-08-02 (in-session word: "ratify ADR-ARCH-031").**
+The Lane 4 gate is passed; the owner has accepted the recorded risk posture (Option 2).
+Lane 3's residency ADR is now unblocked to draft and ratify per the S3 ladder.
+
+*(Was: Proposed — DRAFT for Rich's ratification, 2026-08-01.)*
 
 Ratification ordering is load-bearing: per the mission's S3 ladder ("no rung skipped — the
 copyright rung ratifies before the residency rung does"), this ADR must be **ratified before
