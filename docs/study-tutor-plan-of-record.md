@@ -137,10 +137,10 @@ Eval-first, then plumbing, then content packs:
    → real rows, french → `{}`, whole-student XP identical; binding §2.2 carries a
    dated in-place annotation, no re-pin). Suite 1671 green.
    **Still open: the app subject picker** (`SUBJECT_DEFAULT` becomes the fallback, as
-   its §4 designed) — **blocked on the spark: no Flutter toolchain here**; it needs an
-   attended run on the Mac checkout (`app/lib/ui/home_screen.dart` `defaultSubject`
-   becomes the fallback for a selected-subject state sent on `startSession`; the seam
-   test pins the constant; hermetic gate = `flutter analyze && flutter test` + apk).
+   its §4 designed) — **blocked on the spark: no Flutter toolchain here**; the full
+   design pass + fences + gates for the Mac session are written up in
+   [`HANDOFF-mac-app-subject-picker.md`](runbooks/HANDOFF-mac-app-subject-picker.md)
+   (2026-08-02 — start there; it grounds back to this cell and ends by updating it).
    Also still open: subject on `topic_confidence` *reads* the planner ranks over
    (deliberately unfiltered — whole-student until the content-pack lane decides
    per-subject planning).
