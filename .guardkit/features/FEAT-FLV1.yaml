@@ -1,0 +1,22 @@
+id: FEAT-FLV1
+name: "Home screen shows the app version"
+description: "The Study Tutor app displays its own version on the home screen — the Flutter twin of FEAT-STV1's additive read shape. THE FIRST FACTORY-BUILT FLUTTER FEATURE: single app-component task, verdict = flutter test at cwd app/ per the per-component toolchain declaration (stage 4, 2026-08-02)."
+created: "2026-08-02T17:15:00Z"
+status: planned
+complexity: 3
+estimated_tasks: 1
+evidence_repos: []
+tasks:
+  - id: TASK-FLV1-001
+    name: "Show the app version on the home screen"
+    file_path: "tasks/backlog/app-version-display/TASK-FLV1-001-show-app-version-on-home.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 30
+orchestration:
+  parallel_groups:
+    - - TASK-FLV1-001
+  estimated_duration_minutes: 30
+  recommended_parallel: 1
