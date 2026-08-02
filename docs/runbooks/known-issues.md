@@ -51,13 +51,17 @@ Exit: fold at the next contract re-pin.
 - ~~Reranker constructed per call~~ **CLOSED 2026-08-02**: production
   instance cache landed with the 1b merge (two hermetic tests pin it);
   warm retrieval ~5.3s in the deployed container.
-- **Deploy env files went missing (open, low)**: the gitignored
+- **Deploy env files went missing (mostly closed, low)**: the gitignored
   `deploy/http/.env` / `.env.kc` (scp'd from the GB10 2026-07-26) were
   absent from the spark checkout on 2026-08-02; reconstructed from the
-  running containers' env (docker inspect) for the 1b redeploy — more
-  current than the GB10 originals (those predate the spark-side edits).
-  Exit: GB10-side scp of the originals to comparison names + a diff,
-  then decide whether anything in them still matters.
+  running containers' env (docker inspect) for the 1b redeploy.
+  **Verified 2026-08-02**: Rich scp'd the GB10's `.env.kc` back as
+  `.env.kc.gb10-orig` — key-by-key diff clean, every meaningful value
+  identical (incl. DSN + token table); only cosmetic empty-vs-omitted
+  deltas. The kc reconstruction is faithful; the same method produced
+  `.env`, so confidence carries over. Residual: the GB10's table-mode
+  `.env` copy never arrived (the first scp likely errored — check it
+  still exists on the GB10); diff it if it ever lands, else done.
 
 ---
 
