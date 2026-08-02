@@ -13,6 +13,7 @@ This test suite requires Docker to be available for spinning up test containers.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -27,6 +28,8 @@ def postgres_container():
     Creates a test container on port 5435 (non-standard to avoid conflicts).
     The container persists for the entire test module to allow multiple tests.
     """
+    if shutil.which("docker") is None:
+        pytest.skip("docker unavailable — ephemeral Postgres required")
     container_name = "guardkit-test-pg-kc003"
 
     # Cleanup any existing container

@@ -6,6 +6,7 @@ tests that require a real database (TASK-SMP-04 and related).
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -27,6 +28,8 @@ def postgres_container() -> Generator[str, None, None]:
     Yields the DSN for connecting to the test database.
     Container is torn down at session end.
     """
+    if shutil.which("docker") is None:
+        pytest.skip("docker unavailable — ephemeral Postgres required")
     container_name = "guardkit-test-pg-integration"
     port = 55433
     dsn = f"postgresql://study_tutor:test@localhost:{port}/study_tutor"

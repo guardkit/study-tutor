@@ -12,6 +12,7 @@ module claims **55436** with a fresh container name.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -35,6 +36,8 @@ def session_service_pg_container() -> Generator[str, None, None]:
 
     Yields the loopback DSN; the container is torn down at session end.
     """
+    if shutil.which("docker") is None:
+        pytest.skip("docker unavailable — ephemeral Postgres required")
     dsn = f"postgresql://study_tutor:test@localhost:{_PORT}/study_tutor"
 
     # Clean up any leftover container from a previous run

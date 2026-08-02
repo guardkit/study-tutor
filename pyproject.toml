@@ -93,6 +93,11 @@ dev = [
     # cannot mask a missing dependency the moment the first .feature lands.
     # See guardkit:tasks/.../TASK-OPS-BDDM-11-pyproject-study-tutor.md.
     "pytest-bdd>=8.1,<9",
+    # Monorepo/Flutter design pass D.7 (2026-08-01, landed 2026-08-02): no
+    # per-test hang protection existed — guardkit's --timeout injection is
+    # gated on this plugin being importable, so a single hung test ate the
+    # whole Coach budget and reported tests_run=0 with no attribution.
+    "pytest-timeout",
 ]
 
 # ---------------------------------------------------------------------------
