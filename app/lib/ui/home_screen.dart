@@ -17,15 +17,20 @@ import 'live_session_screen.dart';
 import 'progress_store.dart';
 import 'session_screen.dart';
 import 'settings_screen.dart';
+import 'subject_store.dart';
 import 'theme_controller.dart';
 
-/// Default subject for v1 — English (AQA 8700/8702), matching the tutor's
-/// fine-tune, the Scholar persona, and query_student_model's default. A subject
-/// picker is out of scope for v1 (scope §7); when it lands this becomes the
-/// fallback rather than a fixed value. The robot's ask_tutor sends this same
-/// default, so (student, subject) session pickup matches across phone and robot
-/// (recon D6/D8). Previously 'maths' — a stale placeholder with no content
-/// behind it; reconciled to the English tutor 2026-07-07 (ASSUM-001).
+/// Fallback subject — English (AQA 8700/8702), matching the tutor's
+/// fine-tune, the Scholar persona, and query_student_model's default. The
+/// subject picker landed with Lane 1 step 2, so this is now the fallback the
+/// [SubjectStore] selection initialises to — and what Home sends when no
+/// store is composed (scope-less widget tests) — exactly as
+/// SUBJECT_DEFAULT.md §4 designed. The robot's ask_tutor sends this same
+/// default, so (student, subject) session pickup matches across phone and
+/// robot (recon D6/D8). Previously 'maths' — a stale placeholder with no
+/// content behind it; reconciled to the English tutor 2026-07-07 (ASSUM-001).
+/// The cross-repo seam test (tests/seam/test_subject_default.py) greps this
+/// declaration — keep its name and value verbatim.
 const defaultSubject = 'english';
 
 /// Warm, specific empty state (spec §1 register) — no fabricated streak data
@@ -40,6 +45,7 @@ class HomeScreen extends StatefulWidget {
     required this.sessionApi,
     required this.voiceApi,
     this.progressStore,
+    this.subjectStore,
   });
 
   final IdentityProvider identity;
@@ -50,6 +56,11 @@ class HomeScreen extends StatefulWidget {
   /// ambient [AppScope] when absent so widget tests can inject it directly.
   final ProgressStore? progressStore;
 
+  /// The app-wide subject selection (Lane 1 step 2). Optional the same way;
+  /// when neither injection nor scope provides one, Home renders no picker
+  /// and falls back to [defaultSubject].
+  final SubjectStore? subjectStore;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -57,6 +68,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<SessionSummary> _active = const [];
   ProgressStore? _store;
+  SubjectStore? _subjectStore;
 
   /// In-flight guard for Start/Resume (same reason as the session screen's
   /// `_sending`): a double-tap must not start two sessions or push two
@@ -77,6 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // then kick the first load. Safe here — InheritedWidget lookups are allowed
     // in didChangeDependencies, unlike initState.
     _store ??= widget.progressStore ?? AppScope.maybeOf(context)?.progressStore;
+    _subjectStore ??=
+        widget.subjectStore ?? AppScope.maybeOf(context)?.subjectStore;
     final store = _store;
     if (store != null && !store.hasLoaded) store.load();
   }
@@ -166,16 +180,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _startNewSession() async {
     if (_busy) return;
     setState(() => _busy = true);
+    // Read the selection once for the whole start: the session and its screen
+    // must agree on the subject even if the picker changes mid-flight.
+    final subject = _subjectStore?.selectedSubject ?? defaultSubject;
     try {
       final started =
-          await widget.sessionApi.startSession(subject: defaultSubject);
+          await widget.sessionApi.startSession(subject: subject);
       if (!mounted) return;
       await _open(SessionScreen(
         identity: widget.identity,
         sessionApi: widget.sessionApi,
         voiceApi: widget.voiceApi,
         sessionId: started.sessionId,
-        subject: defaultSubject,
+        subject: subject,
         initialTurns: started.turns ?? const [],
         voiceRecorder: VoiceRecorder(),
         player: JustAudioPlayback(),
@@ -297,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+            if (_subjectStore != null) _subjectPicker(theme, _subjectStore!),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _busy ? null : _startNewSession,
@@ -304,6 +322,41 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// The subject picker (Lane 1 step 2). Deliberately visible even with a
+  /// single subject (Rich's call, 2026-08-02) — the seam is a control Lilymay
+  /// can see today, and a new entry in [availableSubjects] surfaces here with
+  /// no further plumbing. Selection is session-scoped state on [SubjectStore];
+  /// Start-new-session and the progress read both consume it, while resume
+  /// keeps each session's own subject.
+  Widget _subjectPicker(ThemeData theme, SubjectStore store) {
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) => Row(
+        children: [
+          Text(
+            'Subject',
+            style: theme.textTheme.labelLarge
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SegmentedButton<String>(
+              segments: [
+                for (final subject in store.subjects)
+                  ButtonSegment<String>(
+                    value: subject,
+                    label: Text(titleCaseSubject(subject)),
+                  ),
+              ],
+              selected: {store.selectedSubject},
+              onSelectionChanged: (selection) => store.select(selection.first),
+            ),
+          ),
+        ],
       ),
     );
   }

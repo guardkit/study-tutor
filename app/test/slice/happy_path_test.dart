@@ -45,7 +45,9 @@ void main() {
     // Navigate away — home re-lists and shows the resume affordance.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('English'), findsOneWidget,
+    // Scoped to the session Card: Home's subject picker also says 'English'
+    // since Lane 1 step 2.
+    expect(find.widgetWithText(Card, 'English'), findsOneWidget,
         reason: 'session lists under the default subject, title-cased (ASSUM-001)');
     expect(find.text('2 turns'), findsOneWidget,
         reason: 'turn_count survives leaving the session');

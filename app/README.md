@@ -170,6 +170,16 @@ Navigator 1.0 stays.
   failed refresh keeps the last good snapshot (the Home card is never blanked).
   "Streak alive today" is app-local UX state (no wire field) — it flips true
   only once a session-end block reports `streak_extended` during the app run.
+- **`SubjectStore`** (`lib/ui/subject_store.dart`) — a `ChangeNotifier` owning
+  the selected tutoring subject (Lane 1 step 2). The offer is a client-side
+  constant (`availableSubjects`, English-only today — a server endpoint would
+  be a contract addition, deferred until content packs exist); the Home picker
+  is visible even with one subject (Rich's call 2026-08-02). `defaultSubject`
+  (`home_screen.dart`) stays the fallback and the cross-repo seam anchor
+  (`tests/seam/test_subject_default.py`). The shell wires selection changes
+  into `ProgressStore.updateSubject`, so the progress read follows the picked
+  subject; resume keeps each session's own subject. Session-scoped — nothing
+  persists across launches.
 - **Port triplet** `StudentModelApi` — port (`lib/ports/student_model_api.dart`)
   + `HttpStudentModelApi` adapter + `FakeStudentModelApi`, composed in
   `main.dart` on the `API_BASE_URL` flavour switch exactly like `SessionApi`.

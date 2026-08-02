@@ -13,6 +13,7 @@ import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
 import 'package:study_tutor_app/ui/app.dart';
 import 'package:study_tutor_app/ui/home_screen.dart';
+import 'package:study_tutor_app/ui/session_screen.dart';
 
 /// Delegates to the wrapped fake, except that verbs named in [failing]
 /// throw TransportError — the hermetic stand-in for "the network died on
@@ -195,7 +196,9 @@ void main() {
 
     await dismissDialog(tester);
     expect(find.text('Hi, Lilymay'), findsOneWidget);
-    expect(find.text('English'), findsNothing,
+    // Scoped to the screen type: Home's own subject picker legitimately shows
+    // 'English' since Lane 1 step 2, so the bare text is no longer proof.
+    expect(find.byType(SessionScreen), findsNothing,
         reason: 'nothing was started — no session screen was pushed');
 
     // `_busy` must have been released for the retry to work at all.

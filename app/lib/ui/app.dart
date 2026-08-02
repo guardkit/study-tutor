@@ -9,6 +9,7 @@ import 'app_scope.dart';
 import 'home_screen.dart';
 import 'progress_store.dart';
 import 'sign_in_screen.dart';
+import 'subject_store.dart';
 import 'theme/app_theme.dart';
 import 'theme_controller.dart';
 
@@ -23,7 +24,9 @@ import 'theme_controller.dart';
 /// student-model read and a store over it, so pre-S-A3 widget tests compile
 /// and run unchanged. [themeController] is optional the same way: absent, the
 /// shell creates one defaulting to [ThemeMode.system] (the prior hardcoded
-/// behaviour), so pre-Settings tests are unaffected.
+/// behaviour), so pre-Settings tests are unaffected. [subjectStore] (Lane 1
+/// step 2) follows the same pattern: absent, the shell creates one over the
+/// client-side subject list with [defaultSubject] as the fallback.
 class StudyTutorApp extends StatefulWidget {
   const StudyTutorApp({
     super.key,
@@ -32,6 +35,7 @@ class StudyTutorApp extends StatefulWidget {
     required this.voiceApi,
     this.studentModelApi,
     this.progressStore,
+    this.subjectStore,
     this.themeController,
   });
 
@@ -40,6 +44,7 @@ class StudyTutorApp extends StatefulWidget {
   final VoiceApi voiceApi;
   final StudentModelApi? studentModelApi;
   final ProgressStore? progressStore;
+  final SubjectStore? subjectStore;
   final ThemeController? themeController;
 
   @override
@@ -49,14 +54,29 @@ class StudyTutorApp extends StatefulWidget {
 class _StudyTutorAppState extends State<StudyTutorApp> {
   late final StudentModelApi _studentModelApi =
       widget.studentModelApi ?? FakeStudentModelApi(identity: widget.identity);
+  late final SubjectStore _subjectStore =
+      widget.subjectStore ?? SubjectStore(fallback: defaultSubject);
   late final ProgressStore _progressStore = widget.progressStore ??
-      ProgressStore(api: _studentModelApi, subject: defaultSubject);
+      ProgressStore(api: _studentModelApi, subject: _subjectStore.selectedSubject);
   late final ThemeController _themeController =
       widget.themeController ?? ThemeController();
 
   @override
+  void initState() {
+    super.initState();
+    // Progress follows the selection (Lane 1 step 2). Wired here at the
+    // composition shell so neither store knows about the other.
+    _subjectStore.addListener(_syncProgressSubject);
+  }
+
+  void _syncProgressSubject() =>
+      _progressStore.updateSubject(_subjectStore.selectedSubject);
+
+  @override
   void dispose() {
+    _subjectStore.removeListener(_syncProgressSubject);
     // Only dispose objects we created; injected ones are owned by the caller.
+    if (widget.subjectStore == null) _subjectStore.dispose();
     if (widget.progressStore == null) _progressStore.dispose();
     if (widget.themeController == null) _themeController.dispose();
     super.dispose();
@@ -70,6 +90,7 @@ class _StudyTutorAppState extends State<StudyTutorApp> {
       voiceApi: widget.voiceApi,
       studentModelApi: _studentModelApi,
       progressStore: _progressStore,
+      subjectStore: _subjectStore,
       themeController: _themeController,
       // The shell rebuilds when the theme mode changes so `MaterialApp`
       // re-reads `themeMode` from the controller (spec §7 Settings surface).

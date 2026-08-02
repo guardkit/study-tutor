@@ -15,12 +15,15 @@ import '../ports/student_model_api.dart';
 /// only knows the streak is alive once a session-end block reports
 /// `streak_extended` during this app run.
 class ProgressStore extends ChangeNotifier {
-  ProgressStore({required this._api, required this.subject});
+  ProgressStore({required this._api, required this._subject});
 
   final StudentModelApi _api;
 
   /// The subject the record is scoped to (`GET /api/student-model?subject=`).
-  final String subject;
+  /// Tracks the app's selected subject (Lane 1 step 2): the composition shell
+  /// pushes selection changes in via [updateSubject].
+  String get subject => _subject;
+  String _subject;
 
   StudentModel? _model;
   bool _loading = false;
@@ -53,6 +56,19 @@ class ProgressStore extends ChangeNotifier {
   Future<void> refresh({bool streakExtended = false}) {
     if (streakExtended) _streakAliveToday = true;
     return _fetch();
+  }
+
+  /// Point the store at a new subject and refetch. The cached snapshot is
+  /// dropped first — it belongs to the old subject, and §6.1's never-hidden
+  /// card must degrade to its loading/zero state rather than show one
+  /// subject's mastery under another's selection. `streakAliveToday` survives
+  /// the switch: streak and whole-student XP are not subject-scoped
+  /// (binding §2.2, live-proven identical across subjects).
+  void updateSubject(String subject) {
+    if (subject == _subject) return;
+    _subject = subject;
+    _model = null;
+    _fetch();
   }
 
   Future<void> _fetch() async {

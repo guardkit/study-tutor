@@ -5,6 +5,7 @@ import '../ports/session_api.dart';
 import '../ports/student_model_api.dart';
 import '../ports/voice_api.dart';
 import 'progress_store.dart';
+import 'subject_store.dart';
 import 'theme_controller.dart';
 
 /// Root [InheritedWidget] composing the app's ports (spec §2) so screens read
@@ -16,6 +17,8 @@ import 'theme_controller.dart';
 /// S-A3 adds the `StudentModelApi` port and the app-wide [ProgressStore]
 /// (owning the student-model snapshot) to the scope. The Settings surface adds
 /// the app-wide [ThemeController] (theme-mode selection) alongside them.
+/// Lane 1 step 2 adds the app-wide [SubjectStore] (the selected tutoring
+/// subject, `defaultSubject` as fallback).
 class AppScope extends InheritedWidget {
   const AppScope({
     super.key,
@@ -24,6 +27,7 @@ class AppScope extends InheritedWidget {
     required this.voiceApi,
     required this.studentModelApi,
     required this.progressStore,
+    required this.subjectStore,
     required this.themeController,
     required super.child,
   });
@@ -33,6 +37,7 @@ class AppScope extends InheritedWidget {
   final VoiceApi voiceApi;
   final StudentModelApi studentModelApi;
   final ProgressStore progressStore;
+  final SubjectStore subjectStore;
   final ThemeController themeController;
 
   /// The nearest enclosing scope. Throws if none is present — screens that
@@ -55,5 +60,6 @@ class AppScope extends InheritedWidget {
       voiceApi != oldWidget.voiceApi ||
       studentModelApi != oldWidget.studentModelApi ||
       progressStore != oldWidget.progressStore ||
+      subjectStore != oldWidget.subjectStore ||
       themeController != oldWidget.themeController;
 }
