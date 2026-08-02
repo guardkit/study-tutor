@@ -59,6 +59,23 @@ services:
       TTS_BASE_URL: ${TTS_BASE_URL:-}
       TTS_MODEL: ${TTS_MODEL:-}
       TTS_VOICE: ${TTS_VOICE:-}
+
+      # RAG (Lane 2 step 1b, 2026-08-02) — the [rag] extra ships in the image
+      # and serve-http wires the baked data/chroma store at boot. The store is
+      # re-embedded at 1024-dim to match the spark llama-swap's `embed` alias
+      # (Qwen3-Embedding-0.6B); the code's default model name (nomic-embed) is
+      # NOT served here, so the model override below is load-bearing. See the
+      # Lane 2 1a receipt (RESULTS-lane2-rag-image-1a-2026-08-01.md).
+      LLM_EMBEDDINGS_BASE_URL: ${LLM_EMBEDDINGS_BASE_URL:-http://host.docker.internal:9000/v1}
+      LLM_EMBEDDINGS_MODEL: ${LLM_EMBEDDINGS_MODEL:-embed}
+      LLM_EMBEDDINGS_API_KEY: ${LLM_EMBEDDINGS_API_KEY:-not-needed}
+      # Reranker weights cache, persisted on the host so container restarts
+      # don't re-download ~2.3GB. Set HF_HUB_OFFLINE=1 in .env ONLY once the
+      # cache is warm (a cold cache with offline=1 breaks reranker load).
+      HF_HOME: /hf-cache
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-}
+    volumes:
+      - ${HF_CACHE_DIR:-/opt/study-tutor/hf-cache}:/hf-cache
     ports:
       - "${HTTP_PORT:-8100}:8100"
     healthcheck:

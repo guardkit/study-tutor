@@ -471,6 +471,15 @@ def get_collection_provider() -> Callable[[], Any] | None:
 
 _reranker_factory: Callable[[], Any] | None = None
 
+# Production-path instance cache. Constructing a CrossEncoder loads the
+# ~2.3GB model weights from the HF cache — measured at ~3.5s per call on
+# the spark (Lane 2 1a receipt, 2026-08-01) — and ``retrieve`` asks for
+# the reranker on every call, so an uncached production path taxes every
+# retrieval turn with a redundant reload. The cache holds ONLY the real
+# CrossEncoder; the factory path (tests) stays uncached so factories that
+# raise ImportError per call keep exercising the degradation branch.
+_reranker_instance: Any | None = None
+
 
 def set_reranker_factory(factory: Callable[[], Any]) -> None:
     """Install the reranker factory.
@@ -480,15 +489,24 @@ def set_reranker_factory(factory: Callable[[], Any]) -> None:
     path. We restrict the simulated failure to ``ImportError`` because the
     AC explicitly calls out the import-time fallback — broader exception
     catching would mask real bugs.
+
+    Installing a factory also drops any cached production instance so a
+    test that ran after real traffic starts from a clean seam.
     """
-    global _reranker_factory
+    global _reranker_factory, _reranker_instance
     _reranker_factory = factory
+    _reranker_instance = None
 
 
 def reset_reranker_factory() -> None:
-    """Restore the default reranker factory (test teardown helper)."""
-    global _reranker_factory
+    """Restore the default reranker factory (test teardown helper).
+
+    Also drops the cached production instance — teardown returns the
+    module to its import-time state.
+    """
+    global _reranker_factory, _reranker_instance
     _reranker_factory = None
+    _reranker_instance = None
 
 
 def _load_reranker() -> Any:
@@ -497,17 +515,22 @@ def _load_reranker() -> Any:
     When a factory is installed (test path), delegate to it — the factory
     can return a stub or raise ``ImportError`` to simulate "package not
     installed". When no factory is installed (production path), attempt
-    the real ``sentence_transformers`` import. The ``ImportError`` is
-    re-raised by ``retrieve`` and turned into the ``mode="no_rerank"``
-    fallback.
+    the real ``sentence_transformers`` import and cache the constructed
+    instance for the process lifetime (see ``_reranker_instance``). The
+    ``ImportError`` is re-raised by ``retrieve`` and turned into the
+    ``mode="no_rerank"`` fallback.
     """
     if _reranker_factory is not None:
         return _reranker_factory()
+    global _reranker_instance
+    if _reranker_instance is not None:
+        return _reranker_instance
     # Real production import. Local import keeps the module-load cost low
     # for callers (decision-tree consumers) that never touch retrieval.
     from sentence_transformers import CrossEncoder  # type: ignore[import-not-found]
 
-    return CrossEncoder(RERANKER_MODEL, device="cpu")
+    _reranker_instance = CrossEncoder(RERANKER_MODEL, device="cpu")
+    return _reranker_instance
 
 
 def _hydrate_chunk(metadata: dict[str, Any], document: str | None) -> CorpusChunk | None:
