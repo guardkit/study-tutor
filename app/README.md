@@ -5,9 +5,10 @@ seams. The **default flavour** composes an in-process fake backend — no
 network, no Keycloak (v1 scope §1), and the hermetic test gate only ever
 runs this flavour. Phase 2 added an opt-in **real-transport flavour**
 (`--dart-define=API_BASE_URL=…` → `HttpSessionApi`, see §Phase-2 flavours).
-The device-walked target is **Android** (see Definition of done). **iOS**
-compiles and runs the hermetic slice green; a live simulator walk is pending an
-attended run — see [§iOS](#ios-compiles--hermetic-green-live-walk-pending). The
+The device-walked target is **Android** (see Definition of done). **iOS** had
+its slice walked on a simulator 2026-08-02 (integration-test-driven; the voice
+walk still needs a human) — see
+[§iOS](#ios-slice-simulator-walked-2026-08-02-voice-walk-pending). The
 web folder still carries no boot claim.
 
 **Contract pin:** `docs/design/contracts/API-session-cross-device.md` at
@@ -85,12 +86,32 @@ voice plugin) to named backend hosts, but it does not constrain
 Identity stays the fake IdP in both flavours; its constant token is the
 binding doc's dev-table entry #1.
 
-## iOS: compiles + hermetic green, live walk pending
+## iOS: slice simulator-walked 2026-08-02; voice walk pending
 
 This repo is checked out on a Mac, so iOS is brought to a real (honest) boot
 claim — no simulator walk is asserted that was not run.
 
-**What is claimed now:**
+**The slice walk RAN (2026-08-02, Rich's word, driven from the Mac session):**
+iPhone 17 simulator, iOS 26.2, Xcode 26.3, after `pod install`.
+[`integration_test/slice_walk_test.dart`](integration_test/slice_walk_test.dart)
+drives the REAL composition root (`main()`, hermetic fake flavour) on-device
+through every slice checkpoint: sign-in → Home (subject picker visible,
+Lane 1 step 2) → start → two text turns (canned replies rendered) → away
+(session card, turn count) → resume (transcript intact, in order) → end →
+celebration sheet (XP count-up, level-up, achievement, confetti) → dismissed
+to Home with the session off the list. Run it with
+`flutter test integration_test -d <simulator-udid>`. On-device waits are
+bounded polls (`pumpUntil`/`pumpUntilGone`) — `pumpAndSettle` is unusable
+under the live binding (the engine keeps scheduling frames; an open-ended
+settle rides its 10-minute ceiling).
+
+**Still NOT verified on iOS (needs a human):** the voice walk — real mic
+capture (the system permission dialog must be accepted) and audible TTS
+playback — and the Keycloak sign-in flavour (the walk uses the fake IdP).
+The iOS *voice* claim stays "compiles + hermetic green" until that attended
+run.
+
+**What was already claimed before the walk:**
 
 - The app **compiles for iOS**: every adapter that touches native code
   (`voice_recorder.dart`, `audio_playback.dart`, `http_voice_api.dart`) sits on
@@ -112,12 +133,8 @@ claim — no simulator walk is asserted that was not run.
   `flutter_secure_storage`). `AppDelegate.swift` registers the generated plugin
   set; `SceneDelegate` is in place.
 
-**What is NOT yet verified:** a **live simulator/device walk** — signing in,
-recording a real turn, hearing TTS playback, and resuming on an iOS simulator.
-That requires an attended run (`cd app && flutter run` with a booted simulator,
-after `pod install`) and has not been performed from this environment. Treat the
-iOS claim as "compiles + hermetic suite green"; promote it to a device claim
-only after that attended walk (mirror the Android entry in Definition of done).
+The 2026-08-02 simulator walk (above) promoted the slice claim; the voice
+walk note above is what remains for a full device claim mirroring Android.
 
 ## Architecture: two ports, two fakes (scope §2)
 
@@ -266,6 +283,11 @@ twice.
 
 ### The other suites
 
+- `integration_test/slice_walk_test.dart` — the on-device walk surrogate
+  (first used for the iOS simulator walk 2026-08-02): the slice checkpoints
+  through the real `main()` on a physical/virtual device. Needs an explicit
+  device (`flutter test integration_test -d <id>`); never part of the
+  hermetic gate.
 - `test/slice/happy_path_test.dart` — the whole slice through real widgets:
   sign in → start → two turns → away → resume (transcript intact, in order)
   → end (input disabled). Fails if screens are never wired to the port.
