@@ -90,7 +90,7 @@ class FakeStudentStore:
         # Student records: {student_id: {...}}
         self._students: dict[str, dict[str, Any]] = {}
         # Topic confidences: {(student_id, topic_name): {...}}
-        self._confidences: dict[tuple[str, str], dict[str, Any]] = {}
+        self._confidences: dict[tuple[str, str, str], dict[str, Any]] = {}  # (student_id, subject, topic_name) — ADR-ARCH-032
         # Misconceptions: list of {...} (append-only)
         self._misconceptions: list[dict[str, Any]] = []
         # Sessions: {session_id: {...}}
@@ -131,6 +131,7 @@ class FakeStudentStore:
                 band=conf["band"],
                 percentage=conf["percentage"],
                 last_revised_at=conf["last_revised_at"],
+                subject=conf.get("subject", "english"),
             )
             for key, conf in self._confidences.items()
             if key[0] == student_id
@@ -161,9 +162,13 @@ class FakeStudentStore:
         )
 
     async def get_topic_confidences(
-        self, student_id: str
+        self, student_id: str, subject: str | None = None
     ) -> list[TopicConfidence]:
-        """Per-topic confidence entities. Empty list when unknown."""
+        """Per-topic confidence entities. Empty list when unknown.
+
+        ``subject`` filters to one mastery dimension (ADR-ARCH-032);
+        ``None`` returns every subject's rows (mirrors PostgresStudentStore).
+        """
         student = self._students.get(student_id)
         if not student:
             return []
@@ -178,6 +183,7 @@ class FakeStudentStore:
             )
             for key, conf in self._confidences.items()
             if key[0] == student_id
+            and (subject is None or conf.get("subject", "english") == subject)
         ]
 
     async def get_gamification_state(self, student_id: str) -> GamificationState:
@@ -290,10 +296,16 @@ class FakeStudentStore:
                     f"Confidence percentage must be in [0, 100]; got {update.percentage}"
                 )
 
-        # Apply confidence updates
+        # ADR-ARCH-032: the session row's subject is authoritative for the
+        # mastery child-writes (mirrors the Postgres RETURNING-subject path);
+        # a row minted by this end-first path defaults to english.
+        row_subject = (session.get("subject") if session else None) or "english"
+
+        # Apply confidence updates under the session's subject
         for update in confidence_updates:
             await self.apply_confidence_update(
-                student_id=student_id, update=update
+                student_id=student_id,
+                update=update.model_copy(update={"subject": row_subject}),
             )
 
         # Record misconceptions
@@ -304,6 +316,7 @@ class FakeStudentStore:
                 student_id=student_id,
                 topic_name=misc.topic_ref,
                 text=misc.text,
+                subject=row_subject,
             )
 
         # Transition the session to 'ended' (status-based idempotency, mirrors the
@@ -382,7 +395,7 @@ class FakeStudentStore:
         derive the identical W2 tranche."""
         topics = {
             topic: int(conf["percentage"])
-            for (sid, topic), conf in self._confidences.items()
+            for (sid, _subject, topic), conf in self._confidences.items()
             if sid == student_id
         }
         studied_topic_count = len(topics)
@@ -469,6 +482,7 @@ class FakeStudentStore:
         session_facts: SessionFacts,
         confidence_updates: list[ConfidenceUpdate],
         misconceptions: list[Misconception],
+        subject: str = "english",
     ) -> Any:
         """Run the engine and bank its result (mirrors ``postgres._bank_settlement``).
 
@@ -481,9 +495,12 @@ class FakeStudentStore:
             if not misc.topic_ref or not _sanitise_misconception_text(misc.text).strip():
                 raise ValueError("Misconception must have topic_ref and non-blank text")
 
+        # ADR-ARCH-032: the session's subject is authoritative for every
+        # mastery write banked here (mirrors postgres._bank_settlement).
         for update in confidence_updates:
-            self._confidences[(student_id, update.topic_name)] = {
+            self._confidences[(student_id, subject, update.topic_name)] = {
                 "topic_name": update.topic_name,
+                "subject": subject,
                 "percentage": update.percentage,
                 "band": confidence_band_for(update.percentage),
                 "last_revised_at": now,
@@ -491,6 +508,7 @@ class FakeStudentStore:
             self._confidence_history.append(
                 {
                     "student_id": student_id,
+                    "subject": subject,
                     "topic_name": update.topic_name,
                     "percentage": update.percentage,
                     "session_id": session_id,
@@ -519,7 +537,7 @@ class FakeStudentStore:
                     "text": _sanitise_misconception_text(misc.text),
                     "observed_at": now,
                     "band_at_observation": self._confidences.get(
-                        (student_id, misc.topic_ref), {}
+                        (student_id, subject, misc.topic_ref), {}
                     ).get("band", "struggling"),
                 }
             )
@@ -583,6 +601,7 @@ class FakeStudentStore:
                 session_facts=session_facts,
                 confidence_updates=confidence_updates,
                 misconceptions=misconceptions,
+                subject=subject or "english",
             )
         except Exception:  # noqa: BLE001 — settlement is best-effort (D4)
             decision = None
@@ -659,6 +678,7 @@ class FakeStudentStore:
         student_id: str,
         topic_name: str,
         text: str,
+        subject: str = "english",
     ) -> None:
         """F1 - single Coach-observed misconception, append-only (no dedup)."""
         # Unknown learner rejection
@@ -673,13 +693,14 @@ class FakeStudentStore:
         sanitised = _sanitise_misconception_text(text)
 
         # Get current band for this topic (if exists, else struggling)
-        key = (student_id, topic_name)
+        key = (student_id, subject, topic_name)
         band = self._confidences.get(key, {}).get("band", "struggling")
 
         # Append (no deduplication - ASSUM-006)
         self._misconceptions.append(
             {
                 "student_id": student_id,
+                "subject": subject,
                 "topic_name": topic_name,
                 "text": sanitised,
                 "observed_at": datetime.now(timezone.utc),
@@ -704,10 +725,12 @@ class FakeStudentStore:
         # Derive band
         band = confidence_band_for(update.percentage)
 
-        # Upsert confidence
-        key = (student_id, update.topic_name)
+        # Upsert confidence under the (student, subject, topic) key
+        # (ADR-ARCH-032 — mirrors the widened Postgres primary key).
+        key = (student_id, update.subject, update.topic_name)
         self._confidences[key] = {
             "topic_name": update.topic_name,
+            "subject": update.subject,
             "percentage": update.percentage,
             "band": band,
             "last_revised_at": datetime.now(timezone.utc),
@@ -909,10 +932,12 @@ class FakeStudentStore:
         percentage: int,
         *,
         last_revised_at: datetime | None = None,
+        subject: str = "english",
     ) -> None:
         """Helper for tests: seed one topic-confidence row (band derived)."""
-        self._confidences[(student_id, topic_name)] = {
+        self._confidences[(student_id, subject, topic_name)] = {
             "topic_name": topic_name,
+            "subject": subject,
             "percentage": percentage,
             "band": confidence_band_for(percentage),
             "last_revised_at": last_revised_at or datetime.now(timezone.utc),
