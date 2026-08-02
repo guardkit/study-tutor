@@ -37,9 +37,9 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01 |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
 | RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
-| Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), app picker + remaining seams (Lane 1 step 2), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
+| Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **App picker + seams CLOSED 2026-08-02** (Lane 1 step 2 — `3a08bfa`: visible picker, `defaultSubject` now the fallback per SUBJECT_DEFAULT §4). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
-| Suites | **Hermetic python suite FULLY GREEN — 1671 passed, 0 failures as of 2026-08-02 (was 1640 on 2026-08-01)** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
+| Suites | **Hermetic python suite FULLY GREEN — 1671 passed, 0 failures as of 2026-08-02 (was 1640 on 2026-08-01)** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); **400 dart tests (2026-08-02, +14 with the subject-picker leg, `3a08bfa`)**; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
 
 **Known contradictions to burn down (Lane 5) — five of eight burned down 2026-08-01
 (the Lane 4 pass `5c1ddaa` + hygiene commits `5102874`/`10cc802`):**
@@ -125,7 +125,8 @@ Eval-first, then plumbing, then content packs:
    2–0–1 multi-turn, the fine-tune ahead only on the Socratic-stance dimension — yet the
    fine-tune serves). *Gate: Rich rules the serving story on the receipts, per subject —
    with Lane 7's refreshed candidates in the field.*
-2. **Close the subject seams — backend DONE 2026-08-02, one app leg remains:**
+2. **Close the subject seams — ✅ DONE 2026-08-02 (backend on the spark, app leg on
+   the Mac; all seams closed):**
    ~~server normalisation~~ + ~~MCP quirk~~ (ADR-ARCH-032 D4, via Lane 2 step 2);
    ~~subject dimension on the mastery schema~~ **✅ DONE** — migration `d5a9c2e7f814`
    run against the LIVE NAS store (safety dump first; backfill verified:
@@ -136,12 +137,28 @@ Eval-first, then plumbing, then content packs:
    ~~`student-model` filters by its subject param~~ **✅ DONE + LIVE-PROVEN** (english
    → real rows, french → `{}`, whole-student XP identical; binding §2.2 carries a
    dated in-place annotation, no re-pin). Suite 1671 green.
-   **Still open: the app subject picker** (`SUBJECT_DEFAULT` becomes the fallback, as
-   its §4 designed) — **blocked on the spark: no Flutter toolchain here**; the full
-   design pass + fences + gates for the Mac session are written up in
-   [`HANDOFF-mac-app-subject-picker.md`](runbooks/HANDOFF-mac-app-subject-picker.md)
-   (2026-08-02 — start there; it grounds back to this cell and ends by updating it).
-   Also still open: subject on `topic_confidence` *reads* the planner ranks over
+   ~~the app subject picker~~ **✅ DONE 2026-08-02** (the Mac session, per
+   [`HANDOFF-mac-app-subject-picker.md`](runbooks/HANDOFF-mac-app-subject-picker.md)):
+   `SubjectStore` (ChangeNotifier, AppScope-composed, session-scoped — Rich's call)
+   with `defaultSubject` now the *fallback* exactly as SUBJECT_DEFAULT §4 designed;
+   Home renders a **visible** SegmentedButton picker even at one subject (Rich's
+   call 2026-08-02, overriding the handoff's hidden-at-one default) over the
+   client-side `availableSubjects` const (`['english']` — a server-listed offer
+   stays a later additive contract decision, once content packs exist); selection
+   threads to `startSession` + the session screen + the progress read
+   (`ProgressStore.updateSubject`, stale snapshot dropped so one subject's mastery
+   never shows under another's selection); resume keeps each session's own subject.
+   Receipts: commit `3a08bfa` on main (pushed); gates analyze clean + dart suite
+   **400/400** (was 386; +14 hermetic tests — fallback, selection threading through
+   the REAL AppScope composition [mutation-verified: an adversarial review caught
+   the production path unpinned by the first pass], picker at one and two
+   subjects) + `flutter build apk --debug` ✓; python seam
+   `test_subject_default.py` 2/2 (`defaultSubject = 'english'` verbatim); zero
+   contract-file edits. A French selection today honestly yields an empty mastery
+   map and a no-corpus session — correct until Lane 1 step 3's content packs.
+   The Mac-only extras (iOS attended walk, APK install to Lilymay's phone, live
+   contract suite re-run) were NOT run — separate acts awaiting Rich's word.
+   Still open: subject on `topic_confidence` *reads* the planner ranks over
    (deliberately unfiltered — whole-student until the content-pack lane decides
    per-subject planning).
 3. **Per-subject content packs**: prompts + Coach rubric + curriculum seed + assessment-
