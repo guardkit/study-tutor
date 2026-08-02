@@ -67,7 +67,14 @@ WORKDIR /workspace/study-tutor
 # installing study-tutor itself (its src/ isn't in the image yet) but
 # still installs nats-core via the path source above.
 COPY study-tutor/pyproject.toml study-tutor/uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+# Lane 2 step 1a (plan of record): include the [rag] extra (chromadb +
+# sentence-transformers + openai) so build_rag_providers can wire the
+# shipped data/chroma corpus instead of degrading with
+# ``rag_disabled reason=chromadb_missing``. The cache mount keeps uv's
+# wheel cache out of the layer — without it the rag stack bakes ~4.9GB
+# of duplicate wheels into the image (measured 2026-08-01).
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project --extra rag
 
 # ---------------------------------------------------------------------------
 # Layer 2 — application source + editable install
