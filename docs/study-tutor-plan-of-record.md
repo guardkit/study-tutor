@@ -37,7 +37,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01 |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
 | RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
-| Multi-subject | **Mechanism decided + informally validated, not built**: ADR-TUTOR-MULTI-SUBJECT (Accepted 2026-05-05) — ONE fine-tune + per-subject prompts + per-subject corpora; 17/17 Open WebUI probes (raw transcript, unscored); ratified load-bearing 2026-07-19 (Rich — `study-room-cosy-progression.md` §2 line 32). Everything behavioural is English-only today | the ADR; `multi-subject-validation-{prompts,results}.md` |
+| Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), app picker + remaining seams (Lane 1 step 2), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
 | Suites | **Hermetic python suite FULLY GREEN as of 2026-08-01: 1640 passed, 31 skipped, 0 failures** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
 
@@ -60,9 +60,11 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 - ~~Root README + pyproject describe an MCP-only English runtime~~ **✅ FIXED 2026-08-01**
   (`5102874`) — README leads with the monorepo/HTTP reality, MCP demoted to a legacy
   section.
-- MCP adapter writes `subject=student_id` ('lilymay') while HTTP writes 'english' (or `''`
-  when the client omits it) — parallel-session divergence between front doors. (Code —
-  Lane 1 step 2.)
+- ~~MCP adapter `subject=student_id` quirk + server persisting `''`~~ **✅ FIXED
+  2026-08-02** (ADR-ARCH-032 D4, annexed into Lane 2 step 2 as load-bearing): the MCP
+  door sends the shared default and the service normalises empty subjects at the
+  boundary — all front doors now share one `(student, subject)` resume key. Six of
+  eight contradictions burned down.
 - The 15s→90s turn-deadline change was never ratified against the contract's latency
   section. (Rich — ruling queue item 8.)
 - Citation anchors broken on 581/581 corpus chunks since 2026-05-10 — **explicitly
@@ -93,10 +95,17 @@ The recorded sequencing rule stands: *grounding before subject expansion* (rag-g
    the RAG env block + persistent pre-warmed HF cache volume; both containers recreated
    on the 1.4GB image; `event=rag_wired` proven in both deployed logs; smoke PASS 3/3
    inside the deployed `:8100` container; rollback tags kept (`pre-rag-20260802`).
-2. **Subject-scope the layer** — per-subject collections via the reserved `role_config` seam
-   in `build_rag_providers` (or a subject metadata field — one design decision), subject-keyed
-   primary-text registry, `session.subject` threaded into the coach-handover closure,
-   per-subject ingest roots (`domains/<subject>/sources/`).
+2. **Subject-scope the layer** — **✅ DONE 2026-08-02** (Rich's spec word in-session;
+   ADR-ARCH-032; merge on main; suite 1666 green, 24 new tests). The design decision:
+   **per-subject collections** (`gcse-<subject>-v1`; `gcse-english-v1` grandfathered — no
+   re-ingest), discovered at boot with per-subject sidecars + a `rag_subject_coverage`
+   boot log; `session.subject` threaded into the closure with the mandatory coverage
+   check (`no_corpus_for_subject` — never cross-subject fallback); ingest gained
+   `--subject` (derives root/collection/sidecar). Two Lane 1 seams annexed as
+   load-bearing (ADR-032 D4): the MCP `subject=student_id` quirk fixed (all front doors
+   now share one `(student, subject)` resume key) and server-boundary subject
+   normalisation (`''` never persists). New-subject path is now content-only: docling →
+   `domains/gcse-<subject>/sources/` → `ingest_corpus.py --subject <slug>` → redeploy.
 3. **Honesty constraints carried in:** selective retrieval stays (ADR-FLEET-002 — always-on
    RAG degrades the tutor); a **corpus-coverage check per subject** is mandatory (the
    partial-corpus degradation finding); AQA refusal patterns inherited at ingest AND
@@ -117,10 +126,11 @@ Eval-first, then plumbing, then content packs:
    fine-tune serves). *Gate: Rich rules the serving story on the receipts, per subject —
    with Lane 7's refreshed candidates in the field.*
 2. **Close the subject seams**: app subject picker (`SUBJECT_DEFAULT` becomes the fallback,
-   as its §4 designed); server normalises omitted subject (today persists `''`); fix the MCP
-   `subject=student_id` quirk or mark MCP superseded; `student-model` actually filters by
-   its subject param; subject dimension on `topic_confidence`/chests/catalogs from the first
-   migration (study-room §14: "a schema-day-one concern").
+   as its §4 designed); ~~server normalises omitted subject~~ + ~~the MCP
+   `subject=student_id` quirk~~ **both ✅ DONE 2026-08-02** (annexed by ADR-ARCH-032 D4 —
+   see Lane 2 step 2); still open: `student-model` actually filters by its subject param;
+   subject dimension on `topic_confidence`/chests/catalogs from the first migration
+   (study-room §14: "a schema-day-one concern").
 3. **Per-subject content packs**: prompts + Coach rubric + curriculum seed + assessment-
    objective framework per subject (only English AO1–AO6 is documented today).
    **Corpus source ruled 2026-08-01 (Rich): the family owns printed study guides, bought

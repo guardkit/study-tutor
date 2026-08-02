@@ -186,6 +186,8 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 | ADR-ARCH-028 | Self-hosted Keycloak IdP on the NAS; tailscale-cert https issuer; tailnet-only (KC-D1/D2) | Accepted (ratified 2026-07-08, `/arch-refine`; new decision, supersedes none; phase-scoped by ADR-ARCH-029) |
 | ADR-ARCH-029 | Phased productionisation: local-first build (Phase 2), cloud-native AWS + data governance (Phase 3) | Accepted (2026-07-08; annotates ADR-ARCH-015/028 with the cloud trajectory + Phase-2 portability guardrails) |
 | ADR-ARCH-030 | Gamification settlement: pure `decide()` + one `finalize_session` transaction, banked-facts model, notification-only bus | Accepted (2026-07-12; supersedes ADR-ARCH-013 — the FEAT-PO-007 runtime-shape call) |
+| ADR-ARCH-031 | Copyright posture for the friends pilot: per-account private retrieval of user-owned scans, judged under UK law | Accepted (RATIFIED by Rich 2026-08-02; gates Lane 3's uploads; ratified before the residency ADR per the S3 ladder) |
+| ADR-ARCH-032 | Subject-scoped RAG: per-subject collections (`gcse-<subject>-v1`), subject-keyed wiring, closure-level coverage check | Accepted (built + deployed 2026-08-02 on Rich's Lane 2 step 2 spec word; annexes two Lane 1 seam fixes) |
 | ADR-TUTOR-MULTI-SUBJECT | Single fine-tune, multi-subject architecture | Accepted |
 
 ## 10. Assumptions
@@ -217,7 +219,7 @@ See `ADR-ARCH-014` through `ADR-ARCH-016`.
 - `system-context.md` — C4 Level 1 diagram
 - `container.md` — C4 Level 2 diagram
 - `assumptions.yaml` — 18 captured assumptions
-- `decisions/ADR-ARCH-*.md` — 31 ADRs (through ADR-ARCH-030 + ADR-TUTOR-MULTI-SUBJECT)
+- `decisions/ADR-ARCH-*.md` — 33 ADRs (through ADR-ARCH-032 + ADR-TUTOR-MULTI-SUBJECT)
 
 ---
 
