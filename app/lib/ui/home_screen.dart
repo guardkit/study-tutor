@@ -9,6 +9,7 @@ import '../ports/session_api.dart';
 import '../ports/voice_api.dart';
 import 'app_scope.dart';
 import 'error_handling.dart';
+import '../config/app_version.dart';
 import 'formatting.dart';
 import 'gamification/progress_header_card.dart';
 import 'gamification/progress_screen.dart';
@@ -319,6 +320,16 @@ class _HomeScreenState extends State<HomeScreen> {
             FilledButton(
               onPressed: _busy ? null : _startNewSession,
               child: const Text('Start new session'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Center(
+                child: Text(
+                  'v$appVersion',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
             ),
           ],
         ),

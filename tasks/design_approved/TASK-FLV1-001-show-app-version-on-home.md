@@ -1,25 +1,26 @@
 ---
-id: TASK-FLV1-001
-title: Show the app version on the home screen
-task_type: feature
-feature_id: FEAT-FLV1
-wave: 1
-implementation_mode: task-work
 complexity: 3
-dependencies: []
 component: app
 conformance:
   ac_paths: true
   rules:
   - id: R-FLV1-UI
-    type: token_coverage
     paths:
     - app/lib/ui/home_screen.dart
     require_tokens:
-    - "appVersion"
-  - id: R-FLV1-TESTS
+    - appVersion
+    type: token_coverage
+  - command: cd app && flutter test
+    id: R-FLV1-TESTS
     type: assert_command
-    command: "cd app && flutter test"
+dependencies: []
+feature_id: FEAT-FLV1
+id: TASK-FLV1-001
+implementation_mode: task-work
+status: design_approved
+task_type: feature
+title: Show the app version on the home screen
+wave: 1
 ---
 
 # TASK-FLV1-001: Show the app version on the home screen
