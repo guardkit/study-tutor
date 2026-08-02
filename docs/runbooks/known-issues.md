@@ -48,10 +48,16 @@ Exit: fold at the next contract re-pin.
 - **Citation anchors broken on 581/581 corpus chunks** since 2026-05-10
   — explicitly deferred again by Lane 2 step 1a's receipt (Lane 2 step
   3 owns "fix or explicitly defer").
-- **Reranker constructed per call**: `retrieval._load_reranker()` builds
-  a fresh `CrossEncoder` on every `retrieve()` (~3.5s warm) before the
-  ~5s CPU rerank. Exit: instance cache before the gated 1b redeploy
-  (receipt: `RESULTS-lane2-rag-image-1a-2026-08-01.md`).
+- ~~Reranker constructed per call~~ **CLOSED 2026-08-02**: production
+  instance cache landed with the 1b merge (two hermetic tests pin it);
+  warm retrieval ~5.3s in the deployed container.
+- **Deploy env files went missing (open, low)**: the gitignored
+  `deploy/http/.env` / `.env.kc` (scp'd from the GB10 2026-07-26) were
+  absent from the spark checkout on 2026-08-02; reconstructed from the
+  running containers' env (docker inspect) for the 1b redeploy — more
+  current than the GB10 originals (those predate the spark-side edits).
+  Exit: GB10-side scp of the originals to comparison names + a diff,
+  then decide whether anything in them still matters.
 
 ---
 

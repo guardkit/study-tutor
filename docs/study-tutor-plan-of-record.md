@@ -36,7 +36,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Auth | **LIVE end-to-end** — Keycloak on the NAS `:8443`; server gate (KC-G2) and real-device gate (KC-G3) passed 2026-07-19; interim table mode retained for the robot | `HANDOFF-weekend-auth-voice-fable-window.md` §11 |
 | Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01 |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
-| RAG / retrieval | **Code-complete, DEAD in prod — but proven working end-to-end on the spark (Lane 2 1a receipt, 2026-08-01)**: the deployed image still lacks the `[rag]` extra ⇒ `rag_disabled reason=chromadb_missing`, and the 1a work found a second blocker the extra alone would NOT fix — the shipped corpus is 768-dim (`nomic-embed`-era) while the spark's llama-swap serves only the 1024-dim `embed` (Qwen3); re-embed demonstrated (581/581, ~2 min) and the quote-retrieval smoke passes 3/3 on the full path. Retrieval-off still idles the Coach revise loop | `RESULTS-lane2-rag-image-1a-2026-08-01.md` (runbooks); `Dockerfile:70`; `cli/rag_wiring.py`; TASK-RVP-001 |
+| RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
 | Multi-subject | **Mechanism decided + informally validated, not built**: ADR-TUTOR-MULTI-SUBJECT (Accepted 2026-05-05) — ONE fine-tune + per-subject prompts + per-subject corpora; 17/17 Open WebUI probes (raw transcript, unscored); ratified load-bearing 2026-07-19 (Rich — `study-room-cosy-progression.md` §2 line 32). Everything behavioural is English-only today | the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
 | Suites | **Hermetic python suite FULLY GREEN as of 2026-08-01: 1640 passed, 31 skipped, 0 failures** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
@@ -87,10 +87,12 @@ The recorded sequencing rule stands: *grounding before subject expansion* (rag-g
    the CPU-torch pin** (the CUDA wheels were dead weight; smoke passes on the CPU
    image) vs 443MB deployed; and the reranker is re-constructed per call (~6.6–9s/turn
    warm — a named pre-1b fix).
-   **(1b — gated on Rich's go)** Redeploy with the extra; prove `event=rag_wired` live
-   (the actual event name — the plan previously said `rag_enabled`) + the smoke on the
-   deployed host; store decision (bake re-embedded 1024-dim store vs re-embed at deploy
-   vs `nomic-embed` alias on llama-swap) + the receipt's pre-1b items.
+   **(1b) ✅ DONE 2026-08-02** (Rich's go given + executed same session — receipt
+   postscript in the 1a RESULTS doc): store decision = bake (1024-dim re-embed in the
+   image); reranker instance cache landed with tests (suite 1642 green); compose gained
+   the RAG env block + persistent pre-warmed HF cache volume; both containers recreated
+   on the 1.4GB image; `event=rag_wired` proven in both deployed logs; smoke PASS 3/3
+   inside the deployed `:8100` container; rollback tags kept (`pre-rag-20260802`).
 2. **Subject-scope the layer** — per-subject collections via the reserved `role_config` seam
    in `build_rag_providers` (or a subject metadata field — one design decision), subject-keyed
    primary-text registry, `session.subject` threaded into the coach-handover closure,
@@ -127,8 +129,9 @@ Eval-first, then plumbing, then content packs:
    law-4-compliant corpus path; pick the first second subject by scan effort + Lilymay's
    need. *Receipt per subject: the S1 parity definition, ending in a real session.*
 
-### Lane 4 — the copyright/fair-use posture *(gates Lane 3's uploads; S3 rung 1 — ratifies before the residency rung)*
-**DRAFT DELIVERED 2026-08-01 — awaiting Rich's ratification (the lane's gate):**
+### Lane 4 — the copyright/fair-use posture *(gated Lane 3's uploads; S3 rung 1)* — **✅ LANE DONE: RATIFIED 2026-08-02 (Rich)**
+The ADR below is Accepted; Lane 3's residency ADR may now draft and ratify (rung 2).
+**Draft delivered 2026-08-01; ratified 2026-08-02:**
 [`ADR-ARCH-031-pilot-uploads-copyright-posture.md`](architecture/decisions/ADR-ARCH-031-pilot-uploads-copyright-posture.md)
 (merge `5c1ddaa`) — honest UK-law framing (no fair-use doctrine; s29A non-commercial
 TDM only; private-copying quashed 2015; the US Bartz/Kadrey rulings recorded as
@@ -247,16 +250,16 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
 
 1. ~~Ratify the mission and this plan's lane order~~ **✅ BOTH RATIFIED 2026-08-01 (Rich,
    in-session — mission "happy to sign off"; plan "approved").**
-2. Lane 2: the `[rag]` extra go — **the 1a receipt is attached
-   (2026-08-01: [`RESULTS-lane2-rag-image-1a-2026-08-01.md`](runbooks/RESULTS-lane2-rag-image-1a-2026-08-01.md),
-   branch `lane2/rag-image-1a`)**. Headline for the ruling: smoke PASS 3/3; image
-   +0.96GB in its CPU-torch shape; the shipped store must be re-embedded at 1024-dim
-   (demonstrated) or llama-swap gains a `nomic-embed` alias; pre-1b items listed in
-   receipt §5.
+2. ~~Lane 2: the `[rag]` extra go~~ **✅ GO GIVEN + 1b EXECUTED 2026-08-02 (Rich,
+   in-session: "1b go")** — RAG is live in prod; receipts in
+   [`RESULTS-lane2-rag-image-1a-2026-08-01.md`](runbooks/RESULTS-lane2-rag-image-1a-2026-08-01.md)
+   incl. the 1b postscript.
 3. Lane 1: the serving ruling once the subject evals land — over the full field including
    Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
    2026-08-01.)*
-4. Lane 4: the copyright posture ADR.
+4. ~~Lane 4: the copyright posture ADR~~ **✅ RATIFIED 2026-08-02 (Rich, in-session:
+   "ratify ADR-ARCH-031")** — Lane 4 is done; Lane 3's residency ADR is unblocked per
+   the S3 ladder.
 5. Lane 3: the residency/governance ADR + multi-user scope + upload vehicle (web vs in-app).
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
 7. Lane 7: the teacher-dataset option + bake-off scope, once the 2×Spark DeepSeek standup

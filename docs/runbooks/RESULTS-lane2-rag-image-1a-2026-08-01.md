@@ -147,3 +147,42 @@ every retrieval HEADs huggingface.co).
   (`reembed_done count=581`; `rag_smoke_verdict pass=true` ×3 runs).
 - Size breakdown: `du -sm` inside `study-tutor:rag-1a` site-packages;
   `docker images` for the four size points.
+
+---
+
+## Postscript — 1b EXECUTED 2026-08-02 (Rich's go, ruling-queue item 2)
+
+Rich gave the 1b go in-session 2026-08-02. What shipped, in order:
+
+1. **Reranker instance cache** landed (`retrieval.py` — production
+   CrossEncoder constructed once per process; factory seam uncached;
+   two new hermetic tests). Suite: **1642 passed, 0 failures**.
+2. **Store decision taken: bake.** `data/chroma` (untracked build input)
+   now holds the 1024-dim re-embed (verified `gcse-english-v1|1024`,
+   581 chunks, sidecar intact); the 768-dim original is preserved
+   outside the build context on the spark.
+3. **Deploy config:** compose gained the RAG env block
+   (`LLM_EMBEDDINGS_MODEL=embed` is load-bearing) + a host-persisted HF
+   cache volume (`/opt/study-tutor/hf-cache`, pre-warmed 2.2GB so no
+   cold download). `HF_HUB_OFFLINE` left operator-controlled.
+4. **Found en route:** the gitignored `deploy/http/.env`/`.env.kc` had
+   gone missing from the spark checkout — reconstructed from the
+   running containers' env (docker inspect), which is more current
+   than the GB10 originals (those predate the spark-side edits).
+   Comparison against the GB10 copies pending GB10-side scp.
+5. **Deployed:** image rebuilt from merged main (1.4GB, CPU-torch
+   shape), old images tagged `pre-rag-20260802`/`kc-a2-pre-rag-20260802`
+   for rollback, both compose projects recreated.
+6. **Acceptance receipts:**
+   - `:8100` and `:8101` `/healthz` → ok.
+   - Both containers log `event=rag_wired collection=gcse-english-v1
+     persist_dir=data/chroma primary_texts=3` at boot (07:27 local).
+   - The quote-retrieval smoke run INSIDE the deployed `:8100`
+     container: **PASS 3/3**, `mode=rerank`, warm turns ~5.3s.
+   - Idle memory post-deploy: 135MiB (`:8100`) / 110MiB (`:8101`);
+     first real retrieval turn will load the cached reranker
+     (~+1.1GB resident thereafter — measured envelope in §4).
+
+RAG is LIVE in prod. Still open from §5: the fabrication-rate
+golden-quote eval (Lane 2 step 3 builds the harness — the S2 bar) and
+the citation-anchor break (deferred). Subject-scoping is Lane 2 step 2.
