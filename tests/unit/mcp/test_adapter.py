@@ -204,8 +204,11 @@ async def test_session_end_delegates_to_session_service(
     event_name, payload = captured_events[0]
     assert event_name == "session.completed"
     assert payload["session_id"] == session_id
-    # events-schema.yaml required fields (subject is the actual subject slug).
-    assert payload["subject"] == "lilymay"
+    # events-schema.yaml required fields (subject is the actual subject
+    # slug). ADR-ARCH-032 D4: the adapter now sends the shared default
+    # subject instead of the old subject=student_id quirk, so MCP-started
+    # sessions carry 'english' like every other front door.
+    assert payload["subject"] == "english"
     assert "duration_seconds" in payload
     assert "aos_touched" in payload
     assert "ended_at" in payload

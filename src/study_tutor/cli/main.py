@@ -46,8 +46,11 @@ from study_tutor.session.wiring import build_session_service, get_turn_notifier
 from study_tutor.knowledge.coach_handover import apply_quote_verification
 from study_tutor.knowledge.quote_verifier import VerifierMetadata
 from study_tutor.knowledge.retrieval import (
+    DEFAULT_SUBJECT,
+    REASON_NO_SUBJECT_CORPUS,
     decide_retrieval,
     get_last_retrieval_mode,
+    has_corpus,
     retrieve,
 )
 from study_tutor.llm.client import _default_coach_model, _default_player_model
@@ -155,6 +158,11 @@ def _build_coach_handover() -> CoachHandover:
         text_name = getattr(session_state, "text_name", None)
         focus_aos_raw = getattr(session_state, "focus_aos", ()) or ()
         focus_aos = set(focus_aos_raw)
+        # ADR-ARCH-032 D3: retrieval is keyed by the session's subject.
+        # An absent/empty subject resolves to the shared default (the
+        # service normalises at the boundary; this is the defensive
+        # second copy for session states minted before that landed).
+        subject = getattr(session_state, "subject", "") or DEFAULT_SUBJECT
 
         if not text_name:
             # Baseline-degraded plan with no text_name — verifier still
@@ -169,13 +177,33 @@ def _build_coach_handover() -> CoachHandover:
                 raw_response, [], "", retrieval_skipped_reason=None
             )
 
-        decision = decide_retrieval(text_name, focus_aos)
+        if not has_corpus(subject):
+            # The mandatory per-subject coverage check (ADR-ARCH-032 D3):
+            # a subject with no wired collection skips retrieval honestly
+            # — never a cross-subject fallback. Same envelope as every
+            # other skip: verifier still runs against empty chunks.
+            logger.info(
+                "event=orchestrator_turn_completed text_name=%s "
+                "retrieval_mode=skipped reason=%s subject=%s",
+                text_name,
+                REASON_NO_SUBJECT_CORPUS,
+                subject,
+            )
+            return apply_quote_verification(
+                raw_response,
+                [],
+                text_name,
+                retrieval_skipped_reason=REASON_NO_SUBJECT_CORPUS,
+            )
+
+        decision = decide_retrieval(text_name, focus_aos, subject=subject)
         if not decision.retrieve:
             logger.info(
                 "event=orchestrator_turn_completed text_name=%s "
-                "retrieval_mode=skipped reason=%s",
+                "retrieval_mode=skipped reason=%s subject=%s",
                 text_name,
                 decision.reason,
+                subject,
             )
             return apply_quote_verification(
                 raw_response,
@@ -188,15 +216,19 @@ def _build_coach_handover() -> CoachHandover:
         # into TurnResult so consumers can read it without parsing logs.
         # Phase 1 demo signal is the structured log line below.
         chunks = retrieve(
-            query=learner_message, text_name=text_name, focus_aos=focus_aos
+            query=learner_message,
+            text_name=text_name,
+            focus_aos=focus_aos,
+            subject=subject,
         )
         retrieval_mode = get_last_retrieval_mode()
         logger.info(
             "event=orchestrator_turn_completed text_name=%s "
-            "retrieval_mode=%s chunks=%d",
+            "retrieval_mode=%s chunks=%d subject=%s",
             text_name,
             retrieval_mode,
             len(chunks),
+            subject,
         )
         return apply_quote_verification(
             raw_response,

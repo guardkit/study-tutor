@@ -155,27 +155,43 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    # ADR-ARCH-032 D5: the subject convenience flag. When given, it
+    # derives the corpus root (domains/gcse-<subject>/sources/), the
+    # collection (gcse-<subject>-v1), and the sidecar name
+    # (.primary_text_index.<subject>; english keeps the legacy name).
+    # Explicit --domain-root / --collection-name still override.
+    parser.add_argument(
+        "--subject",
+        type=str,
+        default=None,
+        help=(
+            "Subject slug (e.g. 'english', 'french'). Derives the corpus "
+            "root, collection name, and sidecar per ADR-ARCH-032; "
+            "explicit --domain-root/--collection-name win. "
+            "Default: english."
+        ),
+    )
     parser.add_argument(
         "--domain-root",
         type=Path,
-        default=DEFAULT_DOMAIN_ROOT,
+        default=None,
         help=(
             "Path to the corpus root. Must contain four subfolders: "
             "primary_text/, secondary_study_guide/, secondary_critical/, "
-            f"context_historical/. Default: {DEFAULT_DOMAIN_ROOT}"
+            "context_historical/. Default: domains/gcse-<subject>/sources "
+            f"(with no --subject: {DEFAULT_DOMAIN_ROOT})"
         ),
     )
-    # CHROMA_COLLECTION / CHROMA_PERSIST_DIR (DECISION-RAG-001 §3.1) supply
-    # the argparse default; passing the flag at the CLI still wins. Reading
-    # the env var here (rather than later in ``main``) means ``--help``
-    # surfaces whatever the operator's environment actually resolves to.
+    # CHROMA_COLLECTION / CHROMA_PERSIST_DIR (DECISION-RAG-001 §3.1) keep
+    # their env-override meaning; resolution happens in ``main`` so the
+    # --subject derivation can participate.
     parser.add_argument(
         "--collection-name",
         type=str,
-        default=os.environ.get("CHROMA_COLLECTION", DEFAULT_COLLECTION_NAME),
+        default=None,
         help=(
-            "ChromaDB collection name. Default: $CHROMA_COLLECTION or "
-            f"{DEFAULT_COLLECTION_NAME}"
+            "ChromaDB collection name. Default: $CHROMA_COLLECTION, else "
+            f"gcse-<subject>-v1 (with no --subject: {DEFAULT_COLLECTION_NAME})"
         ),
     )
     parser.add_argument(
@@ -340,27 +356,45 @@ def _primary_text_names(chunks: Iterable[CorpusChunk]) -> list[str]:
     return sorted(names)
 
 
-def _register_primary_texts(persist_dir: Path, names: Sequence[str]) -> Path:
+def _sidecar_filename(subject: str) -> str:
+    """Sidecar name for ``subject`` (ADR-ARCH-032 D2/D5).
+
+    English keeps the legacy unsuffixed name so pre-scoping stores stay
+    readable; other subjects get ``.primary_text_index.<subject>``.
+    Mirrors ``study_tutor.cli.rag_wiring.subject_sidecar_filename`` —
+    kept as a local copy because this script must stay runnable without
+    importing CLI wiring; the ingest round-trip test pins the two
+    functions to the same values.
+    """
+    if subject == "english":
+        return PRIMARY_TEXT_INDEX_FILENAME
+    return f"{PRIMARY_TEXT_INDEX_FILENAME}.{subject}"
+
+
+def _register_primary_texts(
+    persist_dir: Path, names: Sequence[str], subject: str = "english"
+) -> Path:
     """Register each ``text_name`` in the runtime registry and write a sidecar.
 
     Two writes happen here:
 
     1. ``study_tutor.knowledge.retrieval.register_primary_text`` populates the
-       in-process module-level set that ``has_primary_text`` reads. This is
+       in-process subject-keyed index that ``has_primary_text`` reads. This is
        lost when the script exits, but it makes the script's exit invariant
        observable to any in-process caller (e.g. tests).
-    2. ``<persist_dir>/.primary_text_index`` records the registered names so
-       the runtime CLI in TASK-RAG-002 can replay the registration at
-       startup. One name per line, sorted, trailing newline.
+    2. ``<persist_dir>/<sidecar>`` records the registered names so the
+       runtime CLI in TASK-RAG-002 can replay the registration at startup.
+       One name per line, sorted, trailing newline; sidecar name per
+       :func:`_sidecar_filename`.
 
     Returns the sidecar path so callers can log it.
     """
     from study_tutor.knowledge.retrieval import register_primary_text
 
     for name in names:
-        register_primary_text(name)
+        register_primary_text(name, subject)
 
-    sidecar = persist_dir / PRIMARY_TEXT_INDEX_FILENAME
+    sidecar = persist_dir / _sidecar_filename(subject)
     sidecar.write_text("\n".join(names) + ("\n" if names else ""), encoding="utf-8")
     return sidecar
 
@@ -447,9 +481,20 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = _build_parser().parse_args(argv)
 
-    domain_root: Path = args.domain_root
+    # ADR-ARCH-032 D5 resolution order: explicit flag > env (collection
+    # only) > --subject derivation > the english defaults (which are the
+    # subject derivation for 'english' — DEFAULT_DOMAIN_ROOT and
+    # DEFAULT_COLLECTION_NAME both parse under the scheme).
+    subject: str = args.subject or "english"
+    domain_root: Path = args.domain_root or Path(
+        f"domains/gcse-{subject}/sources"
+    )
     persist_dir: Path = args.persist_dir
-    collection_name: str = args.collection_name
+    collection_name: str = (
+        args.collection_name
+        or os.environ.get("CHROMA_COLLECTION")
+        or f"gcse-{subject}-v1"
+    )
 
     try:
         result = load_corpus(domain_root)
@@ -468,7 +513,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     _upsert_chunks(collection, result.chunks)
 
     primary_names = _primary_text_names(result.chunks)
-    sidecar = _register_primary_texts(persist_dir, primary_names)
+    sidecar = _register_primary_texts(persist_dir, primary_names, subject)
 
     _emit_summary(result, primary_names, sidecar)
     return 0

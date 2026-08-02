@@ -47,7 +47,11 @@ from study_tutor.session.errors import (
     SessionNotFoundError,
 )
 from study_tutor.session.provider import get_session_service
-from study_tutor.session.service import SessionService, TutorReply
+from study_tutor.session.service import (
+    SUBJECT_DEFAULT,
+    SessionService,
+    TutorReply,
+)
 from study_tutor.session.wiring import resolve_student_id
 from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
 from study_tutor.tutoring.session_end import EventBus
@@ -208,12 +212,19 @@ class MCPAdapter:
         # S-R3 §2.1 / D14: planning now lives in SessionService.start_session
         # (under the 2.0s budget/degrade boundary, keyed by the ownership
         # identity). The adapter is a thin skin: it delegates and projects the
-        # service's plan into the MCP ``plan_summary`` shape. ``student_id`` (the
-        # tool arg / subject slug) is passed as ``topic``-less ``subject``; the
-        # learner override rides on ``topic``.
+        # service's plan into the MCP ``plan_summary`` shape; the learner
+        # override rides on ``topic``.
+        #
+        # ADR-ARCH-032 D4: this door previously sent ``subject=student_id``
+        # (the tool arg, e.g. 'lilymay') — a quirk that keyed MCP sessions
+        # on a parallel ``(student, 'lilymay')`` row and, under
+        # subject-scoped retrieval, would silently skip retrieval for every
+        # MCP session (no corpus is keyed by a student name). It now sends
+        # the shared default, so all front doors resume the same
+        # ``(student, subject)`` session.
         result = await self._session_service.start_session(
             student_id=identity,
-            subject=student_id,
+            subject=SUBJECT_DEFAULT,
             topic=topic_override,
         )
         session_id = result.session_id

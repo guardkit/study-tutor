@@ -96,6 +96,18 @@ from study_tutor.tutoring.session_end import (
 logger = logging.getLogger(__name__)
 
 
+# The backend's copy of the SUBJECT_DEFAULT contract's one value
+# (docs/design/contracts/SUBJECT_DEFAULT.md). ADR-ARCH-032 D4: the
+# service normalises an omitted/empty subject to this at the boundary so
+# ``(student, subject)`` session keying and subject-scoped retrieval
+# always see a real subject. Equal by contract to the app's
+# ``defaultSubject``, fleet-gateway's ``DEFAULT_SUBJECT``, and
+# ``knowledge.retrieval.DEFAULT_SUBJECT`` (kept as a separate literal
+# there — knowledge must not import session); the SUBJECT_DEFAULT seam
+# test pins them all to the same string.
+SUBJECT_DEFAULT: str = "english"
+
+
 # ---------------------------------------------------------------------------
 # Planner-hoist configuration (S-R3 §2.1 — relocated from mcp/adapter.py)
 # ---------------------------------------------------------------------------
@@ -485,7 +497,19 @@ class SessionService:
         ``opening_prompt`` is NOT persisted — it rides back in the plan on the
         result only. ``topic`` (the learner-supplied value) is the planner's
         override; the persisted/returned topic is the plan's chosen topic.
+
+        ADR-ARCH-032 D4: an omitted/empty ``subject`` normalises to
+        :data:`SUBJECT_DEFAULT` at this boundary — the row never persists
+        ``''``, so ``(student, subject)`` resume keying and subject-scoped
+        retrieval always see a real subject.
         """
+        if not subject:
+            logger.info(
+                "event=subject_normalised student_id=%s subject=%s",
+                student_id,
+                SUBJECT_DEFAULT,
+            )
+            subject = SUBJECT_DEFAULT
         store = self._resolve_store()
 
         # Plan under the outer budget/degrade boundary. Keyed by the ownership
