@@ -39,7 +39,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
 | Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), app picker + remaining seams (Lane 1 step 2), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
-| Suites | **Hermetic python suite FULLY GREEN as of 2026-08-01: 1640 passed, 31 skipped, 0 failures** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
+| Suites | **Hermetic python suite FULLY GREEN — 1671 passed, 0 failures as of 2026-08-02 (was 1640 on 2026-08-01)** — the standing `whitestocks`-string scope-guard failure was closed by de-hostifying the auth-test fixtures (`10cc802`); 386 dart tests; the 35-test live contract suite last receipted green 2026-07-05 (re-run still due — the app's 2026-08-01 `turnsSince` change realigned it) | suite run 2026-08-01 (this session); mirror-lane run records 2026-07-31/08-01; p2 acceptance 2026-07-05 |
 
 **Known contradictions to burn down (Lane 5) — five of eight burned down 2026-08-01
 (the Lane 4 pass `5c1ddaa` + hygiene commits `5102874`/`10cc802`):**
@@ -125,12 +125,25 @@ Eval-first, then plumbing, then content packs:
    2–0–1 multi-turn, the fine-tune ahead only on the Socratic-stance dimension — yet the
    fine-tune serves). *Gate: Rich rules the serving story on the receipts, per subject —
    with Lane 7's refreshed candidates in the field.*
-2. **Close the subject seams**: app subject picker (`SUBJECT_DEFAULT` becomes the fallback,
-   as its §4 designed); ~~server normalises omitted subject~~ + ~~the MCP
-   `subject=student_id` quirk~~ **both ✅ DONE 2026-08-02** (annexed by ADR-ARCH-032 D4 —
-   see Lane 2 step 2); still open: `student-model` actually filters by its subject param;
-   subject dimension on `topic_confidence`/chests/catalogs from the first migration
-   (study-room §14: "a schema-day-one concern").
+2. **Close the subject seams — backend DONE 2026-08-02, one app leg remains:**
+   ~~server normalisation~~ + ~~MCP quirk~~ (ADR-ARCH-032 D4, via Lane 2 step 2);
+   ~~subject dimension on the mastery schema~~ **✅ DONE** — migration `d5a9c2e7f814`
+   run against the LIVE NAS store (safety dump first; backfill verified:
+   `topic_confidence` keyed `(student, subject, topic)`, history/misconception
+   subject-stamped, achievement NULLable per §14's W1-whole-student rule; future
+   chest/catalog tables inherit the dimension from their own first migration, as §14
+   wrote); settlement + completion bank mastery writes under the session's subject;
+   ~~`student-model` filters by its subject param~~ **✅ DONE + LIVE-PROVEN** (english
+   → real rows, french → `{}`, whole-student XP identical; binding §2.2 carries a
+   dated in-place annotation, no re-pin). Suite 1671 green.
+   **Still open: the app subject picker** (`SUBJECT_DEFAULT` becomes the fallback, as
+   its §4 designed) — **blocked on the spark: no Flutter toolchain here**; it needs an
+   attended run on the Mac checkout (`app/lib/ui/home_screen.dart` `defaultSubject`
+   becomes the fallback for a selected-subject state sent on `startSession`; the seam
+   test pins the constant; hermetic gate = `flutter analyze && flutter test` + apk).
+   Also still open: subject on `topic_confidence` *reads* the planner ranks over
+   (deliberately unfiltered — whole-student until the content-pack lane decides
+   per-subject planning).
 3. **Per-subject content packs**: prompts + Coach rubric + curriculum seed + assessment-
    objective framework per subject (only English AO1–AO6 is documented today).
    **Corpus source ruled 2026-08-01 (Rich): the family owns printed study guides, bought
