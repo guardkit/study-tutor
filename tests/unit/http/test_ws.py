@@ -437,7 +437,16 @@ def fake_voice_service():
     voice_service.audio_client.transcribe = AsyncMock(
         return_value="what is a metaphor"
     )
+    voice_service.audio_client.synthesize = AsyncMock(return_value=b"RIFFwav")
     return voice_service
+
+
+@pytest.fixture
+def chunk_store():
+    """Real in-memory ChunkStore (cheap) for the audio_ref composition."""
+    from study_tutor.voice.service import ChunkStore
+
+    return ChunkStore(ttl_seconds=120, max_entries=16)
 
 
 class TestVoiceTurnFrameDispatch:
@@ -449,6 +458,7 @@ class TestVoiceTurnFrameDispatch:
         voice_config_wav,
         fake_student_store,
         fake_voice_service,
+        chunk_store,
     ) -> None:
         """Header+binary → transcript frame FIRST, then the turn's token/done
         stream, with the transcript threaded in as the learner message."""
@@ -457,7 +467,7 @@ class TestVoiceTurnFrameDispatch:
 
         async def fake_turn_stream(**kwargs: Any) -> AsyncIterator[TurnEvent]:
             captured.update(kwargs)
-            yield TurnEvent(type="token", text="A metaphor ")
+            yield TurnEvent(type="token", text="A metaphor compares directly.")
             yield TurnEvent(type="done", turn_index=1)
 
         service.turn_stream = fake_turn_stream
@@ -466,6 +476,7 @@ class TestVoiceTurnFrameDispatch:
             auth_config=auth_config,
             voice_config=voice_config_wav,
             voice_service=fake_voice_service,
+            chunk_store=chunk_store,
             student_store=fake_student_store,
             service=service,
             reply_fn_factory=lambda **kwargs: AsyncMock(),
@@ -492,10 +503,19 @@ class TestVoiceTurnFrameDispatch:
 
                 second = ws.receive_json()
                 assert second["type"] == "token"
-                assert second["text"] == "A metaphor "
+                assert second["text"] == "A metaphor compares directly."
 
+                # ADR-ARCH-027 composition: the completed (pre-verified)
+                # sentence synthesizes and its audio_ref frame arrives
+                # before done (§7 Rev 1).
                 third = ws.receive_json()
-                assert third["type"] == "done"
+                assert third["type"] == "audio_ref"
+                assert third["seq"] == 0
+                assert third["chunk_id"]
+                assert third["url"].startswith("/api/sessions/sess-123/voice-audio/")
+
+                fourth = ws.receive_json()
+                assert fourth["type"] == "done"
 
         # The transcript fed the turn as the learner message.
         assert captured["user_message"] == "what is a metaphor"
@@ -507,6 +527,7 @@ class TestVoiceTurnFrameDispatch:
         fake_student_store,
         fake_session_service,
         fake_voice_service,
+        chunk_store,
     ) -> None:
         """An invalid voice frame yields an error frame and the channel stays
         open — a text turn on the same connection still streams (ASSUM-003
@@ -515,6 +536,7 @@ class TestVoiceTurnFrameDispatch:
             auth_config=auth_config,
             voice_config=voice_config_wav,
             voice_service=fake_voice_service,
+            chunk_store=chunk_store,
             student_store=fake_student_store,
             service=fake_session_service,
             reply_fn_factory=lambda **kwargs: AsyncMock(),

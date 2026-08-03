@@ -24,13 +24,24 @@ from study_tutor.voice.errors import VoiceUnavailable
 logger = logging.getLogger(__name__)
 
 
+#: Cap on the total words synthesized per turn — parity with the HTTP
+#: voice path's TTS_MAX_PIECES_PER_TURN(2) × TTS_MAX_WORDS_PER_CHUNK(120)
+#: wall-time budget (voice/service.py): synthesis is serial behind the
+#: TTS server's model lock, so unbounded per-sentence pieces would let a
+#: long reply stall the stream past the app's 90s deadline. Text keeps
+#: streaming after the cap; only audio stops (the on-screen tail carries
+#: the rest — same envelope as the HTTP path).
+DEFAULT_MAX_SPOKEN_WORDS = 240
+
+
 async def stream_with_audio_refs(
     *,
     token_stream: AsyncIterator[TurnEvent],
     session_id: str,
     audio_client: AudioClient,
     chunk_store: ChunkStore,
-    verifier: Callable[[str], Any],
+    verifier: Callable[[str], Any] | None,
+    max_spoken_words: int = DEFAULT_MAX_SPOKEN_WORDS,
 ) -> AsyncIterator[TurnEvent]:
     """Stream turn events with audio_ref frames for verified sentence chunks.
 
@@ -46,7 +57,15 @@ async def stream_with_audio_refs(
         session_id: Session identifier for chunk storage scoping.
         audio_client: AudioClient for text-to-speech synthesis.
         chunk_store: ChunkStore for in-memory audio chunk storage.
-        verifier: Quote verification callable (from TASK-VS2-002 contract).
+        verifier: Quote verification callable (from TASK-VS2-002 contract),
+            or ``None`` when the upstream token stream is ALREADY verified
+            at the sentence boundary (ADR-ARCH-027 —
+            ``run_turn_stream_verified`` emits verified deltas, so a
+            second verification here would be pure duplication; the
+            chunk released for synthesis is the accumulated tail as-is).
+        max_spoken_words: Total words synthesized per turn before audio
+            emission stops (text continues) — see
+            :data:`DEFAULT_MAX_SPOKEN_WORDS`.
 
     Yields:
         TurnEvent frames: original events plus audio_ref frames for each chunk.
@@ -69,9 +88,23 @@ async def stream_with_audio_refs(
     last_released_pos = 0
     chunk_seq = 0
     tts_failed = False  # Flag to stop audio_ref emission after first failure
+    spoken_words = 0
 
     # Buffer for current sentence
     sentence_buffer = ""
+
+    def _next_chunk() -> str | None:
+        """The releasable chunk under the verifier-mode + word-cap rules."""
+        if spoken_words >= max_spoken_words:
+            return None
+        if verifier is None:
+            # Upstream already verified at the sentence boundary
+            # (ADR-ARCH-027) — release the accumulated tail as-is.
+            chunk = accumulated_text[last_released_pos:].rstrip()
+            return chunk if chunk else None
+        return _verify_and_get_chunk(
+            accumulated_text, last_released_pos, verifier
+        )
 
     async for event in token_stream:
         # Pass through non-token events immediately
@@ -80,9 +113,7 @@ async def stream_with_audio_refs(
             if event.type == "done" and sentence_buffer.strip() and not tts_failed:
                 # Final sentence
                 accumulated_text += sentence_buffer
-                verified_chunk = _verify_and_get_chunk(
-                    accumulated_text, last_released_pos, verifier
-                )
+                verified_chunk = _next_chunk()
 
                 if verified_chunk:
                     audio_ref = await _synthesize_and_store(
@@ -113,10 +144,7 @@ async def stream_with_audio_refs(
             # Update accumulated text
             accumulated_text += sentence_buffer
 
-            # Verify and get chunk
-            verified_chunk = _verify_and_get_chunk(
-                accumulated_text, last_released_pos, verifier
-            )
+            verified_chunk = _next_chunk()
 
             if verified_chunk:
                 # Synthesize and emit audio_ref
@@ -132,6 +160,7 @@ async def stream_with_audio_refs(
                     yield audio_ref
                     chunk_seq += 1
                     last_released_pos = len(accumulated_text)
+                    spoken_words += len(verified_chunk.split())
                 else:
                     # TTS failed
                     tts_failed = True

@@ -63,6 +63,17 @@ class _StreamingOrchestrator:
         ):
             yield token
 
+    async def run_turn_stream_verified(
+        self, *, session_state: Any, learner_message: str
+    ) -> AsyncIterator[str]:
+        # The production factory drives the ADR-ARCH-027 verified stream;
+        # this e2e pins service wiring + persistence, not verification —
+        # identity pass-through keeps the token flow observable.
+        async for token in self.run_turn_stream_tokens(
+            session_state=session_state, learner_message=learner_message
+        ):
+            yield token
+
 
 @pytest.fixture
 def role_config(tmp_path):

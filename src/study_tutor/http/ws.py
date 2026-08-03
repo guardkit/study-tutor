@@ -23,6 +23,7 @@ from study_tutor.session.errors import (
     Unauthenticated,
 )
 from study_tutor.session.service import SessionService, TurnEvent
+from study_tutor.voice.streaming_tts import stream_with_audio_refs
 from study_tutor.voice.ws_voice_turn import handle_voice_turn_frame
 
 logger = logging.getLogger(__name__)
@@ -207,7 +208,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
                 voice_config = getattr(websocket.app.state, "voice_config", None)
                 voice_service = getattr(websocket.app.state, "voice_service", None)
-                if voice_config is None or voice_service is None:
+                chunk_store = getattr(websocket.app.state, "chunk_store", None)
+                if voice_config is None or voice_service is None or chunk_store is None:
                     # /ws is only mounted with voice enabled, so this is a
                     # wiring fault, not a client error — non-terminal, per
                     # the handler's VoiceUnavailable posture.
@@ -241,12 +243,25 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         )
 
                     try:
-                        async for event in handle_voice_turn_frame(
+                        # ADR-ARCH-027 composition: the turn stream's
+                        # tokens are already verified sentence deltas
+                        # (run_turn_stream_verified), so the audio layer
+                        # runs verifier-free — it synthesizes each
+                        # released sentence and emits audio_ref frames
+                        # interleaved with the token flow (§7 Rev 1).
+                        voice_events = handle_voice_turn_frame(
                             audio_bytes=audio_bytes,
                             content_type=content_type,
                             config=voice_config,
                             audio_client=voice_service.audio_client,
                             turn_stream_fn=_turn_stream,
+                        )
+                        async for event in stream_with_audio_refs(
+                            token_stream=voice_events,
+                            session_id=session_id,
+                            audio_client=voice_service.audio_client,
+                            chunk_store=chunk_store,
+                            verifier=None,
                         ):
                             if event.type == "transcript":
                                 transcript_holder["text"] = event.text or ""

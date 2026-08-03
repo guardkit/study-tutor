@@ -394,6 +394,7 @@ class PlayerCoachOrchestrator:
         coach: CoachLike,
         quote_verifier: QuoteVerifierLike | None = None,
         coach_handover: CoachHandover | None = None,
+        turn_verifier_factory: Callable[..., Any] | None = None,
         on_flag: Callable[[str, dict[str, Any]], Awaitable[None] | None] | None = None,
         latency_budget_seconds: float = LATENCY_BUDGET_SECONDS,
         max_revision_attempts: int = MAX_REVISION_ATTEMPTS,
@@ -443,6 +444,12 @@ class PlayerCoachOrchestrator:
         self._coach = coach
         self._quote_verifier = quote_verifier
         self._coach_handover = coach_handover
+        # ADR-ARCH-027: ``(learner_message, session_state) → verify(text)``
+        # for the sentence-boundary streaming path. Retrieval happens once
+        # inside the factory call; the returned verifier is cheap per call.
+        # ``None`` keeps run_turn_stream_verified unavailable (callers use
+        # the raw-token stream, pre-ADR-027 behaviour).
+        self._turn_verifier_factory = turn_verifier_factory
         self._on_flag = on_flag
         self._latency_budget_seconds = latency_budget_seconds
         self._max_revision_attempts = max_revision_attempts
@@ -810,6 +817,143 @@ class PlayerCoachOrchestrator:
             session_state=session_state,
             learner_message=learner_message,
             player_response=verified_response,
+            verifier_metadata=metadata,
+        )
+
+    async def run_turn_stream_verified(
+        self,
+        session_state: Any,
+        learner_message: str,
+    ) -> AsyncIterator[str]:
+        """Yield VERIFIED sentence deltas for the WS turn path (ADR-ARCH-027).
+
+        The ratified streaming shape: Player tokens buffer into sentence
+        chunks (:func:`~study_tutor.voice.verified_stream.releasable_prefix_len`
+        — sentence terminator + balanced quotes, the straddle guard), and
+        each chunk passes quote verification scoped to the text
+        accumulated so far BEFORE its tokens are emitted. What this method
+        yields is therefore safe to display AND to synthesize; the caller
+        (``SessionService.turn_stream``) persists exactly what was
+        yielded, so the stored transcript is the verified text too.
+
+        Verifier construction (which performs the turn's ONE retrieval)
+        runs on a worker thread started before generation, so the ~5s
+        warm-retrieval cost overlaps the Player's first tokens instead of
+        preceding them. Per-boundary verification against the fetched
+        chunks is milliseconds.
+
+        After the stream drains, the final verified full text and its
+        metadata dispatch the async Coach — the same end-of-turn
+        semantics as :meth:`run_turn_stream_tokens` (ADR-ARCH-026 D1),
+        with the raw-tokens leak closed.
+
+        Raises:
+            OrchestratorConfigurationError: If no ``turn_verifier_factory``
+                was wired — the verified path cannot silently degrade to
+                emitting raw tokens (that would invert ADR-ARCH-027).
+        """
+        if self._turn_verifier_factory is None:
+            raise OrchestratorConfigurationError(
+                "run_turn_stream_verified requires turn_verifier_factory "
+                "(ADR-ARCH-027) — wire it or use run_turn_stream_tokens"
+            )
+
+        from study_tutor.voice.verified_stream import releasable_prefix_len
+
+        # Hoist verifier construction (the turn's one retrieval) onto a
+        # thread, overlapping Player generation.
+        verifier_task = asyncio.create_task(
+            asyncio.to_thread(
+                self._turn_verifier_factory, learner_message, session_state
+            )
+        )
+
+        accumulated_raw = ""
+        released_raw_len = 0
+        released_verified_len = 0
+        verify: Callable[[str], tuple[str, Any]] | None = None
+        metadata: Any = None
+        verified_full = ""
+
+        async def _release(upto_raw: int) -> str | None:
+            """Verify accumulated_raw[:upto_raw]; return the new verified delta.
+
+            Returns ``None`` on verifier exception (fail-closed: nothing
+            new is released; the final full-text pass decides the turn).
+            """
+            nonlocal verify, metadata, verified_full, released_raw_len
+            nonlocal released_verified_len
+            if verify is None:
+                verify = await verifier_task
+            candidate_verified, candidate_meta = verify(
+                accumulated_raw[:upto_raw]
+            )
+            metadata = candidate_meta
+            if getattr(candidate_meta, "verifier_exception", False):
+                # Fail-closed per chunk (ADR-ARCH-027 / D3): hold release.
+                logger.warning(
+                    "verified_stream.chunk_verification_exception",
+                    extra={"released_raw_len": released_raw_len},
+                )
+                return None
+            if not candidate_verified.startswith(
+                verified_full[:released_verified_len]
+            ):
+                # Defensive: the balanced-quote boundary rule should make
+                # verification prefix-stable; a rewrite crossing an
+                # already-released boundary is a bug signal. Fail closed.
+                logger.error(
+                    "verified_stream.released_prefix_rewritten",
+                    extra={"released_verified_len": released_verified_len},
+                )
+                return None
+            verified_full = candidate_verified
+            delta = verified_full[released_verified_len:]
+            released_raw_len = upto_raw
+            released_verified_len = len(verified_full)
+            return delta if delta else None
+
+        try:
+            async for token in self._player.respond_stream(  # type: ignore[attr-defined]
+                session_state=session_state,
+                learner_message=learner_message,
+            ):
+                accumulated_raw += token
+                boundary = releasable_prefix_len(accumulated_raw)
+                if boundary > released_raw_len:
+                    delta = await _release(boundary)
+                    if delta is not None:
+                        yield delta
+        finally:
+            # Never leak the verifier thread on cancellation/failure.
+            if not verifier_task.done():
+                verifier_task.cancel()
+
+        # Final pass over the complete raw text — releases the tail (and,
+        # after a fail-closed chunk, everything held back), and produces
+        # the metadata the async Coach consumes.
+        if verify is None:
+            verify = await verifier_task
+        final_verified, metadata = verify(accumulated_raw)
+        if final_verified.startswith(verified_full[:released_verified_len]):
+            tail = final_verified[released_verified_len:]
+        else:
+            # Released prefix diverged (same defensive case as above):
+            # the already-shown text cannot be retracted; append nothing
+            # beyond the verified remainder computed from raw length to
+            # avoid duplicating shown content, and log loudly.
+            logger.error(
+                "verified_stream.final_prefix_rewritten",
+                extra={"released_verified_len": released_verified_len},
+            )
+            tail = ""
+        if tail:
+            yield tail
+
+        self._dispatch_async_coach(
+            session_state=session_state,
+            learner_message=learner_message,
+            player_response=final_verified,
             verifier_metadata=metadata,
         )
 
