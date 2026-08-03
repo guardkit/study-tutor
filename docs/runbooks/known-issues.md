@@ -28,10 +28,6 @@ section.
   (receipt: `RESULTS-spark-live-robot-session-mirror-2026-07-31.md`,
   Stage 0 review). Exit: make the fixture order-independent in that
   feature file's scope.
-- **Live contract suite re-run due**: the 35-test live suite was last
-  receipted green 2026-07-05; the app's 2026-08-01 `turnsSince` change
-  realigned it. Exit: an operator-attended re-run against the spark
-  (plan Lane 5 step 2).
 
 ### Mirror-lane advisories (2026-07-31, non-blocking coach notes)
 
@@ -61,6 +57,16 @@ Exit: fold at the next contract re-pin.
   the ADR-027 composition, then merge the branch + audio leg together.
   **Division of labour (standing, 2026-08-03): Mac session = `app/`
   client track only; spark session = server side.**
+  **Client leg DONE 2026-08-03 (`fa8d95b`, Mac)**: the adapter now
+  speaks ratified §7 verbatim (it consumed a private dialect —
+  `token{token}`/`audio_part`/`turn_complete` vs the ratified
+  `token{text}`/`audio_ref`/`done` — undetected because the fakes speak
+  events, not wire frames; pinned by a real-socket §7 conversation
+  test), and a voice turn can no longer strand: stream-end-without-done
+  and stream-gone-silent both take the batch safety net (two widget
+  tests pin the strand shapes; the live three-dots hang is dead). The
+  phone is dependable on the batch path; when the parked server branch
+  merges, the client is already conformant.
 - **TTS is the dominant voice-turn cost (~10-12s per audio piece, up to
   2 pieces/turn)** on the HTTP path — all pieces returned 200 in the
   2026-08-03 window (the ≤120-word split design works; no ReadTimeouts,
