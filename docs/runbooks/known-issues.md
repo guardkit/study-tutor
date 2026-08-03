@@ -21,7 +21,26 @@ section.
   (`idp-test.tail0000.ts.net` / `100.100.100.100`), which also honours
   the guard's actual point — unit tests shouldn't name production
   hosts.
-- **Fixture-ordering artifact (open)**: running the durable-cross-device
+- **The live suite pollutes AND wipes the real store (open, HIGH —
+  found by Rich's 2026-08-03 evening walk)**: `test_live` signs in as
+  the REAL primary student (dev-table `lilymay`) and (1) leaves stray
+  sessions behind — the shared contract bodies start `subject: 'maths'`
+  sessions (s4/s9), two of which survived the 48/48 run's last reset;
+  the server's planner gave them real topics, so the app's new
+  disclosure card rendered one as "Continue: Dramatic Irony In Macbeth"
+  and Rich resumed a leftover TEST session believing it was Lilymay's
+  (empty transcript, subject Maths — every app behaviour was correct
+  over polluted data); and (2) its `reset()` calls `__dev__/reset`,
+  which TRUNCATES the entire session+turn store for ALL students —
+  today's three runs deleted all session history before ~16:56Z
+  (learner-state — XP/streak/confidence — is spared by the route;
+  Lilymay's evening session postdates the last reset and survives;
+  recovery of older transcripts = NAS nightly dumps, operator call).
+  Exit: a dedicated suite student in the dev table + a per-student
+  reset (server side, spark) and the suite re-pointed at it + ending
+  its own sessions (app side, Mac); until that lands the live suite is
+  STRICTLY operator-attended and understood to wipe session history —
+  never run it casually against a store anyone cares about.
   feature file **standalone** fails
   `test_redelivering_the_same_completed_session…`; green in full-suite
   order and reproduces at the pre-S0 baseline — not a product bug

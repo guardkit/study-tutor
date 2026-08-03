@@ -1,5 +1,16 @@
 # test_live — the contract suite against the real adapter
 
+> **⚠ DESTRUCTIVE + POLLUTING on a shared store (2026-08-03 finding).**
+> This suite signs in as the REAL primary student (`token-lilymay`) and its
+> `reset()` calls `POST /__dev__/reset`, which **truncates the ENTIRE
+> session+turn store for all students** (learner-state XP/streak/confidence
+> survive). It also leaves stray test sessions behind (the shared bodies
+> start `subject: 'maths'` sessions) that then surface on the app's Home as
+> real-looking cards. Until the dedicated-suite-student + per-student-reset
+> exit lands (known-issues, Test-suite artifacts), treat every run as an
+> operator-attended act that DELETES session history — never run it against
+> a store anyone cares about without saying so first.
+
 The same 35 test bodies as `test/contract/` (imported from there, not
 copied), run through `LiveContractBackend` against a deployed GB10 HTTP
 adapter. This directory is **outside the default `flutter test` tree** — the
