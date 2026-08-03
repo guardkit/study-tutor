@@ -45,26 +45,13 @@ Exit: fold at the next contract re-pin.
 
 ### Voice (found by the 2026-08-03 live-suite run + phone walk)
 
-- **The app's streaming WebSocket path is wrong (open, app-side defect)**:
-  binding §2.1 (frozen) mounts the stream at
-  `GET /api/sessions/{session_id}/ws` and the server serves exactly that;
-  `app/lib/adapters/http_voice_api.dart` (`_wsUri`, ~line 213) connects
-  to `/api/sessions/{id}/voice_turn` — Starlette closes unrouted WS
-  upgrades with 403, the app silently falls back to the non-streaming
-  HTTP voice POST, and **streaming has never worked live on any device**
-  (prior "streaming" walk claims observed the graceful fallback).
-  Receipt: spark `:8100` logs 2026-08-03 ~12:17-12:20 — three
-  `WebSocket ... /voice_turn" 403` lines, one per turn, each followed by
-  the HTTP fallback succeeding. Exit: one-line app fix to the binding's
-  path + a hermetic test pinning the §2.1 path string (Mac checkout —
-  Flutter gates).
 - **TTS is the dominant voice-turn cost (~10-12s per audio piece, up to
   2 pieces/turn)** on the HTTP path — all pieces returned 200 in the
   2026-08-03 window (the ≤120-word split design works; no ReadTimeouts,
-  no model-swap kills observed). With the WS path fixed, perceived
-  latency should drop to transcript-then-streamed-text; synthesis cost
-  itself is a serving-side follow-up (the ~150-word voice reply cap is
-  already a named deferral).
+  no model-swap kills observed). With the WS path fixed (`049f17c`),
+  perceived latency should drop to transcript-then-streamed-text;
+  synthesis cost itself is a serving-side follow-up (the ~150-word voice
+  reply cap is already a named deferral).
 - **`background Coach evaluation failed (non-fatal)`** logged once
   2026-08-03 12:19:24 — response delivered; unchased, noted for a look.
 
