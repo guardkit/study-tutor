@@ -18,6 +18,7 @@ import 'live_session_screen.dart';
 import 'progress_store.dart';
 import 'session_screen.dart';
 import 'settings_screen.dart';
+import 'start_fresh_sheet.dart';
 import 'subject_store.dart';
 import 'theme_controller.dart';
 
@@ -180,14 +181,89 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _startNewSession() async {
     if (_busy) return;
-    setState(() => _busy = true);
     // Read the selection once for the whole start: the session and its screen
     // must agree on the subject even if the picker changes mid-flight.
     final subject = _subjectStore?.selectedSubject ?? defaultSubject;
+
+    // Lilymay's 2026-08-03 "switched to Macbeth" defect (Rich's ruling: full
+    // app fix): an active session for this subject must never be resumed
+    // SILENTLY by a start. Gate on SERVER truth, not the in-memory list —
+    // the cache can be stale (cold start, a failed initial refresh, a
+    // session the robot or another device started since), and a stale gate
+    // silently bypassed the sheet (review finding, 2026-08-03).
+    setState(() => _busy = true);
     try {
-      final started =
-          await widget.sessionApi.startSession(subject: subject);
+      final fresh =
+          await widget.sessionApi.listSessions(status: SessionStatus.active);
       if (!mounted) return;
+      setState(() => _active = fresh);
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
+      return;
+    } on TransportError {
+      // The truth is unknowable right now — never start blind against a
+      // possibly-active session.
+      if (!mounted) return;
+      await showConnectionProblem(context);
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+
+    final active = _active.where((s) => s.subject == subject).firstOrNull;
+    if (active != null) {
+      await _offerStartChoice(active, subject);
+      return;
+    }
+    await _startPlannerPick(subject);
+  }
+
+  /// The disclosure sheet (Rich's ruling): Continue the active session by
+  /// name, or end it and start fresh on the learner's own topic.
+  Future<void> _offerStartChoice(SessionSummary active, String subject) async {
+    final choice = await showStartFreshSheet(
+      context,
+      active: active,
+      knownTopics: _store?.model?.topicConfidence.keys.toList() ?? const [],
+    );
+    if (!mounted || choice == null) return;
+    switch (choice) {
+      case ContinueActive():
+        await _resume(active);
+      case StartFresh(:final topic):
+        await _startFresh(active, subject, topic);
+    }
+  }
+
+  /// Start with the planner picking the topic. `resume_if_active: true` is
+  /// the server-truth backstop: if a session re-activated between the fresh
+  /// list and this call (cross-device), the server RESUMES instead of
+  /// creating a second active (student, subject) session — and `resumed`
+  /// routes it into the disclosure sheet rather than opening it silently.
+  /// With no active match the server creates, exactly as before.
+  Future<void> _startPlannerPick(String subject) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final started = await widget.sessionApi.startSession(
+        subject: subject,
+        resumeIfActive: true,
+      );
+      if (!mounted) return;
+      if (started.resumed) {
+        setState(() => _busy = false);
+        await _refresh();
+        if (!mounted) return;
+        final active =
+            _active.where((s) => s.subject == subject).firstOrNull;
+        if (active != null) {
+          await _offerStartChoice(active, subject);
+          return;
+        }
+        // Vanished between resume and re-list (ended elsewhere) — fall
+        // through and open what the server gave us, transcript intact.
+      }
       await _open(SessionScreen(
         identity: widget.identity,
         sessionApi: widget.sessionApi,
@@ -208,6 +284,65 @@ class _HomeScreenState extends State<HomeScreen> {
       // `_busy` resets in `finally`.
       if (!mounted) return;
       await showConnectionProblem(context);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// End [active] and start a fresh session, with [topic] as the learner's
+  /// override (null → the planner picks). Both verbs already exist (§5);
+  /// the pair replaces the silent (student, subject) resume with explicit
+  /// learner intent.
+  Future<void> _startFresh(
+    SessionSummary active,
+    String subject,
+    String? topic,
+  ) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      try {
+        await widget.sessionApi.endSession(active.sessionId);
+      } on SessionApiException {
+        // Already ended (or gone) elsewhere — the goal state is reached.
+        // Never discard the learner's typed topic over it (review finding).
+      }
+      if (!mounted) return;
+      // The row is dead either way: drop it NOW so a start failure below
+      // can't leave Home re-offering "Continue" on an ended session
+      // (review finding: end lands, start throws, stale card).
+      setState(
+        () => _active.removeWhere((s) => s.sessionId == active.sessionId),
+      );
+      final started = await widget.sessionApi
+          .startSession(subject: subject, topic: topic);
+      if (!mounted) return;
+      await _open(SessionScreen(
+        identity: widget.identity,
+        sessionApi: widget.sessionApi,
+        voiceApi: widget.voiceApi,
+        sessionId: started.sessionId,
+        subject: subject,
+        initialTurns: started.turns ?? const [],
+        voiceRecorder: VoiceRecorder(),
+        player: JustAudioPlayback(),
+        progressStore: _store,
+        streamVoice: true,
+      ));
+    } on Unauthenticated {
+      if (!mounted) return;
+      routeToSignIn(context, widget.identity, widget.sessionApi, widget.voiceApi);
+    } on TransportError {
+      // The end may have landed while the start did not — the re-list in
+      // `finally`'s caller path (pull-to-refresh) recovers; stay home.
+      if (!mounted) return;
+      await showConnectionProblem(context);
+    } on SessionApiException {
+      // The active session vanished elsewhere (ended on another device):
+      // shared surface, then re-list so the stale row drops.
+      if (!mounted) return;
+      await showCantOpenSession(context);
+      if (mounted) await _refresh();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -397,12 +532,24 @@ class _HomeScreenState extends State<HomeScreen> {
           titleCaseSubject(summary.subject),
           style: theme.textTheme.titleMedium,
         ),
-        subtitle: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${summary.turnCount} turns'),
-            Text(
-              '  ·  ${relativeTime(summary.lastActivity)}',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            // Never a silent resume: the card says what the session is ABOUT
+            // (the planner-pinned topic), not just its subject.
+            if (summary.topic != null && summary.topic!.trim().isNotEmpty)
+              Text(
+                'Continue: ${titleCaseSubject(summary.topic)}',
+                style: theme.textTheme.bodyMedium,
+              ),
+            Row(
+              children: [
+                Text('${summary.turnCount} turns'),
+                Text(
+                  '  ·  ${relativeTime(summary.lastActivity)}',
+                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
             ),
           ],
         ),
