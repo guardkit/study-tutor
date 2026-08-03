@@ -8,6 +8,7 @@
 @Timeout(Duration(minutes: 5))
 library;
 
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -119,10 +120,13 @@ class LiveVoiceContractBackend implements VoiceContractBackend {
 
   @override
   Uint8List get sampleAudio {
-    // Minimal valid MP4/AAC audio for live testing (the live server actually
-    // processes this through STT, so it needs to be a valid audio format).
-    // Using a tiny silent MP4 AAC — real codec params preserved.
-    return _generateMinimalMp4Aac();
+    // A REAL spoken AAC-LC recording ("What is a metaphor?", ~1s, mono) so
+    // the bytes match the declared content type below. The old inline "WAV
+    // bytes declared as mp4" fallback passed the GB10-era STT (which sniffed
+    // bytes) but the spark's parakeet server trusts the declaration and
+    // rejects the mismatch — found 2026-08-03 when the whole live voice
+    // suite failed as VoiceUnavailable against a healthy STT.
+    return File('test_live/fixtures/sample_question.m4a').readAsBytesSync();
   }
 
   @override
@@ -137,25 +141,6 @@ class LiveVoiceContractBackend implements VoiceContractBackend {
   Matcher expectedAnswer() =>
       allOf(isA<String>(), isNotEmpty); // Live LLM returns real answer
 
-  /// Generate a minimal valid MP4/AAC audio file (tiny silent recording).
-  /// The live STT will process this and return a transcript (possibly empty
-  /// or "no speech detected", but it won't reject the format).
-  Uint8List _generateMinimalMp4Aac() {
-    // Minimal MP4 container with AAC audio track (simplified structure).
-    // This is a bare-bones MP4 file that most decoders will accept.
-    // In a real implementation, we'd use a pre-recorded sample file.
-    // For now, we'll use a minimal WAV as a fallback (the server should
-    // accept common formats).
-    return Uint8List.fromList([
-      // WAV header (44 bytes) + minimal PCM data
-      0x52, 0x49, 0x46, 0x46, 0x28, 0x00, 0x00, 0x00, // RIFF header
-      0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74, 0x20, // WAVE fmt
-      0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, // PCM, mono
-      0x44, 0xAC, 0x00, 0x00, 0x88, 0x58, 0x01, 0x00, // 44100 Hz
-      0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, // 16-bit, data chunk
-      0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 4 bytes of silence
-    ]);
-  }
 }
 
 /// Skip condition: live tutor unavailable (no API_BASE_URL or unreachable).

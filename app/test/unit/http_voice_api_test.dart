@@ -3,7 +3,9 @@
 //
 // Contract (design §6.4): field 'audio'; filename extension matches captured
 // codec; Content-Type preserves codec params exactly as recorded; bearer present.
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -441,6 +443,62 @@ void main() {
         api.fetchAudioChunk('unknown', 'chunk-123'),
         throwsA(isA<SessionNotFoundError>()),
       );
+    });
+  });
+
+  group('§2.1 WS route pin — the URL the production stream actually opens', () {
+    // The client opened /api/sessions/{id}/voice_turn from 2026-07 until
+    // 2026-08-03; the binding (§2.1) and the server mount /ws. Starlette
+    // 403-closed every live upgrade and the app fell back silently to the
+    // non-streaming POST, so streaming never ran live and no hermetic test
+    // noticed — the fakes accepted whatever path the client asked for. This
+    // pin drives the REAL voiceTurnStream at a real local socket and asserts
+    // the upgrade line itself (the picker review's mutation lesson: pin the
+    // production path, not just the adapter shape).
+    test('voiceTurnStream upgrades on /api/sessions/{id}/ws with bearer auth',
+        () async {
+      String? upgradePath;
+      String? authHeader;
+      final upgraded = Completer<void>();
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((request) async {
+        upgradePath = request.uri.path;
+        authHeader = request.headers.value('authorization');
+        final socket = await WebSocketTransformer.upgrade(request);
+        await socket.close();
+        upgraded.complete();
+      });
+
+      final identity = FakeIdentityProvider();
+      await identity.signIn();
+      final api = HttpVoiceApi(
+        baseUrl: 'http://127.0.0.1:${server.port}',
+        identity: identity,
+      );
+
+      // Drain the stream; the server closes right after the upgrade, so the
+      // stream ends (or surfaces a voice/transport error) — the pin is the
+      // upgrade request itself, captured above.
+      try {
+        await api
+            .voiceTurnStream(
+              'abc123',
+              Uint8List.fromList([1, 2, 3]),
+              contentType: 'audio/mp4; codecs=mp4a.40.2',
+            )
+            .drain<void>();
+      } on Object {
+        // Close-after-upgrade may surface as an error; irrelevant to the pin.
+      }
+      await upgraded.future;
+      await server.close(force: true);
+
+      expect(upgradePath, '/api/sessions/abc123/ws',
+          reason: 'binding §2.1 mounts the stream at /ws — the client must '
+              'open exactly this path (it opened /voice_turn until '
+              '2026-08-03 and every live upgrade was 403-closed)');
+      expect(authHeader, startsWith('Bearer '),
+          reason: '§2.1: bearer auth rides the upgrade request');
     });
   });
 }

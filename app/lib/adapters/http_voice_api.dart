@@ -208,9 +208,15 @@ class HttpVoiceApi implements VoiceApi {
     Uint8List audio, {
     required String contentType,
   }) async* {
-    // Build WebSocket URI from base URL (http→ws, https→wss)
+    // Build WebSocket URI from base URL (http→ws, https→wss). The route is
+    // binding §2.1's `GET /api/sessions/{session_id}/ws` — NOT the HTTP
+    // voice_turn path. The client opened `/voice_turn` from 2026-07 until
+    // 2026-08-03: Starlette 403-closed the unrouted upgrade and the app fell
+    // back silently to the non-streaming POST, so live streaming never ran
+    // (spark log finding, 2026-08-03). Pinned by the §2.1 path test in
+    // test/unit/http_voice_api_test.dart.
     final wsUri = _wsUri(
-      '/api/sessions/${Uri.encodeComponent(sessionId)}/voice_turn',
+      '/api/sessions/${Uri.encodeComponent(sessionId)}/ws',
     );
 
     IOWebSocketChannel? channel;
