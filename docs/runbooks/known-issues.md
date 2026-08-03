@@ -41,6 +41,30 @@ Exit: fold at the next contract re-pin.
 
 ### Voice (found by the 2026-08-03 live-suite run + phone walk)
 
+- **The planned session silently overrides the learner's intended text
+  (open, product/UX — Lilymay's first session found it, 2026-08-03)**:
+  she and Rich believed they were doing An Inspector Calls; the ACTIVE
+  session (b1eec0dc) had been planner-pinned to "dramatic irony in
+  Macbeth" (her weakest topic), and "starting a session on An Inspector
+  Calls" silently RESUMED it — one active session per (student, subject)
+  by design (D8 cross-device pickup). Every turn then retrieved MACBETH
+  chunks and framed prompts around Macbeth, so "give me an example"
+  produced a Macbeth example mid-AIC-conversation. Contract behaved as
+  written; the experience hid it. Exit (needs Rich's product ruling):
+  (a) app surfaces the active session's planned topic/text prominently
+  ("Continue: Dramatic irony in Macbeth" vs "Start fresh on…" which
+  ends-then-starts with the learner's topic override — both verbs
+  already exist); (b) longer-term, per-turn text-following is a Lane 1
+  content-pack-era design question, noted not built.
+- ~~Streamed think-block leak~~ **CLOSED 2026-08-03 (same session's
+  turn 11 receipt)**: respond_stream buffered the full generation (fake
+  streaming) then re-yielded RAW tokens through a per-token marker check
+  defeated by tokenization ('<th'+'ink>') — reasoning streamed to the
+  learner and into the store. Fixed by _IncrementalThinkFilter (true
+  incremental release, canonical-strip parity, split-marker guards,
+  stricter-than-batch on mid-response danglers); 7 tests incl. the
+  production token-split case; deployed + post-deploy WS smoke clean.
+
 - ~~Voice STREAMING unfinished three-deep~~ **CLOSED 2026-08-03**:
   ADR-ARCH-027 implemented as ratified (`513bc70`, merged + deployed) —
   sentence-boundary verification before tokens are shown/spoken/persisted
