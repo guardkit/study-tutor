@@ -49,8 +49,12 @@ Exit: fold at the next contract re-pin.
   sentence (240-spoken-word cap, HTTP-path parity), voice dispatch live
   in `/ws`. Live receipt: WS voice turn on prod — transcript 0.2s, first
   verified sentence 1.9s, its audio 3.2s, 4 audio pieces interleaved,
-  done 15.6s, verdict PASS. Device re-walk pending the fa8d95b-client
-  APK install.
+  done 15.6s, verdict PASS. Mac follow-through 2026-08-03: the Samsung's
+  installed APK verified byte-identical to the fa8d95b tree (no
+  reinstall needed) and the live suite gained a §7 verified-streaming
+  case through the app's REAL adapter — full suite 48/48 in one run.
+  Remaining: Rich's attended streaming walk (ears on the interleaved
+  audio).
 - **TTS is the dominant voice-turn cost (~10-12s per audio piece, up to
   2 pieces/turn)** on the HTTP path — all pieces returned 200 in the
   2026-08-03 window (the ≤120-word split design works; no ReadTimeouts,

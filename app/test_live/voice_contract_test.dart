@@ -209,6 +209,49 @@ void main() {
     );
 
     test(
+      '§7 VERIFIED STREAMING over the live /ws: transcript first, '
+      'token/audio_ref interleave, terminal done',
+      () async {
+        // Mirrors the 2026-08-03 prod smoke through the app's REAL adapter:
+        // ADR-ARCH-027 verified streaming — sentence chunks verified before
+        // their tokens/audio surface, §7 frame order end to end.
+        final events = <VoiceTurnEvent>[];
+        await for (final event in backend.voiceApi.voiceTurnStream(
+          sessionId,
+          backend.sampleAudio,
+          contentType: backend.sampleContentType,
+        )) {
+          events.add(event);
+          if (event is TurnCompleteEvent) break;
+        }
+
+        expect(events.first, isA<TranscriptEvent>(),
+            reason: '§7: transcript is the FIRST frame (STT confirmation)');
+        expect(
+          (events.first as TranscriptEvent).transcript.trim(),
+          isNotEmpty,
+          reason: 'the spoken fixture transcribes to real text',
+        );
+        expect(events.whereType<TextTokenEvent>(), isNotEmpty,
+            reason: 'verified sentence tokens stream (ADR-ARCH-027 order)');
+        expect(events.whereType<AudioPartEvent>(), isNotEmpty,
+            reason: '§7 audio_ref frames interleave per synthesized sentence');
+        expect(events.last, isA<TurnCompleteEvent>(),
+            reason: "§7's terminal done closes the turn");
+
+        // §7: audio chunks are FETCHED via voice_audio (`url` is advisory) —
+        // a streamed ref must resolve to real bytes.
+        final firstAudio = events.whereType<AudioPartEvent>().first;
+        final bytes = await backend.voiceApi
+            .fetchAudioChunk(sessionId, firstAudio.chunkId);
+        expect(bytes, isNotEmpty);
+      },
+      skip: _liveTutorUnavailable
+          ? 'Live tutor unavailable (no API_BASE_URL)'
+          : null,
+    );
+
+    test(
       'bearer auth required for voice turns',
       () async {
         // Sign out to remove bearer token, then attempt voice turn
