@@ -43,6 +43,20 @@ corrected by addendum text rather than rewritten; the §7
 freeze-discipline point feeds the ruling-3 re-pin discretion on push.
 Exit: fold at the next contract re-pin.
 
+### Voice (found by the 2026-08-03 live-suite run)
+
+- **`VoiceConfig.from_env` code defaults are a trap (open, low)**: with env
+  unset they resolve to the retired GB10 host
+  (`http://promaxgb10-41b1:9000/v1`) and the GB10-era model aliases
+  (`parakeet-tdt`/`qwen3-tts`) the spark's llama-swap does not register —
+  exactly what silently broke every voice turn from the 2026-07-26 spark
+  move until 2026-08-03 (the deploy env now pins
+  `parakeet-tdt-0.6b-v3`/`qwen3-tts-0.6b` explicitly, so the defaults are
+  currently unreachable in prod). Exit: change the code defaults to the
+  spark-era values (their doctests pin the old ones — update together),
+  or make empty model names fail loud at boot instead of degrading per
+  turn.
+
 ### Retrieval (Lane 2 receipts, 2026-08-01)
 
 - **Citation anchors broken on 581/581 corpus chunks** since 2026-05-10
