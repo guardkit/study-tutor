@@ -41,32 +41,16 @@ Exit: fold at the next contract re-pin.
 
 ### Voice (found by the 2026-08-03 live-suite run + phone walk)
 
-- **Voice STREAMING is unfinished three-deep — server leg PARKED on
-  branch `voice/ws-voice-dispatch` pending Rich's design ruling**: the
-  four-surface audit (Mac) + the spark's server pass found (1) the WS
-  voice handler (`handle_voice_turn_frame`) was never mounted into
-  `/ws` — now wired with endpoint tests on the branch (pushed, NOT
-  merged/deployed; suite 1673 green there); (2) `stream_with_audio_refs`
-  (audio_ref emission) has no callers anywhere; (3) its token handling
-  emits tokens UNVERIFIED where ADR-ARCH-027's ratified decision
-  requires sentence chunks verified BEFORE tokens are emitted/spoken —
-  and that verifier composition needs session context (text_name,
-  subject-scoped retrieval) the ws layer doesn't hold. Deploying the
-  dispatch alone would stream text with SILENT voice turns — worse than
-  the client's clean HTTP fallback. Exit: a design pass to Rich choosing
-  the ADR-027 composition, then merge the branch + audio leg together.
-  **Division of labour (standing, 2026-08-03): Mac session = `app/`
-  client track only; spark session = server side.**
-  **Client leg DONE 2026-08-03 (`fa8d95b`, Mac)**: the adapter now
-  speaks ratified §7 verbatim (it consumed a private dialect —
-  `token{token}`/`audio_part`/`turn_complete` vs the ratified
-  `token{text}`/`audio_ref`/`done` — undetected because the fakes speak
-  events, not wire frames; pinned by a real-socket §7 conversation
-  test), and a voice turn can no longer strand: stream-end-without-done
-  and stream-gone-silent both take the batch safety net (two widget
-  tests pin the strand shapes; the live three-dots hang is dead). The
-  phone is dependable on the batch path; when the parked server branch
-  merges, the client is already conformant.
+- ~~Voice STREAMING unfinished three-deep~~ **CLOSED 2026-08-03**:
+  ADR-ARCH-027 implemented as ratified (`513bc70`, merged + deployed) —
+  sentence-boundary verification before tokens are shown/spoken/persisted
+  (balanced-quote straddle guard; one retrieval per turn, hoisted onto a
+  thread under generation), audio_ref synthesis composed per verified
+  sentence (240-spoken-word cap, HTTP-path parity), voice dispatch live
+  in `/ws`. Live receipt: WS voice turn on prod — transcript 0.2s, first
+  verified sentence 1.9s, its audio 3.2s, 4 audio pieces interleaved,
+  done 15.6s, verdict PASS. Device re-walk pending the fa8d95b-client
+  APK install.
 - **TTS is the dominant voice-turn cost (~10-12s per audio piece, up to
   2 pieces/turn)** on the HTTP path — all pieces returned 200 in the
   2026-08-03 window (the ≤120-word split design works; no ReadTimeouts,
