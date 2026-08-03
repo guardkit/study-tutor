@@ -273,7 +273,15 @@ class HttpVoiceApi implements VoiceApi {
             _throwWireErrorFromType(errorType, errorMessage);
           }
 
-          // Map frame type to event
+          // Map frame type to event. The wire names are contract §7 Rev 1
+          // VERBATIM — `token{text}`, `audio_ref{seq, chunk_id, url}`, and
+          // terminal `done{turn_index}`. This client consumed a private
+          // dialect (`token{token}`/`audio_part`/`turn_complete`) until
+          // 2026-08-03: nothing caught it because the fakes spoke the same
+          // dialect and the WS path bug meant no live frame ever arrived.
+          // Pinned by the §7 conversation test in
+          // test/unit/http_voice_api_test.dart — change nothing here without
+          // reading contract §7.
           switch (type) {
             case 'transcript':
               final text = json['text'] as String? ?? '';
@@ -281,15 +289,17 @@ class HttpVoiceApi implements VoiceApi {
               yield TranscriptEvent(transcript: text, isFinal: isFinal);
 
             case 'token':
-              final token = json['token'] as String? ?? '';
+              final token = json['text'] as String? ?? '';
               yield TextTokenEvent(token: token);
 
-            case 'audio_part':
+            case 'audio_ref':
+              // §7: audio is FETCHED via the voice_audio route from chunk_id
+              // (the `url` field is advisory); played in `seq` order.
               final seq = json['seq'] as int? ?? 0;
               final chunkId = json['chunk_id'] as String? ?? '';
               yield AudioPartEvent(seq: seq, chunkId: chunkId);
 
-            case 'turn_complete':
+            case 'done':
               yield const TurnCompleteEvent();
               await channel.sink.close();
               return;

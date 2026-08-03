@@ -3,6 +3,7 @@
 // arrive live — replacing the batch "Recording sent…" wall. Also covers the
 // batch fallback (stream error → the existing voiceTurn safety net) and that
 // batch stays the default when the streamVoice gate is off.
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,37 @@ import 'package:study_tutor_app/fakes/fake_session_api.dart';
 import 'package:study_tutor_app/fakes/fake_voice_api.dart';
 import 'package:study_tutor_app/ports/voice_api.dart';
 import 'package:study_tutor_app/ui/session_screen.dart';
+
+/// A stream that ends mid-turn WITHOUT §7's terminal `done` and throws
+/// nothing — the server-closed-mid-turn shape that stranded the typing
+/// indicator on the 2026-08-03 live walk. Batch stays canned via the parent.
+class NoDoneVoiceApi extends FakeVoiceApi {
+  @override
+  Stream<VoiceTurnEvent> voiceTurnStream(
+    String sessionId,
+    Uint8List audio, {
+    required String contentType,
+  }) async* {
+    yield TranscriptEvent(
+      transcript: 'What is the quadratic formula?',
+      isFinal: true,
+    );
+    yield TextTokenEvent(token: 'Half an ');
+  }
+}
+
+/// A stream that stays open but never emits — the silent-stall strand shape.
+class StalledVoiceApi extends FakeVoiceApi {
+  final _controller = StreamController<VoiceTurnEvent>();
+
+  @override
+  Stream<VoiceTurnEvent> voiceTurnStream(
+    String sessionId,
+    Uint8List audio, {
+    required String contentType,
+  }) =>
+      _controller.stream;
+}
 
 /// Records playback invocations without touching platform channels.
 class MockAudioPlayback implements AudioPlayback {
@@ -46,6 +78,7 @@ void main() {
     AudioPlayback? player,
     bool streamVoice = true,
     String sessionId = 'test-session',
+    Duration streamEventTimeout = const Duration(seconds: 90),
   }) {
     return MaterialApp(
       home: SessionScreen(
@@ -56,6 +89,7 @@ void main() {
         voiceRecorder: FakeVoiceRecorder(),
         player: player,
         streamVoice: streamVoice,
+        streamEventTimeout: streamEventTimeout,
       ),
     );
   }
@@ -157,6 +191,51 @@ void main() {
         find.widgetWithIcon(IconButton, Icons.mic),
       );
       expect(mic.onPressed, isNotNull);
+    });
+
+    testWidgets('a stream that ends WITHOUT the terminal done falls back to '
+        'batch — never a stranded turn (2026-08-03 live strand)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeScreen(voice: NoDoneVoiceApi(), player: MockAudioPlayback()),
+      );
+
+      await doVoiceTurn(tester);
+      await tester.pumpAndSettle();
+
+      // The batch safety net committed the turn; nothing half-streamed left.
+      expect(find.text('What is the quadratic formula?'), findsOneWidget);
+      expect(
+        find.textContaining("Let's break that down together"),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('streaming-answer')), findsNothing);
+      final mic = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.mic),
+      );
+      expect(mic.onPressed, isNotNull,
+          reason: 'no permanently-stuck typing indicator');
+    });
+
+    testWidgets('a stream that goes silent hits the event timeout and falls '
+        'back to batch', (tester) async {
+      await tester.pumpWidget(makeScreen(
+        voice: StalledVoiceApi(),
+        player: MockAudioPlayback(),
+        streamEventTimeout: const Duration(milliseconds: 200),
+      ));
+
+      await doVoiceTurn(tester);
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining("Let's break that down together"),
+        findsOneWidget,
+        reason: 'the stall is bounded by streamEventTimeout, then batch runs',
+      );
+      expect(find.byKey(const Key('streaming-answer')), findsNothing);
     });
 
     testWidgets('a stream VoiceUnavailable falls back to batch, which surfaces '

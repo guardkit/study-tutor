@@ -32,6 +32,7 @@ class SessionScreen extends StatefulWidget {
     this.clock,
     this.progressStore,
     this.streamVoice = false,
+    this.streamEventTimeout = const Duration(seconds: 90),
   });
 
   final IdentityProvider identity;
@@ -46,6 +47,15 @@ class SessionScreen extends StatefulWidget {
   /// whenever streaming is off, or whenever the stream errors out. Defaults to
   /// false so batch is the default; the composed app opts in (main → home).
   final bool streamVoice;
+
+  /// Maximum gap between streamed events before the turn is declared stalled
+  /// and handed to the batch safety net. Matches the voice-turn budget (90s):
+  /// a healthy stream ticks far more often (tokens), so a gap this long means
+  /// the server died mid-turn. Injectable so tests don't wait 90 real
+  /// seconds. Added 2026-08-03 after the live three-dots strand: a WS that
+  /// closed without §7's terminal `done` (or simply went quiet) left the
+  /// typing indicator up forever with no fallback.
+  final Duration streamEventTimeout;
 
   /// The app-wide student-model store (spec §6.2). Refreshed after a settled
   /// end so the Home header/Progress screen reflect the new totals. Null in
@@ -490,8 +500,26 @@ class _SessionScreenState extends State<SessionScreen>
       audio,
       contentType: 'audio/m4a',
     );
+    // Tracks §7's terminal `done`: a stream that ENDS without it (server
+    // closed mid-turn, no error frame) must take the same safety net as a
+    // thrown error — before 2026-08-03 it stranded the typing indicator
+    // forever. The per-moveNext timeout covers the other strand shape: a
+    // stream that stays open but goes silent. Pulled via StreamIterator with
+    // a single-shot Future.timeout per event — Stream.timeout's per-event
+    // forwarding machinery defers events under the widget-test fake clock
+    // (empirically: the happy-path loop never exits), where a plain
+    // completer-vs-timer race behaves under both clocks.
+    var completed = false;
+    final iterator = StreamIterator<VoiceTurnEvent>(stream);
     try {
-      await for (final event in stream) {
+      while (true) {
+        final hasNext = await iterator.moveNext().timeout(
+          widget.streamEventTimeout,
+          onTimeout: () =>
+              throw const TransportError('voice stream stalled'),
+        );
+        if (!hasNext) break;
+        final event = iterator.current;
         if (!mounted) return;
         switch (event) {
           case TranscriptEvent(:final transcript, :final isFinal):
@@ -514,16 +542,29 @@ class _SessionScreenState extends State<SessionScreen>
             // Start playing this part now — do not block token consumption.
             unawaited(_enqueueStreamAudio(chunkId));
           case TurnCompleteEvent():
+            completed = true;
             _commitStreamedTurn();
         }
       }
     } catch (_) {
-      // Stream error / unavailability: fall back to the batch safety net.
+      // Stream error / unavailability / stall-timeout: fall back to the
+      // batch safety net.
       if (!mounted) return;
       await _fallbackToBatch(audio);
       return;
     } finally {
+      // Releases the underlying WS on every exit path (a stalled stream's
+      // subscription would otherwise outlive the turn). Deliberately not
+      // awaited: cancel() on an already-done iterator never completes under
+      // the widget-test clock, and nothing here depends on its completion.
+      unawaited(iterator.cancel());
       if (mounted) setState(() => _sending = false);
+    }
+    if (!completed) {
+      // The stream ended without §7's terminal `done` and threw nothing —
+      // same safety net, never a stranded turn.
+      if (!mounted) return;
+      await _fallbackToBatch(audio);
     }
   }
 

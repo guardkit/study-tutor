@@ -500,5 +500,79 @@ void main() {
       expect(authHeader, startsWith('Bearer '),
           reason: '§2.1: bearer auth rides the upgrade request');
     });
+
+    // Contract §7 Rev 1, both directions, VERBATIM strings. Until 2026-08-03
+    // the client consumed a private dialect (token{token} / audio_part /
+    // turn_complete) instead of the ratified token{text} / audio_ref / done —
+    // undetected because the fakes speak events (not wire frames) and the WS
+    // path bug meant no live frame ever arrived. This conversation runs the
+    // REAL adapter against a real local socket speaking the ratified frames.
+    test('§7 conversation: ratified frames in → events out; header+binary sent',
+        () async {
+      final received = <dynamic>[];
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((request) async {
+        final socket = await WebSocketTransformer.upgrade(request);
+        socket.listen((message) {
+          received.add(message);
+          if (received.length == 2) {
+            socket.add(jsonEncode({
+              'type': 'transcript',
+              'text': 'what is a metaphor',
+              'is_final': true,
+            }));
+            socket.add(jsonEncode({'type': 'token', 'text': 'A metaphor '}));
+            socket.add(jsonEncode({'type': 'token', 'text': 'compares.'}));
+            socket.add(jsonEncode({
+              'type': 'audio_ref',
+              'seq': 0,
+              'chunk_id': 'c-0',
+              'url': '/api/sessions/s1/voice-audio/c-0',
+            }));
+            socket.add(jsonEncode({'type': 'done', 'turn_index': 3}));
+          }
+        });
+      });
+
+      final identity = FakeIdentityProvider();
+      await identity.signIn();
+      final api = HttpVoiceApi(
+        baseUrl: 'http://127.0.0.1:${server.port}',
+        identity: identity,
+      );
+
+      final events = await api
+          .voiceTurnStream(
+            's1',
+            Uint8List.fromList([9, 9]),
+            contentType: 'audio/mp4; codecs=mp4a.40.2',
+          )
+          .toList();
+      await server.close(force: true);
+
+      // Client → server: the §7 header frame verbatim, then ONE binary frame.
+      final header = jsonDecode(received[0] as String);
+      expect(header, {
+        'type': 'voice_turn',
+        'content_type': 'audio/mp4; codecs=mp4a.40.2',
+        'size_bytes': 2,
+      });
+      expect(received[1], [9, 9],
+          reason: '§7: exactly one binary frame carries the clip');
+
+      // Server → client: the ratified frames map to the event set, in order.
+      expect(events, hasLength(5));
+      expect((events[0] as TranscriptEvent).transcript, 'what is a metaphor');
+      expect((events[1] as TextTokenEvent).token, 'A metaphor ',
+          reason: "§7 token frames carry the text in field 'text'");
+      expect((events[2] as TextTokenEvent).token, 'compares.');
+      final audio = events[3] as AudioPartEvent;
+      expect(audio.seq, 0);
+      expect(audio.chunkId, 'c-0',
+          reason: "§7's audio frame is 'audio_ref' (not the old dialect's "
+              "'audio_part'); the chunk is fetched via voice_audio");
+      expect(events[4], isA<TurnCompleteEvent>(),
+          reason: "§7's terminal frame is 'done' (not 'turn_complete')");
+    });
   });
 }
