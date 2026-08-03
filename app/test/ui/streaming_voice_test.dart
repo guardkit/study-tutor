@@ -47,6 +47,65 @@ class StalledVoiceApi extends FakeVoiceApi {
       _controller.stream;
 }
 
+/// A player whose playSequential does not complete until the test opens its
+/// gate — models a piece that is still audibly playing (Rich's 2026-08-03
+/// walk: pieces are 8–15s of audio, frames arrive ~3s apart).
+class GatedAudioPlayback implements AudioPlayback {
+  final List<List<Uint8List>> played = [];
+  final List<Completer<void>> gates = [];
+  int stopCalls = 0;
+
+  @override
+  Future<void> playSequential(List<Uint8List> chunks) {
+    played.add(chunks);
+    final gate = Completer<void>();
+    gates.add(gate);
+    return gate.future;
+  }
+
+  @override
+  Future<void> stop() async => stopCalls++;
+
+  @override
+  Future<void> dispose() async {}
+}
+
+/// Emits two audio_ref pieces (then done); chunk-a's FETCH can be delayed
+/// past chunk-b's to model the fetch-completion race the frame-order pin
+/// closes.
+class TwoAudioRefVoiceApi extends FakeVoiceApi {
+  TwoAudioRefVoiceApi({this.chunkAFetchDelay = Duration.zero});
+
+  final Duration chunkAFetchDelay;
+
+  @override
+  Stream<VoiceTurnEvent> voiceTurnStream(
+    String sessionId,
+    Uint8List audio, {
+    required String contentType,
+  }) async* {
+    yield TranscriptEvent(
+      transcript: 'What is the quadratic formula?',
+      isFinal: true,
+    );
+    yield TextTokenEvent(token: 'Answer ');
+    yield AudioPartEvent(seq: 0, chunkId: 'chunk-a');
+    yield AudioPartEvent(seq: 1, chunkId: 'chunk-b');
+    yield const TurnCompleteEvent();
+  }
+
+  @override
+  Future<Uint8List> fetchAudioChunk(String sessionId, String chunkId) async {
+    if (chunkId == 'chunk-a') {
+      if (chunkAFetchDelay > Duration.zero) {
+        await Future<void>.delayed(chunkAFetchDelay);
+      }
+      return Uint8List.fromList([0xA]);
+    }
+    return Uint8List.fromList([0xB]);
+  }
+}
+
 /// Records playback invocations without touching platform channels.
 class MockAudioPlayback implements AudioPlayback {
   final List<List<Uint8List>> played = [];
@@ -191,6 +250,69 @@ void main() {
         find.widgetWithIcon(IconButton, Icons.mic),
       );
       expect(mic.onPressed, isNotNull);
+    });
+
+    testWidgets('a second audio_ref queues behind the playing piece — it '
+        'NEVER interrupts (2026-08-03 walk: piece 2 cut piece 1 off)', (
+      tester,
+    ) async {
+      final player = GatedAudioPlayback();
+      await tester.pumpWidget(
+        makeScreen(voice: TwoAudioRefVoiceApi(), player: player),
+      );
+
+      await doVoiceTurn(tester);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Both frames have arrived and fetched; piece 1 is mid-play (its gate
+      // is still shut). Piece 2 must be waiting, not playing.
+      expect(player.played, hasLength(1),
+          reason: 'the second piece waits for the first to FINISH');
+      expect(player.played.single.single, [0xA]);
+
+      // Piece 1 finishes → piece 2 plays, in order.
+      player.gates[0].complete();
+      await tester.pump();
+      await tester.pump();
+      expect(player.played, hasLength(2));
+      expect(player.played[1].single, [0xB]);
+
+      player.gates[1].complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('audio plays in FRAME order even when the first fetch '
+        'completes second', (tester) async {
+      final player = GatedAudioPlayback();
+      await tester.pumpWidget(makeScreen(
+        voice: TwoAudioRefVoiceApi(
+          chunkAFetchDelay: const Duration(milliseconds: 300),
+        ),
+        player: player,
+      ));
+
+      await doVoiceTurn(tester);
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // chunk-b's fetch has landed; chunk-a's is still in flight. Nothing
+      // may play yet — frame order, not fetch-completion order.
+      expect(player.played, isEmpty,
+          reason: 'a later piece that fetched first must still wait its turn');
+
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(player.played, hasLength(1));
+      expect(player.played.single.single, [0xA],
+          reason: 'piece 1 plays first regardless of fetch timing');
+
+      player.gates[0].complete();
+      await tester.pump();
+      await tester.pump();
+      expect(player.played[1].single, [0xB]);
+
+      player.gates[1].complete();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('a stream that ends WITHOUT the terminal done falls back to '

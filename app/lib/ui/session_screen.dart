@@ -124,11 +124,18 @@ class _SessionScreenState extends State<SessionScreen>
   /// (null before the first token / when no streaming turn is mid-flight).
   String? _streamingAnswer;
 
-  /// Fetched audio chunks awaiting sequential playback during a streaming turn,
-  /// with a single-drainer guard so overlapping [AudioPartEvent]s still play
-  /// back-to-back through the existing [AudioPlayback.playSequential].
-  final List<Uint8List> _streamAudioQueue = [];
-  bool _streamDraining = false;
+  /// Streaming audio pipeline (§7 `audio_ref`): each arriving frame gets a
+  /// SLOT in arrival order (wire order == the frame's `seq` order on the
+  /// ordered socket) and its chunk is fetched immediately (concurrent —
+  /// chunk-store reads stay at frame time, well inside the TTL); a single
+  /// worker PLAYS the slots strictly serially, never starting a piece
+  /// before the previous one finished. Rich's 2026-08-03 streaming walk
+  /// heard piece 2 cut piece 1 off (frames ~3s apart vs 8–15s of audio per
+  /// piece): the old shape raced fetch completions straight into the play
+  /// queue. A failed fetch completes its slot null and is skipped — a
+  /// dropped piece never breaks the turn (the text is already shown).
+  final List<Completer<Uint8List?>> _streamAudioPending = [];
+  bool _streamAudioPlaying = false;
 
   /// Dismissible banner state (spec §3: themed MaterialBanner replaces the
   /// hardcoded amber/red containers).
@@ -540,7 +547,7 @@ class _SessionScreenState extends State<SessionScreen>
             _scrollToBottom();
           case AudioPartEvent(:final chunkId):
             // Start playing this part now — do not block token consumption.
-            unawaited(_enqueueStreamAudio(chunkId));
+            _admitStreamAudio(chunkId);
           case TurnCompleteEvent():
             completed = true;
             _commitStreamedTurn();
@@ -599,6 +606,10 @@ class _SessionScreenState extends State<SessionScreen>
   /// during streaming, so a clean reset is enough before the batch send takes
   /// over (its own success/error handling paints the final result).
   Future<void> _fallbackToBatch(Uint8List audio) async {
+    // Drop queued streamed audio and silence the current piece — the batch
+    // retry replays the WHOLE answer's audio; overlap would double-speak.
+    _streamAudioPending.clear();
+    await widget.player?.stop();
     setState(() {
       _streamTranscript = null;
       _streamingAnswer = null;
@@ -612,30 +623,43 @@ class _SessionScreenState extends State<SessionScreen>
   /// [AudioPlayback.playSequential]. A single drainer coalesces parts that
   /// arrive while a chunk is still playing so they are heard back-to-back; a
   /// failed fetch or playback never breaks the turn (the text is already shown).
-  Future<void> _enqueueStreamAudio(String chunkId) async {
+  /// Synchronous admission at frame time: the slot's position in
+  /// [_streamAudioPending] is fixed HERE, before any async gap, so playback
+  /// order can never depend on fetch-completion order. Pinned by the
+  /// queue-never-interrupts and frame-order widget tests.
+  void _admitStreamAudio(String chunkId) {
     final player = widget.player;
     if (player == null) return;
-    Uint8List bytes;
+    final slot = Completer<Uint8List?>();
+    _streamAudioPending.add(slot);
+    unawaited(() async {
+      try {
+        slot.complete(
+          await widget.voiceApi.fetchAudioChunk(widget.sessionId, chunkId),
+        );
+      } catch (_) {
+        slot.complete(null);
+      }
+    }());
+    if (_streamAudioPlaying) return;
+    _streamAudioPlaying = true;
+    unawaited(_drainStreamAudio(player));
+  }
+
+  Future<void> _drainStreamAudio(AudioPlayback player) async {
+    if (mounted) setState(() => _playing = true);
     try {
-      bytes = await widget.voiceApi.fetchAudioChunk(widget.sessionId, chunkId);
-    } catch (_) {
-      return;
-    }
-    if (!mounted) return;
-    _streamAudioQueue.add(bytes);
-    if (_streamDraining) return;
-    _streamDraining = true;
-    setState(() => _playing = true);
-    try {
-      while (_streamAudioQueue.isNotEmpty) {
-        final batch = List<Uint8List>.of(_streamAudioQueue);
-        _streamAudioQueue.clear();
-        await player.playSequential(batch);
+      while (_streamAudioPending.isNotEmpty) {
+        final slot = _streamAudioPending.removeAt(0);
+        final bytes = await slot.future;
+        if (!mounted) return;
+        if (bytes == null) continue;
+        await player.playSequential([bytes]);
       }
     } catch (_) {
       // Playback failure must not break the turn — the text is already shown.
     } finally {
-      _streamDraining = false;
+      _streamAudioPlaying = false;
       if (mounted) setState(() => _playing = false);
     }
   }

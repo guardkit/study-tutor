@@ -42,8 +42,19 @@ class JustAudioPlayback implements AudioPlayback {
       final file = await _writeTemp(bytes);
       try {
         await _player.setFilePath(file.path);
-        // `play()` completes when playback reaches the end (or is stopped).
+        // `play()` normally completes when playback reaches the end, but it
+        // can resolve early in some player states (observed on-device
+        // 2026-08-03: a queued streaming piece cut the playing one off).
+        // Hold explicitly until the player genuinely finishes — or stop()
+        // idles it — so this method's contract ("completes when the chunk
+        // finishes") is true regardless of play()'s resolution timing.
         await _player.play();
+        if (!_stopped) {
+          await _player.processingStateStream.firstWhere(
+            (s) =>
+                s == ProcessingState.completed || s == ProcessingState.idle,
+          );
+        }
       } finally {
         if (await file.exists()) {
           await file.delete();
