@@ -381,3 +381,163 @@ class TestSuccessfulStreamingTurn:
                 assert frames[1]["text"] == " world"
                 assert frames[2]["type"] == "done"
                 assert frames[2]["turn_index"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Contract §7 Rev 1: voice_turn frame dispatch (the missing half of
+# TASK-VS2-006, found live 2026-08-03 — the endpoint ignored the header
+# frame and crashed on the binary frame; the app had ridden the HTTP
+# fallback silently while its old WS path 403'd)
+# ---------------------------------------------------------------------------
+
+
+def _minimal_wav_blob() -> bytes:
+    """Minimal valid WAV (mirrors tests/unit/voice/test_ws_voice_turn.py)."""
+    return (
+        b"RIFF"
+        + (36).to_bytes(4, "little")
+        + b"WAVE"
+        + b"fmt "
+        + (16).to_bytes(4, "little")
+        + (1).to_bytes(2, "little")
+        + (1).to_bytes(2, "little")
+        + (16000).to_bytes(4, "little")
+        + (32000).to_bytes(4, "little")
+        + (2).to_bytes(2, "little")
+        + (16).to_bytes(2, "little")
+        + b"data"
+        + (4).to_bytes(4, "little")
+        + b"\x00" * 4
+    )
+
+
+@pytest.fixture
+def voice_config_wav():
+    """Voice config accepting the minimal WAV fixture."""
+    return VoiceConfig(
+        enabled=True,
+        stt_base_url="http://test-stt",
+        stt_model="test-stt-model",
+        tts_base_url="http://test-tts",
+        tts_model="test-tts-model",
+        tts_voice="nova",
+        audio_timeout_seconds=30.0,
+        max_recording_bytes=5 * 1024 * 1024,
+        max_query_seconds=120,
+        chunk_ttl_seconds=120,
+        supported_base_mimetypes={"audio/wav", "audio/mp4", "audio/m4a"},
+    )
+
+
+@pytest.fixture
+def fake_voice_service():
+    """Fake VoiceTurnService exposing .audio_client (the WS dispatch's need)."""
+    voice_service = MagicMock()
+    voice_service.audio_client = AsyncMock()
+    voice_service.audio_client.transcribe = AsyncMock(
+        return_value="what is a metaphor"
+    )
+    return voice_service
+
+
+class TestVoiceTurnFrameDispatch:
+    """The /ws endpoint speaks the §7 voice frames: header + one binary."""
+
+    def test_voice_turn_streams_transcript_then_tokens(
+        self,
+        auth_config,
+        voice_config_wav,
+        fake_student_store,
+        fake_voice_service,
+    ) -> None:
+        """Header+binary → transcript frame FIRST, then the turn's token/done
+        stream, with the transcript threaded in as the learner message."""
+        captured: dict[str, Any] = {}
+        service = AsyncMock(spec=SessionService)
+
+        async def fake_turn_stream(**kwargs: Any) -> AsyncIterator[TurnEvent]:
+            captured.update(kwargs)
+            yield TurnEvent(type="token", text="A metaphor ")
+            yield TurnEvent(type="done", turn_index=1)
+
+        service.turn_stream = fake_turn_stream
+
+        app = create_app(
+            auth_config=auth_config,
+            voice_config=voice_config_wav,
+            voice_service=fake_voice_service,
+            student_store=fake_student_store,
+            service=service,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+        )
+
+        blob = _minimal_wav_blob()
+        with TestClient(app) as client:
+            with client.websocket_connect(
+                "/api/sessions/sess-123/ws",
+                headers={"Authorization": "Bearer test-token"},
+            ) as ws:
+                ws.send_json(
+                    {
+                        "type": "voice_turn",
+                        "content_type": "audio/wav",
+                        "size_bytes": len(blob),
+                    }
+                )
+                ws.send_bytes(blob)
+
+                first = ws.receive_json()
+                assert first["type"] == "transcript"
+                assert first["text"] == "what is a metaphor"
+
+                second = ws.receive_json()
+                assert second["type"] == "token"
+                assert second["text"] == "A metaphor "
+
+                third = ws.receive_json()
+                assert third["type"] == "done"
+
+        # The transcript fed the turn as the learner message.
+        assert captured["user_message"] == "what is a metaphor"
+
+    def test_voice_validation_refusal_is_non_terminal(
+        self,
+        auth_config,
+        voice_config_wav,
+        fake_student_store,
+        fake_session_service,
+        fake_voice_service,
+    ) -> None:
+        """An invalid voice frame yields an error frame and the channel stays
+        open — a text turn on the same connection still streams (ASSUM-003
+        non-terminal parity)."""
+        app = create_app(
+            auth_config=auth_config,
+            voice_config=voice_config_wav,
+            voice_service=fake_voice_service,
+            student_store=fake_student_store,
+            service=fake_session_service,
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+        )
+
+        with TestClient(app) as client:
+            with client.websocket_connect(
+                "/api/sessions/sess-123/ws",
+                headers={"Authorization": "Bearer test-token"},
+            ) as ws:
+                ws.send_json(
+                    {
+                        "type": "voice_turn",
+                        "content_type": "audio/wav",
+                        "size_bytes": 0,
+                    }
+                )
+                ws.send_bytes(b"")
+
+                refusal = ws.receive_json()
+                assert refusal["type"] == "error"
+
+                # Channel still open: a text turn streams normally.
+                ws.send_json({"type": "turn", "text": "hello", "stream": True})
+                data = ws.receive_json()
+                assert data["type"] == "token"

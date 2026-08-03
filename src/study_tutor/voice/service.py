@@ -314,6 +314,16 @@ class VoiceTurnService:
         self._chunk_store = chunk_store
         self._reply_fn_factory = reply_fn_factory
 
+    @property
+    def audio_client(self) -> AudioClient:
+        """The transcription/synthesis client (read-only).
+
+        Exposed for the WebSocket voice_turn dispatch (contract §7 Rev 1):
+        the ``/ws`` endpoint shares this service's client for STT rather
+        than constructing a second one.
+        """
+        return self._audio_client
+
     async def voice_turn(
         self,
         session_id: str,
