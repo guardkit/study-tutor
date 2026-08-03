@@ -41,6 +41,17 @@ Exit: fold at the next contract re-pin.
 
 ### Voice (found by the 2026-08-03 live-suite run + phone walk)
 
+- **Streaming audio pieces interrupt each other on the phone (open,
+  app-side)**: Rich's attended streaming walk (2026-08-03 ~16:39) —
+  first sentence's audio started playing then "jumped" when the next
+  piece arrived. Server timing shows why: audio_ref frames arrive
+  faster than pieces finish playing (~3s apart vs ~8-15s of audio), and
+  the client appears to play each arrival immediately instead of
+  queueing. The batch path never hit this (complete audio[] list,
+  sequential playback); the streaming path needs an append-only play
+  queue ordered by the frame's seq, never interrupting the current
+  piece. Exit: Mac client leg; server frames already carry seq.
+
 - ~~Voice STREAMING unfinished three-deep~~ **CLOSED 2026-08-03**:
   ADR-ARCH-027 implemented as ratified (`513bc70`, merged + deployed) —
   sentence-boundary verification before tokens are shown/spoken/persisted
