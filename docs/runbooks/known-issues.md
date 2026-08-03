@@ -41,16 +41,17 @@ Exit: fold at the next contract re-pin.
 
 ### Voice (found by the 2026-08-03 live-suite run + phone walk)
 
-- **Streaming audio pieces interrupt each other on the phone (open,
-  app-side)**: Rich's attended streaming walk (2026-08-03 ~16:39) —
-  first sentence's audio started playing then "jumped" when the next
-  piece arrived. Server timing shows why: audio_ref frames arrive
-  faster than pieces finish playing (~3s apart vs ~8-15s of audio), and
-  the client appears to play each arrival immediately instead of
-  queueing. The batch path never hit this (complete audio[] list,
-  sequential playback); the streaming path needs an append-only play
-  queue ordered by the frame's seq, never interrupting the current
-  piece. Exit: Mac client leg; server frames already carry seq.
+- **Streaming audio pieces interrupt each other on the phone — FIX
+  LANDED 2026-08-03 (`ffc83c9`), delete on Rich's green re-walk**: the
+  walk (~16:39) heard piece 2 cut piece 1 off (frames ~3s apart vs
+  8–15s of audio each). Two client defects closed together: audio_ref
+  admission is now synchronous at frame time into ordered slots played
+  strictly serially by one worker (fetch races can no longer reorder or
+  overlap), and `playSequential` now holds until the player genuinely
+  completes — `play()` can resolve early in some states, which is the
+  likely on-device interrupt mechanism. Two widget pins (queue-never-
+  interrupts; frame order survives fetch races); 408/408; the fixed APK
+  is on the Samsung. Remaining receipt: Rich's re-walk ears.
 
 - ~~Voice STREAMING unfinished three-deep~~ **CLOSED 2026-08-03**:
   ADR-ARCH-027 implemented as ratified (`513bc70`, merged + deployed) —
