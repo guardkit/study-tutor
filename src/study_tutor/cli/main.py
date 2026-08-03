@@ -240,6 +240,70 @@ def _build_coach_handover() -> CoachHandover:
     return coach_handover
 
 
+def _build_turn_verifier_factory() -> Any:
+    """Per-turn chunk-verifier factory for verified streaming (ADR-ARCH-027).
+
+    The whole-turn ``coach_handover`` closure above retrieves on every
+    call — fine once per turn, ruinous once per sentence. This factory
+    splits the closure's two halves: ``make_turn_verifier`` performs the
+    coverage check + retrieval decision + ONE ``retrieve`` (query = the
+    learner message, exactly the closure's query), then returns a cheap
+    per-call verifier bound to those chunks. The orchestrator calls the
+    returned verifier at every sentence boundary (and once over the full
+    text at stream end) — milliseconds per call, one retrieval per turn.
+
+    Construction runs synchronously (retrieval blocks); the orchestrator
+    hoists it onto a thread and overlaps it with Player generation.
+    """
+
+    def make_turn_verifier(
+        learner_message: str, session_state: Any
+    ) -> Callable[[str], tuple[str, VerifierMetadata]]:
+        text_name = getattr(session_state, "text_name", None)
+        focus_aos = set(getattr(session_state, "focus_aos", ()) or ())
+        subject = getattr(session_state, "subject", "") or DEFAULT_SUBJECT
+
+        chunks: list[Any] = []
+        skip_reason: str | None = None
+
+        if not text_name:
+            text_name = ""
+            skip_reason = None  # matches the closure's no-text_name envelope
+        elif not has_corpus(subject):
+            skip_reason = REASON_NO_SUBJECT_CORPUS
+        else:
+            decision = decide_retrieval(text_name, focus_aos, subject=subject)
+            if not decision.retrieve:
+                skip_reason = decision.reason
+            else:
+                chunks = retrieve(
+                    query=learner_message,
+                    text_name=text_name,
+                    focus_aos=focus_aos,
+                    subject=subject,
+                )
+        logger.info(
+            "event=turn_verifier_built text_name=%s subject=%s chunks=%d "
+            "skip_reason=%s",
+            text_name,
+            subject,
+            len(chunks),
+            skip_reason,
+        )
+
+        def verify(accumulated_text: str) -> tuple[str, VerifierMetadata]:
+            return apply_quote_verification(
+                accumulated_text,
+                chunks,
+                text_name,
+                retrieval_skipped_reason=skip_reason,
+            )
+
+        return verify
+
+    return make_turn_verifier
+
+
 def _build_orchestrator_factory(
     role_config: RoleConfig,
 ) -> Callable[[], PlayerCoachOrchestrator]:
@@ -294,6 +358,7 @@ def _build_orchestrator_factory(
     # primary-text index) which is wired by ``build_rag_providers`` in
     # ``serve`` *before* this factory is constructed.
     coach_handover_closure = _build_coach_handover()
+    turn_verifier_factory = _build_turn_verifier_factory()
 
     def _on_flag(reason: str, extra: dict[str, Any]) -> None:
         """Logger-only flag callback (D-COACH-07).
@@ -332,6 +397,10 @@ def _build_orchestrator_factory(
             coach=LLMCoachAdapter(role_config),
             quote_verifier=None,  # ASSUM-LCA-015 — follow-up subtask
             coach_handover=coach_handover_closure,
+            # ADR-ARCH-027: sentence-boundary verification for the
+            # streamed paths (run_turn_stream_verified). Same retrieval
+            # + verifier seams as the handover, hoisted to once per turn.
+            turn_verifier_factory=turn_verifier_factory,
             on_flag=_on_flag,
             # ADR-ARCH-026 D1 — production runs the Coach as a background
             # monitor (return the Player response immediately; evaluate off the
@@ -918,11 +987,14 @@ def _build_http_reply_stream_fn_factory(
                 session_id=session_id,
             )
             orchestrator = orchestrator_factory()
-            async for token in orchestrator.run_turn_stream_tokens(
+            # ADR-ARCH-027: the streamed paths emit VERIFIED sentence
+            # deltas, not raw tokens — every chunk passes quote
+            # verification before it is shown, spoken, or persisted.
+            async for delta in orchestrator.run_turn_stream_verified(
                 session_state=session_state,
                 learner_message=user_message,
             ):
-                yield token
+                yield delta
 
         return reply_stream_fn
 

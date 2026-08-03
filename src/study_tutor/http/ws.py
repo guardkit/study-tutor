@@ -23,6 +23,8 @@ from study_tutor.session.errors import (
     Unauthenticated,
 )
 from study_tutor.session.service import SessionService, TurnEvent
+from study_tutor.voice.streaming_tts import stream_with_audio_refs
+from study_tutor.voice.ws_voice_turn import handle_voice_turn_frame
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +76,24 @@ def _is_terminal_error(error: Exception) -> bool:
     return isinstance(
         error, (Unauthenticated, SessionForbidden, SessionNotFoundError, SessionEnded)
     )
+
+
+def _event_frame(event: TurnEvent) -> dict[str, Any]:
+    """Serialize a TurnEvent to the §7 Rev 1 wire frame.
+
+    One shape for both the streamed text turn and the streamed voice
+    turn — the frame vocabulary is shared (contract §7).
+    """
+    return {
+        "type": event.type,
+        "text": event.text,
+        "turn_index": event.turn_index,
+        "seq": event.seq,
+        "chunk_id": event.chunk_id,
+        "url": event.url,
+        "error": event.error,
+        "error_type": event.error_type,
+    }
 
 
 async def _send_error_and_close(
@@ -163,13 +183,108 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 )
                 return
 
-            # Only handle {type:"turn"} frames
-            if message.get("type") != "turn":
+            frame_type = message.get("type")
+
+            # Streamed voice turn (contract §7 Rev 1): header frame then
+            # ONE binary audio frame. This dispatch was the missing half
+            # of TASK-VS2-006 — the handler existed, the endpoint dropped
+            # the header and then crashed on the binary frame (found live
+            # 2026-08-03; the app had silently ridden the HTTP fallback
+            # while the WS path 403'd on its old wrong path).
+            if frame_type == "voice_turn":
+                content_type = str(message.get("content_type", ""))
+                try:
+                    audio_bytes = await websocket.receive_bytes()
+                except WebSocketDisconnect:
+                    logger.info(
+                        "WebSocket disconnected before voice binary frame",
+                        extra={
+                            "event": "ws_client_disconnect",
+                            "session_id": session_id,
+                            "student_id": student_id,
+                        },
+                    )
+                    return
+
+                voice_config = getattr(websocket.app.state, "voice_config", None)
+                voice_service = getattr(websocket.app.state, "voice_service", None)
+                chunk_store = getattr(websocket.app.state, "chunk_store", None)
+                if voice_config is None or voice_service is None or chunk_store is None:
+                    # /ws is only mounted with voice enabled, so this is a
+                    # wiring fault, not a client error — non-terminal, per
+                    # the handler's VoiceUnavailable posture.
+                    await websocket.send_json({
+                        "type": "error",
+                        "error": "Voice services not wired",
+                        "error_type": "VoiceUnavailable",
+                    })
+                    continue
+
+                lock = _get_session_lock(session_id)
+                async with lock:
+                    # The transcript is only known mid-generator; the
+                    # factory closes over this holder, and the handler
+                    # guarantees the transcript frame is yielded (and
+                    # forwarded below, filling the holder) BEFORE it calls
+                    # the factory — lazy generators make that ordering
+                    # sound.
+                    transcript_holder: dict[str, str] = {}
+
+                    def _turn_stream(
+                        _sid: str = session_id, _stu: str = student_id
+                    ) -> Any:
+                        return service.turn_stream(
+                            student_id=_stu,
+                            session_id=_sid,
+                            user_message=transcript_holder.get("text", ""),
+                            reply_stream_fn=websocket.app.state.reply_stream_fn_factory(
+                                session_id=_sid, student_id=_stu
+                            ),
+                        )
+
+                    try:
+                        # ADR-ARCH-027 composition: the turn stream's
+                        # tokens are already verified sentence deltas
+                        # (run_turn_stream_verified), so the audio layer
+                        # runs verifier-free — it synthesizes each
+                        # released sentence and emits audio_ref frames
+                        # interleaved with the token flow (§7 Rev 1).
+                        voice_events = handle_voice_turn_frame(
+                            audio_bytes=audio_bytes,
+                            content_type=content_type,
+                            config=voice_config,
+                            audio_client=voice_service.audio_client,
+                            turn_stream_fn=_turn_stream,
+                        )
+                        async for event in stream_with_audio_refs(
+                            token_stream=voice_events,
+                            session_id=session_id,
+                            audio_client=voice_service.audio_client,
+                            chunk_store=chunk_store,
+                            verifier=None,
+                        ):
+                            if event.type == "transcript":
+                                transcript_holder["text"] = event.text or ""
+                            await websocket.send_json(_event_frame(event))
+                    except (
+                        SessionForbidden,
+                        SessionNotFoundError,
+                        SessionEnded,
+                    ) as e:
+                        # Terminal errors: error frame then close (ASSUM-003)
+                        await _send_error_and_close(
+                            websocket, e, type(e).__name__
+                        )
+                        return
+                continue
+
+            # Only handle {type:"turn"} frames beyond this point
+            if frame_type != "turn":
                 logger.warning(
                     "Ignoring non-turn frame",
                     extra={
                         "event": "ws_unexpected_frame_type",
-                        "frame_type": message.get("type"),
+                        "frame_type": frame_type,
                         "session_id": session_id,
                     },
                 )
@@ -194,17 +309,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                             session_id=session_id, student_id=student_id
                         ),
                     ):
-                        # Send event as JSON frame
-                        await websocket.send_json({
-                            "type": event.type,
-                            "text": event.text,
-                            "turn_index": event.turn_index,
-                            "seq": event.seq,
-                            "chunk_id": event.chunk_id,
-                            "url": event.url,
-                            "error": event.error,
-                            "error_type": event.error_type,
-                        })
+                        # Send event as JSON frame (§7 shared vocabulary)
+                        await websocket.send_json(_event_frame(event))
 
                 except (SessionForbidden, SessionNotFoundError, SessionEnded) as e:
                     # Terminal errors: send error frame then close (ASSUM-003)
