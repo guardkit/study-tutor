@@ -39,6 +39,7 @@ pattern at ``study_tutor.mcp.adapter.MCPAdapter.tutor_turn``).
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from typing import AsyncIterator, Iterable
 
@@ -46,6 +47,8 @@ from study_tutor.llm.client import LLMClient, _default_player_model
 from study_tutor.roles.loader import RoleConfig
 from study_tutor.tutoring.adapters.session_state import SessionState
 from study_tutor.tutoring.coach import RubricFeedback
+
+logger = logging.getLogger(__name__)
 
 
 _REVISE_PROMPT_HEADER = (
@@ -245,6 +248,94 @@ def _strip_think_tokens(raw: str) -> str:
     return cleaned.lstrip()
 
 
+# An in-flight ``<think`` opener (possibly still missing its ``>``): from
+# here on, everything is potential reasoning — hold it back.
+_THINK_OPENER_ANYWHERE_RE = re.compile(r"<think\b", re.IGNORECASE)
+
+#: Proper prefixes of ``<think`` — a raw-stream tail matching one of these
+#: might be a marker split across model tokens ("<th" + "ink>"), so it is
+#: withheld until the next token disambiguates.
+_THINK_MARKER_PREFIXES = ("<", "<t", "<th", "<thi", "<thin")
+
+
+class _IncrementalThinkFilter:
+    """Streaming ``<think>`` suppression with token-split safety.
+
+    Feeds raw model tokens; returns only the deltas that are provably
+    OUTSIDE reasoning blocks, releasing them as they arrive (true
+    streaming). Closed blocks are removed with the same regexes the
+    batch path uses; an open ``<think`` holds everything after it; a
+    buffer tail that could be the start of a split marker is withheld
+    until disambiguated. ``flush()`` applies the canonical
+    :func:`_strip_think_tokens` to the full raw text so end-of-stream
+    semantics (dangling-opener rules, lstrip) match the batch path
+    exactly.
+    """
+
+    def __init__(self) -> None:
+        self._raw = ""
+        #: Chars of the visible prefix already consumed (including any
+        #: head whitespace swallowed by the lstrip mirror) — position
+        #: bookkeeping stays on the visible-prefix plane.
+        self._consumed = 0
+        #: The text actually emitted (post-lstrip) — flush() compares
+        #: against the canonical strip with this.
+        self._emitted = ""
+
+    def _visible_prefix(self) -> str:
+        visible = _THINK_BLOCK_RE.sub("", self._raw)
+        opener = _THINK_OPENER_ANYWHERE_RE.search(visible)
+        if opener is not None:
+            # Everything from an unclosed opener onward is reasoning
+            # until its ``</think>`` arrives (at which point the block
+            # regex removes the whole span).
+            visible = visible[: opener.start()]
+        else:
+            lowered = visible.lower()
+            for prefix in _THINK_MARKER_PREFIXES:
+                if lowered.endswith(prefix):
+                    visible = visible[: len(visible) - len(prefix)]
+                    break
+        return visible
+
+    def feed(self, token: str) -> str:
+        self._raw += token
+        visible = self._visible_prefix()
+        chunk = visible[self._consumed :]
+        if not chunk:
+            return ""
+        self._consumed = len(visible)
+        if not self._emitted:
+            # Mirror the batch path's lstrip of the response head; the
+            # swallowed whitespace still counts as consumed.
+            chunk = chunk.lstrip()
+            if not chunk:
+                return ""
+        self._emitted += chunk
+        return chunk
+
+    def flush(self) -> str:
+        final = _strip_think_tokens(self._raw)
+        if not final.startswith(self._emitted):
+            # Defensive: the incremental prefix should always be a prefix
+            # of the canonical strip; if not, never re-emit or contradict
+            # what was already shown.
+            logger.error(
+                "incremental think filter diverged from canonical strip",
+                extra={"emitted_chars": len(self._emitted)},
+            )
+            return ""
+        tail = final[len(self._emitted) :]
+        # Stricter than the batch function in one pathological case: a
+        # MID-response dangling ``<think`` (no close, not at the head)
+        # survives the canonical strip's head-anchored rules — never
+        # release it here; reasoning must not reach the learner.
+        opener = _THINK_OPENER_ANYWHERE_RE.search(tail)
+        if opener is not None:
+            tail = tail[: opener.start()]
+        return tail
+
+
 class LLMPlayerAdapter:
     """Production :class:`PlayerLike` implementation backed by ``LLMClient``.
 
@@ -350,28 +441,25 @@ class LLMPlayerAdapter:
         provider = _default_player_model()
         client = LLMClient(provider=provider)
 
-        # Buffer the complete response to apply think-token stripping correctly
-        raw_tokens: list[str] = []
+        # True incremental streaming with correct think suppression
+        # (2026-08-03): the previous implementation buffered the COMPLETE
+        # generation (fake streaming) and then re-yielded RAW tokens
+        # through a per-token marker check — but model tokens split
+        # "<think>" across pieces, so the markers slipped through and the
+        # reasoning content (which contains no markers) streamed straight
+        # to the learner. Receipt: session b1eec0dc turn 11 persisted a
+        # raw think block. The filter holds back only what could still be
+        # reasoning and releases everything else as it arrives.
+        think_filter = _IncrementalThinkFilter()
         async for token in client.generate_stream(
             prompt, self._player_prompt, history
         ):
-            raw_tokens.append(token)
-
-        # Apply think-token stripping to the complete response
-        raw_response = "".join(raw_tokens)
-        cleaned_response = _strip_think_tokens(raw_response)
-
-        # Yield the cleaned response as tokens
-        # For simplicity, we yield the entire cleaned response as one token
-        # A more sophisticated implementation would re-tokenize
-        if cleaned_response:
-            # Split back into approximate tokens to maintain streaming semantics
-            # For now, yield character-by-character or in chunks
-            # To match test expectations, yield the full cleaned string
-            for token in raw_tokens:
-                # Simple heuristic: filter out tokens that contain think markers
-                if "<think" not in token and "</think>" not in token:
-                    yield token
+            delta = think_filter.feed(token)
+            if delta:
+                yield delta
+        tail = think_filter.flush()
+        if tail:
+            yield tail
 
     async def revise(
         self,
