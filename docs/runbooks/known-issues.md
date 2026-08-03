@@ -41,21 +41,20 @@ Exit: fold at the next contract re-pin.
 
 ### Voice (found by the 2026-08-03 live-suite run + phone walk)
 
-- **The planned session silently overrides the learner's intended text
-  (open, product/UX — Lilymay's first session found it, 2026-08-03)**:
-  she and Rich believed they were doing An Inspector Calls; the ACTIVE
-  session (b1eec0dc) had been planner-pinned to "dramatic irony in
-  Macbeth" (her weakest topic), and "starting a session on An Inspector
-  Calls" silently RESUMED it — one active session per (student, subject)
-  by design (D8 cross-device pickup). Every turn then retrieved MACBETH
-  chunks and framed prompts around Macbeth, so "give me an example"
-  produced a Macbeth example mid-AIC-conversation. Contract behaved as
-  written; the experience hid it. Exit (needs Rich's product ruling):
-  (a) app surfaces the active session's planned topic/text prominently
-  ("Continue: Dramatic irony in Macbeth" vs "Start fresh on…" which
-  ends-then-starts with the learner's topic override — both verbs
-  already exist); (b) longer-term, per-turn text-following is a Lane 1
-  content-pack-era design question, noted not built.
+- **Per-turn text-following (open, deferred by design)**: the remnant of
+  Lilymay's 2026-08-03 "switched to Macbeth" finding after Rich ruled
+  option (a) and it SHIPPED (`69d7d5f`, Mac): the card now discloses the
+  planner-pinned topic, and a start against an active same-subject
+  session raises the Continue-vs-start-fresh sheet (chips from her own
+  topics + free text → end + start with her topic override; server-truth
+  gate + resume_if_active backstop so no path silently resumes OR
+  double-actives). What remains open is (b): the tutor FOLLOWING a
+  mid-session text switch turn-by-turn — a Lane 1 content-pack-era
+  design question, noted not built. Fake-fidelity note from the same
+  review: `FakeSessionApi.startSession(resume_if_active:false)` CREATES
+  a second active session where prod unconditionally INSERTs too (no
+  unique-active constraint) — the app no longer exercises that path, but
+  the seam stays un-pinned server-side.
 - ~~Streamed think-block leak~~ **CLOSED 2026-08-03 (same session's
   turn 11 receipt)**: respond_stream buffered the full generation (fake
   streaming) then re-yielded RAW tokens through a per-token marker check
