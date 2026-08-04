@@ -116,6 +116,23 @@ class FakeStudentStore:
         """Whether the student has an identity row (auth unseeded-guard)."""
         return student_id in self._students
 
+    async def delete_sessions_for_student(
+        self, student_id: str
+    ) -> dict[str, int]:
+        """Scoped dev reset (mirrors PostgresStudentStore, 2026-08-04):
+        delete ONE student's sessions + turns; learner state untouched."""
+        doomed = [
+            sid
+            for sid, sess in self._sessions.items()
+            if sess["student_id"] == student_id
+        ]
+        turn_count = sum(len(self._turns.get(sid, [])) for sid in doomed)
+        for sid in doomed:
+            self._sessions.pop(sid, None)
+            self._turns.pop(sid, None)
+            self._completed_sessions.discard(sid)
+        return {"sessions": len(doomed), "turns": turn_count}
+
     # -- Reads (handler + planner) -----------------------------------------
 
     async def get_student_state(self, student_id: str) -> StudentState:

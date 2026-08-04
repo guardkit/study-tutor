@@ -591,8 +591,14 @@ async def healthz(request: Request) -> JSONResponse:
 async def dev_reset(request: Request) -> JSONResponse:
     """POST /__dev__/reset — Dev-only session reset (TASK-APP1-05).
 
-    Truncates session + session_turn tables only. Learner-state tables
-    (student, topic_confidence, misconception, achievement, quest) are
+    **Scoped to the caller since 2026-08-04 (suite isolation)**: the
+    bearer resolves to a student — the same auth as every verb; this
+    route previously required NO auth — and only THAT student's session
+    + session_turn rows are deleted. The store-wide truncate wiped every
+    student's transcripts when the live suite reset as the real primary
+    student (known-issues receipt, 2026-08-03); a reset can no longer
+    touch another student's rows. Learner-state tables (student,
+    topic_confidence, misconception, achievement, quest) remain
     untouched — banked XP/streak/confidence survive.
 
     This route is mounted ONLY when STUDY_TUTOR_HTTP_DEV_RESET is set.
@@ -601,13 +607,16 @@ async def dev_reset(request: Request) -> JSONResponse:
         JSON response with deleted counts: {"deleted": {"sessions": N, "turns": M}}
     """
     try:
+        student_id = await _resolve_student_id(request)
         student_store = request.app.state.student_store
 
-        # Call truncate_sessions on the store
-        deleted_counts = await student_store.truncate_sessions()
+        deleted_counts = await student_store.delete_sessions_for_student(
+            student_id
+        )
 
         logger.info(
-            "event=dev_reset_executed sessions=%d turns=%d",
+            "event=dev_reset_executed student_id=%s sessions=%d turns=%d",
+            student_id,
             deleted_counts["sessions"],
             deleted_counts["turns"],
         )
@@ -617,6 +626,8 @@ async def dev_reset(request: Request) -> JSONResponse:
             status_code=200,
         )
 
+    except Unauthenticated as e:
+        return _map_error_to_response(e)
     except Exception as e:
         logger.exception("Dev reset failed: %s", e)
         return JSONResponse(

@@ -214,7 +214,7 @@ class TestVoiceTurnService:
     @pytest.fixture
     def voice_config(self) -> VoiceConfig:
         """VoiceConfig fixture."""
-        return VoiceConfig.from_env(enabled="true")
+        return VoiceConfig.from_env(enabled="true", stt_model="test-stt", tts_model="test-tts")
 
     @pytest.fixture
     def chunk_store(self) -> ChunkStore:

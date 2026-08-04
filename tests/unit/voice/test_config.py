@@ -18,10 +18,10 @@ def test_config_from_env_default_values():
 
     # Verify default values match spec
     assert config.enabled is False
-    assert config.stt_base_url == "http://promaxgb10-41b1:9000/v1"
-    assert config.stt_model == "parakeet-tdt"
-    assert config.tts_base_url == "http://promaxgb10-41b1:9000/v1"
-    assert config.tts_model == "qwen3-tts"
+    assert config.stt_base_url == "http://localhost:9000/v1"
+    assert config.stt_model == ""  # empty when disabled; REQUIRED when enabled (2026-08-04)
+    assert config.tts_base_url == "http://localhost:9000/v1"
+    assert config.tts_model == ""
     assert config.tts_voice == "Ryan"
 
     # Verify constants
@@ -94,6 +94,7 @@ def test_config_from_env_partial_overrides(monkeypatch):
     config = VoiceConfig.from_env(
         enabled="1",
         stt_model="override-model",
+        tts_model="tts-override",
     )
 
     # Overridden values
@@ -101,9 +102,9 @@ def test_config_from_env_partial_overrides(monkeypatch):
     assert config.stt_model == "override-model"
 
     # Default values for non-overridden fields
-    assert config.stt_base_url == "http://promaxgb10-41b1:9000/v1"
-    assert config.tts_base_url == "http://promaxgb10-41b1:9000/v1"
-    assert config.tts_model == "qwen3-tts"
+    assert config.stt_base_url == "http://localhost:9000/v1"
+    assert config.tts_base_url == "http://localhost:9000/v1"
+    assert config.tts_model == "tts-override"
     assert config.tts_voice == "Ryan"
 
 
@@ -187,7 +188,7 @@ def test_no_import_time_env_access(monkeypatch):
     # If import-time access existed, these would be the monkeypatched values
     # Instead, we should get defaults because we didn't pass them to from_env()
     assert config.enabled is False  # Default, not "true"
-    assert config.stt_base_url == "http://promaxgb10-41b1:9000/v1"  # Default
+    assert config.stt_base_url == "http://localhost:9000/v1"  # Default
 
     # Clean up
     monkeypatch.delenv("STUDY_TUTOR_VOICE_ENABLED")
@@ -217,8 +218,26 @@ def test_hermetic_env_coverage_all_vars(monkeypatch):
     # Now we can test with confidence that defaults are truly defaults
     config = VoiceConfig.from_env()
     assert config.enabled is False
-    assert config.stt_base_url == "http://promaxgb10-41b1:9000/v1"
-    assert config.stt_model == "parakeet-tdt"
-    assert config.tts_base_url == "http://promaxgb10-41b1:9000/v1"
-    assert config.tts_model == "qwen3-tts"
+    assert config.stt_base_url == "http://localhost:9000/v1"
+    assert config.stt_model == ""  # empty when disabled; REQUIRED when enabled (2026-08-04)
+    assert config.tts_base_url == "http://localhost:9000/v1"
+    assert config.tts_model == ""
     assert config.tts_voice == "Ryan"
+
+
+def test_enabled_with_empty_model_names_fails_loud():
+    """2026-08-04 (known-issues Voice): empty model aliases with voice
+    enabled must stop the boot — silent defaults to a retired host's
+    aliases broke every voice turn 2026-07-26→08-03."""
+    import pytest
+
+    with pytest.raises(ValueError, match="STT_MODEL"):
+        VoiceConfig.from_env(enabled="true", tts_model="t")
+    with pytest.raises(ValueError, match="TTS_MODEL"):
+        VoiceConfig.from_env(enabled="true", stt_model="s")
+
+
+def test_disabled_needs_no_model_names():
+    config = VoiceConfig.from_env()
+    assert config.enabled is False
+    assert config.stt_model == ""

@@ -290,7 +290,14 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 )
                 continue
 
-            user_message = message.get("text", "")
+            # Binding §2.1's ratified frame carries ``user_message``; the
+            # legacy ``text`` key is tolerated (2026-08-04 conformance
+            # fix — the server previously read ONLY the legacy key; no
+            # shipped client sends text-turn frames, the app's WS is
+            # voice-only).
+            user_message = message.get(
+                "user_message", message.get("text", "")
+            )
 
             # Acquire per-session lock to ensure strict ordering (ASSUM-008)
             lock = _get_session_lock(session_id)

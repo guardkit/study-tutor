@@ -68,11 +68,13 @@ class VoiceConfig:
             ValueError: On malformed boolean flag with clear error message.
 
         Examples:
-            >>> config = VoiceConfig.from_env(enabled="true")
+            >>> config = VoiceConfig.from_env(
+            ...     enabled="true", stt_model="stt-x", tts_model="tts-x"
+            ... )
             >>> config.enabled
             True
             >>> config.stt_base_url
-            'http://promaxgb10-41b1:9000/v1'
+            'http://localhost:9000/v1'
         """
         # Parse enabled flag with clear error on malformed input
         try:
@@ -82,13 +84,34 @@ class VoiceConfig:
                 f"Failed to parse STUDY_TUTOR_VOICE_ENABLED: {e}"
             ) from e
 
-        # Apply defaults for optional fields
+        # Fail-loud on the silent-drift trap (2026-08-04, known-issues
+        # Voice): the old defaults resolved to the RETIRED GB10 host and
+        # its era's llama-swap model aliases — which is exactly what
+        # silently killed every voice turn from the 2026-07-26 spark
+        # move until 2026-08-03 (routes mounted, every STT call failing
+        # per turn). Model aliases are deployment-specific, so when
+        # voice is ENABLED they must be stated explicitly; an empty
+        # value now stops the boot with a clear message instead of
+        # degrading one turn at a time.
+        if enabled_bool and (not stt_model or not tts_model):
+            raise ValueError(
+                "STUDY_TUTOR_VOICE_ENABLED is set but "
+                f"{'STT_MODEL' if not stt_model else 'TTS_MODEL'} is empty. "
+                "Model aliases are deployment-specific (the spark's "
+                "llama-swap registers e.g. parakeet-tdt-0.6b-v3 / "
+                "qwen3-tts-0.6b) — set them explicitly in the deploy env; "
+                "empty defaults silently broke voice 2026-07-26→08-03."
+            )
+
+        # Apply defaults for optional fields. Base URLs default to the
+        # local machine (host-neutral) rather than any named host — the
+        # deploy env pins the real endpoint.
         return cls(
             enabled=enabled_bool,
-            stt_base_url=stt_base_url or "http://promaxgb10-41b1:9000/v1",
-            stt_model=stt_model or "parakeet-tdt",
-            tts_base_url=tts_base_url or "http://promaxgb10-41b1:9000/v1",
-            tts_model=tts_model or "qwen3-tts",
+            stt_base_url=stt_base_url or "http://localhost:9000/v1",
+            stt_model=stt_model,
+            tts_base_url=tts_base_url or "http://localhost:9000/v1",
+            tts_model=tts_model,
             tts_voice=tts_voice or "Ryan",
             # Constants (spec ASSUM-006, contract §5 Rev 1, spec ASSUM-004, spec ASSUM-003)
             audio_timeout_seconds=10.0,

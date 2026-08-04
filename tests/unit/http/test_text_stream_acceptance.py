@@ -43,7 +43,7 @@ def auth_config():
 @pytest.fixture
 def voice_config_enabled():
     """Voice config with feature enabled."""
-    return VoiceConfig.from_env(enabled="true")
+    return VoiceConfig.from_env(enabled="true", stt_model="test-stt", tts_model="test-tts")
 
 
 @pytest.fixture

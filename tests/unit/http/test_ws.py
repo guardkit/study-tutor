@@ -42,7 +42,7 @@ def auth_config():
 @pytest.fixture
 def voice_config_enabled():
     """Voice config with feature enabled."""
-    return VoiceConfig.from_env(enabled="true")
+    return VoiceConfig.from_env(enabled="true", stt_model="test-stt", tts_model="test-tts")
 
 
 @pytest.fixture
@@ -563,3 +563,30 @@ class TestVoiceTurnFrameDispatch:
                 ws.send_json({"type": "turn", "text": "hello", "stream": True})
                 data = ws.receive_json()
                 assert data["type"] == "token"
+
+
+def test_turn_frame_ratified_user_message_key(
+    auth_config, voice_config_wav, fake_student_store, fake_session_service,
+    fake_voice_service, chunk_store,
+) -> None:
+    """Binding §2.1's ratified frame key (2026-08-04 conformance fix —
+    the server previously read only the legacy ``text`` key)."""
+    app = create_app(
+        auth_config=auth_config,
+        voice_config=voice_config_wav,
+        voice_service=fake_voice_service,
+        chunk_store=chunk_store,
+        student_store=fake_student_store,
+        service=fake_session_service,
+        reply_fn_factory=lambda **kwargs: AsyncMock(),
+    )
+    with TestClient(app) as client:
+        with client.websocket_connect(
+            "/api/sessions/sess-123/ws",
+            headers={"Authorization": "Bearer test-token"},
+        ) as ws:
+            ws.send_json(
+                {"type": "turn", "user_message": "hello", "stream": True}
+            )
+            data = ws.receive_json()
+            assert data["type"] == "token"

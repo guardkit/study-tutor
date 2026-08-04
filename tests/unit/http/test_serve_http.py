@@ -88,7 +88,7 @@ def test_build_voice_service_runs_the_cli_construction_when_enabled():
     from study_tutor.cli.main import _build_voice_service
     from study_tutor.voice.config import VoiceConfig
 
-    config = VoiceConfig.from_env(enabled="true")
+    config = VoiceConfig.from_env(enabled="true", stt_model="test-stt", tts_model="test-tts")
     voice_service, chunk_store = _build_voice_service(
         config,
         session_service=MagicMock(),

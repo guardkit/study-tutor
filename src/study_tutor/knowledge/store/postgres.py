@@ -758,6 +758,56 @@ class PostgresStudentStore:
 
         return {"sessions": session_count or 0, "turns": turn_count or 0}
 
+    async def delete_sessions_for_student(
+        self, student_id: str
+    ) -> dict[str, int]:
+        """Delete ONE student's sessions + turns (scoped dev reset, 2026-08-04).
+
+        The suite-isolation fix: ``POST /__dev__/reset`` now derives the
+        caller from the bearer and deletes that student's rows only —
+        the store-wide :meth:`truncate_sessions` wiped every student's
+        transcripts when the live suite reset as the real primary
+        student (known-issues, 2026-08-03). Learner-state tables are
+        untouched, same as the store-wide variant.
+
+        Returns:
+            Dict with deleted counts: {"sessions": N, "turns": M}
+        """
+        if self._pool is not None:
+            engine = self._pool
+        elif self._engine is not None:
+            engine = self._engine
+        else:  # pragma: no cover
+            raise RuntimeError("No engine or pool configured")
+
+        async with engine.begin() as conn:
+            turn_count = (
+                await conn.execute(
+                    sql_text(
+                        "SELECT COUNT(*) FROM session_turn t "
+                        "JOIN session s ON s.session_id = t.session_id "
+                        "WHERE s.student_id = :sid"
+                    ),
+                    {"sid": student_id},
+                )
+            ).scalar()
+            session_count = (
+                await conn.execute(
+                    sql_text(
+                        "SELECT COUNT(*) FROM session WHERE student_id = :sid"
+                    ),
+                    {"sid": student_id},
+                )
+            ).scalar()
+            # session_turn rows cascade with their sessions (FK ON DELETE
+            # CASCADE, schema_reference.sql).
+            await conn.execute(
+                sql_text("DELETE FROM session WHERE student_id = :sid"),
+                {"sid": student_id},
+            )
+
+        return {"sessions": session_count or 0, "turns": turn_count or 0}
+
     # -- Reads --------------------------------------------------------------
 
     async def get_student_state(self, student_id: str) -> StudentState:

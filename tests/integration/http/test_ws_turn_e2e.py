@@ -123,7 +123,7 @@ def test_ws_turn_streams_tokens_and_persists(role_config, monkeypatch) -> None:
         reply_stream_fn_factory=reply_stream_fn_factory,
         auth_config=auth_config,
         student_store=store,
-        voice_config=VoiceConfig.from_env(enabled="true"),
+        voice_config=VoiceConfig.from_env(enabled="true", stt_model="test-stt", tts_model="test-tts"),
     )
 
     with patch(

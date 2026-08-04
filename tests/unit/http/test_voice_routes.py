@@ -50,7 +50,7 @@ def fake_voice_config():
     """Mock VoiceConfig with voice enabled."""
     from study_tutor.voice.config import VoiceConfig
 
-    return VoiceConfig.from_env(enabled="true")
+    return VoiceConfig.from_env(enabled="true", stt_model="test-stt", tts_model="test-tts")
 
 
 @pytest.fixture

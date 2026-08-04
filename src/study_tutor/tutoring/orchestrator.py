@@ -1080,13 +1080,17 @@ class PlayerCoachOrchestrator:
                 verifier_metadata=verifier_metadata,
             )
         except Exception as exc:  # noqa: BLE001 — background monitor never raises
+            # Detail rides in the MESSAGE (2026-08-04): the prod log
+            # format renders only the message, so the previous
+            # extra-only fields left the 2026-08-03 occurrence
+            # undiagnosable. exc_info gives the traceback.
             logger.warning(
-                "background Coach evaluation failed (non-fatal — response delivered)",
-                extra={
-                    "event": "orchestrator_async_coach_failed",
-                    "error_type": type(exc).__name__,
-                    "error": str(exc),
-                },
+                "background Coach evaluation failed (non-fatal — response "
+                "delivered): %s: %s",
+                type(exc).__name__,
+                exc,
+                extra={"event": "orchestrator_async_coach_failed"},
+                exc_info=True,
             )
             return
         if verdict.decision != "accept":
