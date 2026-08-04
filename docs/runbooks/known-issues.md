@@ -43,6 +43,7 @@ section.
   never run it casually against a store anyone cares about. Full
   server-side design pass + Mac interlock:
   [`HANDOFF-spark-server-queue-2026-08-04.md`](HANDOFF-spark-server-queue-2026-08-04.md).
+- **Fixture-ordering artifact (open)**: running the durable-cross-device
   feature file **standalone** fails
   `test_redelivering_the_same_completed_session…`; green in full-suite
   order and reproduces at the pre-S0 baseline — not a product bug
