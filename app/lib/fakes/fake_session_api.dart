@@ -114,6 +114,22 @@ class FakeSessionApi implements SessionApi {
           turns: _transcript(existing.id),
         );
       }
+    } else {
+      // Ruled 2026-08-04 (Rich, server-queue item 3, option b): `false`
+      // means the caller wants a FRESH session — any active
+      // (student, subject) match is ENDED first, never duplicated, so the
+      // one-active invariant D8's cross-device pickup relies on holds by
+      // construction. The server normalises identically (spark side; dated
+      // binding annotation rides that change). Status-flip only here —
+      // whether the implicit end settles gamification is a server-side
+      // design point this fake deliberately doesn't invent.
+      for (final s in _store.sessions.values.toList()) {
+        if (s.studentId == studentId &&
+            s.subject == subject &&
+            s.status == SessionStatus.active) {
+          _store.sessions[s.id] = s.copyWith(status: SessionStatus.ended);
+        }
+      }
     }
 
     final now = _clock();

@@ -1,15 +1,14 @@
 # test_live — the contract suite against the real adapter
 
-> **⚠ DESTRUCTIVE + POLLUTING on a shared store (2026-08-03 finding).**
-> This suite signs in as the REAL primary student (`token-lilymay`) and its
-> `reset()` calls `POST /__dev__/reset`, which **truncates the ENTIRE
-> session+turn store for all students** (learner-state XP/streak/confidence
-> survive). It also leaves stray test sessions behind (the shared bodies
-> start `subject: 'maths'` sessions) that then surface on the app's Home as
-> real-looking cards. Until the dedicated-suite-student + per-student-reset
-> exit lands (known-issues, Test-suite artifacts), treat every run as an
-> operator-attended act that DELETES session history — never run it against
-> a store anyone cares about without saying so first.
+> **Isolated since 2026-08-04** (the 2026-08-03 wipe-and-pollute finding's
+> exit, both halves): the suite signs in as the dedicated suite identity
+> (`token-suite` → `suite-runner`, seeded server-side), `reset()` is
+> AUTHENTICATED and deletes only the caller's rows, and a per-file
+> `flutter_test_config.dart` hook clears the suite student's AND the
+> second principal's sessions at each file's end — a run leaves zero rows
+> behind (live-receipted: lilymay's list byte-identical across a full run;
+> suite-runner and alex both empty after). Still operator-attended: it
+> drives the real deployment and loads the real models.
 
 The same 35 test bodies as `test/contract/` (imported from there, not
 copied), run through `LiveContractBackend` against a deployed GB10 HTTP

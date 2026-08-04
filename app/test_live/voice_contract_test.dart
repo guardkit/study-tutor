@@ -11,18 +11,17 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:study_tutor_app/adapters/http_session_api.dart';
 import 'package:study_tutor_app/adapters/http_voice_api.dart';
 import 'package:study_tutor_app/domain/errors.dart';
 import 'package:study_tutor_app/domain/principal.dart';
-import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 import 'package:study_tutor_app/ports/identity_provider.dart';
 import 'package:study_tutor_app/ports/session_api.dart';
 import 'package:study_tutor_app/ports/voice_api.dart';
 
 import '../test/contract/voice_contract_test.dart'
     show VoiceContractBackend, runVoiceContractTests;
+import 'suite_identity.dart';
 
 const _rawApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
@@ -46,8 +45,7 @@ class _DevTableIdentity implements IdentityProvider {
   Principal? get currentPrincipal => _current;
 
   @override
-  Future<Principal> signIn() async =>
-      _current = FakeIdentityProvider.lilymay;
+  Future<Principal> signIn() async => _current = suitePrincipal;
 
   @override
   Future<void> signOut() async {
@@ -97,19 +95,13 @@ class LiveVoiceContractBackend implements VoiceContractBackend {
 
   @override
   Future<void> reset() async {
-    // Call the dev reset route (same pattern as LiveContractBackend)
+    // Scoped + authenticated since 2026-08-04 (same pattern as
+    // LiveContractBackend): deletes only the suite student's rows.
     try {
-      final response = await http
-          .post(Uri.parse('$_apiBaseUrl/__dev__/reset'))
-          .timeout(_resetDeadline);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw StateError(
-            'dev reset failed: HTTP ${response.statusCode} — is the adapter '
-            'deployed in dev config?');
-      }
+      await scopedReset(_apiBaseUrl, suitePrincipal,
+          deadline: _resetDeadline);
     } catch (e) {
-      throw StateError(
-          'dev reset failed: $e — is the adapter reachable?');
+      throw StateError('dev reset failed: $e — is the adapter reachable?');
     }
     await _identity.signOut();
     _currentSessionId = null;

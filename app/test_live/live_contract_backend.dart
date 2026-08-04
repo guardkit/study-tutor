@@ -4,8 +4,9 @@
 // imported unchanged from test/contract/; only this backend differs.
 //
 // Requires --dart-define=API_BASE_URL and MUST run with --concurrency=1
-// (reset() truncates GLOBAL server state — binding §5.2). See README.md
-// here for the run command. Never point this at a prod config.
+// (tests share the suite student's state; since 2026-08-04 reset() is
+// AUTHENTICATED and scoped to the caller's rows — binding §5.2). See
+// README.md here for the run command. Never point this at a prod config.
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ import 'package:study_tutor_app/ports/session_api.dart';
 import 'package:study_tutor_app/ports/student_model_api.dart';
 
 import '../test/contract/contract_backend.dart';
+import 'suite_identity.dart';
 
 const _rawApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
@@ -63,8 +65,7 @@ class _DevTableIdentity implements IdentityProvider {
   Principal? get currentPrincipal => _current;
 
   @override
-  Future<Principal> signIn() async =>
-      _current = FakeIdentityProvider.lilymay;
+  Future<Principal> signIn() async => _current = suitePrincipal;
 
   Future<Principal> signInSecondStudent() async =>
       _current = FakeIdentityProvider.secondStudent;
@@ -112,19 +113,23 @@ class LiveContractBackend implements ContractBackend {
   @override
   StudentModelApi get studentModelApi => _studentModelApi;
 
-  /// Dev table entry #1 (binding §5.1).
+  /// The dedicated suite identity (2026-08-04) — never a real learner.
   @override
-  String get defaultStudentId => 'lilymay';
+  String get defaultStudentId => suiteStudentId;
 
   /// The reset route published in the binding doc (§5.2) — never a guess.
-  /// Truncates session + session_turn rows server-wide, which is exactly why
-  /// the run command pins --concurrency=1.
+  /// Since 2026-08-04 it AUTHENTICATES and deletes only the caller's rows
+  /// (the 2026-08-03 whole-store wipe cannot recur); --concurrency=1 still
+  /// stands so tests don't race each other on the suite student's state.
   @override
   Future<void> reset() async {
     final http.Response response;
     try {
       response = await http
-          .post(Uri.parse('$_apiBaseUrl/__dev__/reset'))
+          .post(
+            Uri.parse('$_apiBaseUrl/__dev__/reset'),
+            headers: {'authorization': 'Bearer ${suitePrincipal.token}'},
+          )
           .timeout(_resetDeadline);
     } on TimeoutException {
       throw StateError(
