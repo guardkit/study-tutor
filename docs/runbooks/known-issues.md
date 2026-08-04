@@ -21,28 +21,21 @@ section.
   (`idp-test.tail0000.ts.net` / `100.100.100.100`), which also honours
   the guard's actual point — unit tests shouldn't name production
   hosts.
-- **The live suite pollutes AND wipes the real store (open, HIGH —
-  found by Rich's 2026-08-03 evening walk)**: `test_live` signs in as
-  the REAL primary student (dev-table `lilymay`) and (1) leaves stray
-  sessions behind — the shared contract bodies start `subject: 'maths'`
-  sessions (s4/s9), two of which survived the 48/48 run's last reset;
-  the server's planner gave them real topics, so the app's new
-  disclosure card rendered one as "Continue: Dramatic Irony In Macbeth"
-  and Rich resumed a leftover TEST session believing it was Lilymay's
-  (empty transcript, subject Maths — every app behaviour was correct
-  over polluted data); and (2) its `reset()` calls `__dev__/reset`,
-  which TRUNCATES the entire session+turn store for ALL students —
-  today's three runs deleted all session history before ~16:56Z
-  (learner-state — XP/streak/confidence — is spared by the route;
-  Lilymay's evening session postdates the last reset and survives;
-  recovery of older transcripts = NAS nightly dumps, operator call).
-  Exit: a dedicated suite student in the dev table + a per-student
-  reset (server side, spark) and the suite re-pointed at it + ending
-  its own sessions (app side, Mac); until that lands the live suite is
-  STRICTLY operator-attended and understood to wipe session history —
-  never run it casually against a store anyone cares about. Full
-  server-side design pass + Mac interlock:
-  [`HANDOFF-spark-server-queue-2026-08-04.md`](HANDOFF-spark-server-queue-2026-08-04.md).
+- **Live-suite isolation — server half DONE 2026-08-04, Mac re-point
+  remains (open until the suite runs as the suite identity)**: the
+  2026-08-03 finding (test_live signed in as REAL `lilymay`; its reset
+  TRUNCATED every student's sessions; stray maths test sessions
+  surfaced as real-looking cards) is half-closed: `__dev__/reset` now
+  AUTHENTICATES (it previously required no bearer at all) and deletes
+  only the CALLER's rows (`delete_sessions_for_student`, 3 route pins;
+  live-proven post-deploy: unauthenticated → 401, reset as the new
+  suite identity deleted 0 rows and left lilymay's 4 + alex's 1
+  untouched). **The suite identity is deployed: token `token-suite` →
+  student `suite-runner`** (dev-table env + seeded student row).
+  Remaining (Mac): re-point test_live at `token-suite`, add
+  end-own-sessions teardown, re-run for a fresh Suites-row receipt.
+  Until then the live suite stays operator-attended (it can no longer
+  wipe others' history — worst case is suite-student pollution).
 - **Fixture-ordering artifact (open)**: running the durable-cross-device
   feature file **standalone** fails
   `test_redelivering_the_same_completed_session…`; green in full-suite
@@ -107,20 +100,13 @@ Exit: fold at the next contract re-pin.
   perceived latency should drop to transcript-then-streamed-text;
   synthesis cost itself is a serving-side follow-up (the ~150-word voice
   reply cap is already a named deferral).
-- **`background Coach evaluation failed (non-fatal)`** logged once
-  2026-08-03 12:19:24 — response delivered; unchased, noted for a look.
-
-- **`VoiceConfig.from_env` code defaults are a trap (open, low)**: with env
-  unset they resolve to the retired GB10 host
-  (`http://promaxgb10-41b1:9000/v1`) and the GB10-era model aliases
-  (`parakeet-tdt`/`qwen3-tts`) the spark's llama-swap does not register —
-  exactly what silently broke every voice turn from the 2026-07-26 spark
-  move until 2026-08-03 (the deploy env now pins
-  `parakeet-tdt-0.6b-v3`/`qwen3-tts-0.6b` explicitly, so the defaults are
-  currently unreachable in prod). Exit: change the code defaults to the
-  spark-era values (their doctests pin the old ones — update together),
-  or make empty model names fail loud at boot instead of degrading per
-  turn.
+- ~~`background Coach evaluation failed` (2026-08-03, once)~~
+  **INSTRUMENTED 2026-08-04**: the one occurrence was undiagnosable
+  because the error detail lived in `extra` fields the prod formatter
+  never renders — the log now carries type+message+traceback inline.
+  Single occurrence, response delivered, not reproduced; a recurrence
+  will self-diagnose. (Delete this line when one is diagnosed or after
+  a quiet month.)
 
 ### Retrieval (Lane 2 receipts, 2026-08-01)
 
