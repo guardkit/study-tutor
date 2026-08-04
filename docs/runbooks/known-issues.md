@@ -40,7 +40,9 @@ section.
   reset (server side, spark) and the suite re-pointed at it + ending
   its own sessions (app side, Mac); until that lands the live suite is
   STRICTLY operator-attended and understood to wipe session history —
-  never run it casually against a store anyone cares about.
+  never run it casually against a store anyone cares about. Full
+  server-side design pass + Mac interlock:
+  [`HANDOFF-spark-server-queue-2026-08-04.md`](HANDOFF-spark-server-queue-2026-08-04.md).
   feature file **standalone** fails
   `test_redelivering_the_same_completed_session…`; green in full-suite
   order and reproduces at the pre-S0 baseline — not a product bug
