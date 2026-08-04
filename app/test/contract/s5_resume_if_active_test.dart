@@ -3,6 +3,7 @@
 // session with its turns instead of creating a new one; a different subject,
 // or omitting the flag, creates a new session.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:study_tutor_app/domain/session.dart';
 
 import 'contract_backend.dart';
 import 'fake_contract_backend.dart';
@@ -52,9 +53,37 @@ void runResumeIfActiveTests(ContractBackend Function() newBackend) {
     expect(second.resumed, isFalse);
   });
 
+  test('§5 (ruled 2026-08-04) a fresh start ENDS the active (student, '
+      'subject) match — end-then-create, never a second active', () async {
+    // Rich's option (b) ruling on the double-active seam: the fake
+    // implements it (bb5a4fa) and the server deployed it same day
+    // (19a0211, with a partial-unique-index backstop). One-active per
+    // (student, subject) is what D8 cross-device pickup relies on.
+    final first =
+        await b.api.startSession(subject: 'maths', topic: 'fractions');
+
+    final second = await b.api.startSession(subject: 'maths');
+
+    expect(second.resumed, isFalse);
+    expect(second.sessionId, isNot(first.sessionId));
+
+    final active = await b.api.listSessions(status: SessionStatus.active);
+    expect(active, hasLength(1),
+        reason: 'the previous active was ENDED by the fresh start — '
+            'one-active by construction, never a silent duplicate');
+    expect(active.single.sessionId, second.sessionId);
+  });
+
   test('§5 duplicate active (student, subject) sessions: the most recently '
       'active one wins (contract wording is singular — see QUESTIONS.md)',
       () async {
+    // Since the 2026-08-04 (b) ruling, a start can no longer MINT a
+    // duplicate active — the second start below ends the first
+    // (end-then-create), so this now exercises resume picking the one
+    // true active. The most-recent-wins rule stays pinned for any
+    // duplicate that predates the ruling (or arrives via a path the
+    // partial index doesn't guard) — the QUESTIONS.md wording question
+    // is moot-by-construction for new data.
     final older = await b.api.startSession(subject: 'maths');
     final newer = await b.api.startSession(subject: 'maths');
     // Advance the *newer* session so it is unambiguously the most recently

@@ -92,6 +92,14 @@ class FakeSessionApi implements SessionApi {
   }) async {
     final studentId = _requireStudentId();
 
+    // Server parity (ADR-ARCH-032 D4): omitted/empty subjects normalise to
+    // english for ALL (student, subject) keying — legacy '' rows count as
+    // english, exactly as the server's normalised-key match does.
+    String subjectKey(String? s) {
+      final t = s?.trim() ?? '';
+      return t.isEmpty ? 'english' : t;
+    }
+
     if (resumeIfActive) {
       // §5: keyed on (student, subject) — an active session for a different
       // subject does not match. The contract's singular wording leaves the
@@ -101,7 +109,7 @@ class FakeSessionApi implements SessionApi {
       final matches = _store.sessions.values
           .where((s) =>
               s.studentId == studentId &&
-              s.subject == subject &&
+              subjectKey(s.subject) == subjectKey(subject) &&
               s.status == SessionStatus.active)
           .toList()
         ..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
@@ -119,13 +127,14 @@ class FakeSessionApi implements SessionApi {
       // means the caller wants a FRESH session — any active
       // (student, subject) match is ENDED first, never duplicated, so the
       // one-active invariant D8's cross-device pickup relies on holds by
-      // construction. The server normalises identically (spark side; dated
-      // binding annotation rides that change). Status-flip only here —
-      // whether the implicit end settles gamification is a server-side
-      // design point this fake deliberately doesn't invent.
+      // construction. DEPLOYED server-side same day (`19a0211`): the
+      // server's implicit end rides the real end path and SETTLES
+      // gamification; this fake stays status-flip-only (settlement is
+      // invisible to the session verbs' shapes, so observable semantics
+      // agree — the shared s5 body pins them against both).
       for (final s in _store.sessions.values.toList()) {
         if (s.studentId == studentId &&
-            s.subject == subject &&
+            subjectKey(s.subject) == subjectKey(subject) &&
             s.status == SessionStatus.active) {
           _store.sessions[s.id] = s.copyWith(status: SessionStatus.ended);
         }
