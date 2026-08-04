@@ -1,5 +1,13 @@
 # HANDOFF — the double-active server build (fresh spark session, 2026-08-04)
 
+> **✅ DONE 2026-08-04 (same day, spark)** — built, adversarially reviewed
+> (16-agent pre-deploy pass; 2 would-be blockers refuted empirically, 4
+> confirmed findings fixed incl. the MCP door now RESUMING), deployed, and
+> live-proven. Receipts: commit `19a0211`, migration head `346cd366b66e`,
+> safety dump `pre-one-active-migration-20260804.sql`, hermetic 1709/0,
+> plan Tutoring-core + Suites rows, known-issues tail (the Mac's promotion
+> instruction). Retained as the build's design record — do not re-work.
+
 **Written:** 2026-08-04 on the spark, at origin/main `d95add0`, as the prior
 spark session ran out of context. **One build task carries over** — everything
 else from the 2026-08-04 server queue

@@ -51,14 +51,24 @@ Exit: fold at the next contract re-pin.
   double-actives). What remains open is (b): the tutor FOLLOWING a
   mid-session text switch turn-by-turn — a Lane 1 content-pack-era
   design question, noted not built. Double-active seam **RULED (b) by
-  Rich 2026-08-04** — `resume_if_active:false` normalises to
-  end-then-create (one-active by construction): the FAKE implements it
-  with two hermetic pins (`bb5a4fa`,
-  `test/unit/fake_start_fresh_semantics_test.dart`); the SERVER
-  normalisation + dated binding annotation are the spark's build
-  (full design pass + deploy ritual:
-  [`HANDOFF-spark-double-active-server-build.md`](HANDOFF-spark-double-active-server-build.md));
-  PROMOTE the pin into the shared s5 contract body once that deploys,
+  Rich 2026-08-04 — SERVER SIDE DEPLOYED same day (`19a0211`)**:
+  `resume_if_active:false` normalises to end-then-create (the implicit
+  end rides the real end path and SETTLES); one-active per
+  `(student, subject)` is structural via partial unique index
+  `session_one_active_idx` (migration head `346cd366b66e`); the MCP
+  door now RESUMES (its False default would otherwise end the live app
+  session on every robot start); live-proven as `suite-runner` (second
+  false-start ended+settled the first; lilymay untouched; zero
+  leftovers). **Mac's turn**: PROMOTE the pin into the shared s5
+  contract body (`test/contract/s5_resume_if_active_test.dart`) and in
+  the same pass fold two fake-fidelity nits from the server build's
+  adversarial review — (1) the fake's start-fresh match compares the
+  RAW nullable subject while the server matches on the normalised key
+  (`''`/omitted → `english`, ADR-ARCH-032 D4): align the fake's keying;
+  (2) the fake's "whether the implicit end settles is a server-side
+  design point" comment is now decided (the server settles,
+  `tests/unit/session/test_start_fresh_semantics.py`): update the
+  comment (fake stays status-flip-only; observable semantics agree) —
   then delete this note.
 - ~~Streamed think-block leak~~ **CLOSED 2026-08-03 (same session's
   turn 11 receipt)**: respond_stream buffered the full generation (fake
