@@ -61,6 +61,26 @@ async def test_start_session_returns_session_id(adapter: MCPAdapter) -> None:
     await _drain_warmups(adapter)
 
 
+async def test_start_session_resumes_the_active_session(
+    adapter: MCPAdapter,
+) -> None:
+    """The MCP door RESUMES (ruled (b) follow-through, 2026-08-04): under
+    end-then-create semantics a False start would END the student's active
+    session, and this door's tool surface can't express the caller's
+    intent — so a robot start joins the one (student, SUBJECT_DEFAULT)
+    session (D8 cross-device pickup) instead of destroying it."""
+    first = await adapter.tutor_start_session(student_id="lilymay")
+    second = await adapter.tutor_start_session(student_id="lilymay")
+    await _drain_warmups(adapter)
+
+    assert second["session_id"] == first["session_id"]
+
+    status = await adapter.tutor_session_status(
+        session_id=first["session_id"]
+    )
+    assert status["status"] == "active"
+
+
 async def test_turn_rejects_unknown_session(adapter: MCPAdapter) -> None:
     result = await adapter.tutor_turn(session_id="nope", user_message="hi")
     assert result["error_type"] == "SessionNotFoundError"

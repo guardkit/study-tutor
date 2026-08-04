@@ -203,10 +203,12 @@ async def test_upgrade_head_creates_named_indexes(
     ephemeral_postgres_dsn: str,
     alembic_project_root: Path,
 ) -> None:
-    """Verify that all 4 named indexes are created."""
+    """Verify that all 5 named indexes are created, and that the one-active
+    backstop (rev 346cd366b66e) keeps its UNIQUE + partial predicate."""
     expected_indexes = {
         "misconception_recent_idx",
         "session_resume_idx",
+        "session_one_active_idx",
         "quest_active_idx",
         "topic_confidence_history_recent_idx",
     }
@@ -227,10 +229,24 @@ async def test_upgrade_head_creates_named_indexes(
         )
         actual_indexes = {row[0] for row in result}
 
+        one_active_def = (
+            await conn.execute(
+                text(
+                    "SELECT indexdef FROM pg_indexes "
+                    "WHERE indexname = 'session_one_active_idx'"
+                )
+            )
+        ).scalar()
+
     await engine.dispose()
     assert actual_indexes == expected_indexes, (
         f"Missing indexes: {expected_indexes - actual_indexes}"
     )
+    # The backstop is load-bearing only as UNIQUE-and-partial: without
+    # either property it silently stops enforcing one-active.
+    assert one_active_def is not None
+    assert "CREATE UNIQUE INDEX" in one_active_def
+    assert "status = 'active'" in one_active_def
 
 
 @pytest.mark.asyncio

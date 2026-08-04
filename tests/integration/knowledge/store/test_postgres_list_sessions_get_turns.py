@@ -92,7 +92,8 @@ async def test_list_sessions_respects_limit(pg_store, pg_engine, student_id):
     """list_sessions respects the limit parameter."""
     now = datetime.now(timezone.utc)
 
-    # Create 5 sessions
+    # Create 5 sessions — one subject each: one-active-per-(student, subject)
+    # is structural since rev 346cd366b66e (ruled (b), 2026-08-04).
     async with pg_engine.begin() as conn:
         for i in range(5):
             await conn.execute(
@@ -105,7 +106,7 @@ async def test_list_sessions_respects_limit(pg_store, pg_engine, student_id):
                 {
                     "sid": f"session-{i}",
                     "student_id": student_id,
-                    "subject": "Mathematics",
+                    "subject": f"subject-{i}",
                     "status": "active",
                     "started_at": now - timedelta(hours=i),
                     "last_activity": now - timedelta(hours=i),
@@ -130,7 +131,8 @@ async def test_list_sessions_filters_by_status(pg_store, pg_engine, student_id):
     now = datetime.now(timezone.utc)
 
     async with pg_engine.begin() as conn:
-        # Create 2 active sessions
+        # Create 2 active sessions — one subject each (the one-active
+        # invariant is per (student, subject), rev 346cd366b66e).
         for i in range(2):
             await conn.execute(
                 text(
@@ -142,7 +144,7 @@ async def test_list_sessions_filters_by_status(pg_store, pg_engine, student_id):
                 {
                     "sid": f"active-{i}",
                     "student_id": student_id,
-                    "subject": "Mathematics",
+                    "subject": f"subject-{i}",
                     "status": "active",
                     "started_at": now - timedelta(hours=i),
                     "last_activity": now - timedelta(hours=i),

@@ -47,6 +47,8 @@ All endpoints use JSON request/response bodies. The server listens on **port 810
 
 **Note:** Request and response JSON shapes are defined in contract §5. This binding table maps verbs to HTTP methods and paths; the payload semantics are unchanged from the contract.
 
+> **Dated annotation 2026-08-04 (`start_session` row — in-place, per the §2.2/§4.1 precedent):** `resume_if_active: false` semantics clarified (ruled option (b), 2026-08-04): the service normalises a start against an existing **active** `(student, subject)` session to **end-then-create** — the active match is ended first (riding the normal end path, so it settles) and a fresh session is created, making the one-active-per-`(student, subject)` invariant structural (a partial unique index backstops it in the store; D8 cross-device pickup relies on it). The response already expresses this (`resumed: false`); previously the `false` path could mint a second active session for the same key — a latent store corruption, never a contracted behaviour. No field, shape, or status-code change; **no `CONTRACT_SHA`/`BINDING_SHA` re-pin**.
+
 **Rev 1 notes:**
 - `voice_turn`'s multipart request and `voice_audio`'s binary response are the two deliberate exceptions to "all endpoints use JSON bodies".
 - **Rollout flag:** the voice routes are mounted only when `STUDY_TUTOR_VOICE_ENABLED` is set (the same conditional-route pattern as §5's dev endpoints) — with the flag absent they return 404. The six original routes are never flag-gated.

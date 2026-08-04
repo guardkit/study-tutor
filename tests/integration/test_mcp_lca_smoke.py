@@ -231,9 +231,10 @@ async def test_per_turn_factory_isolation_concurrent_sessions(
         instances.append(orch)
         return orch
 
+    session_service = _fake_session_service()
     adapter = MCPAdapter(
         role_config=role_config,
-        session_service=_fake_session_service(),
+        session_service=session_service,
         orchestrator_factory=tracking_factory,
     )
     # Boot smoke check should have invoked the factory exactly once.
@@ -242,11 +243,18 @@ async def test_per_turn_factory_isolation_concurrent_sessions(
         f"boot smoke check should invoke factory once; got {boot_count}"
     )
 
-    # Two distinct sessions for two distinct learners.
+    # Two concurrently-live sessions for the one resolved identity. Ruled
+    # (b) 2026-08-04: a second MCP start would share the (student,
+    # SUBJECT_DEFAULT) key and END the first — one-active is structural
+    # now — so the second live session comes from the service under a
+    # different subject; the invariant under test here is tutor_turn's
+    # per-turn factory isolation, not the start door's keying.
     s1 = await adapter.tutor_start_session(student_id="lilymay-iso-1")
-    s2 = await adapter.tutor_start_session(student_id="lilymay-iso-2")
+    s2 = await session_service.start_session(
+        student_id="lilymay", subject="french"
+    )
     await _drain_warmups(adapter)
-    sid1, sid2 = s1["session_id"], s2["session_id"]
+    sid1, sid2 = s1["session_id"], s2.session_id
     assert sid1 != sid2
 
     # Concurrent turns — gather forces both into the same event loop

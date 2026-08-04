@@ -127,6 +127,12 @@ _PLANNER_HANDLER_BUDGET_DEFAULT: float = 2.0
 #: generous cap keeps the 4-day London rotation honest without a heavy read.
 _RECENT_SESSIONS_WINDOW: int = 20
 
+#: How many active sessions to scan for ``(student, subject)`` matches on a
+#: start-fresh (ruled (b), 2026-08-04). Post-backstop (rev 346cd366b66e) a
+#: student holds at most one active per subject, so this bounds at the
+#: subject count; it is generous only to sweep pre-index strays too.
+_START_FRESH_ACTIVE_SCAN_LIMIT: int = 100
+
 
 def _planner_handler_budget_sec() -> float:
     """Return the outer ``plan_session`` budget for ``start_session``.
@@ -489,6 +495,17 @@ class SessionService:
         existing active one (with its transcript). No ownership guard: an
         auth-derived ``student_id`` can only create/resume its own session.
 
+        Ruled (b) 2026-08-04 (Rich): ``resume_if_active=False`` means the
+        caller wants a FRESH session, so any active ``(student, subject)``
+        match is ENDED first — one-active by construction, the invariant D8
+        cross-device pickup (``last_activity DESC LIMIT 1``) relies on. The
+        implicit end rides the real :meth:`end_session` path, so the abandoned
+        session settles (XP banks) exactly as an explicit end would:
+        start-fresh is the app's two-call end-then-start flow in one verb.
+        The app fake pins the observable semantics
+        (``app/test/unit/fake_start_fresh_semantics_test.dart``); the partial
+        unique index (rev 346cd366b66e) backstops the invariant in the store.
+
         S-R3 §2.1 / D14: planning now lives here. The plan is computed under the
         2.0s budget/degrade boundary keyed by the **ownership** ``student_id``
         (the same identity the confidence writes use — spec §2.1 read-key fix),
@@ -511,6 +528,38 @@ class SessionService:
             )
             subject = SUBJECT_DEFAULT
         store = self._resolve_store()
+
+        # Ruled (b) end-then-create (see docstring). Ending precedes planning
+        # deliberately: the plan then reads the just-settled learner state,
+        # keeping this path byte-alike with the app's explicit two-call flow.
+        if not resume_if_active:
+            active = await store.list_sessions(
+                student_id,
+                status="active",
+                limit=_START_FRESH_ACTIVE_SCAN_LIMIT,
+            )
+            for existing in active:
+                # Compare on the normalised key: pre-ADR-032 rows may still
+                # carry subject='' (semantically english) — the same defence
+                # finalize_session applies on the end path.
+                if (existing.subject or SUBJECT_DEFAULT) != subject:
+                    continue
+                logger.info(
+                    "event=start_fresh_ended_active session_id=%s "
+                    "student_id=%s subject=%s",
+                    existing.session_id,
+                    student_id,
+                    subject,
+                )
+                try:
+                    await self.end_session(
+                        student_id=student_id,
+                        session_id=existing.session_id,
+                    )
+                except SessionEnded:
+                    # A concurrent end already reached the goal state; the
+                    # invariant holds either way.
+                    pass
 
         # Plan under the outer budget/degrade boundary. Keyed by the ownership
         # student_id so the planner reads the same learner state the confidence

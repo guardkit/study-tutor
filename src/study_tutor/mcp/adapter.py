@@ -222,10 +222,18 @@ class MCPAdapter:
         # MCP session (no corpus is keyed by a student name). It now sends
         # the shared default, so all front doors resume the same
         # ``(student, subject)`` session.
+        # Ruled (b) 2026-08-04: the service's False path now ENDS the active
+        # (student, subject) match (end-then-create), and this door's tool
+        # surface has no way to express the caller's intent. Its D4
+        # unification above exists precisely so all front doors share the
+        # one session — so it resumes: a robot start joins the student's
+        # active session (D8 cross-device pickup) instead of destroying it
+        # mid-conversation.
         result = await self._session_service.start_session(
             student_id=identity,
             subject=SUBJECT_DEFAULT,
             topic=topic_override,
+            resume_if_active=True,
         )
         session_id = result.session_id
 

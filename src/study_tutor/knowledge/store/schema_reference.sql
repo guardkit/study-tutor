@@ -2,8 +2,9 @@
 --
 -- LIVING REFERENCE. This file is kept in sync by hand; `alembic upgrade head`
 -- is the source of truth for the schema (revisions 3c7cd4bca034 →
--- b7d1e4f92a3c → c3f8a1b6d2e4). Do NOT apply by hand — the runbook's G7 gate runs
--- `alembic upgrade head` (docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md).
+-- b7d1e4f92a3c → c3f8a1b6d2e4 → d5a9c2e7f814 → 346cd366b66e). Do NOT apply by
+-- hand — the runbook's G7 gate runs `alembic upgrade head`
+-- (docs/runbooks/RUNBOOK-study-tutor-postgres-deploy.md).
 --
 -- JSONB is used only for genuinely flexible/nested fields (per-AO observations,
 -- scaffolded-AO lists). Scalar learner state stays typed. No pgvector.
@@ -63,6 +64,11 @@ CREATE TABLE session (
 );
 -- The "resume where you left off" query: active sessions for a student, newest first.
 CREATE INDEX session_resume_idx ON session (student_id, status, last_activity DESC);
+-- One-active backstop (rev 346cd366b66e, ruled (b) 2026-08-04): the service
+-- normalises start(resume_if_active=false) to end-then-create; this makes the
+-- one-active-per-(student, subject) invariant structural. Silent in normal
+-- flow — it fires only on a pathological concurrent double-start.
+CREATE UNIQUE INDEX session_one_active_idx ON session (student_id, subject) WHERE status = 'active';
 
 -- Per-turn durable append (lossless mid-session device switch, §4/§6).
 CREATE TABLE session_turn (

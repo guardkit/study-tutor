@@ -282,22 +282,26 @@ async def test_slow_plan_abandoned_within_outer_budget(
 
 
 # ---------------------------------------------------------------------------
-# Concurrent invocations produce distinct session_ids
+# Concurrent invocations converge on the one active session
 # ---------------------------------------------------------------------------
 
 
-async def test_concurrent_invocations_produce_distinct_session_ids(
+async def test_concurrent_invocations_converge_on_one_active_session(
     adapter: MCPAdapter,
 ) -> None:
-    """Two concurrent ``tutor_start_session`` calls for the same learner each
-    get a distinct session_id (durable minting, no shared cache to collide)."""
+    """Two concurrent ``tutor_start_session`` calls for the same learner
+    complete without corrupting each other and converge on the ONE active
+    ``(student, subject)`` session — the door resumes (ruled (b)
+    follow-through, 2026-08-04), so distinct-id minting per call is no
+    longer the invariant; one-active is."""
     a, b = await asyncio.gather(
         adapter.tutor_start_session(student_id="lilymay"),
         adapter.tutor_start_session(student_id="lilymay"),
     )
     await _drain_warmups(adapter)
 
-    assert a["session_id"] != b["session_id"]
+    assert a["session_id"] and b["session_id"]
+    assert a["session_id"] == b["session_id"]
 
 
 # ---------------------------------------------------------------------------

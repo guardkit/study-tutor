@@ -6,8 +6,9 @@ the W2 Growth tranche (Quote Champion / Quote Master, R8) reads:
 * ``session.quotes_embedded`` is INTEGER NOT NULL DEFAULT 0 with a ``>= 0`` check.
 * a session row created before the upgrade reads ``quotes_embedded = 0`` after it
   (honest — no verifier signal existed before this wave).
-* the revision's own ``downgrade`` (one step back to b7d1e4f92a3c) removes the
-  column + its check constraint and leaves the rest of the schema intact.
+* downgrading head → b7d1e4f92a3c (which now also walks the later revisions'
+  downgrades) removes the column + its check constraint and leaves the rest
+  of the schema intact.
 
 This module self-provisions its OWN throwaway ``postgres:16`` on a dedicated port
 + container name (port 55437 — 55432/55433/55434/55435/55436 are taken). It NEVER
@@ -31,7 +32,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 
 #: The revision under test and the revision it downgrades to.
-_HEAD_REVISION = "d5a9c2e7f814"
+_HEAD_REVISION = "346cd366b66e"
 _PREVIOUS_REVISION = "b7d1e4f92a3c"
 
 #: Dedicated container + port for this module's throwaway Postgres. Port 55437 is
@@ -181,7 +182,7 @@ async def test_current_revision_is_head(
     ephemeral_postgres_dsn: str,
     alembic_project_root: Path,
 ) -> None:
-    """After upgrade head, the DB reports revision c3f8a1b6d2e4 as current."""
+    """After upgrade head, the DB reports the head revision as current."""
     result = _run_alembic(alembic_project_root, ephemeral_postgres_dsn, "current")
     assert result.returncode == 0, f"alembic current failed: {result.stderr}"
     assert _HEAD_REVISION in result.stdout, (
@@ -252,7 +253,10 @@ async def test_downgrade_one_step_removes_quotes_embedded(
     ephemeral_postgres_dsn: str,
     alembic_project_root: Path,
 ) -> None:
-    """Downgrading c3f8a1b6d2e4 → b7d1e4f92a3c removes only quotes_embedded."""
+    """Downgrading head → b7d1e4f92a3c removes quotes_embedded (and walks the
+    later revisions' downgrades — 346cd366b66e's drop_index and
+    d5a9c2e7f814's subject drops — on the way; a failure here can live in
+    any of those three)."""
     result = _run_alembic(
         alembic_project_root, ephemeral_postgres_dsn, "downgrade", _PREVIOUS_REVISION
     )
