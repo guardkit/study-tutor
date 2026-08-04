@@ -55,7 +55,9 @@ Exit: fold at the next contract re-pin.
   end-then-create (one-active by construction): the FAKE implements it
   with two hermetic pins (`bb5a4fa`,
   `test/unit/fake_start_fresh_semantics_test.dart`); the SERVER
-  normalisation + dated binding annotation are the spark's build;
+  normalisation + dated binding annotation are the spark's build
+  (full design pass + deploy ritual:
+  [`HANDOFF-spark-double-active-server-build.md`](HANDOFF-spark-double-active-server-build.md));
   PROMOTE the pin into the shared s5 contract body once that deploys,
   then delete this note.
 - ~~Streamed think-block leak~~ **CLOSED 2026-08-03 (same session's
