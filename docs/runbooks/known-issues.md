@@ -21,21 +21,6 @@ section.
   (`idp-test.tail0000.ts.net` / `100.100.100.100`), which also honours
   the guard's actual point — unit tests shouldn't name production
   hosts.
-- **Live-suite isolation — server half DONE 2026-08-04, Mac re-point
-  remains (open until the suite runs as the suite identity)**: the
-  2026-08-03 finding (test_live signed in as REAL `lilymay`; its reset
-  TRUNCATED every student's sessions; stray maths test sessions
-  surfaced as real-looking cards) is half-closed: `__dev__/reset` now
-  AUTHENTICATES (it previously required no bearer at all) and deletes
-  only the CALLER's rows (`delete_sessions_for_student`, 3 route pins;
-  live-proven post-deploy: unauthenticated → 401, reset as the new
-  suite identity deleted 0 rows and left lilymay's 4 + alex's 1
-  untouched). **The suite identity is deployed: token `token-suite` →
-  student `suite-runner`** (dev-table env + seeded student row).
-  Remaining (Mac): re-point test_live at `token-suite`, add
-  end-own-sessions teardown, re-run for a fresh Suites-row receipt.
-  Until then the live suite stays operator-attended (it can no longer
-  wipe others' history — worst case is suite-student pollution).
 - **Fixture-ordering artifact (open)**: running the durable-cross-device
   feature file **standalone** fails
   `test_redelivering_the_same_completed_session…`; green in full-suite
@@ -65,11 +50,14 @@ Exit: fold at the next contract re-pin.
   gate + resume_if_active backstop so no path silently resumes OR
   double-actives). What remains open is (b): the tutor FOLLOWING a
   mid-session text switch turn-by-turn — a Lane 1 content-pack-era
-  design question, noted not built. Fake-fidelity note from the same
-  review: `FakeSessionApi.startSession(resume_if_active:false)` CREATES
-  a second active session where prod unconditionally INSERTs too (no
-  unique-active constraint) — the app no longer exercises that path, but
-  the seam stays un-pinned server-side.
+  design question, noted not built. Double-active seam **RULED (b) by
+  Rich 2026-08-04** — `resume_if_active:false` normalises to
+  end-then-create (one-active by construction): the FAKE implements it
+  with two hermetic pins (`bb5a4fa`,
+  `test/unit/fake_start_fresh_semantics_test.dart`); the SERVER
+  normalisation + dated binding annotation are the spark's build;
+  PROMOTE the pin into the shared s5 contract body once that deploys,
+  then delete this note.
 - ~~Streamed think-block leak~~ **CLOSED 2026-08-03 (same session's
   turn 11 receipt)**: respond_stream buffered the full generation (fake
   streaming) then re-yielded RAW tokens through a per-token marker check
