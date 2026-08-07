@@ -160,12 +160,15 @@ def _run_ingest(
     persist_dir: Path,
     collection_name: str = "test-collection",
     reset: bool = False,
+    extra_argv: list[str] | None = None,
+    expect_rc: int = 0,
 ) -> list[dict[str, Any]]:
     """Invoke ``ingest_corpus.main`` programmatically and parse NDJSON stdout.
 
     Returns the list of parsed NDJSON records emitted by the script. Asserts
-    the exit code is 0 on success — every test here drives a corpus that
-    should ingest cleanly, so a non-zero return is a failure signal.
+    the exit code equals ``expect_rc`` (0 by default — most tests drive a
+    corpus that should ingest cleanly; the ``--fail-on-unanchored`` gate
+    tests expect the documented non-zero code instead).
     """
     argv = [
         "--domain-root",
@@ -177,10 +180,11 @@ def _run_ingest(
     ]
     if reset:
         argv.append("--reset")
+    argv.extend(extra_argv or [])
     buf = io.StringIO()
     with redirect_stdout(buf):
         rc = ingest_corpus.main(argv)
-    assert rc == 0, f"ingest_corpus.main exited with {rc}"
+    assert rc == expect_rc, f"ingest_corpus.main exited with {rc}, expected {expect_rc}"
     return [json.loads(line) for line in buf.getvalue().splitlines() if line.strip()]
 
 
@@ -423,3 +427,127 @@ def test_make_embedding_function_default_values(
     assert ef.api_base == ingest_corpus.DEFAULT_EMBEDDINGS_BASE_URL
     assert ef.api_key == ingest_corpus.DEFAULT_EMBEDDINGS_API_KEY
     assert ef.model_name == ingest_corpus.DEFAULT_EMBEDDINGS_MODEL
+
+
+# ---------------------------------------------------------------------------
+# Track A / A3 — citation-anchor regression gate (Lane 2 step 3, 2026-08-07).
+#
+# The 2026-05-10 docling re-ingest silently shipped 581/581 anchorless
+# primary chunks (the summary carried no anchor signal, so the loss went
+# unnoticed until the verifier blew up on correct quotes). The
+# ``citation_anchor_summary`` NDJSON event is ALWAYS emitted per primary
+# text; ``--fail-on-unanchored`` opts in to a non-zero exit (3) when any
+# primary text is 100% unanchored. Existing callers see the same exit
+# codes as before by default.
+# ---------------------------------------------------------------------------
+
+
+# Flowed prose with NO structural markers (no line-leading ACT/SCENE, no
+# chapter headings) — the citation-anchor inferer returns None for every
+# chunk, reproducing the 2026-05-10 regression shape.
+_UNANCHORED_PRIMARY_BODY = """\
+Come, you spirits that tend on mortal thoughts, unsex me here, and fill me
+from the crown to the toe top-full of direst cruelty. Make thick my blood,
+stop up the access and passage to remorse, that no compunctious visitings
+of nature shake my fell purpose, nor keep peace between the effect and it.
+
+If it were done when 'tis done, then 'twere well it were done quickly. If
+the assassination could trammel up the consequence and catch with his
+surcease success, that but this blow might be the be-all and the end-all
+here, but here, upon this bank and shoal of time, we'd jump the life to
+come. I have no spur to prick the sides of my intent, but only vaulting
+ambition, which o'erleaps itself.
+"""
+
+
+def _write_unanchored_fixture_corpus(root: Path) -> None:
+    """Four-folder corpus whose single primary text yields NO citation anchors."""
+    (root / "primary_text").mkdir(parents=True)
+    (root / "secondary_study_guide").mkdir(parents=True)
+    (root / "secondary_critical").mkdir(parents=True)
+    (root / "context_historical").mkdir(parents=True)
+    (root / "primary_text" / "flatplay.txt").write_text(
+        _UNANCHORED_PRIMARY_BODY, encoding="utf-8"
+    )
+
+
+def test_citation_anchor_summary_always_emitted_for_anchored_corpus(
+    tmp_path: Path,
+) -> None:
+    """Anchored fixture → one citation_anchor_summary per primary text, anchored > 0."""
+    domain_root = tmp_path / "corpus"
+    persist_dir = tmp_path / "chroma"
+    _write_fixture_corpus(domain_root)
+
+    records = _run_ingest(domain_root=domain_root, persist_dir=persist_dir)
+
+    summaries = [r for r in records if r["event"] == "citation_anchor_summary"]
+    # Exactly one primary text in the fixture ("macbeth"); the secondary
+    # macbeth.txt must NOT contribute a summary of its own.
+    assert len(summaries) == 1
+    summary = summaries[0]
+    assert summary["text_name"] == "macbeth"
+    assert summary["anchored"] >= 1
+    # anchored + unanchored covers every PRIMARY_TEXT chunk for the text.
+    primary_count = next(
+        r["chunk_count"]
+        for r in records
+        if r["event"] == "per_text_count"
+        and r["text_name"] == "macbeth"
+        and r["source_type"] == "PRIMARY_TEXT"
+    )
+    assert summary["anchored"] + summary["unanchored"] == primary_count
+
+
+def test_unanchored_corpus_reports_counts_but_exits_zero_by_default(
+    tmp_path: Path,
+) -> None:
+    """Without the opt-in flag a 100%-unanchored text is reported, not fatal."""
+    domain_root = tmp_path / "corpus"
+    persist_dir = tmp_path / "chroma"
+    _write_unanchored_fixture_corpus(domain_root)
+
+    # _run_ingest asserts rc == 0 — existing-caller behaviour unchanged.
+    records = _run_ingest(domain_root=domain_root, persist_dir=persist_dir)
+
+    summaries = [r for r in records if r["event"] == "citation_anchor_summary"]
+    assert len(summaries) == 1
+    assert summaries[0]["text_name"] == "flatplay"
+    assert summaries[0]["anchored"] == 0
+    assert summaries[0]["unanchored"] >= 1
+
+
+def test_fail_on_unanchored_exits_nonzero_for_fully_unanchored_text(
+    tmp_path: Path,
+) -> None:
+    """--fail-on-unanchored → exit 3 when a primary text is 100% unanchored."""
+    domain_root = tmp_path / "corpus"
+    persist_dir = tmp_path / "chroma"
+    _write_unanchored_fixture_corpus(domain_root)
+
+    records = _run_ingest(
+        domain_root=domain_root,
+        persist_dir=persist_dir,
+        extra_argv=["--fail-on-unanchored"],
+        expect_rc=3,
+    )
+
+    # The summary events still emitted before the non-zero exit — the
+    # operator sees WHICH text failed, not just an exit code.
+    summaries = [r for r in records if r["event"] == "citation_anchor_summary"]
+    assert summaries and summaries[0]["anchored"] == 0
+
+
+def test_fail_on_unanchored_passes_when_anchors_survive(tmp_path: Path) -> None:
+    """--fail-on-unanchored is quiet (exit 0) when the text keeps its anchors."""
+    domain_root = tmp_path / "corpus"
+    persist_dir = tmp_path / "chroma"
+    _write_fixture_corpus(domain_root)
+
+    records = _run_ingest(
+        domain_root=domain_root,
+        persist_dir=persist_dir,
+        extra_argv=["--fail-on-unanchored"],
+        expect_rc=0,
+    )
+    assert any(r["event"] == "citation_anchor_summary" for r in records)

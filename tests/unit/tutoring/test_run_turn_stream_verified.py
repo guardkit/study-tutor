@@ -157,3 +157,77 @@ async def test_missing_factory_refuses_rather_than_degrading_to_raw() -> None:
     )
     with pytest.raises(OrchestratorConfigurationError):
         await anext(stream)
+
+
+# ---------------------------------------------------------------------------
+# Track A / A2 — the FINAL pass must fail CLOSED on verifier_exception
+# (Lane 2 step 3 regression pins, 2026-08-07).
+#
+# Observed HEAD behaviour BEFORE the fix: per-chunk verification correctly
+# held release on verifier_exception, but the end-of-stream final pass did
+# NOT re-check the flag. With everything held,
+# verified_full[:released_verified_len] was "" and "".startswith("") is
+# True, so tail = the ENTIRE raw response — the stream yielded raw
+# unverified text (fail-OPEN) and SessionService.turn_stream persisted it.
+# These tests assert the FIXED behaviour: on a final-pass
+# verifier_exception nothing raw is ever released; the learner gets the
+# already-verified prefix plus an honest fallback notice, and the async
+# Coach sees exactly what was shown with the exception flag intact.
+# ---------------------------------------------------------------------------
+
+
+async def test_final_pass_verifier_exception_fails_closed_releases_no_raw_text() -> None:
+    def factory(learner_message: str, session_state: Any) -> Any:
+        def verify(text: str) -> tuple[str, VerifierMetadata]:
+            return text, VerifierMetadata(verifier_exception=True)
+
+        return verify
+
+    tokens = ['She says "unsex me here and fill me". ', "More raw text follows."]
+    orch, dispatched = _make_orchestrator(tokens, factory)
+
+    deltas = await _collect(orch)
+
+    from study_tutor.tutoring.orchestrator import FINAL_VERIFICATION_FALLBACK
+
+    joined = "".join(deltas)
+    # No fragment of the unverified raw response reaches the learner.
+    assert "unsex me here" not in joined
+    assert "More raw text" not in joined
+    # The learner gets the honest fallback, alone.
+    assert joined == FINAL_VERIFICATION_FALLBACK
+    # The async Coach sees exactly what was shown + the exception flag.
+    assert dispatched.call_count == 1
+    kwargs = dispatched.call_args.kwargs
+    assert kwargs["player_response"] == FINAL_VERIFICATION_FALLBACK
+    assert kwargs["verifier_metadata"].verifier_exception is True
+
+
+async def test_final_pass_exception_keeps_released_prefix_and_appends_fallback() -> None:
+    calls = {"n": 0}
+
+    def factory(learner_message: str, session_state: Any) -> Any:
+        def verify(text: str) -> tuple[str, VerifierMetadata]:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return text, VerifierMetadata()
+            return text, VerifierMetadata(verifier_exception=True)
+
+        return verify
+
+    tokens = ["A metaphor compares directly. ", 'Then "a fabricated line" follows.']
+    orch, dispatched = _make_orchestrator(tokens, factory)
+
+    deltas = await _collect(orch)
+
+    from study_tutor.tutoring.orchestrator import FINAL_VERIFICATION_FALLBACK
+
+    # The verified first sentence was released and is never retracted.
+    assert deltas[0] == "A metaphor compares directly. "
+    joined = "".join(deltas)
+    # The unverified tail is held back entirely.
+    assert "fabricated line" not in joined
+    assert joined == "A metaphor compares directly. " + FINAL_VERIFICATION_FALLBACK
+    kwargs = dispatched.call_args.kwargs
+    assert kwargs["player_response"] == joined
+    assert kwargs["verifier_metadata"].verifier_exception is True

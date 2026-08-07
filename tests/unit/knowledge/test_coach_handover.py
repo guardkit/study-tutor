@@ -460,3 +460,50 @@ async def test_orchestrator_runs_handover_on_each_revision() -> None:
     assert result.response == "raw_revised (verified)"
     assert result.verifier_metadata is not None
     assert result.verifier_metadata.retrieval_skipped_reason == "attempt:2"
+
+
+# ---------------------------------------------------------------------------
+# Track A / A1 — anchorless primary corpus must not fail the verifier OPEN
+# (Lane 2 step 3 regression pin, 2026-08-07).
+#
+# Observed HEAD behaviour BEFORE the fix: the shipped store (2026-05-10
+# docling re-ingest) carries citation_anchor=None on 581/581 chunks, so a
+# CORRECT verbatim quote made verify_quotes raise ("corpus loader contract
+# broken"); this broad-except caught it and returned the RAW UNVERIFIED
+# response with verifier_exception=True — i.e. on English sessions the
+# exact path built for mission law 3 released unverified text whenever the
+# Player quoted correctly.
+# ---------------------------------------------------------------------------
+
+
+def test_apply_quote_verification_anchorless_primary_corpus_no_longer_fails_open() -> None:
+    """Anchorless primary chunk → degraded (uncited) citation, NOT verifier_exception."""
+    response = (
+        'Lady Macbeth cries "Out, damned spot! out, I say! One: two: why, '
+        'then, tis time to do" in her sleep.'
+    )
+    anchorless_corpus = [
+        CorpusChunk(
+            text=(
+                "Out, damned spot! out, I say! One: two: why, then, "
+                "tis time to do't."
+            ),
+            source_type=SourceType.PRIMARY_TEXT,
+            source_path="corpus/primary/macbeth.txt",
+            text_name="Macbeth",
+            citation_anchor=None,  # the 2026-05-10 store shape
+            chunk_index=0,
+        ),
+    ]
+
+    rewritten, metadata = apply_quote_verification(
+        response, anchorless_corpus, session_text_name="Macbeth"
+    )
+
+    # The verifier ran to completion — no fail-open.
+    assert metadata.verifier_exception is False
+    assert len(metadata.primary_matches) == 1
+    assert metadata.primary_matches[0].citation_anchor is None
+    assert metadata.anchorless_primary_matches == 1
+    # Span verified and kept in quotes; nothing to cite so no annotation.
+    assert rewritten == response

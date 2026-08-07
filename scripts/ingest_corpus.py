@@ -54,6 +54,10 @@ The operator can pipe stdout through ``jq`` cleanly. Event types:
   primary texts registered.
 * ``per_text_count`` — emitted once per (``text_name``, ``source_type``)
   pair in the corpus, with the chunk count.
+* ``citation_anchor_summary`` — emitted once per primary ``text_name``
+  with ``anchored`` / ``unanchored`` chunk counts (always emitted; the
+  regression gate for the 2026-05-10 all-anchors-lost re-ingest). Pair
+  with ``--fail-on-unanchored`` to make a 100%-unanchored text fatal.
 * ``refusal`` — emitted per refusal with ``reason`` and ``detail``.
 * ``skip`` — emitted per skip with ``reason`` and ``detail``.
 
@@ -202,6 +206,17 @@ def _build_parser() -> argparse.ArgumentParser:
             "Directory for the persistent ChromaDB client. Will be created "
             "if missing. The .primary_text_index sidecar is written here too. "
             f"Default: $CHROMA_PERSIST_DIR or {DEFAULT_PERSIST_DIR}"
+        ),
+    )
+    parser.add_argument(
+        "--fail-on-unanchored",
+        action="store_true",
+        help=(
+            "Exit non-zero (3) when any primary text ingests with 100%% "
+            "unanchored chunks (citation-anchor inference produced nothing "
+            "for that text — the 2026-05-10 regression shape). Off by "
+            "default so existing callers are unaffected; the "
+            "citation_anchor_summary NDJSON events are emitted either way."
         ),
     )
     parser.add_argument(
@@ -356,6 +371,29 @@ def _primary_text_names(chunks: Iterable[CorpusChunk]) -> list[str]:
     return sorted(names)
 
 
+def _citation_anchor_counts(
+    chunks: Iterable[CorpusChunk],
+) -> dict[str, tuple[int, int]]:
+    """Per-primary-text ``(anchored, unanchored)`` chunk counts.
+
+    Only ``PRIMARY_TEXT`` chunks are counted — secondary / context chunks
+    never carry a :class:`CitationAnchor` by contract, so including them
+    would drown the signal this gate exists for (the quote verifier's
+    citation rendering depends on primary anchors; a text ingesting 100%
+    unanchored means every verified quote for it degrades to an uncited
+    quotation).
+    """
+    counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for chunk in chunks:
+        if chunk.source_type is not SourceType.PRIMARY_TEXT:
+            continue
+        if chunk.citation_anchor is None:
+            counts[chunk.text_name][1] += 1
+        else:
+            counts[chunk.text_name][0] += 1
+    return {name: (anchored, unanchored) for name, (anchored, unanchored) in counts.items()}
+
+
 def _sidecar_filename(subject: str) -> str:
     """Sidecar name for ``subject`` (ADR-ARCH-032 D2/D5).
 
@@ -414,8 +452,16 @@ def _emit_summary(
     result: IngestResult,
     primary_text_names: Sequence[str],
     sidecar_path: Path,
+    anchor_counts: dict[str, tuple[int, int]] | None = None,
 ) -> None:
-    """Emit the NDJSON summary lines: refusals, skips, per-text, header."""
+    """Emit the NDJSON summary lines: refusals, skips, per-text, anchors, header.
+
+    ``anchor_counts`` (from :func:`_citation_anchor_counts`) drives the
+    always-emitted ``citation_anchor_summary`` events; ``None`` computes
+    it from ``result.chunks`` so direct callers stay one-argument-simple.
+    """
+    if anchor_counts is None:
+        anchor_counts = _citation_anchor_counts(result.chunks)
     for refusal in result.refusals:
         _emit(
             {
@@ -445,6 +491,16 @@ def _emit_summary(
                 "text_name": text_name,
                 "source_type": source_type,
                 "chunk_count": chunk_count,
+            }
+        )
+
+    for text_name, (anchored, unanchored) in sorted(anchor_counts.items()):
+        _emit(
+            {
+                "event": "citation_anchor_summary",
+                "text_name": text_name,
+                "anchored": anchored,
+                "unanchored": unanchored,
             }
         )
 
@@ -515,7 +571,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     primary_names = _primary_text_names(result.chunks)
     sidecar = _register_primary_texts(persist_dir, primary_names, subject)
 
-    _emit_summary(result, primary_names, sidecar)
+    anchor_counts = _citation_anchor_counts(result.chunks)
+    _emit_summary(result, primary_names, sidecar, anchor_counts)
+
+    if args.fail_on_unanchored:
+        fully_unanchored = sorted(
+            text_name
+            for text_name, (anchored, unanchored) in anchor_counts.items()
+            if anchored == 0 and unanchored > 0
+        )
+        if fully_unanchored:
+            logger.error(
+                "ingest.citation_anchor.fully_unanchored",
+                extra={"text_names": ",".join(fully_unanchored)},
+            )
+            return 3
+
     return 0
 
 
