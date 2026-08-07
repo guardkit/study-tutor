@@ -1,6 +1,6 @@
 # Voice — Tutor Voice (server + Flutter) and Reachy Local Migration — Scope + Build Plan
 
-**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06**; **W0-R ALL GATES PASS 2026-07-06** ([evidence](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md)); **FEAT-VOICE-002 + 003 + 004 spec+plan all done (003 + 004 on 2026-07-07: 004 = 25-scenario BDD spec `features/reachy-local-voice-migration/` + TASK-VOX-R01..R09/SMK-R breakdown, YAML `FEAT-VOICE-004.yaml`, all assumptions resolved incl. ASSUM-001 subject→`english`)** — next actions: **W1 build — Opus session (§9 Step 4a)** ‖ **R1 (productionize the s2s unit per the W0-R evidence pins) — Operator + Opus** ‖ **FEAT-VOICE-003 build — Opus `/feature-build FEAT-VOICE-003`** ‖ **FEAT-VOICE-004 build — R-track Operator + Opus in fleet-gateway (NOT study-tutor autobuild)**. Living status in §0; **model allocation in §0a**.
+**Status:** Drafted 2026-07-05; **G-RAT + G-CON executed 2026-07-05**; **W0-T PASS + W1 spec/plan done 2026-07-06**; **W0-R ALL GATES PASS 2026-07-06** ([evidence](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md)); **FEAT-VOICE-002 + 003 + 004 spec+plan all done (003 + 004 on 2026-07-07: 004 = 25-scenario BDD spec `features/reachy-local-voice-migration/` + TASK-VOX-R01..R09/SMK-R breakdown, YAML `FEAT-VOICE-004.yaml`, all assumptions resolved incl. ASSUM-001 subject→`english`)** — next actions: **W1 build — Opus session (§9 Step 4a)** ‖ **R1 (productionize the s2s unit per the W0-R evidence pins) — Operator + Opus** ‖ **FEAT-VOICE-003 build — Opus `/feature-build FEAT-VOICE-003`** ‖ **FEAT-VOICE-004 build — R-track Operator + Opus in fleet-gateway (NOT study-tutor autobuild)**. Living status in §0; **model allocation in §0a**. **LEDGER FORMALLY CLOSED 2026-08-07 (Lane 5)** — every wave/gate row now carries its outcome (§0 annotations + the closure note under §0); no build work remains in this plan.
 **Voice-phase contract pins (authoritative consumption point):** `CONTRACT_SHA=574615e916bfacafd014b2a0027b47cdf20d8f4a` (contract Rev 1) · `BINDING_SHA=e50897d12470b9f7c9455d5c5836f0d7ee298a50` (binding Rev 1). *Pushed to origin/main (verified 2026-07-06) — the freeze is finalized ("frozen once pushed"); do not amend/rebase these commits or the pins invalidate. Phase-2 pins (`22791afb…`/`6eb7b88c…`) remain the historical record of what phase 2 verified.*
 **Generated:** 2026-07-05 · **status refreshed:** 2026-07-06
 **Design:** [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md) — closes the blueprint's open decisions (streaming-first contract, Starlette port map, audio delivery, quote-handover recommendation) and adds the Reachy track
@@ -10,7 +10,7 @@
 
 ---
 
-## 0. Status (2026-07-06)
+## 0. Status (2026-07-06 — formally closed 2026-08-07, see §0-close below the table)
 
 | Item | State | Record |
 |---|---|---|
@@ -23,14 +23,56 @@
 | W0-T pre-flight (tutor) | **PASS** 2026-07-05 — all four gates green; STT warm 0.11–0.29 s across wav/ogg-opus/**m4a**; TTS Ryan 2.09 s/sentence | [evidence](../../runbooks/evidence/voice-w0-preflight-2026-07-05/EVIDENCE.md) |
 | W0-R feasibility gates (Reachy, R-G1..R-G6) | **ALL GATES PASS — run 2026-07-06** (agent-on-GB10 + operator Mac/robot session). Headlines: `--num_pipelines 2` supersedes the two-instance fallback (R-G6); voice pin must be app-side (`MODEL_VOICE`), not server flag; **known defect: tool-call text is spoken** (fixes identified — template tool-call support + TTS strip filter → R1/FEAT-VOICE-004); R-G5 executed (ttl 0, tutor-set preload, keepalive rotated, dgx-spark mirror `be71e3f`); 4 install pins for R1 recorded | [EVIDENCE](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md) |
 | W1 — FEAT-VOICE-001 spec + plan | **Done 2026-07-06**: 27-scenario BDD spec (all assumptions owner-confirmed) + TASK-VOX-001..007 breakdown, AutoBuild YAML validated, all scenarios `@task:`-linked | `c149929` · `2f8b299` |
-| W1 — FEAT-VOICE-001 build (TASK-VOX-001..007) | **NEXT (W-track)** — `/feature-build FEAT-VOICE-001` or `/task-work TASK-VOX-001` sequentially | `tasks/backlog/voice-server-module/` |
-| W2 — FEAT-VOICE-002 spec + plan | **Done** (Fable window) — spec `features/streaming-voice/` + plan `.guardkit/features/FEAT-VOICE-002.yaml` | `features/streaming-voice/` |
+| W1 — FEAT-VOICE-001 build (TASK-VOX-001..007) | ~~NEXT (W-track)~~ **✅ DONE 2026-07-08** — built + merged (7 tasks VOX-001..007) | merge `5d57b022` |
+| W2 — FEAT-VOICE-002 spec + plan | **Done** (Fable window) — spec `features/streaming-voice/` + plan `.guardkit/features/FEAT-VOICE-002.yaml`. **Build (with TASK-STREAM-001): ✅ DONE 2026-07-08** — merged, all 8 tasks VS2-001..008 (Tier A + Tier B); TASK-STREAM-001 itself closed as superseded 2026-07-17 (record: `tasks/completed/TASK-STREAM-001-tutor-turn-token-streaming.md`) | `features/streaming-voice/` · merge `8d4bf2dd` · STREAM-001 close `8e75ecc4` |
 | W2a/W3 — FEAT-VOICE-003 spec + plan | **Done 2026-07-07**: 22-scenario BDD spec (`features/flutter-voice-client/`, all assumptions owner-confirmed) + TASK-VC-001..007 breakdown, AutoBuild YAML validated, all 22 scenarios `@task:`-linked (R2 active), `flutter test` smoke gate (waves 3/4/5, R3 active), review TASK-REV-V3C1 | `tasks/backlog/flutter-voice-client/` · `.guardkit/features/FEAT-VOICE-003.yaml` |
-| W2a/W3 — FEAT-VOICE-003 build (TASK-VC-001..007) | **NEXT (W-track, Opus)** — `/feature-build FEAT-VOICE-003` or `/task-work TASK-VC-001` per wave; MVP HTTP path (waves 1–3) needs only FEAT-VOICE-001, streaming (wave 4) consumes FEAT-VOICE-002 | `tasks/backlog/flutter-voice-client/` |
+| W2a/W3 — FEAT-VOICE-003 build (TASK-VC-001..007) | ~~NEXT (W-track, Opus)~~ **✅ DONE 2026-07-09** — built + merged (7 tasks VC-001..007, tap-to-talk + streaming client incl. `voiceTurnStream`, `app/lib/adapters/http_voice_api.dart:206`); completion recorded `9c4e18d2` | merge `74bef473` |
 | FEAT-VOICE-004 spec + plan | **Done 2026-07-07**: 25-scenario BDD spec (`features/reachy-local-voice-migration/`, all 9 assumptions resolved/confirmed — ASSUM-001 subject resolved to `english`, app `defaultSubject` moved `'maths'→'english'`; 1.7B TTS fallback pre-approved; persona copy drafted) + TASK-VOX-R01..R09/SMK-R breakdown (5 code / 5 operator_handoff), YAML validated. Consumes recon deltas D1/D2/D3/D4/D6/D7. Review TASK-REV-RCH4 | `tasks/backlog/reachy-local-voice-migration/` · `.guardkit/features/FEAT-VOICE-004.yaml` |
-| FEAT-VOICE-004 build (R-track) | **NEXT (R-track, Operator + Opus)** — code (R04–R08) lands in **sibling `fleet-gateway` repo**, NOT study-tutor autobuild; operator gates R01/R02/R03/R09/SMK-R are `operator_handoff`. Resolve nothing further — all assumptions closed | `tasks/backlog/reachy-local-voice-migration/` |
+| FEAT-VOICE-004 build (R-track) | ~~NEXT (R-track, Operator + Opus)~~ **✅ DONE 2026-07-19** — code R04–R08 in `../fleet-gateway` (R05's server-side read endpoint here: `90f1ed4c`); operator gates R01/R02 (batch A, 2026-07-17), R03/R09/SMK-R (batch B, 2026-07-18) all passed; feature closed at C5 | close `9e596258` · evidence `docs/runbooks/evidence/voice-r01-r02-batchA-2026-07-17/`, `…/voice-r03-r09-smkr-batchB-2026-07-18/` · SMK-R record `tasks/completed/2026-07/TASK-VOX-SMK-R-live-smoke.md` |
 
 Detailed, ordered actions in **§9**.
+
+### §0-close — Formal closure of this ledger (2026-08-07, Lane 5 hygiene pass)
+
+Every wave and gate above now has its outcome recorded in place. The honest final state,
+with receipts (nothing deleted — the 2026-07-06 rows stand as history):
+
+- **W-track:** W1 merged `5d57b022` (2026-07-08); W2 (joint TASK-STREAM-001 +
+  FEAT-VOICE-002, Tier A **and** Tier B) merged `8d4bf2dd` (2026-07-08); W2a/W3
+  (FEAT-VOICE-003) merged `74bef473` (2026-07-09). TASK-STREAM-001 closed as ~90 %
+  superseded 2026-07-17 (`8e75ecc4`; record in
+  `tasks/completed/TASK-STREAM-001-tutor-turn-token-streaming.md` — the ~10 % residual,
+  incremental text-path rendering, deliberately NOT re-filed).
+- **W4 (TASK-VOX-SMK-T) — NEVER RUN AS WRITTEN; closed as such 2026-08-07.** The task
+  file was never created (only SMK-R was; `tasks/completed/2026-07/` holds no SMK-T).
+  AC-V1's substance was later proven live: the 2026-08-03 attended Android device walk
+  signed off verified streaming voice by ear against the spark (plan-of-record App row),
+  and the live contract suite's voice tests are green 49/49 (2026-08-04). AC-V2/AC-V3 as
+  *live drills* (disk/DB audio sweep; models-stopped degradation with outbound-connection
+  sampling) were never executed — the no-audio-at-rest invariant stands on the hermetic
+  seam pins (`features/voice-server-module/`). Any revival = a fresh operator task
+  against the spark deployment (owner: Rich).
+- **R-track:** R1–R4 all closed 2026-07-19 at C5 (`9e596258`): R01/R02 evidence
+  `docs/runbooks/evidence/voice-r01-r02-batchA-2026-07-17/`, R03/R09/SMK-R evidence
+  `…/voice-r03-r09-smkr-batchB-2026-07-18/`; SMK-R (AC-R1..R4) completed 2026-07-19
+  (`tasks/completed/2026-07/TASK-VOX-SMK-R-live-smoke.md`), closing the D3 residency
+  exception.
+- **What history did to this plan after closure of the builds:** serving moved GB10 →
+  spark (2026-07-26, `HANDOFF-study-tutor-full-encapsulation-spark.md`) — this plan's
+  GB10 host/port framing is historical. Voice was silently dead 2026-07-26→08-03 (empty
+  `STT_MODEL`/`TTS_MODEL` env falling back to dead GB10-era aliases), found by the live
+  suite and fixed same day (`1595b68`; fail-loud `VoiceConfig` `6d1c8e5`). ADR-ARCH-027
+  verified streaming then shipped end-to-end (`513bc70` + prod WS smoke 2026-08-03);
+  client-side hardening `fa8d95b`/`049f17c`/`ffc83c9`.
+- **§7's "add a phase-3 voice row to the roadmap" was never done** and is closed here as
+  a dead letter: `docs/planning/feature-roadmap.md` has no voice row (verified
+  2026-08-07) and is a historical hackathon-era surface (plan-of-record deferrals);
+  the plan of record's Tutoring-core/App rows are the live status surface.
+- **Genuinely still open (owned, not closed by this note):** the iOS voice walk needs a
+  human ear (mic permission + TTS audibility — Rich; parked on the plan-of-record
+  deferrals list), and the fleet-gateway re-point of the robot to the spark is Lane 6
+  step 1 of the plan of record (outstanding — the R-track's 2026-07-19 GB10-pointed
+  state is no longer the serving reality).
 
 ## 0a. Model allocation (Fable window 2026-07-06 → 07)
 
@@ -294,23 +336,35 @@ W0-R: P0 + R-G1..R-G6 all PASS ([evidence](../../runbooks/evidence/voice-w0r-rea
 evidence file's pins verbatim (resolve-URL wheel, numba floors, `OPENAI_API_KEY`, `--num_pipelines 2`,
 app-side voice pin, tool-call-speech fixes, user-mode `systemctl --user restart llama-swap`).
 
-### Step 4a — W1 (FEAT-VOICE-001) — **Opus session** (spec+plan already done)
+### Step 4a — W1 (FEAT-VOICE-001) — ✅ DONE 2026-07-08 (merge `5d57b022`)
 **Do:** build the server voice module — `/feature-build FEAT-VOICE-001` (or `/task-work TASK-VOX-001` sequentially). Do **not** run this from a Fable session (§0a): the build is gate-carried and the autobuild Player/Coach models are YAML-pinned anyway.
-**Gate:** suite green; seam tests pin the multipart contract; flag off ⇒ 404.
+**Gate:** suite green; seam tests pin the multipart contract; flag off ⇒ 404. *(Held — flag-off 404 remains the deployed behaviour, `RUNBOOK-study-tutor-http-dev-deploy.md` crib.)*
 
-### Step 4b — R1 → R2 → R3 (parallel to Steps 4a–5) — **Operator + Opus** (FEAT-VOICE-004 spec by **Fable** if W0-R passes within the window)
+### Step 4b — R1 → R2 → R3 (parallel to Steps 4a–5) — ✅ DONE 2026-07-17/18 (evidence `voice-r01-r02-batchA-2026-07-17/` + `voice-r03-r09-smkr-batchB-2026-07-18/`; closed at C5 `9e596258`)
 **Do:** productionize the W0-R configuration as the durable s2s unit; re-point the robot; verify tools; build `ask_tutor` (subject pinned — resolve recon D6 first) + profile update.
 **Gate:** R2's tool round-trip verified; robot converses locally end-to-end.
 
-### Step 5 — W2 + W2a — **Opus builds; spec+plan authored by Fable first (§0a)**
+### Step 5 — W2 + W2a — ✅ DONE 2026-07-08/09 (W2 merged `8d4bf2dd`; W2a landed inside FEAT-VOICE-003 `74bef473`)
 **Do:** joint TASK-STREAM-001 + FEAT-VOICE-002 build; Flutter MVP slice in parallel (GB10 access is the only resource shared with the R-track). The FEAT-VOICE-002 (and 003) `/feature-spec` + `/feature-plan` runs happen in the Fable window — the contract shape is frozen at G-CON, so speccing ahead of the W1 build is safe; fold any W1-build learnings into the plan at review.
 **Gate:** streaming contract variants green against dev deploy; MVP voice works on device.
 
-### Step 6 — W3 → W4 and R4 — **Opus builds; Operator smokes**
+### Step 6 — W3 → W4 and R4 — CLOSED 2026-08-07 (mixed outcome — see §0-close)
 **Do:** streaming Flutter client; then the two operator-handoff smokes (§8).
 **Gate:** AC-V1..V3 and AC-R1..R4 hold; RESULTS + evidence written; D3 residency exception closed.
 **Then:** update roadmap row; retro the freeze discipline (did we really only bump once?).
+**Outcome:** W3 shipped in `74bef473` (2026-07-09). R4/SMK-R PASSED 2026-07-18 (batch-B
+evidence; D3 residency exception closed). W4/SMK-T was **never run as written** — AC-V1's
+substance later proven by the 2026-08-03 attended Android walk + the 49/49 live suite
+(2026-08-04); AC-V2/V3 live drills never executed (details + owner in §0-close). The
+roadmap row was never added (dead letter, §0-close). Freeze-discipline answer for the
+retro: the voice freeze bumped once (Rev 1 `574615e9…`/`e50897d1…`); the later Rev 2
+gamification re-pin `53f2fc5` was a separate, ratified cycle — discipline held.
 
 ---
 
 *Generated 2026-07-05; status refreshed 2026-07-06 (G-RAT + G-CON executed 2026-07-05 — ADR-ARCH-026 Accepted, ADR-ARCH-027 recorded, contract + binding at Revision 1, SHAs pinned in the header; W0-T PASS; **W0-R all gates PASS 2026-07-06** with [evidence](../../runbooks/evidence/voice-w0r-reachy-feasibility-2026-07-06/EVIDENCE.md) — R-track fully unblocked, R-G5 config executed + mirrored; W1 spec 27 scenarios + plan TASK-VOX-001..007 committed, AutoBuild-ready; **model allocation in §0a**). Companion design: [voice-tutor-and-reachy-design.md](../../design/voice-tutor-and-reachy-design.md). Next actions: **Step 4a (W1 build — Opus)** ‖ **Step 4b R1 (productionize s2s per evidence pins — Operator + Opus)** ‖ **FEAT-VOICE-002/003/004 spec+plan (Fable, by 2026-07-07)** in §9.*
+
+*Formal closure 2026-08-07 (Lane 5): all waves/gates carry their outcomes in §0/§0-close/§9 —
+builds merged `5d57b022`/`8d4bf2dd`/`74bef473`, R-track closed `9e596258`, SMK-T honestly
+recorded as never-run, iOS voice walk and the spark re-point named as the two live residuals.
+This document is history; the plan of record is the live status surface.*
