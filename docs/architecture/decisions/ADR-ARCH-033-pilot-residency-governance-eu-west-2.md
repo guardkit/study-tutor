@@ -22,7 +22,7 @@ this draft attaches to that cell and the coordinator updates it at ratification.
 **Commissioned by:** [ADR-ARCH-029](ADR-ARCH-029-phased-productionisation-local-first-cloud-native-target.md)
 D4 (the Phase 3 data-governance surface, ADR-029:92–96) and mission **law 2** (cloud is a
 governed posture change requiring exactly this ADR before any student data moves,
-mission:83–88).
+mission:84–89).
 **Supersedes (on ratification, cloud/pilot scope only):**
 [ADR-ARCH-015](ADR-ARCH-015-uk-on-device-data-residency.md) (UK on-device residency).
 ADR-015 **remains the record for the household deployment while it runs** — the spark (the
@@ -30,7 +30,7 @@ household NVIDIA DGX Spark box currently serving the tutor) and the NAS (the fam
 Synology network-attached-storage server, hostname `whitestocks`) keep their posture. The
 supersession map is D1.
 **Amends (on ratification):** [ADR-ARCH-028](ADR-ARCH-028-keycloak-idp-nas-placement-tailnet-tls.md)'s
-"ADR-015 rules out any cloud IdP" reading (ADR-028:24, :105–106) — relaxed per D4 below;
+"ADR-015 rules out any cloud IdP" reading (ADR-028:26–27, :105–106) — relaxed per D4 below;
 ADR-029:33–35 already called that reading stricter than 015 requires.
 **Related:** [ADR-ARCH-031](ADR-ARCH-031-pilot-uploads-copyright-posture.md) (the copyright
 posture whose five legs D10 inherits, and whose D4.2 open licence item is flagged in the
@@ -84,17 +84,17 @@ construction**. This ADR is written for that fact, not around it.
 ADR-015 is superseded **for cloud/pilot scope**; it remains in force for the household
 deployment while that runs. Item by item:
 
-1. **The residency table (ADR-015:57–67) is restated wholly by this ADR** — it no longer
+1. **The residency table (ADR-015:45–53) is restated wholly by this ADR** — it no longer
    describes the system (FalkorDB is gone since ADR-023; the retrieval corpus — the
    ChromaDB vector store — is now baked into the deployed container image, not on a
    MacBook). D2 and D6 below are the current statement of where data lives and how it
    leaves.
-2. **The Gemini exception (ADR-015:69–83) is CLOSED, not carried.** It existed for
+2. **The Gemini exception (ADR-015:55–68) is CLOSED, not carried.** It existed for
    Graphiti entity extraction; [ADR-ARCH-023](ADR-ARCH-023-student-model-postgres-jsonb-drop-graphiti.md)
    dropped Graphiti and moved the student model to study-tutor-owned Postgres (ADR-023:83).
    No third-party model sees any student data today, and this ADR does not reopen that
    door.
-3. **The Bedrock exception and its non-UK fallback (ADR-015:85–98) are DEAD.** Bedrock
+3. **The Bedrock exception and its non-UK fallback (ADR-015:70–85) are DEAD.** Bedrock
    Custom Model Import cannot serve the fine-tune, three ways (AWS research §2:27–46): no
    Gemma of any generation on the supported-architecture list plus a 128K positional cap
    against Gemma 4's 256K; Custom Model Import exists only in us-east-1/2, us-west-2 and
@@ -102,7 +102,7 @@ deployment while that runs. Item by item:
    demo-week fallback" is withdrawn with it. The pilot posture is UK-only (D2; Rich's Q1).
 4. **The no-third-party-telemetry clause CARRIES FORWARD VERBATIM:** "**No** telemetry,
    analytics, error reporting to any third-party service (Sentry, LogRocket, etc.) in any
-   phase" (ADR-015:87–88 of the decision section, lines 100–101 of the file). This clause
+   phase" (ADR-015:87–88). This clause
    survives the supersession word for word and binds the cloud deployment identically.
    (The mission independently forbids it, mission:154–155.)
 5. **ADR-028's "rules out cloud IdP" reading is relaxed** — see D4.
@@ -151,7 +151,7 @@ Stated honestly, because the record demands it:
 ### D4 — Cloud OIDC unblocked; Keycloak remains the identity provider
 
 Superseding ADR-015 for cloud scope mechanically removes the constraint ADR-028 leaned on:
-ADR-028 rejected any cloud IdP *because* "ADR-015 rules out any cloud IdP" (ADR-028:24,
+ADR-028 rejected any cloud IdP *because* "ADR-015 rules out any cloud IdP" (ADR-028:26–27,
 :105–106). ADR-029 already called that reading over-strict (:33–35) and marked it "the
 Phase-2 posture, relaxed in Phase 3" (ADR-028 trajectory note). **This ADR says so
 explicitly: cloud-hosted OIDC is now permitted** for the pilot, inside the D2/D3 posture
@@ -251,7 +251,7 @@ withdrawal.** The path, component by component, with receipts:
    thing this system touches and it never touches a disk.
 6. **An erasure primitive must exist.** Today the only deletion code is a dev tool —
    `PostgresStudentStore.delete_sessions_for_student` behind a dev-flag-only
-   `POST /__dev__/reset` (`store/postgres.py:761–806`; `http/app.py:591–618, :752–755`) —
+   `POST /__dev__/reset` (`knowledge/store/postgres.py:761–806`; `http/app.py:591–618, :752–755`) —
    which spares XP/streak/confidence and is **not** an erasure path. This ADR mandates a
    real one before the first external account: at minimum an operator runbook executing
    steps 1–3 above; whether it also becomes an additive API verb is ADR-ARCH-034's surface
@@ -314,7 +314,7 @@ gate (`src/study_tutor/knowledge/corpus.py`) and `AQA_FILENAME_PATTERN` retrieva
 at both ingest and retrieval; (5) non-commercial, small, removable — account deletion
 deletes the account's corpus, which is exactly D6.3 of the erasure path; rights-holder
 objection honoured by removal. Cloud hosting changed the governance question this ADR
-answers, not the copyright one ADR-031 answered (ADR-031:146–150).
+answers, not the copyright one ADR-031 answered (ADR-031:149–153).
 
 ### D11 — Secrets handling: extend the sops pattern *(default; the tooling question is Rich's Q3)*
 
@@ -327,8 +327,9 @@ age key itself protected by KMS as an implementation detail of the deploy. The a
 — AWS Secrets Manager / SSM Parameter Store — is presented as Q3 if Rich wants to spend a
 ruling on it; if not, the plan's wording stands. Either way, the current known gap is
 named: `deploy/http/.env.kc` holds a production database DSN with a plaintext password
-(0600, gitignored) — precisely the class of thing this decision exists to close before
-any cloud counterpart is created.
+(0600; gitignored by design, `.gitignore:149`, so the file exists only on the spark host —
+this receipt is the 2026-08-07 design-pass inspection, not a repo file) — precisely the
+class of thing this decision exists to close before any cloud counterpart is created.
 
 ## Alternatives considered
 
@@ -497,7 +498,7 @@ inherited here and lands with the deploy, not with this draft.
   — D4 (the commission, :92–96), D1 (:54–56), D2 (portability guardrails), D3 (transients),
   the Cognito deferral (:109–111).
 - [ADR-ARCH-015](ADR-ARCH-015-uk-on-device-data-residency.md) — the superseded household
-  posture; the carried telemetry clause (:100–101).
+  posture; the carried telemetry clause (:87–88).
 - [ADR-ARCH-028](ADR-ARCH-028-keycloak-idp-nas-placement-tailnet-tls.md) — the cloud-IdP
   reading relaxed by D4; the Hyper Backup implicit-copy receipt (:79).
 - [ADR-ARCH-031](ADR-ARCH-031-pilot-uploads-copyright-posture.md) — the five inherited
@@ -510,7 +511,7 @@ inherited here and lands with the deploy, not with this draft.
 - Erasure receipts: `src/study_tutor/knowledge/store/schema_reference.sql` (head
   `346cd366b66e`, the cascade + year-group CHECK); `deploy/postgres/backup.sh` (:21–22,
   :61, :79, :90–92); `src/study_tutor/voice/service.py` (:154–186) +
-  `src/study_tutor/voice/streaming_tts.py` (:10); `src/study_tutor/store/postgres.py`
+  `src/study_tutor/voice/streaming_tts.py` (:10); `src/study_tutor/knowledge/store/postgres.py`
   (:761–806) + `src/study_tutor/http/app.py` (:591–618, :752–755) — the dev-only reset;
   `src/study_tutor/knowledge/retrieval.py` (:461, :464–478) — subject-keyed collections.
 - Secrets receipt: `deploy/keycloak/provision-live-suite.sh` (:34–51).

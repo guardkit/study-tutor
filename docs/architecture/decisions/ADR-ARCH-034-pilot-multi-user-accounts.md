@@ -75,7 +75,7 @@ The data layer needs **zero structural work** for multiple accounts. Receipts:
   student is a partition key", :12–14). This is ADR-014's day-1 posture, mechanism updated
   by ADR-023.
 - **Queries:** roughly **28 student-scoped call sites** in the Postgres store
-  (`src/study_tutor/store/postgres.py` — :272, :286, :305, :384, :407, :430, :443, :454,
+  (`src/study_tutor/knowledge/store/postgres.py` — :272, :286, :305, :384, :407, :430, :443, :454,
   :640, :789, :797, :805, :848, :868, :894, :915, :962, :975, :991, :1054, :1125, :1634,
   :1670, :1784, :1794) all carry the `student_id` partition, including the whole
   gamification read path (`get_gamification_state` :938 and its sub-queries :962, :975,
@@ -128,7 +128,7 @@ mechanisms are already built and receipted:
 ### D3 — Provisioning: ONE runbook, which must be WRITTEN — the plan's "runbook exists" claim is corrected here
 
 **Honest correction:** the plan's Lane 3 step 5 says "friends provisioned (runbook
-exists)" (plan:230). **That claim is false.** No friend-provisioning runbook exists. What
+exists)" (plan:233). **That claim is false.** No friend-provisioning runbook exists. What
 exists is three partial pieces, none sufficient alone:
 
 1. The **Keycloak standup runbook's Phase 4** — manual user creation in the admin console
@@ -153,7 +153,7 @@ per-account corpus deletion. **The erasure surface decision ADR-033 delegated he
 decided: for the pilot, erasure is an attended operator runbook, not an API verb.** The
 cohort is small and named, deprovisioning is inherently an operator act (mission: attended
 steps are Rich's), and the only in-code deletion primitive today is a dev-flag tool that
-deliberately spares gamification state (`store/postgres.py:761–806`;
+deliberately spares gamification state (`knowledge/store/postgres.py:761–806`;
 `http/app.py:591–618, :752–755`) — not an erasure path. If an erasure verb ever lands on
 the API it lands **additive** per law 6; nothing about the six frozen verbs changes either
 way. The plan-text correction to step 5 ("runbook exists" → "runbook to be written, this
@@ -216,7 +216,9 @@ capacity one.
 ### D5 — Voice on Keycloak mode: ruled IN, gated on ONE attended voice walk against :8101
 
 Voice is currently **off** in the Keycloak-mode deployment
-(`deploy/http/.env.kc:6` — `STUDY_TUTOR_VOICE_ENABLED` empty) for exactly one recorded
+(`deploy/http/.env.kc:6` — `STUDY_TUTOR_VOICE_ENABLED` empty; that file is gitignored by
+design (`.gitignore:149`) and lives only on the spark host, so this receipt is the
+2026-08-07 design-pass inspection, not a repo file) for exactly one recorded
 reason: "voice OFF pending the Keycloak phone-flow proof" (plan:32). The record now shows
 the residual risk is one attended proof, not engineering:
 
@@ -227,7 +229,7 @@ the residual risk is one attended proof, not engineering:
   connection upgrade through the **same `TokenResolver` seam** as every HTTP verb
   (`src/study_tutor/http/ws.py:4`) — the seam ADR-029 D2 pinned and D2 above relies on.
 - **The phone-flow half is banked:** KC-G3, real-device Keycloak sign-in, GATE PASS
-  2026-07-19 (`evidence/keycloak-kcg3-2026-07-19/EVIDENCE.md:10`).
+  2026-07-19 (`docs/runbooks/evidence/keycloak-kcg3-2026-07-19/EVIDENCE.md:10`).
 - **What is NOT banked, said plainly:** an attended **voice** walk in Keycloak mode. The
   existing voice walk receipt (2026-08-03) is table-mode, against :8100.
 
@@ -398,7 +400,7 @@ Supersession lands via this checklist — no existing file is edited before Rich
    only) superseded by ADR-ARCH-034 D4 ({date}); the Bedrock inference scale-out escape
    hatch is retired as dead (Custom Model Import cannot serve the fine-tune — AWS research
    §2); the multi-student schema posture STANDS and is vindicated by ADR-034 D1's receipts."
-3. **Plan updates:** mark Lane 3 step 2's cell moved; **correct plan:230's "runbook
+3. **Plan updates:** mark Lane 3 step 2's cell moved; **correct plan:233's "runbook
    exists" to "runbook to be written — ADR-034 D3"**; strike the multi-user half of
    ruling-queue item 5; record the Q2/Q4 rulings where the plan tracks them.
 4. Confirm ADR-033's checklist items that this ADR depends on are done in the same pass
@@ -472,7 +474,7 @@ Lane 6 retires it.
   measurables S0/S3; dated note 1 (Dulcie).
 - Plan: [study-tutor-plan-of-record.md](../../study-tutor-plan-of-record.md) — Lane 3
   step 2 (this cell); :216–217 (concurrency belongs here); :218–222 (consent-in-onboarding
-  direction); :230 (the corrected "runbook exists" claim); :32 (voice-off reason); Lane 6
+  direction); :233 (the corrected "runbook exists" claim); :32 (voice-off reason); Lane 6
   step 1 (the robot re-point D8 waits on).
 - [ADR-ARCH-033](ADR-ARCH-033-pilot-residency-governance-eu-west-2.md) — sibling: D5 (the
   consent record this D6 implements), D6 (the erasure path D3/D7 join), Q1/Q3/Q5.
@@ -492,7 +494,7 @@ Lane 6 retires it.
   — §2 (Bedrock Custom Model Import dead ×3), §4–§5 (the D4 price table), §8.4 (the spike).
 - Tenancy/isolation receipts: `src/study_tutor/knowledge/store/schema_reference.sql` (head
   `346cd366b66e` — partition :12–14, `session_one_active_idx` :70–73);
-  `src/study_tutor/store/postgres.py` (the ~28 student-scoped call sites; gamification
+  `src/study_tutor/knowledge/store/postgres.py` (the ~28 student-scoped call sites; gamification
   :938, :962, :975, :991; the dev-only reset :761–806); the 2026-08-04 live isolation run
   (plan, Suites row).
 - Identity/provisioning receipts: `deploy/keycloak/realm/study-tutor-realm.json`;
@@ -504,7 +506,7 @@ Lane 6 retires it.
 - Voice receipts: `src/study_tutor/http/app.py` (:757–766, :788–791 mount gate);
   `src/study_tutor/voice/config.py` (:57); `deploy/http/.env.kc` (:6 — the off switch);
   `src/study_tutor/http/ws.py` (:4 — upgrade auth through the shared seam);
-  `evidence/keycloak-kcg3-2026-07-19/EVIDENCE.md` (:10 — KC-G3 pass).
+  `docs/runbooks/evidence/keycloak-kcg3-2026-07-19/EVIDENCE.md` (:10 — KC-G3 pass).
 - Concurrency receipts: `HANDOFF-study-tutor-full-encapsulation-spark.md` (:133–135 — the
   measured memory law); `deploy/http/docker-compose.yml` (:63–66 — the baked corpus image).
 - Contract: `docs/design/contracts/API-session-http-binding.md` §7 — the additive/addendum
