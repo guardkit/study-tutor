@@ -108,15 +108,30 @@ Exit: fold at the next contract re-pin.
   lines "unsex me here"/"Out, damned spot"), B2 (poetry anchor — needs a
   design decision), B3 (Inspector headings — uncertain). Citation
   coverage reads an honest 0% until Track B lands.
-- **T2 store-isolation leak (open, low):** during the 2026-08-07
-  measured eval run (scratch-copy isolation, sha-verified) the working
-  tree's `data/chroma/chroma.sqlite3` still gained 5 rows in chroma's
-  internal `acquire_write` bookkeeping table — content proven identical
-  table-by-table; original bytes restored from the pristine copy.
-  Opener unattributed: suspects are a chromadb-collected hermetic test
-  (the module only collects once the `[rag]` extra is installed) or a
-  second client open on the T2 path. Exit: attribute the opener and
-  either point it at the scratch dir or mark it read-only.
+- ~~T2 store-isolation leak~~ **CLOSED 2026-08-07** — attributed
+  empirically (suspect (a), not the T2 path): with the `[rag]` extra
+  installed, hermetic tests that reach the serve boot open the working
+  tree's real store via `rag_wiring`'s RELATIVE `data/chroma` default
+  when `CHROMA_PERSIST_DIR` is unset; each fresh-process
+  `PersistentClient` open appends exactly one `acquire_write` row
+  (proven against a scratch copy). Openers, each reproduced with a
+  per-test row-count watch: the four fail-fast subprocess boots in
+  `tests/unit/http/test_serve_http.py` (unreachable-store +
+  keycloak/auth trio), both `serve` spawns in
+  `tests/unit/mcp/test_stdio_discipline.py`, and the in-process
+  `CliRunner` serve in `tests/unit/cli/test_serve_student_store_wiring.py`
+  — +7 rows per full hermetic run (the run-day +5 was the same
+  mechanism, fewer boots reached). The T2 eval path itself was clean
+  (`build_t2_closure` pins the env; metric corpus reads via sqlite
+  `immutable=1`). Fix: root `conftest.py` now backfills an unset
+  `CHROMA_PERSIST_DIR` with a nonexistent path before any test runs
+  (subprocess spawners inherit it via `os.environ.copy()`), routing the
+  wiring to its `persist_dir_missing` graceful branch; regression pin
+  `tests/unit/http/test_serve_http_chroma_isolation.py` proves
+  `acquire_write` row-count stability across a boot that demonstrably
+  reaches the RAG wiring (copy-based, scratch store in tmp). Full
+  hermetic suite green with the store copy's row count byte-stable and
+  the real store sha-identical before/after.
 - ~~Reranker constructed per call~~ **CLOSED 2026-08-02**: production
   instance cache landed with the 1b merge (two hermetic tests pin it);
   warm retrieval ~5.3s in the deployed container.
