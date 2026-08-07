@@ -79,6 +79,22 @@ MAX_REVISION_ATTEMPTS: int = 3
 #: an observability signal, not an error mode.
 LATENCY_BUDGET_SECONDS: float = 30.0
 
+#: Learner-facing fallback yielded by :meth:`run_turn_stream_verified`
+#: when the END-OF-STREAM verification pass itself reports
+#: ``verifier_exception`` (Lane 2 step 3, Track A2). The streaming path
+#: fails CLOSED: raw, unverified text is never released — the learner
+#: keeps the already-verified prefix plus this honest notice. Judgment
+#: call recorded in the Lane 2 step 3 build receipt: ADR-ARCH-027 is
+#: silent on final-pass errors, so this mirrors the fail-closed posture
+#: of ``sentence_chunker.chunk_stream`` (which raises on
+#: ``verifier_exception``) while keeping the WS turn alive with a safe
+#: reply instead of crashing it.
+FINAL_VERIFICATION_FALLBACK: str = (
+    "I couldn't double-check the rest of that reply against the text, "
+    "so I've held it back rather than risk misquoting. Let's take that "
+    "point again."
+)
+
 
 #: Decision tag attached to :class:`TurnResult.decision`. ``"deferred"`` is the
 #: async-Coach return tag (ADR-ARCH-026 D1): the response was delivered before
@@ -935,6 +951,34 @@ class PlayerCoachOrchestrator:
         if verify is None:
             verify = await verifier_task
         final_verified, metadata = verify(accumulated_raw)
+        if getattr(metadata, "verifier_exception", False):
+            # Fail CLOSED (ADR-ARCH-027 posture; the ADR is silent on
+            # final-pass errors, so mirror sentence_chunker's stance —
+            # judgment call recorded in the Lane 2 step 3 receipt): on a
+            # verifier exception ``final_verified`` is the RAW response
+            # (the coach-handover's fail-open return), which must never
+            # reach the learner. Release only the honest fallback after
+            # whatever was already verified; the async Coach sees exactly
+            # what was shown, with the exception flag intact.
+            released_text = verified_full[:released_verified_len]
+            logger.error(
+                "verified_stream.final_verification_exception",
+                extra={
+                    "released_verified_len": released_verified_len,
+                    "held_raw_len": len(accumulated_raw) - released_raw_len,
+                },
+            )
+            fallback = FINAL_VERIFICATION_FALLBACK
+            if released_text and not released_text.endswith((" ", "\n", "\t")):
+                fallback = " " + fallback
+            yield fallback
+            self._dispatch_async_coach(
+                session_state=session_state,
+                learner_message=learner_message,
+                player_response=released_text + fallback,
+                verifier_metadata=metadata,
+            )
+            return
         if final_verified.startswith(verified_full[:released_verified_len]):
             tail = final_verified[released_verified_len:]
         else:

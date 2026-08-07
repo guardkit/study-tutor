@@ -9,7 +9,11 @@ ordering, rewrites the response in place, and emits a
 Precedence ordering (Open Question 3 closure)
 ---------------------------------------------
 1. Exact match against any ``PRIMARY_TEXT`` chunk for the *session* text
-   → :class:`PrimaryMatch` (annotated with ``chunk.citation_anchor``).
+   → :class:`PrimaryMatch` (annotated with ``chunk.citation_anchor``;
+   when the matching chunk carries no anchor — an ingest-side inference
+   gap, e.g. the 2026-05-10 docling re-ingest — the match DEGRADES to an
+   uncited quotation instead of failing the verifier; see
+   ``VerifierMetadata.anchorless_primary_matches``).
 2. Exact match against any ``PRIMARY_TEXT`` chunk for a *different* text
    → :class:`CrossTextEvent` (paraphrase rewrite — never annotated with
    the wrong citation).
@@ -109,11 +113,14 @@ class PrimaryMatch(_StrictModel):
 
     The ``citation_anchor`` is read directly from the matching chunk —
     it is never re-derived by parsing chunk text (covered by the
-    ``@citation`` AC).
+    ``@citation`` AC). ``None`` means the chunk itself carried no anchor
+    (ingest-side inference gap): the span is still VERIFIED verbatim
+    primary text, but it renders as a degraded citation — kept in quote
+    marks with no trailing ``(a.s.l)`` annotation.
     """
 
     original_span: str
-    citation_anchor: CitationAnchor
+    citation_anchor: CitationAnchor | None
     chunk_index: int
     text_name: str
 
@@ -136,13 +143,15 @@ class FuzzyCorrection(_StrictModel):
     """A near-verbatim primary span (≤3 edits) substituted for the canonical wording.
 
     Restricted to primary-text source — see module docstring for the
-    invariant.
+    invariant. ``citation_anchor`` is ``None`` when the matched chunk
+    carries no anchor (same degraded-citation semantics as
+    :class:`PrimaryMatch`).
     """
 
     original_span: str
     corrected_span: str
     edit_distance: int
-    citation_anchor: CitationAnchor
+    citation_anchor: CitationAnchor | None
     chunk_index: int
     text_name: str
 
@@ -201,6 +210,17 @@ class VerifierMetadata(_StrictModel):
     cross_text_events: list[CrossTextEvent] = Field(default_factory=list)
     shortenings: list[Shortening] = Field(default_factory=list)
     retrieval_skipped_reason: str | None = None
+    #: ADDITIVE counters (Lane 2 step 3, Track A). How many of the
+    #: ``primary_matches`` / ``fuzzy_corrections`` above matched a chunk
+    #: whose ``citation_anchor`` was ``None`` and therefore rendered as a
+    #: DEGRADED citation (quoted span, no trailing annotation). Keeps
+    #: citation coverage measurable for the golden-quote eval harness:
+    #: anchored count = ``len(list) - anchorless count``. Never mutate the
+    #: existing fields' semantics — count-only consumers
+    #: (``tutoring/coach/rubric.py``, ``tutoring/turn_capture.py``) are
+    #: unaffected by these additions.
+    anchorless_primary_matches: int = 0
+    anchorless_fuzzy_corrections: int = 0
     #: Set to ``True`` by the coach-handover seam (TASK-PRV-006) when
     #: :func:`verify_quotes` raised and the orchestrator fell back to
     #: passing the unannotated Player response to the Coach. Defaults to
@@ -381,15 +401,14 @@ def verify_quote(
             and chunk.text_name == session_text_name
             and normalised_quote in _normalise(chunk.text)
         ):
-            if chunk.citation_anchor is None:
-                # Defence-in-depth: a primary chunk with no anchor is a
-                # corpus-loader bug, not a verifier bug — fail loudly so
-                # the Coach doesn't see a silently citation-less primary.
-                raise ValueError(
-                    "PRIMARY_TEXT chunk for "
-                    f"{chunk.text_name!r} (chunk_index={chunk.chunk_index}) "
-                    "has no citation_anchor; corpus loader contract broken"
-                )
+            # An anchorless primary chunk (ingest-side inference gap —
+            # e.g. the 2026-05-10 store: 581/581 anchorless) is a
+            # DEGRADED CITATION, not an exception: the span IS verified
+            # verbatim primary text, so raising here would abort the
+            # whole response and fail the safety gate open at the
+            # coach-handover broad-except (the Lane 2 step 3 regression).
+            # ``citation_anchor=None`` flows through and the rewriter
+            # keeps the quoted span with no trailing annotation.
             return PrimaryMatch(
                 original_span=quote.text,
                 citation_anchor=chunk.citation_anchor,
@@ -444,11 +463,10 @@ def verify_quote(
             best_distance = distance
             best_chunk = chunk
             best_window = window
-    if (
-        best_chunk is not None
-        and best_distance <= FUZZY_MAX_EDIT_DISTANCE
-        and best_chunk.citation_anchor is not None
-    ):
+    # An anchorless best chunk still corrects (degraded citation — same
+    # posture as the exact-primary arm above); requiring an anchor here
+    # made fuzzy correction structurally dead against anchorless stores.
+    if best_chunk is not None and best_distance <= FUZZY_MAX_EDIT_DISTANCE:
         return FuzzyCorrection(
             original_span=quote.text,
             corrected_span=best_window,
@@ -561,9 +579,15 @@ def _build_replacement(
                 )
             )
             span = shortened
+        if result.citation_anchor is None:
+            # Degraded citation: verified span, nothing to cite.
+            return f'"{span}"'
         return f'"{span}" {_render_citation(result.citation_anchor)}'
 
     if isinstance(result, FuzzyCorrection):
+        if result.citation_anchor is None:
+            # Degraded citation (see PrimaryMatch arm above).
+            return f'"{result.corrected_span}"'
         return (
             f'"{result.corrected_span}" {_render_citation(result.citation_anchor)}'
         )
@@ -653,10 +677,14 @@ def verify_quotes(
         # Bucket the result into the correct metadata list.
         if isinstance(result, PrimaryMatch):
             metadata.primary_matches.append(result)
+            if result.citation_anchor is None:
+                metadata.anchorless_primary_matches += 1
         elif isinstance(result, SecondaryRewrite):
             metadata.secondary_rewrites.append(result)
         elif isinstance(result, FuzzyCorrection):
             metadata.fuzzy_corrections.append(result)
+            if result.citation_anchor is None:
+                metadata.anchorless_fuzzy_corrections += 1
         elif isinstance(result, CrossTextEvent):
             metadata.cross_text_events.append(result)
         elif isinstance(result, NoMatchStrip):

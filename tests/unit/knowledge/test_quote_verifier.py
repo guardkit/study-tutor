@@ -508,3 +508,128 @@ def test_verify_quotes_rejects_non_string_response(
 ) -> None:
     with pytest.raises(TypeError, match="response_text must be str"):
         verify_quotes(None, macbeth_corpus, "Macbeth")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# Track A / A1 — anchorless primary chunk = DEGRADED CITATION, not exception
+# (Lane 2 step 3 regression pins, 2026-08-07).
+#
+# Observed HEAD behaviour BEFORE the fix (pinned here as the receipt):
+#   * A PRIMARY_TEXT chunk with ``citation_anchor=None`` (the shipped
+#     2026-05-10 store is 581/581 anchorless) plus a CORRECT verbatim quote
+#     made ``verify_quote`` raise
+#       ValueError("PRIMARY_TEXT chunk for ... has no citation_anchor;
+#                   corpus loader contract broken")
+#     which aborted verification of the WHOLE response (including every
+#     other quote in it) inside ``verify_quotes``.
+#   * The fuzzy guard additionally required ``citation_anchor is not None``,
+#     so near-miss quotes against anchorless chunks fell through to
+#     ``NoMatchStrip`` instead of ``FuzzyCorrection``.
+# Net: correct quotes blew the gate; fabricated ones were the only kind
+# handled. These tests assert the FIXED behaviour: the span is verified,
+# kept in quotes, and rendered with NO trailing citation; anchorless
+# outcomes are counted on VerifierMetadata so citation coverage stays
+# measurable.
+# ---------------------------------------------------------------------------
+
+
+def _anchorless_primary_chunk(
+    text: str, *, text_name: str = "Macbeth", index: int = 0
+) -> CorpusChunk:
+    return CorpusChunk(
+        text=text,
+        source_type=SourceType.PRIMARY_TEXT,
+        source_path=f"/corpus/{text_name}/{index}.txt",
+        text_name=text_name,
+        citation_anchor=None,
+        chunk_index=index,
+    )
+
+
+def test_anchorless_primary_exact_match_degrades_citation_instead_of_raising() -> None:
+    """A verbatim quote against an anchorless primary chunk verifies WITHOUT a citation."""
+    response = 'Lady Macbeth cries "Out, damned spot! out, I say!" in her sleep.'
+    corpus = [_anchorless_primary_chunk("Out, damned spot! out, I say!")]
+
+    rewritten, metadata = verify_quotes(response, corpus, "Macbeth")
+
+    assert len(metadata.primary_matches) == 1
+    primary = metadata.primary_matches[0]
+    assert primary.citation_anchor is None
+    assert primary.text_name == "Macbeth"
+    # Span kept, still framed as a quotation, NO trailing citation — the
+    # response is byte-identical because there is nothing to annotate.
+    assert rewritten == response
+    # The degraded outcome is countable (citation-coverage measurability).
+    assert metadata.anchorless_primary_matches == 1
+    assert metadata.verifier_exception is False
+    assert metadata.no_match_strips == []
+
+
+def test_anchored_and_anchorless_primary_matches_counted_separately() -> None:
+    """Mixed corpus: anchored chunks still cite; anchorless ones degrade; counts split."""
+    corpus = [
+        _primary_chunk("Out, damned spot! out, I say!", index=0),  # (5.1.36)
+        _anchorless_primary_chunk(
+            "She should have died hereafter; there would have been a time",
+            index=7,
+        ),
+    ]
+    response = (
+        'First "Out, damned spot! out, I say!" and later '
+        '"She should have died hereafter; there would have been a time" too.'
+    )
+
+    rewritten, metadata = verify_quotes(response, corpus, "Macbeth")
+
+    assert len(metadata.primary_matches) == 2
+    assert metadata.anchorless_primary_matches == 1
+    # The anchored match keeps its citation; the anchorless one gets none.
+    assert "(5.1.36)" in rewritten
+    assert (
+        '"She should have died hereafter; there would have been a time" too.'
+        in rewritten
+    )
+    assert rewritten.count("(") == 1
+
+
+def test_anchorless_fuzzy_near_miss_corrects_without_citation() -> None:
+    """A near-miss (≤3 edits) against an anchorless primary chunk still corrects."""
+    corpus = [_anchorless_primary_chunk("Out, damned spot! out, I say!")]
+    # One edit away from the canonical line ("saw" for "say").
+    response = 'She cries "Out, damned spot! out, I saw!" in the sleepwalking scene.'
+
+    rewritten, metadata = verify_quotes(response, corpus, "Macbeth")
+
+    assert len(metadata.fuzzy_corrections) == 1
+    fuzzy = metadata.fuzzy_corrections[0]
+    assert fuzzy.citation_anchor is None
+    assert fuzzy.edit_distance == 1
+    # HEAD (pre-fix) fell through to NoMatchStrip here — pinned gone.
+    assert metadata.no_match_strips == []
+    assert metadata.anchorless_fuzzy_corrections == 1
+    # Corrected canonical wording, in quotes, with NO trailing citation.
+    assert '"out, damned spot! out, i say"' in rewritten
+    assert "(" not in rewritten
+
+
+def test_anchorless_primary_does_not_abort_other_quotes_in_the_response() -> None:
+    """The old raise aborted the WHOLE response; each quote now resolves independently."""
+    corpus = [
+        _anchorless_primary_chunk("Out, damned spot! out, I say!", index=0),
+        _primary_chunk(
+            "She should have died hereafter; there would have been a time for such a word.",
+            index=1,
+        ),
+    ]
+    response = (
+        'She cries "Out, damned spot! out, I say!" and then '
+        '"She should have died hereafter; there would have been a time for such a word." follows.'
+    )
+
+    rewritten, metadata = verify_quotes(response, corpus, "Macbeth")
+
+    assert len(metadata.primary_matches) == 2
+    assert metadata.anchorless_primary_matches == 1
+    # The anchored second quote still gets its citation.
+    assert "(5.1.36)" in rewritten
