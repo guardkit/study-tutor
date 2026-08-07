@@ -325,10 +325,15 @@ def _session_already_completed(
     asyncio.run(
         store.append_turn(session_id=result.session_id, role="user", content="Q1")
     )
-    # End and complete
-    asyncio.run(store.end_session(result.session_id))
     from study_tutor.knowledge.store.entities import ConfidenceUpdate
 
+    # Record the completion while the session is still ACTIVE — W0 ordering
+    # (commit 2970229, spec §1): record_session_completion itself performs the
+    # active→ended transition. Calling store.end_session first trips the
+    # status-based idempotency gate (`WHERE status != 'ended'`) and silently
+    # drops the confidence/misconception children, so the "first delivery"
+    # this Given promises would never land (the known-issues
+    # "fixture-ordering artifact": this step encoded the pre-W0 call order).
     asyncio.run(
         store.record_session_completion(
             student_id="lilymay",
@@ -342,6 +347,12 @@ def _session_already_completed(
             misconceptions=[],
         )
     )
+    # Sanity: the first delivery must actually have landed — fail loudly here
+    # (not in the Then step) if the idempotency gate ever swallows it again.
+    _confs = asyncio.run(store.get_topic_confidences("lilymay"))
+    assert any(
+        c.topic_ref == "Macbeth Act 1" and c.percentage == 65 for c in _confs
+    ), "Given-step completion was dropped: first delivery wrote no confidence"
 
 
 @given("the tutor tools are served over the agent surface")
