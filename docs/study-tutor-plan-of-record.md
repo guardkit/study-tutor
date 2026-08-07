@@ -29,7 +29,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 
 | Piece | State | Receipt |
 |---|---|---|
-| Tutoring core (Player + async Coach + planner + quote verifier) | **LIVE** on the spark `:8100` (table auth) and `:8101` (Keycloak; voice OFF pending the Keycloak phone-flow proof). `:8100` capabilities, each live-proven: **verified streaming voice** (ADR-ARCH-027 as ratified — per-sentence quote-verification before tokens are shown/spoken/persisted, streamed TTS; transcript ~0.2s, first spoken sentence ~3s), **one-active (b) session semantics** (`resume_if_active:false` = end-then-create with settlement; structural via partial unique index `session_one_active_idx`, migration head `346cd366b66e`; the MCP door RESUMES — this and the concurrency-test rewrite were the build's two flagged judgment calls, **both BLESSED by Rich 2026-08-04**), and the **incremental think-filter** (reasoning can never stream to the learner). The 2026-07-26→08-03 silent voice outage (empty `STT_MODEL`/`TTS_MODEL` falling back to dead GB10-era aliases) was found by the live suite and fixed same day; `VoiceConfig` now fails loud at boot on empty model names | `HANDOFF-study-tutor-full-encapsulation-spark.md` (2026-07-26); verified-streaming deploy `513bc70` + prod WS smoke 2026-08-03; (b) build `19a0211` + `HANDOFF-spark-double-active-server-build.md` (2026-08-04); voice env fix `1595b68`; fail-loud + scoped-reset `6d1c8e5` |
+| Tutoring core (Player + async Coach + planner + quote verifier) | **LIVE** on the spark `:8100` (table auth) and `:8101` (Keycloak; voice OFF pending the Keycloak phone-flow proof). `:8100` capabilities, each live-proven: **verified streaming voice** (ADR-ARCH-027 as ratified — per-sentence quote-verification before tokens are shown/spoken/persisted, streamed TTS; transcript ~0.2s, first spoken sentence ~3s), **one-active (b) session semantics** (`resume_if_active:false` = end-then-create with settlement; structural via partial unique index `session_one_active_idx`, migration head `346cd366b66e`; the MCP door RESUMES — this and the concurrency-test rewrite were the build's two flagged judgment calls, **both BLESSED by Rich 2026-08-04**), and the **incremental think-filter** (reasoning can never stream to the learner). The 2026-07-26→08-03 silent voice outage (empty `STT_MODEL`/`TTS_MODEL` falling back to dead GB10-era aliases) was found by the live suite and fixed same day; `VoiceConfig` now fails loud at boot on empty model names | `HANDOFF-study-tutor-full-encapsulation-spark.md` (2026-07-26); verified-streaming deploy `513bc70` + prod WS smoke 2026-08-03; (b) build `19a0211` + `HANDOFF-spark-double-active-server-build.md` (2026-08-04); voice env fix `1595b68`; fail-loud + scoped-reset `6d1c8e5`; verifier fail-closed deploy 2026-08-07 (merge `6b50821`, rollback `pre-track-a-20260807`, live probe 0 exceptions) |
 | Model serving | **LIVE** — `gemma4-tutor` (fine-tuned Gemma 4 26B-A4B) + coach + speech models + embedder on the spark's llama-swap `:9000`; the GB10 handed back to the factory (Reachy speech unit `:8765` excepted) | same handoff; `/opt/llama-swap/config/config.yaml` |
 | Student model + gamification | **LIVE** — Postgres on the NAS `:5434`, nightly dumps; W1+W2 economy (33 achievements) settling per ADR-ARCH-030; real session receipted 2026-07-26 (`904ad0f`) | ADR-ARCH-030; `docs/gamification/design.md` §13.1 |
 | App (Flutter, monorepo `app/`) | **Android device-walked end-to-end against the LIVE spark (2026-08-03, Rich attended)**: sign-in, subject picker (visible-at-one), real tutor turns, **verified streaming signed off by ear** — sentence-by-sentence text with CONTINUOUS serialized audio, grounded turns on both `macbeth` and `an_inspector_calls` — history, live robot mirror, gamification UI, settings. Client hardening, all hermetically pinned: §7-conformant wire vocabulary + strand-proof batch fallback (`fa8d95b`), WS `/ws` path pin (`049f17c`), serialized stream-audio queue (`ffc83c9`), and **never-a-silent-resume** (Lilymay's 2026-08-03 finding; Rich's ruling shipped `69d7d5f` — topic disclosure card + Continue-vs-start-fresh sheet with chips + free text, server-truth gate, `resumed` backstop). **iOS: slice SIMULATOR-WALKED 2026-08-02** (iPhone 17 / iOS 26.2 — `integration_test/slice_walk_test.dart` drives the real composition root; **voice walk still pending**: mic permission + TTS audibility need human attendance). **Web: no boot claim** | `RESULTS-study-tutor-p2-live-acceptance-2026-07-05.md`; `app/README.md`; honest-iOS `29a320f`; iOS walk `dd4bbed`; streaming sign-off + fix SHAs named in-cell (2026-08-03/04) |
@@ -66,8 +66,12 @@ the sixth on 2026-08-02 via ADR-ARCH-032 D4):**
   door sends the shared default and the service normalises empty subjects at the
   boundary — all front doors now share one `(student, subject)` resume key. Six of
   eight contradictions burned down.
-- The 15s→90s turn-deadline change was never ratified against the contract's latency
-  section. (Rich — ruling queue item 8.)
+- ~~The 15s→90s turn-deadline change was never ratified against the contract's latency
+  section~~ **✅ RULED: RATIFY (Rich, 2026-08-07, in-session)** — dated annotation on the
+  binding (no re-pin); the binding never had a latency section, SR-07's 30s survives only
+  as the orchestrator's log-only budget; full archaeology in
+  [`BRIEF-90s-deadline-ratify-or-revert.md`](runbooks/BRIEF-90s-deadline-ratify-or-revert.md).
+  **All eight contradictions are now burned down.**
 - ~~Citation anchors broken on 581/581 corpus chunks since 2026-05-10~~ **RULED
   2026-08-07 (Lane 2 step 3):** the break's hidden consequence — the verifier failing
   OPEN on correct quotes — is **fixed in code** (deploy pending Rich's word); the
@@ -334,9 +338,12 @@ standup and updated-base availability are confirmed.*
    refreshed into the repo-wide ledger (fixture-ordering artifact + mirror advisories
    adopted; the `whitestocks` failure was **fixed outright** rather than adopted —
    hermetic suite now fully green); ARCHITECTURE.md model identity + ADR-ARCH-030
-   index row done; app/README `voiceTurnStream` note fixed. **Still open:** the voice
-   wave/gate ledger's formal closure; the live contract suite re-run against the spark
-   (operator-attended — the 35-green receipt is from 2026-07-05, pre-`turnsSince`).
+   index row done; app/README `voiceTurnStream` note fixed. ~~Still open: the voice
+   wave/gate ledger's formal closure~~ **✅ DONE 2026-08-07** (`c786f26` — 13 SHAs
+   verified, TASK-STREAM-001 found already formally closed, iOS voice walk + robot
+   re-point honestly left open with owners); ~~the live contract suite re-run~~
+   **already receipted** (49/49 as `suite-runner`, 2026-08-04 — Suites row).
+   **Lane 5 step 2 is now fully closed.**
 3. ~~Push the local Stage-0-revert commits~~ **✅ DONE 2026-08-01** — `gh` CLI 2.97.0
    installed + authenticated on the spark; the 6-commit backlog (incl. `96baad2`)
    pushed (`dad738a..f056b5c`). The fleet-gateway re-point stays in Lane 6 step 1
@@ -374,20 +381,32 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    **Drafts DELIVERED 2026-08-07** — ADR-ARCH-033 + ADR-ARCH-034 on main (Proposed), five
    consolidated ruling asks Q1–Q5, each with a recommendation; ruling them + ratifying the
    pair discharges this item. The upload-vehicle half waits on the Mac's Flutter-web
-   boot-claim leg (handoff `27bb0b5`).
+   boot-claim leg (handoff `27bb0b5`). **Q1–Q5 ALL RULED (Rich, 2026-08-07, in-session,
+   as recommended — recorded in both ADRs' ruling-asks sections): UK-only eu-west-2;
+   hold serving for Lane 1 evals; extend sops; ≤6 accounts on-demand; documented
+   backup-roll. Ratification pending only Rich's ICO/AWS hand-check.**
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
    **DELIVERED 2026-08-07** — the design-pass doc's seven gate questions E1–E7 (see the
-   Lane 6 step 2 cell); one word per question closes the gate.
+   Lane 6 step 2 cell). **✅ GATE CLOSED same day (Rich, in-session — all seven ruled,
+   recorded in the design doc §E): standalone app on server-side voice; public Space;
+   settings-UI bearer now / AUTH-004 after; ask_jarvis dropped; startup-app; step 1
+   this weekend + hand-deploy path retired; fleet-gateway + RichWoollcott HF.** The
+   build brief awaits Rich's want; it lands in fleet-gateway.
 7. Lane 7: the teacher-dataset option + bake-off scope, once the 2×Spark DeepSeek standup
    and the updated Gemma 4 base availability are confirmed.
 8. Housekeeping: ~~push the local commits~~ **✅ DONE 2026-08-01 (gh CLI installed +
    authenticated on the spark; backlog pushed)**; execute the fleet-gateway re-point
    (Lane 6 step 1 — runbook ready); ratify-or-revert the 90s deadlines;
-   **NEW 2026-08-07: the deploy word for the verifier fail-closed fix** (built, merged
-   `6b50821`, hermetic 1747/0, measured-run receipt — prod `:8100`/`:8101` still runs
-   the fail-open verifier until deployed; ritual is the standing four-step);
-   **NEW 2026-08-07: the `fleet-evals` GitHub repo creation** (local seed ready, no
-   remote exists by fence).
+   ~~the deploy word for the verifier fail-closed fix~~ **✅ GIVEN + EXECUTED
+   2026-08-07 (Rich, in-session)** — both containers recreated (rollback
+   `pre-track-a-20260807` kept), healthz 200 ×2, `rag_wired`/`voice_services_wired`,
+   live suite-runner probe: quote stripped-with-hedge, 0 verifier exceptions;
+   ~~the `fleet-evals` GitHub repo creation~~ **✅ RULED 2026-08-07: private, guardkit
+   org** (executed same session); **the weekend operator batch (Rich, ruled
+   2026-08-07):** the fleet-gateway re-point + the `gemma4-base` llama-swap seat
+   (~16GB download + config + restart) + the GGUF provenance checksum (Rich's origin
+   word banked: fine-tuned on the Dell ProMax GB10, files on the GB10 and backed up to
+   the whitestocks NAS — checksum the NAS copy against local sha `675424b0…3144`).
 
 ## Standing rules (how work runs here — already the convention, now written)
 

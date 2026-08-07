@@ -363,6 +363,13 @@ Lane 6's decision, not this one.
 
 ## The ruling asks that belong here (only Rich rules these)
 
+> **RULINGS RECEIVED — Rich, 2026-08-07, in-session (both, as recommended):**
+> **Q2: hold the default (Branch A provisional); rule serving once when Lane 1's evals
+> land.** **Q4: the D4 ceiling confirmed (≤ ~6 accounts, ~2–3 simultaneous, queueing as
+> degradation); on-demand for anything a student touches, spot only for spike/batch.**
+> (Q1/Q3/Q5 ruled in ADR-033 the same session.) **Status remains Proposed** pending
+> Rich's ICO/AWS hand-verification, then the pair ratifies together.
+
 Everything above is decided on the record. These two are genuinely his; each carries this
 draft's recommendation. (Q1, Q3 and Q5 are ADR-033's; ruling-queue item 5 is discharged by
 ruling all five and ratifying the pair.)

@@ -280,6 +280,23 @@ app lifecycle.
 
 ## E. THE GATE — open questions for Rich (ruling-queue item 6)
 
+> **GATE CLOSED — Rich, 2026-08-07, in-session; all seven ruled:**
+> **E1: (c)** — standalone app on study-tutor's server-side verified streaming voice
+> (one backend, no GB10 dependency; the biggest build, accepted). **E2: public Space**
+> (the store tile the children can reinstall; secrets stay out via the settings UI;
+> "usable only on the household network" stated on the page). **E3: settings-UI bearer
+> acceptable now; FEAT-AUTH-004 sequenced after** (September/Dulcie's robot as the
+> forcing date). **E4: drop `ask_jarvis` from the tutor app** — discussed: Tavily cost
+> was a NON-factor at household volume (free tier ~1,000 credits/mo vs ~300 projected);
+> decided on governance (a child's utterances not leaving home via a search API inside
+> the tutor) + Socratic integrity (law 1 — no answer escape hatch beside the tutor) +
+> secret surface; jarvis can be its own switchable app later. **E5: startup app** —
+> antenna-touch → tutor. **E6: confirmed both** — step 1 (spark re-point) scheduled
+> this weekend, before/with any build; the packaging build formally retires the
+> hand-deploy path. **E7: package in fleet-gateway; the Space under the RichWoollcott
+> Hugging Face account.** The build brief can now be drafted whenever Rich wants the
+> lane to run; it lands in the fleet-gateway repo.
+
 The investigation's seven open questions FOR Rich, verbatim from its brief, each with a
 one-line recommendation where the findings support one. Reminder riding with every answer: **the
 step-1 precondition stands** — the GB10-to-spark re-point (or at least its URL decision)

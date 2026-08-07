@@ -389,6 +389,16 @@ class of thing this decision exists to close before any cloud counterpart is cre
 
 ## The five ruling asks (only Rich rules these)
 
+> **RULINGS RECEIVED — Rich, 2026-08-07, in-session (all five, as recommended):**
+> **Q1: UK-only, eu-west-2, no non-UK fallback** (D2 stands). **Q2: hold the default;
+> rule serving once when Lane 1's evals land** (with Q1 already ruled, the stock-Bedrock
+> branch is foreclosed unless Q1 is explicitly reopened). **Q3: extend sops** (D11
+> stands). **Q4: ≤ ~6 accounts, on-demand for anything a student touches; spot only for
+> the spike and batch work.** **Q5: accept the documented-roll posture** (Hyper Backup
+> retention to be documented at ratification). **Status remains Proposed:** ratification
+> itself lands after Rich's hand-verification of the ICO/AWS pages (his chosen sequence,
+> same session) — the on-ratification checklist then executes.
+
 Everything above is decided on the record. These five are genuinely his; each carries this
 draft's recommendation. Ruling-queue item 5 is discharged by ruling them and ratifying.
 

@@ -1,8 +1,9 @@
 # Known issues — study-tutor
 
 **Audience**: anyone working this repo (operators and build lanes).
-**Last updated**: 2026-08-01 (Lane 5 refresh — this file was stale at
-2026-05-18 and scoped to the NATS fleet only; it is now the repo-wide
+**Last updated**: 2026-08-07 (Lane 5 wave — fixture-ordering + T2 leak
+closed; verifier fail-closed fix deployed. Originally refreshed
+2026-08-01 from the stale 2026-05-18 NATS-only scope into the repo-wide
 ledger the plan of record's Lane 5 points at).
 
 This file collects known issues that are **understood and deferred on
@@ -21,13 +22,13 @@ section.
   (`idp-test.tail0000.ts.net` / `100.100.100.100`), which also honours
   the guard's actual point — unit tests shouldn't name production
   hosts.
-- **Fixture-ordering artifact (open)**: running the durable-cross-device
-  feature file **standalone** fails
-  `test_redelivering_the_same_completed_session…`; green in full-suite
-  order and reproduces at the pre-S0 baseline — not a product bug
-  (receipt: `RESULTS-spark-live-robot-session-mirror-2026-07-31.md`,
-  Stage 0 review). Exit: make the fixture order-independent in that
-  feature file's scope.
+- ~~Fixture-ordering artifact~~ **CLOSED 2026-08-07** (`cf6158a`,
+  coach revert-proven): the feature file's Given step called
+  `end_session` before `record_session_completion`, tripping the fake
+  store's status-based idempotency gate when run standalone (full-suite
+  ordering masked it). Fixed inside the feature file's fixture scope —
+  the W0 ordering corrected + a fail-loud sanity assert; standalone
+  23/23, full hermetic suite 1749/0.
 
 ### Mirror-lane advisories (2026-07-31, non-blocking coach notes)
 
@@ -99,9 +100,13 @@ Exit: fold at the next contract re-pin.
   broad-except AND the streaming final pass; both now fail closed, with
   anchorless primary matches degrading to verified-but-uncited quotes —
   merge `6b50821`, 11 regression pins, measured-run receipt in
-  `evidence/golden-quote-fabrication-eval/`). **⚠ NOT YET DEPLOYED:**
-  prod `:8100`/`:8101` still runs the fail-open verifier until the
-  deploy word (ruling queue). **The anchors themselves (Track B) stay
+  `evidence/golden-quote-fabrication-eval/`). **✅ DEPLOYED 2026-08-07**
+  (Rich's word in-session): both containers recreated on the fixed image
+  (rollback tag `pre-track-a-20260807` kept); healthz 200 ×2,
+  `rag_wired` 581 chunks, `voice_services_wired`; live probe as
+  `suite-runner` — a slightly-off dagger quote came back STRIPPED with
+  the hedge, **0 verifier exceptions** in the logs (fail-closed live).
+  **The anchors themselves (Track B) stay
   explicitly deferred** with costed options in
   `RUNBOOK-golden-quote-fabrication-eval.md` §6 — B1 (Standard Ebooks
   Macbeth re-ingest, cheapest, also restores the page-break-dropped

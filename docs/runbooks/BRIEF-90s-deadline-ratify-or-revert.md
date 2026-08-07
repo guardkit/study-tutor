@@ -81,3 +81,10 @@ the serving-side aspiration it always was.
 **The ask — one word: "ratify" or "revert".** On *ratify*, the dated annotation above lands
 in place (no re-pin) and plan contradiction `:69` closes. On *revert*, the app deadlines
 return to 15s/30s only after a serving-latency workstream is scoped first.
+
+---
+
+**RULED 2026-08-07 (Rich, in-session): RATIFY.** The dated annotation is on the binding
+(the 2026-08-04 precedent form, no re-pin); the plan's known-contradictions entry is
+struck in the same fold. The 30s SR-07 figure survives as the orchestrator's log-only
+latency budget, noted in the annotation per the verify pass's nit.
