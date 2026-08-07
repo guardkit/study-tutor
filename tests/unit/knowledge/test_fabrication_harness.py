@@ -382,3 +382,35 @@ def test_t1_end_to_end_scoreboard() -> None:
     assert buckets["overall"].citation_coverage == 0.0
     report = render_markdown(buckets, "t1.jsonl")
     assert "FAIL" in report  # 50% is far above the frozen 5% bar
+
+
+def test_generate_import_resolves_without_repo_root_on_sys_path(monkeypatch):
+    """Plain-script invocation regression (2026-08-07 measured run).
+
+    ``uv run python scripts/eval/run_fabrication_eval.py --generate`` runs
+    with ``scripts/eval`` as ``sys.path[0]`` and NO repo root, so the
+    package import ``scripts.eval.run_ab_eval`` raises
+    ``ModuleNotFoundError``. ``_import_generate`` must fall back to the
+    same-directory import and still return the real function.
+    """
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    from scripts.eval import run_fabrication_eval as mod
+
+    for name in ("scripts", "scripts.eval", "scripts.eval.run_ab_eval", "run_ab_eval"):
+        monkeypatch.delitem(_sys.modules, name, raising=False)
+    repo_root = _Path(mod.__file__).resolve().parents[2]
+
+    def _is_repo_root(entry: str) -> bool:
+        try:
+            return _Path(entry or ".").resolve() == repo_root
+        except OSError:
+            return False
+
+    monkeypatch.setattr(
+        _sys, "path", [p for p in _sys.path if not _is_repo_root(p)]
+    )
+    generate = mod._import_generate()
+    assert callable(generate)
+    assert generate.__name__ == "generate"

@@ -462,6 +462,22 @@ def load_player_system_prompt(path: Path = PLAYER_PROMPT_PATH) -> str:
     return re.sub(r"\A\s*<!--.*?-->\s*", "", text, count=1, flags=re.S)
 
 
+def _import_generate():
+    """Import the A/B harness's ``generate`` under both invocation modes.
+
+    Under pytest the repo root is on ``sys.path`` so the package import
+    works; run as a plain script (``uv run python scripts/eval/…``, the
+    runbook's own command) ``scripts`` is NOT importable — fall back to a
+    same-directory import (2026-08-07 measured-run regression).
+    """
+    try:
+        from scripts.eval.run_ab_eval import generate
+    except ModuleNotFoundError:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from run_ab_eval import generate  # type: ignore[no-redef]
+    return generate
+
+
 def generate_response(
     prompt: str,
     *,
@@ -473,7 +489,7 @@ def generate_response(
     timeout: float,
 ) -> str:
     """One generation round-trip, reusing the A/B harness's client."""
-    from scripts.eval.run_ab_eval import generate
+    generate = _import_generate()
 
     result = generate(
         endpoint,
