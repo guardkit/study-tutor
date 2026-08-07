@@ -127,7 +127,8 @@ installs an app by `pip`-installing the repo into the robot's shared virtualenv.
 Discovery is by Hugging Face tag: the app's README frontmatter must carry
 `reachy_mini_python_app` to appear in the store. The store front-ends are (a) the
 **robot's own dashboard** (the daemon's web UI on `:8000`) and (b) **Reachy Mini
-Control**, the official cross-platform desktop app, whose Applications tab fetches
+Control**, the official desktop app (production-ready on macOS; Windows and Linux are
+work-in-progress per its own README), whose Applications tab fetches
 tagged Spaces, installs via job-based polling, and handles start/stop/uninstall.
 Hugging Face launched the official app store 2026-05-06 with 200+ community apps and
 roughly 10,000 robots in the field; all apps are open-source repos, forkable and
@@ -226,7 +227,9 @@ app lifecycle.
 - Official store curation dataset:
   https://huggingface.co/datasets/pollen-robotics/reachy-mini-official-app-store
 - Template app with settings UI:
-  https://huggingface.co/spaces/pollen-robotics/reachy_mini_template_app · conversation
+  https://huggingface.co/spaces/pollen-robotics/reachy_mini_template_app (the Space
+  returned 401 at verification on 2026-08-07 — apparently made private; the settings-UI
+  pattern it demonstrates is described in the SDK apps doc above) · conversation
   app (`.env.example` config precedent):
   https://github.com/pollen-robotics/reachy_mini_conversation_app
 - Wireless hardware (CM4 listing):
@@ -277,8 +280,8 @@ app lifecycle.
 
 ## E. THE GATE — open questions for Rich (ruling-queue item 6)
 
-Rich's seven questions, verbatim from the investigation brief, each with a one-line
-recommendation where the findings support one. Reminder riding with every answer: **the
+The investigation's seven open questions FOR Rich, verbatim from its brief, each with a
+one-line recommendation where the findings support one. Reminder riding with every answer: **the
 step-1 precondition stands** — the GB10-to-spark re-point (or at least its URL decision)
 precedes or rides with any build.
 
