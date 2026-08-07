@@ -159,3 +159,23 @@ every per-subject (and, come the pilot, per-account) pipeline per ADR-ARCH-031 D
 
 The core decision of this ADR — one fine-tune, per-subject system prompts, per-subject
 corpora — is unchanged by this amendment.
+
+---
+
+## Amendment — 2026-08-07 (dated note; the Chemistry validation row is UNBACKED)
+
+The Lane 1 step 1 design pass (fleet-evals seed) found that **both Chemistry probes in
+the 17-prompt validation ran under the Biology preset**: in
+`docs/research/multi-subject-validation-results.md`, prompt C1 (line 530) and prompt C2
+(line 562) are each answered under the label `GCSE Biology Tutor` (lines 532, 564);
+`GCSE Chemistry Tutor` appears nowhere in that file, though the `gcse-chemistry` preset
+exists and is correctly defined (`RUNBOOK-open-webui-tutor-access.md` ~601–615, ~652).
+**Consequence:** this ADR's "Chemistry ✅ Validated" row is unbacked — the honest
+informal pass rate is **15/17 across 5 subjects**, not 17/17 across 7. (Also noted: the
+"7 subjects" phrasing covers a 6-subject probe set; Physics has a preset and prompt but
+no probes at all.) **Exit:** re-run C1/C2 under the real chemistry preset via the
+fleet-evals harness, which now stamps `subject` + `preset_id` + prompt SHA on every row
+so this class of mislabeling cannot recur (the probes are data:
+`fleet-evals/venues/study-tutor-multisubject/probes-17/probes.jsonl`, C1/C2 annotated).
+The core decision — one fine-tune, per-subject prompts, per-subject corpora — is
+unchanged by this amendment.

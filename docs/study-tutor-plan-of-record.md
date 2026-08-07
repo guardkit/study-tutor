@@ -36,10 +36,10 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 | Auth | **LIVE end-to-end** — Keycloak on the NAS `:8443`; server gate (KC-G2) and real-device gate (KC-G3) passed 2026-07-19; interim table mode retained for the robot | `HANDOFF-weekend-auth-voice-fable-window.md` §11 |
 | Robot (Reachy "Scholar") | **⚠ CONFIRMED NOT re-pointed (Rich, 2026-08-01)** — the robot still targets the GB10, whose tutor stack was retired 2026-07-26, so the robot's `ask_tutor`/student-model path is presumed DOWN until the fleet-gateway URL flips to the spark `:8100` (same static bearer). The re-point is an operator act in the fleet-gateway repo/robot host. **2026-08-04 made the flip safer**: the MCP door now resumes (a robot start joins — never ends — the learner's active session, blessed), and the voice model pins are explicit + fail-loud | `HANDOFF-study-tutor-full-encapsulation-spark.md` operator item 3; Rich in-session 2026-08-01; MCP resume `19a0211` |
 | Live robot-session mirror | **SHIPPED 2026-07-31** — `turns?since=` delta read + SSE stream; `resume` stays active-only ("one verb per job"; the mirror lane's Stage-0 resume widening was reverted, `96baad2`) | `RESULTS-spark-live-robot-session-mirror-2026-07-31.md` |
-| RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **Still open:** the fabrication-rate golden-quote eval (S2's bar — harness unbuilt, Lane 2 step 3), citation anchors (deferred), subject-scoping (Lane 2 step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
+| RAG / retrieval | **LIVE in prod as of 2026-08-02** (Rich's 1b go, executed same session): both spark containers boot with `event=rag_wired` (581-chunk `gcse-english-v1` re-embedded at 1024-dim to match llama-swap's `embed`, baked into the 1.4GB CPU-torch image); quote-retrieval smoke PASS 3/3 **inside the deployed container**; reranker instance-cached (~5.3s warm retrieval); rollback tags `pre-rag-20260802` kept. The Coach revise loop is un-idled. **2026-08-07 (Lane 2 step 3):** the golden-quote fabrication harness is **BUILT + first measured run executed** (29 generated responses through the real closure; receipt in `evidence/golden-quote-fabrication-eval/`); the step-3 design pass found the citation-anchor break had been failing the verifier **OPEN** since 2026-05-10 (a CORRECT quote raised inside the verifier and the whole turn released UNVERIFIED — law 3 unenforced on its own path) — **fixed in code** (merge `6b50821`: anchorless primaries degrade to verified-uncited, streaming final pass fails closed), **⚠ deploy pending Rich's word — prod still runs the fail-open build**; citation anchors themselves (Track B) explicitly deferred with costed options (fabrication runbook §6); subject-scoping done 2026-08-02 (step 2) | `RESULTS-lane2-rag-image-1a-2026-08-01.md` incl. the 1b postscript; deploy/http compose |
 | Multi-subject | **Retrieval layer BUILT + LIVE 2026-08-02** (ADR-ARCH-032: per-subject collections, subject-keyed wiring/registry, closure coverage check, `--subject` ingest — deployed, `rag_subject_coverage` in prod boot logs); mechanism stays ADR-TUTOR-MULTI-SUBJECT (ONE fine-tune + per-subject prompts + corpora; 17/17 informal probes). **App picker + seams CLOSED 2026-08-02** (Lane 1 step 2 — `3a08bfa`: visible picker, `defaultSubject` now the fallback per SUBJECT_DEFAULT §4). **Still open for a real second subject:** content packs (Lane 1 step 3 — scans!), subject evals (Lane 1 step 1) | ADR-ARCH-032; the ADR; `multi-subject-validation-{prompts,results}.md` |
 | Contracts | Six verbs frozen (Rev 2); additive addenda through 2026-07-31; `SUBJECT_DEFAULT='english'` (a default, not a pin) | `API-session-http-binding.md`; `SUBJECT_DEFAULT.md` |
-| Suites | **Python hermetic 1709 passed / 0 failed (2026-08-04)**; **dart 424 / 424 (2026-08-04)**; **live contract suite 49/49 (2026-08-04) — and ISOLATED**: it runs as the dedicated `suite-runner` identity with scoped authenticated resets and zero-leftover per-file cleanup (lilymay's rows byte-identical across a full run), and the promoted (b) end-then-create pin lives in the shared s5 body, asserting against BOTH the fake (hermetic) and the deployed `19a0211` build — fake and server agree by test. Grown 35→49 since 2026-07-05. The 2026-08-03 diagnostic arc (40/47 → 47/47 → 48/48) found-and-fixed voice dead-since-the-spark-move (`1595b68`), the WAV-declared-as-mp4 live fixture (`049f17c`), and the suite's own store pollution + whole-store reset wipe (isolation: server `6d1c8e5`, Mac `bb5a4fa`). Pre-2026-08-03 transcripts wiped by the old reset: **ACCEPTED LOSS** (Rich, 2026-08-04 — learner state untouched). **Lane 5's suite debt is CLOSED** | suite runs 2026-08-04 (spark 1709; Mac 424 + live 49/49); p2 acceptance 2026-07-05 |
+| Suites | **Python hermetic 1747 passed / 0 failed (2026-08-07** — the count includes the ingest-corpus test module, which only collects when the `[rag]` extra is installed; 1733/0 without it — same green either way**)**; **dart 424 / 424 (2026-08-04)**; **live contract suite 49/49 (2026-08-04) — and ISOLATED**: it runs as the dedicated `suite-runner` identity with scoped authenticated resets and zero-leftover per-file cleanup (lilymay's rows byte-identical across a full run), and the promoted (b) end-then-create pin lives in the shared s5 body, asserting against BOTH the fake (hermetic) and the deployed `19a0211` build — fake and server agree by test. Grown 35→49 since 2026-07-05. The 2026-08-03 diagnostic arc (40/47 → 47/47 → 48/48) found-and-fixed voice dead-since-the-spark-move (`1595b68`), the WAV-declared-as-mp4 live fixture (`049f17c`), and the suite's own store pollution + whole-store reset wipe (isolation: server `6d1c8e5`, Mac `bb5a4fa`). Pre-2026-08-03 transcripts wiped by the old reset: **ACCEPTED LOSS** (Rich, 2026-08-04 — learner state untouched). **Lane 5's suite debt is CLOSED** | suite runs 2026-08-04 (spark 1709; Mac 424 + live 49/49); p2 acceptance 2026-07-05 |
 
 **Known contradictions to burn down (Lane 5) — six of eight burned down
 (five on 2026-08-01: the Lane 4 pass `5c1ddaa` + hygiene commits `5102874`/`10cc802`;
@@ -68,8 +68,12 @@ the sixth on 2026-08-02 via ADR-ARCH-032 D4):**
   eight contradictions burned down.
 - The 15s→90s turn-deadline change was never ratified against the contract's latency
   section. (Rich — ruling queue item 8.)
-- Citation anchors broken on 581/581 corpus chunks since 2026-05-10 — **explicitly
-  deferred again** by the Lane 2 1a receipt; Lane 2 step 3 owns fix-or-defer.
+- ~~Citation anchors broken on 581/581 corpus chunks since 2026-05-10~~ **RULED
+  2026-08-07 (Lane 2 step 3):** the break's hidden consequence — the verifier failing
+  OPEN on correct quotes — is **fixed in code** (deploy pending Rich's word); the
+  anchors themselves stay **explicitly deferred as Track B** with costed options
+  (`RUNBOOK-golden-quote-fabrication-eval.md` §6; B1 Standard-Ebooks Macbeth is the
+  cheapest next win). Citation coverage reads an honest 0% until Track B lands.
 
 ## The lanes
 
@@ -113,6 +117,18 @@ The recorded sequencing rule stands: *grounding before subject expansion* (rag-g
    retrieval; fix or explicitly defer the citation-anchor break.
    *Receipt: fabrication <5% on the golden-quote eval (the S2 frozen bar), per subject with
    a corpus.*
+   **Step-3 build ✅ DONE 2026-08-07** (merge `6b50821` + fix `fb325cf`; coach-gated
+   workflow, adversarial revert-verify; hermetic 1747/0): the fail-open fix (Track A —
+   anchorless-degradation + streaming fail-closed + ingest anchor gate, 11 regression
+   pins), the harness (29 store-verified golden items incl. the four spec seeds verbatim,
+   T1/T2 tiers, pre-registered runbook with the frozen <5% bar), and the **first measured
+   run** (generated by the live `gemma4-tutor`): 3 quotes across 29 Socratic responses —
+   n far too small for a rate claim; the one fabrication was the DESIGNED BAIT working
+   (the model reproduced its known 2026-04-21 "mortal coats" misquote and the runtime
+   verifier STRIPPED it — law 3 held); the Track A degraded-citation path proven live
+   (`qf-poems-lone-level`). Next for a meaningful denominator: quote-eliciting prompts.
+   **Deploy of the fix awaits Rich's word** (prod still fail-open). Track B (real
+   anchors) deferred with costs (runbook §6).
 
 ### Lane 1 — multiple subjects working well *(moves S1; Rich's ask #1)*
 Eval-first, then plumbing, then content packs:
@@ -126,6 +142,20 @@ Eval-first, then plumbing, then content packs:
    2–0–1 multi-turn, the fine-tune ahead only on the Socratic-stance dimension — yet the
    fine-tune serves). *Gate: Rich rules the serving story on the receipts, per subject —
    with Lane 7's refreshed candidates in the field.*
+   **Seed ✅ BUILT 2026-08-07** (local sibling repo `fleet-evals`, 6 commits, 29 tests
+   green, coach-gated; **no GitHub repo yet — creation is Rich's flag, no remote exists
+   by fence**): the 10 scripts lifted with the five generalisations (n-way candidates
+   for Lane 7, per-subject rubrics, run manifests stamping subject+preset+prompt-SHA,
+   code-enforced pre-registration — runs REFUSE to start without a ratified PROTOCOL),
+   the 7 subject prompts extracted byte-verbatim from the OWUI runbook heredocs with
+   sha256 provenance, the 17 probes as data with **the Chemistry defect annotated**
+   (both C1/C2 ran under the Biology preset — the ADR's 17/17 is honestly 15/17; dated
+   amendment on ADR-TUTOR-MULTI-SUBJECT 2026-08-07), 2026-05-18 evidence as
+   golden-master fixtures (published tables reproduced exactly), and 136 golden items
+   across 8 subjects (english 24 + 7×16), each adversarially reviewed. **Scored run
+   still blocked on:** the base-model seat on llama-swap (operator act), the served-GGUF
+   provenance (no HF GGUF comparator exists — local sha256 pinned), and Rich's gate tap
+   on the DRAFT protocol.
 2. **Close the subject seams — ✅ DONE 2026-08-02 (backend on the spark, app leg on
    the Mac; all seams closed):**
    ~~server normalisation~~ + ~~MCP quirk~~ (ADR-ARCH-032 D4, via Lane 2 step 2);
@@ -212,6 +242,15 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    encryption, parental-consent record, erasure path — "this surface IS the portfolio
    artifact" (ADR-029 D4). *Gate: Rich ratifies — minors' data is the whole question. Per
    the S3 ladder, this ratifies only after Lane 4's posture ADR has.*
+   **✅ DRAFTED 2026-08-07** —
+   [`ADR-ARCH-033-pilot-residency-governance-eu-west-2.md`](architecture/decisions/ADR-ARCH-033-pilot-residency-governance-eu-west-2.md)
+   (merge `5d2d849`; 3-lens adversarial verify — 20+ receipts per draft re-checked,
+   UK-law claims re-confirmed incl. DUAA s81 in force since 2026-02-05). Decides the 11
+   record-supported items (supersession map, UK-only recommendation, net-new encryption
+   at rest, consent-in-onboarding regardless of age, the one-statement erasure cascade
+   + ≤30-day SLA, DPIA commissioned, AWS DPA satisfied); carries ruling asks Q1/Q3/Q5.
+   Status: Proposed — awaiting Rich (ruling-queue item 5). Hand-verify the ICO/AWS pages
+   before ratifying (honest register).
 2. **The multi-user ADR**: pilot accounts on the existing `student_id` partition + Keycloak
    provisioning (both already multi-user-shaped); concurrency posture (the spark cannot
    serve a concurrent cohort — cloud sizing is part of this); voice-on-Keycloak-mode flip.
@@ -219,6 +258,16 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    record ADR-029 D4 names is captured in the pilot onboarding flow itself — a signed step
    before a friend's first session, not paperwork on the side — so the pilot is covered for
    friends' usage by construction.
+   **✅ DRAFTED 2026-08-07** —
+   [`ADR-ARCH-034-pilot-multi-user-accounts.md`](architecture/decisions/ADR-ARCH-034-pilot-multi-user-accounts.md)
+   (same merge + verify pass as 033): pilot rides the `student_id` partition unchanged;
+   ONE provisioning/deprovisioning runbook to be written (**the step-5 "runbook exists"
+   claim below is corrected — it does not exist**; three partial pieces named); the
+   pilot does NOT run on the spark (measured memory law) — priced default EC2 g6.xlarge
+   London with a ~6-account ceiling stated as arithmetic; voice-on-Keycloak ruled IN
+   gated on one attended walk; consent = one onboarding step, two records, additive
+   contract change only; erasure = attended runbook, not an API verb. Carries ruling
+   asks Q2/Q4. Status: Proposed — awaiting Rich (ruling-queue item 5).
 3. **The spike → deploy**: reuse is high (stateless app container, compose, alembic
    migrations, realm-as-code, the model file + llama-swap config verbatim); new =
    TLS/domain (app base-URL rebuild, cleartext-HTTP fix), hosted Postgres/Keycloak, secrets
@@ -251,6 +300,16 @@ than a hand-deployed integration.
    fleet-gateway repo + robot host, with study-tutor's surface unchanged — the contracts
    already serve any client that authenticates). *Gate: the design pass comes back to Rich
    before any build.*
+   **✅ DESIGN PASS DELIVERED 2026-08-07** —
+   [`robot-app-distribution-design-pass-2026-08-07.md`](design/robot-app-distribution-design-pass-2026-08-07.md)
+   (merge `bda0705`; citations verified to source incl. the desktop app's code). The
+   platform fits the ask: Reachy Mini apps are pip-installable Hugging Face Spaces,
+   daemon-managed one-app-at-a-time switching, documented settings-UI pattern for
+   exactly our config (backend URL, bearer, voice pins); all build work lands in
+   fleet-gateway + a Space, study-tutor contracts untouched. **Seven gate questions
+   E1–E7 await Rich** (ruling-queue item 6); headline recommendation: option (c) —
+   standalone app on study-tutor's server-side verified streaming voice, dropping the
+   GB10 dependency. Step 1 (the re-point) still precedes or rides with any build.
 
 ### Lane 7 — model refresh & bake-off *(feeds Lane 1's serving ruling; added by Rich 2026-08-01)*
 **Ruled IN (Rich, 2026-08-01: "we should definitely re-run the fine-tune"):** re-run the
@@ -304,17 +363,31 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    incl. the 1b postscript.
 3. Lane 1: the serving ruling once the subject evals land — over the full field including
    Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
-   2026-08-01.)*
+   2026-08-01.)* **2026-08-07: the eval estate now exists** (local `fleet-evals` seed —
+   Lane 1 step 1 cell); the scored run needs his **gate tap on the DRAFT protocol**, plus
+   two operator acts (base-model seat on llama-swap; served-GGUF provenance resolution)
+   and **the `fleet-evals` GitHub repo creation word** (seed is local-only by fence).
 4. ~~Lane 4: the copyright posture ADR~~ **✅ RATIFIED 2026-08-02 (Rich, in-session:
    "ratify ADR-ARCH-031")** — Lane 4 is done; Lane 3's residency ADR is unblocked per
    the S3 ladder.
 5. Lane 3: the residency/governance ADR + multi-user scope + upload vehicle (web vs in-app).
+   **Drafts DELIVERED 2026-08-07** — ADR-ARCH-033 + ADR-ARCH-034 on main (Proposed), five
+   consolidated ruling asks Q1–Q5, each with a recommendation; ruling them + ratifying the
+   pair discharges this item. The upload-vehicle half waits on the Mac's Flutter-web
+   boot-claim leg (handoff `27bb0b5`).
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
+   **DELIVERED 2026-08-07** — the design-pass doc's seven gate questions E1–E7 (see the
+   Lane 6 step 2 cell); one word per question closes the gate.
 7. Lane 7: the teacher-dataset option + bake-off scope, once the 2×Spark DeepSeek standup
    and the updated Gemma 4 base availability are confirmed.
 8. Housekeeping: ~~push the local commits~~ **✅ DONE 2026-08-01 (gh CLI installed +
    authenticated on the spark; backlog pushed)**; execute the fleet-gateway re-point
-   (Lane 6 step 1 — runbook ready); ratify-or-revert the 90s deadlines.
+   (Lane 6 step 1 — runbook ready); ratify-or-revert the 90s deadlines;
+   **NEW 2026-08-07: the deploy word for the verifier fail-closed fix** (built, merged
+   `6b50821`, hermetic 1747/0, measured-run receipt — prod `:8100`/`:8101` still runs
+   the fail-open verifier until deployed; ritual is the standing four-step);
+   **NEW 2026-08-07: the `fleet-evals` GitHub repo creation** (local seed ready, no
+   remote exists by fence).
 
 ## Standing rules (how work runs here — already the convention, now written)
 

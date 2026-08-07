@@ -89,11 +89,34 @@ Exit: fold at the next contract re-pin.
   will self-diagnose. (Delete this line when one is diagnosed or after
   a quiet month.)
 
-### Retrieval (Lane 2 receipts, 2026-08-01)
+### Retrieval (Lane 2 receipts, 2026-08-01; step-3 disposition 2026-08-07)
 
-- **Citation anchors broken on 581/581 corpus chunks** since 2026-05-10
-  — explicitly deferred again by Lane 2 step 1a's receipt (Lane 2 step
-  3 owns "fix or explicitly defer").
+- **Citation anchors: 581/581 corpus chunks anchorless** since the
+  2026-05-10 docling-VLM re-ingest. Lane 2 step 3 (2026-08-07) split the
+  problem and ruled it: **the fail-open consequence is FIXED in code**
+  (a correct quote used to raise inside the verifier and release the
+  whole turn UNVERIFIED — non-streaming via the coach-handover
+  broad-except AND the streaming final pass; both now fail closed, with
+  anchorless primary matches degrading to verified-but-uncited quotes —
+  merge `6b50821`, 11 regression pins, measured-run receipt in
+  `evidence/golden-quote-fabrication-eval/`). **⚠ NOT YET DEPLOYED:**
+  prod `:8100`/`:8101` still runs the fail-open verifier until the
+  deploy word (ruling queue). **The anchors themselves (Track B) stay
+  explicitly deferred** with costed options in
+  `RUNBOOK-golden-quote-fabrication-eval.md` §6 — B1 (Standard Ebooks
+  Macbeth re-ingest, cheapest, also restores the page-break-dropped
+  lines "unsex me here"/"Out, damned spot"), B2 (poetry anchor — needs a
+  design decision), B3 (Inspector headings — uncertain). Citation
+  coverage reads an honest 0% until Track B lands.
+- **T2 store-isolation leak (open, low):** during the 2026-08-07
+  measured eval run (scratch-copy isolation, sha-verified) the working
+  tree's `data/chroma/chroma.sqlite3` still gained 5 rows in chroma's
+  internal `acquire_write` bookkeeping table — content proven identical
+  table-by-table; original bytes restored from the pristine copy.
+  Opener unattributed: suspects are a chromadb-collected hermetic test
+  (the module only collects once the `[rag]` extra is installed) or a
+  second client open on the T2 path. Exit: attribute the opener and
+  either point it at the scratch dir or mark it read-only.
 - ~~Reranker constructed per call~~ **CLOSED 2026-08-02**: production
   instance cache landed with the 1b merge (two hermetic tests pin it);
   warm retrieval ~5.3s in the deployed container.
