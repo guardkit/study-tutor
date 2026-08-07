@@ -1,5 +1,11 @@
 # FEAT-VOICE-002 — Streaming Voice (streaming-voice)
 
+> **CLOSED 2026-08-07 (Lane 5 ledger closure): all 8 waves below BUILT + MERGED
+> 2026-07-08 (`8d4bf2dd` — Tier A and Tier B both shipped; the Tier B gate was
+> satisfied by FEAT-VOICE-001's prior merge `5d57b022`).** This README stays as the
+> planning record; live status lives in the plan of record. Full wave/gate closure:
+> `docs/research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md` §0-close.
+
 Streaming tutoring turns — live text and voice on the session channel,
 implementing the streaming path of the frozen contract (Rev 1 §7 frames).
 
