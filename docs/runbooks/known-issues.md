@@ -1,7 +1,9 @@
 # Known issues — study-tutor
 
 **Audience**: anyone working this repo (operators and build lanes).
-**Last updated**: 2026-08-07 (Lane 5 wave — fixture-ordering + T2 leak
+**Last updated**: 2026-08-13 (Mac Flutter-web boot leg — browser/web section
+added: no CORS on the API, `dart:io` web runtime trap, no-web-`flutter_appauth`.
+Previously 2026-08-07, Lane 5 wave — fixture-ordering + T2 leak
 closed; verifier fail-closed fix deployed. Originally refreshed
 2026-08-01 from the stale 2026-05-18 NATS-only scope into the repo-wide
 ledger the plan of record's Lane 5 points at).
@@ -118,6 +120,52 @@ Exit: fold at the next contract re-pin.
   folder uses it (all plain local Volume 1) — no cloud recipient
   exists. The `docker` share has btrfs Data Integrity Protection
   enabled (bitrot detection — good, but not a backup).
+
+### Browser/web surface (found 2026-08-13, by the Mac Flutter-web boot-claim leg)
+
+- **The HTTP API serves NO CORS headers — any browser client is blocked
+  (open, server-side).** There is no CORS middleware anywhere in `src/`
+  (grep: zero hits), and the deployed spark confirms it: `OPTIONS
+  /api/sessions/start` with `Origin` + `Access-Control-Request-*` returns
+  **405 Method Not Allowed** (`allow: POST`), and no response carries
+  `Access-Control-Allow-Origin`. Because every call sends `authorization:
+  Bearer …` (plus JSON `content-type` on writes) the requests are
+  non-simple, so preflight is **unavoidable** — no header-trimming trick
+  dodges it. Consequence: the Flutter-web build boots and then fails every
+  API call (`net::ERR_FAILED`); it degrades gracefully ("Connection
+  problem" dialog, no crash). Proven to be the *only* blocker — with
+  `--disable-web-security` the full walk (sign-in → resume → real tutor
+  turn → end/settlement) passes 200 across the board against the live
+  spark. Exit: either add an explicit CORS allowlist to the app factory
+  when a browser surface is actually chosen (a new security surface that
+  grows with every origin in Lane 3's TLS/domain work), or serve the page
+  **same-origin** and never need one. Receipt:
+  `RESULTS-mac-flutter-web-boot-2026-08-13.md`. Feeds Lane 3 step 4.
+- **`dart:io` in the app's voice/audio adapters compiles on web but is a
+  runtime trap (open, client-side, latent).**
+  `app/lib/adapters/{audio_playback,voice_recorder,http_voice_api}.dart`
+  import `dart:io`, and the recorder calls `getTemporaryDirectory()` while
+  playback touches `Directory.systemTemp`/`File`. dart2js supplies a
+  **stub**, so `flutter build web` succeeds — verified independently by
+  compiling a one-line `dart:io` program to JS. "It compiles" is therefore
+  **not** evidence the voice path is web-safe; those calls would throw at
+  runtime. Today it is masked because web voice never gets past the mic
+  gate (`record.hasPermission()` → the "needs microphone access" banner,
+  reproduced even with permission pre-granted + a fake device). Exit: only
+  matters if a browser surface ever wants voice — then both the gate and
+  the `dart:io` paths need real web implementations.
+- **`flutter_appauth` has no web platform (open, constrains vehicle
+  choice).** Its pubspec registers `android`, `ios`, `macos` only. The
+  web walk passed on the **table-auth dev flavour**; the pilot's real
+  Keycloak flavour cannot run on Flutter web as built and would need a
+  second, web-specific OIDC implementation. Also: **no wasm build** —
+  `flutter_secure_storage_web` uses `dart:html`/`dart:js_util`/`package:js`
+  (JS build unaffected).
+- **`GET /api/sessions?limit=<non-integer>` → 500 (open, cosmetic).**
+  Should be a 422. **Unreachable from the app** (the adapter always
+  formats an int), so robustness only. Same probe run also saw one
+  **transient 500** on the first `?limit=3` request of the session, not
+  reproducible afterwards — recorded, not investigated.
 
 ### Retrieval (Lane 2 receipts, 2026-08-01; step-3 disposition 2026-08-07)
 

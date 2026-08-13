@@ -8,8 +8,14 @@ runs this flavour. Phase 2 added an opt-in **real-transport flavour**
 The device-walked target is **Android** (see Definition of done). **iOS** had
 its slice walked on a simulator 2026-08-02 (integration-test-driven; the voice
 walk still needs a human) — see
-[§iOS](#ios-slice-simulator-walked-2026-08-02-voice-walk-pending). The
-web folder still carries no boot claim.
+[§iOS](#ios-slice-simulator-walked-2026-08-02-voice-walk-pending). **Web**
+compiles and boots, and the full text walk (sign-in → resume → a real tutor
+turn → end/settlement) passes against the live server — but **only with browser
+security disabled**, because the API serves no CORS headers; voice is broken on
+web and the Keycloak flavour cannot run there at all (`flutter_appauth` has no
+web platform). Diagnostic claim, not a shipping one — full detail and the
+upload-surface recommendation in
+`docs/runbooks/RESULTS-mac-flutter-web-boot-2026-08-13.md`.
 
 **Contract pin:** `docs/design/contracts/API-session-cross-device.md` at
 `CONTRACT_SHA=22791afbcdb3b71abbe6bd2f1b8e18218988942f` (ratified 2026-07-03).
