@@ -322,7 +322,10 @@ than a hand-deployed integration.
    **✅ RUN 2026-08-13 — text path DONE + verified end-to-end** (see the Robot row for
    the full receipt chain; real `ask_tutor` Socratic round trip through the robot's own
    tool code). **The spoken smoke is SUPERSEDED, not pending (Rich's ruling, same day):**
-   the GB10 `:8765` speech unit was found down and STAYS down — restarting it would
+   the GB10 `:8765` speech unit was found down and STAYS down — and a same-day GB10
+   sweep found **no trace of it at all** (no container, no systemd unit, system or user:
+   it was an ad-hoc process that never survived a reboot, so the July docs' "fenced on
+   the GB10" had already rotted into fiction) — restarting it would
    re-entangle the factory's box (busy on product-owner dataset work) to serve a robot
    whose spoken path hasn't worked for weeks anyway, and the Lane 6 packaging build's
    E1-(c) ruling deletes that dependency outright (spark server-side voice). **The GB10
