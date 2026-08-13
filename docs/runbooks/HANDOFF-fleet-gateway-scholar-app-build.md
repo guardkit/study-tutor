@@ -46,6 +46,15 @@ verification built in.
 8. **Success criterion added 2026-08-13 (Rich): ZERO study-tutor dependency on the
    GB10.** Grep-provable: no `promaxgb10`, no `:8765`, no `HF_REALTIME_*` requirement
    in the app or its config surface.
+   **Scope pinned 2026-08-13 (Mac session, before the spec word — so stage 4's gate is
+   not argued at the finish line):** the criterion is about **the app package and its
+   config**, not the whole fleet-gateway repo. A naive repo-wide grep hits three
+   PRE-EXISTING NATS/jarvis files today — `reachy/external_content/external_tools/
+   ask_jarvis.py`, `scripts/bridge-probe.py`, `tests/test_bridge_probe.py` — which are
+   exactly what E4 drops from the app and are **not** violations. Run the gate scoped to
+   the new package, e.g. `grep -rn -E 'promaxgb10|:8765|HF_REALTIME' <app-package-dir>/`
+   → must be empty. If the build also removes the dead `ask_jarvis` tool wiring, say so
+   in the RESULTS as a separate line — a bonus, not the criterion.
 
 ## What the app talks to (the spark surface — frozen contract, CONSUME ONLY)
 
@@ -53,7 +62,8 @@ Base URL (per-robot setting, default for the household):
 `http://spark-fcf6.tailebf801.ts.net:8100` — table-auth mode, `Authorization: Bearer
 <token>` on every call, identity derived server-side. The re-point receipts prove the
 robot's existing bearer works against it. Client-side turn deadline: **90 s** (ratified
-2026-08-13). The six session verbs are FROZEN — additive consumption only; any wire need
+2026-08-07, Rich in-session — dated annotation on the binding, no re-pin; archaeology in
+`BRIEF-90s-deadline-ratify-or-revert.md`). The six session verbs are FROZEN — additive consumption only; any wire need
 this build discovers comes back as a question, never an edit.
 
 - `POST /api/sessions/start` `{subject: "english", resume_if_active: true}` — **the
@@ -75,6 +85,16 @@ this build discovers comes back as a question, never an edit.
 - `POST /api/sessions/{id}/end` — on clean app stop (SIGINT → `stop_event`), do NOT end
   the session by default: the session may be Lilymay's, shared with her phone (the
   join-never-end principle extends to shutdown; just stop talking).
+
+**Surface VERIFIED 2026-08-13 (Mac session, against the frozen binding + the live spark —
+so you can build on it without a study-tutor checkout):** every path and shape above
+matches `API-session-http-binding.md` §7. The WS route is confirmed
+`GET /api/sessions/{session_id}/ws` — it matches the app's own hard-won path pin
+(`049f17c`, `app/lib/adapters/http_voice_api.dart:211-219`), which is the pin most worth
+trusting since the app paid for it. **Voice is mounted and live on `:8100` right now**
+(probed: `voice-turn` returns 500 on an empty body, not 404; a control route 404s) — stage
+2 will not hit a dead surface. `resume_if_active: true` = JOIN is consistent with the
+2026-08-04 blessed semantics (that ruling defined the `false` path as end-then-create).
 
 Existing tool code to LIFT, not rewrite: `common/tutor_client.py` (the offline behaviour
 is contract-shaped — any failure yields exactly "The tutor isn't reachable right now.",
