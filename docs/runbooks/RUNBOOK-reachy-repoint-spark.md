@@ -1,7 +1,11 @@
 # RUNBOOK — re-point the Reachy robot's tutor path from the GB10 to the spark
 
 **Lane:** plan-of-record Lane 6, step 1 (`docs/study-tutor-plan-of-record.md`) ·
-**Written:** 2026-08-01 · **Status: NOT YET RUN — mark each step ✅ with a date as you go**
+**Written:** 2026-08-01 · **Status: RUN 2026-08-13 (Rich + a fleet-gateway Claude session
+on the Pi) — text path ✅ verified end-to-end (preflight, one-line sitecustomize flip with
+timestamped backup, student-model read with real data, full `ask_tutor` round trip);
+spoken-smoke + mirror ticks PENDING the GB10 `:8765` speech unit restart (found down —
+not a flip defect). Receipt: the plan's Robot row, 2026-08-13.**
 **Why now:** the GB10's tutor stack was retired 2026-07-26 (spark encapsulation), but the
 fleet-gateway config was never re-pointed (confirmed outstanding, Rich 2026-08-01) — so the
 robot's `ask_tutor` / student-model path is presumed DOWN. This runbook is the recorded
