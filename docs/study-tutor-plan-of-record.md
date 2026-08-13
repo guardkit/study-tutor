@@ -430,8 +430,11 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    Lane 6 step 2 cell). **✅ GATE CLOSED same day (Rich, in-session — all seven ruled,
    recorded in the design doc §E): standalone app on server-side voice; public Space;
    settings-UI bearer now / AUTH-004 after; ask_jarvis dropped; startup-app; step 1
-   this weekend + hand-deploy path retired; fleet-gateway + RichWoollcott HF.** The
-   build brief awaits Rich's want; it lands in fleet-gateway.
+   this weekend + hand-deploy path retired; fleet-gateway + RichWoollcott HF.** **The
+   build brief is DRAFTED (2026-08-13):**
+   [`HANDOFF-fleet-gateway-scholar-app-build.md`](runbooks/HANDOFF-fleet-gateway-scholar-app-build.md)
+   — self-contained, rulings inlined, 4 coach-gated stages, zero-GB10 success
+   criterion; hand it to the fleet-gateway session to start the lane.
 7. Lane 7: the teacher-dataset option + bake-off scope, once the 2×Spark DeepSeek standup
    and the updated Gemma 4 base availability are confirmed.
 8. Housekeeping: ~~push the local commits~~ **✅ DONE 2026-08-01 (gh CLI installed +
