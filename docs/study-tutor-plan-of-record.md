@@ -407,9 +407,20 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
    2026-08-01.)* **2026-08-07: the eval estate now exists** (local `fleet-evals` seed —
    Lane 1 step 1 cell); ~~gate tap~~ **✅ TAPPED 2026-08-07** (PROTOCOL registered) and
-   ~~the merge~~ **✅ MERGED to `guardkit/fleet-evals` main 2026-08-08 (Rich's merge
-   word — direct merge, no PR, per the solo convention; `7cad33d`, 29 tests green
-   post-merge)**; the scored run now needs only
+   ~~the merge~~ **✅ MERGED to `guardkit/fleet-evals` main 2026-08-08 (`7cad33d`)**;
+   **✅ THE SCORED RUN EXECUTED 2026-08-13 (protocol v2+v3, Rich attended
+   throughout)** — the full three-instrument evidence for this ruling now exists in
+   `fleet-evals/multisubject/runs/2026-08-13-multisubject-v2/RESULTS-multisubject-2026-08-13.md`:
+   single-turn pairwise **base 106/7/1** (2 blind judges, 84% agreement);
+   length-neutral criterion track base 73.9% vs ft 67.0% behaviours (the honest,
+   MODEST underlying gap; red flags 4 vs 12); **multi-turn session track — built
+   after Rich's construct challenge, with a new engagement_elicitation dimension —
+   agreement set base 20/0**, engagement scored base-higher by BOTH judges. Every
+   deviation worded and receipted (judge substitutions, MFL rubric correction
+   caught mid-run by the AO fact-check, two voided-and-receipted Judge-B defects).
+   **Remaining before Rich rules:** his mandatory spot-check word, and the
+   RESULTS' named final evidence step — an attended base-in-the-loop trial (flip
+   the serving seat for a few real sessions; one reversible config change).
    two operator acts (base-model seat on llama-swap; served-GGUF provenance resolution)
    and **the `fleet-evals` GitHub repo creation word** (seed is local-only by fence).
 4. ~~Lane 4: the copyright posture ADR~~ **✅ RATIFIED 2026-08-02 (Rich, in-session:
