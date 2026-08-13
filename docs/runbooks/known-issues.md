@@ -108,6 +108,18 @@ Exit: fold at the next contract re-pin.
   "what would change this posture" item 4, so it needs a dated ADR note
   first. Set rotation so the oldest version is ≤30 days (the erasure
   SLA), or document the real number by dated note on ADR-033 D6.4.
+  **Verification detail (same day, Task Scheduler + Shared Folder
+  screenshots):** the `study-tutor nightly pg_dump` task IS alive
+  (enabled, owner RichardWoollcott, daily 03:15) — the 14-day dump layer
+  is seen-running, not just documented. The one existing USB Copy task
+  (`T5_SSD`) is DISABLED and is Data-IMPORT direction (SSD→NAS) — never
+  a backup even when on; delete or leave disabled when the T5 becomes
+  the Hyper Backup target. Hybrid Share is installed but NO shared
+  folder uses it (all plain local Volume 1) — no cloud recipient
+  exists. The `docker` share has btrfs Data Integrity Protection
+  enabled (bitrot detection — good, but not a backup).
+
+### Retrieval (Lane 2 receipts, 2026-08-01; step-3 disposition 2026-08-07)
 
 - **Citation anchors: 581/581 corpus chunks anchorless** since the
   2026-05-10 docling-VLM re-ingest. Lane 2 step 3 (2026-08-07) split the
