@@ -253,8 +253,11 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    record-supported items (supersession map, UK-only recommendation, net-new encryption
    at rest, consent-in-onboarding regardless of age, the one-statement erasure cascade
    + ≤30-day SLA, DPIA commissioned, AWS DPA satisfied); carries ruling asks Q1/Q3/Q5.
-   Status: Proposed — awaiting Rich (ruling-queue item 5). Hand-verify the ICO/AWS pages
-   before ratifying (honest register).
+   **✅ RATIFIED 2026-08-13 (Rich: "ratify")** — hand-check done against Rich's
+   primary-source exports (`docs/research/ICO/`, five PDFs; 4 of 5 claims confirmed
+   verbatim from the originals, the DPIA leg accepted knowingly on secondary sources);
+   dated supersession notes landed on ADR-015 + ADR-028; the S3 ladder's rung 2 is
+   CLIMBED. Pending line: the Hyper Backup retention number (Q5) by dated note.
 2. **The multi-user ADR**: pilot accounts on the existing `student_id` partition + Keycloak
    provisioning (both already multi-user-shaped); concurrency posture (the spark cannot
    serve a concurrent cohort — cloud sizing is part of this); voice-on-Keycloak-mode flip.
@@ -271,7 +274,9 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    London with a ~6-account ceiling stated as arithmetic; voice-on-Keycloak ruled IN
    gated on one attended walk; consent = one onboarding step, two records, additive
    contract change only; erasure = attended runbook, not an API verb. Carries ruling
-   asks Q2/Q4. Status: Proposed — awaiting Rich (ruling-queue item 5).
+   asks Q2/Q4. **✅ RATIFIED 2026-08-13 (Rich: "ratify", the pair together)** — dated
+   supersession note landed on ADR-ARCH-014 (runtime clause + dead Bedrock hatch;
+   schema posture vindicated).
 3. **The spike → deploy**: reuse is high (stateless app container, compose, alembic
    migrations, realm-as-code, the model file + llama-swap config verbatim); new =
    TLS/domain (app base-URL rebuild, cleartext-HTTP fix), hosted Postgres/Keycloak, secrets
@@ -283,7 +288,11 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    a service instead of an operator ritual; **per-account corpus tenancy** (per-user
    collections; the global primary-text registry gets user/subject keying); quota + format
    guards.
-5. **The pilot**: friends provisioned (runbook exists), first external session = S3 top rung.
+5. **The pilot**: friends provisioned (**runbook to be WRITTEN — ADR-ARCH-034 D3
+   corrected this cell's former "runbook exists" claim, 2026-08-13**: one attended
+   procedure doing Keycloak user + `student_id` attribute + role + `seed-students` row +
+   consent record, with the deprovisioning half; modelled on `provision-live-suite.sh`),
+   first external session = S3 top rung.
 
 ### Lane 6 — robot app distribution & switching *(moves S0's robot leg; added by Rich 2026-08-01)*
 Rich's ask, same day as this plan: the **Reachy Mini desktop or mobile app should be able to
@@ -382,12 +391,11 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    the S3 ladder.
 5. Lane 3: the residency/governance ADR + multi-user scope + upload vehicle (web vs in-app).
    **Drafts DELIVERED 2026-08-07** — ADR-ARCH-033 + ADR-ARCH-034 on main (Proposed), five
-   consolidated ruling asks Q1–Q5, each with a recommendation; ruling them + ratifying the
-   pair discharges this item. The upload-vehicle half waits on the Mac's Flutter-web
-   boot-claim leg (handoff `27bb0b5`). **Q1–Q5 ALL RULED (Rich, 2026-08-07, in-session,
-   as recommended — recorded in both ADRs' ruling-asks sections): UK-only eu-west-2;
-   hold serving for Lane 1 evals; extend sops; ≤6 accounts on-demand; documented
-   backup-roll. Ratification pending only Rich's ICO/AWS hand-check.**
+   consolidated ruling asks Q1–Q5, each with a recommendation. **Q1–Q5 ALL RULED
+   (2026-08-07) and the pair RATIFIED (2026-08-13, hand-check done via Rich's
+   primary-source exports) — the ADR halves of this item are DISCHARGED.** Remaining in
+   this item: the upload vehicle (web vs in-app), which waits on the Mac's Flutter-web
+   boot-claim leg (handoff `27bb0b5`).
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
    **DELIVERED 2026-08-07** — the design-pass doc's seven gate questions E1–E7 (see the
    Lane 6 step 2 cell). **✅ GATE CLOSED same day (Rich, in-session — all seven ruled,

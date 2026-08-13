@@ -9,6 +9,15 @@ Accepted — **phase-scoped (Phase 1–2).**
 > **Phase 3 revisits it toward a cloud-native AWS posture** (UK `eu-west-2` + a data-governance surface),
 > at which point a superseding ADR replaces this one. Not yet superseded — no change to current force.
 
+> **Dated note (2026-08-13): SUPERSEDED for cloud/pilot scope by
+> [ADR-ARCH-033](ADR-ARCH-033-pilot-residency-governance-eu-west-2.md)** (ratified by
+> Rich 2026-08-13). This ADR **remains the record for the household deployment while it
+> runs** (the spark + NAS keep this posture). Per ADR-033 D1: the residency table here is
+> restated by 033; the Gemini exception was already closed by ADR-023; the Bedrock
+> exception and its non-UK fallback are dead (Custom Model Import cannot serve the
+> fine-tune); and the **no-third-party-telemetry clause carries forward VERBATIM** into
+> the cloud posture.
+
 **Date:** 2026-04-18
 **Phase:** Phase 0
 **Related:** ADR-ARCH-007, DEC-02, DEC-08, ASSUM-013, [ADR-ARCH-029](ADR-ARCH-029-phased-productionisation-local-first-cloud-native-target.md) (phasing toward cloud-native)

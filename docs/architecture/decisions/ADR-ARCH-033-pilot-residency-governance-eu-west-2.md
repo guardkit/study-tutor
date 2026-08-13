@@ -2,7 +2,18 @@
 
 ## Status
 
-**Proposed — awaiting Rich's ratification (ruling-queue item 5); drafted 2026-08-07**
+**Accepted — RATIFIED by Rich, 2026-08-13 (in-session word: "ratify"), with all five
+rulings banked 2026-08-07 as recorded in the ruling-asks section (Q1 UK-only eu-west-2;
+Q2 hold serving for Lane 1's evals; Q3 extend sops; Q4 ≤ ~6 accounts, on-demand for
+students; Q5 documented backup-roll).** Hand-verification receipt: the five primary
+sources were exported by Rich to `docs/research/ICO/` (2026-08-13) and verified against
+this ADR's claims — four of five confirmed verbatim from the originals (age-13 consent,
+one-month erasure + child-ISS ground, DUAA s81, the AWS UK Addendum's self-executing
+applicability clause; AADC scope + 15 standards); the DPIA-mandatory leg (standard 2)
+rests on secondary confirmation and was accepted knowingly in the ratify word — the DPIA
+is commissioned regardless (D8). **One named pending line:** the Hyper Backup retention
+number (Q5's documented-roll posture) — being read off the Synology now; recorded here
+by dated note when it lands. *Drafted 2026-08-07.*
 
 This is the residency/governance rung of the mission's S3 pilot-readiness ladder
 (mission [S3](../../study-tutor-mission-statement-2026-08-01.md), lines 140–143):

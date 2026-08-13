@@ -2,7 +2,12 @@
 
 ## Status
 
-**Proposed — awaiting Rich's ratification (ruling-queue item 5); drafted 2026-08-07**
+**Accepted — RATIFIED by Rich, 2026-08-13 (in-session word: "ratify", the pair together
+with ADR-ARCH-033), with both rulings banked 2026-08-07 as recorded in the ruling-asks
+section (Q2 hold serving for Lane 1's evals — Branch A provisional; Q4 the D4 ceiling
+confirmed, on-demand for anything a student touches).** ADR-033's hand-verification
+receipt covers the consent-law facts this ADR's D6 leans on (see its status block).
+*Drafted 2026-08-07.*
 
 This is the multi-user half of the Lane 3 ADR pair. Its sibling,
 [ADR-ARCH-033](ADR-ARCH-033-pilot-residency-governance-eu-west-2.md) (the residency/

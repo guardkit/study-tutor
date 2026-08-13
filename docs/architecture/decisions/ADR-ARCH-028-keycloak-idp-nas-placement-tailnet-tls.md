@@ -10,6 +10,14 @@ effective on ratification: the design's KC-D1/D2 checklist item is discharged; C
 regenerated to add the Keycloak IdP trust boundary (and, incidentally, the D9 HTTP/WS App Access adapter
 that hosts the token-validation seam — previously absent from L2). Supersedes nothing.
 
+> **Dated note (2026-08-13):** the "ADR-015 rules out any cloud IdP" reading in this
+> ADR's context/alternatives is **relaxed by
+> [ADR-ARCH-033](ADR-ARCH-033-pilot-residency-governance-eu-west-2.md) D4** (ratified by
+> Rich 2026-08-13): cloud-hosted OIDC is now permitted for the pilot inside 033's
+> posture, and **Keycloak remains the identity provider** (Keycloak-on-cloud ports the
+> realm-as-code with no PII to migrate; Cognito stays the recorded alternative). The NAS
+> placement here remains the Phase-2/household record.
+
 > **Trajectory note (2026-07-08):** this NAS placement is the **Phase-2-local** decision. Per
 > [ADR-ARCH-029](ADR-ARCH-029-phased-productionisation-local-first-cloud-native-target.md), **Phase 3
 > makes cloud-hosted OIDC (Keycloak-on-ECS or Cognito) a first-class target, not a fallback** — the

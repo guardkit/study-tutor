@@ -4,6 +4,17 @@
 
 Accepted
 
+> **Dated note (2026-08-13):** the **runtime clause** ("single-user only through
+> Phase 2") is **superseded by
+> [ADR-ARCH-034](ADR-ARCH-034-pilot-multi-user-accounts.md) D4** (ratified by Rich
+> 2026-08-13), and the **Bedrock inference scale-out escape hatch** ("Bedrock already
+> supports concurrent per-student inference; no new work") is **retired as dead** —
+> Bedrock Custom Model Import cannot serve the fine-tune (no Gemma architecture support,
+> no eu-west-2; AWS research 2026-07-06 §2). The **multi-student schema posture STANDS
+> and is vindicated**: ADR-034 D1's receipts (the student_id partition at every call
+> site, the 2026-08-04 byte-identical live isolation proof) are this ADR's day-1 bet
+> paying out.
+
 **Date:** 2026-04-18
 **Phase:** Phase 0
 **Related:** ADR-ARCH-006, ADR-ARCH-008, ASSUM-015
