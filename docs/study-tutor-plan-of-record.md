@@ -371,7 +371,10 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
 3. Lane 1: the serving ruling once the subject evals land — over the full field including
    Lane 7's refreshed candidates. *(The fine-tune re-run itself is already ruled IN,
    2026-08-01.)* **2026-08-07: the eval estate now exists** (local `fleet-evals` seed —
-   Lane 1 step 1 cell); the scored run needs his **gate tap on the DRAFT protocol**, plus
+   Lane 1 step 1 cell); ~~gate tap~~ **✅ TAPPED 2026-08-07** (PROTOCOL registered) and
+   ~~the merge~~ **✅ MERGED to `guardkit/fleet-evals` main 2026-08-08 (Rich's merge
+   word — direct merge, no PR, per the solo convention; `7cad33d`, 29 tests green
+   post-merge)**; the scored run now needs only
    two operator acts (base-model seat on llama-swap; served-GGUF provenance resolution)
    and **the `fleet-evals` GitHub repo creation word** (seed is local-only by fence).
 4. ~~Lane 4: the copyright posture ADR~~ **✅ RATIFIED 2026-08-02 (Rich, in-session:
@@ -405,8 +408,9 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    premise:** `guardkit/fleet-evals` already EXISTED (public — the factory's standing
    eval substrate, pushed 2026-07-25; the earlier absence check covered only the
    personal account). Rich re-ruled in-session: the seed lands as **branch
-   `study-tutor-multisubject-seed` on the existing public repo**, additively, for his
-   merge word; **the weekend operator batch (Rich, ruled
+   `study-tutor-multisubject-seed` on the existing public repo**, additively — **and
+   MERGED to its main 2026-08-08 on Rich's merge word (`7cad33d`; branch deleted; direct
+   merge, no PR — the solo convention)**; **the weekend operator batch (Rich, ruled
    2026-08-07):** the fleet-gateway re-point + the `gemma4-base` llama-swap seat
    (~16GB download + config + restart) + the GGUF provenance checksum (Rich's origin
    word banked: fine-tuned on the Dell ProMax GB10, files on the GB10 and backed up to
