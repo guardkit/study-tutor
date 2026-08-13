@@ -285,8 +285,12 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    TLS/domain (app base-URL rebuild, cleartext-HTTP fix), hosted Postgres/Keycloak, secrets
    (extend the `sops` encrypted-config pattern), and the fine-tune-vs-stock serving decision
    from Lane 1's evals (it swings pilot economics).
-4. **The upload surface** (after Lane 4 ratifies): a page — vehicle **now evidenced, Rich's
-   call outstanding**: Flutter web (boot claim ESTABLISHED 2026-08-13 — compiles, boots,
+4. **The upload surface** (after Lane 4 ratifies): a page — vehicle **✅ RULED 2026-08-13
+   (Rich, in-session, the spark master: "separate page")** — the **minimal separate page,
+   served same-origin**, exactly as the Mac leg's evidence recommended. The Flutter-web
+   option stays banked as a receipted live option (a browser tutoring client is possible
+   whenever server CORS + a web OIDC path are built), not the pilot's vehicle.
+   The evidence, for the record: Flutter web (boot claim ESTABLISHED 2026-08-13 — compiles, boots,
    full text walk passes; blocked only by the missing server CORS) vs a minimal separate web
    page. **The Mac leg's recommendation is the separate page, served same-origin**: it
    deletes the CORS problem rather than solving it, avoids the ~5 MB CanvasKit boot for what
@@ -407,8 +411,8 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    this item: the upload vehicle (web vs in-app). **The blocking evidence is now IN** — the
    Mac's Flutter-web boot-claim leg (handoff `27bb0b5`) landed 2026-08-13:
    `RESULTS-mac-flutter-web-boot-2026-08-13.md`, recommending the **minimal separate
-   same-origin page** with a four-point argument. **This is now a Rich ruling ask, not a
-   blocked item.**
+   same-origin page** with a four-point argument. **✅ RULED same day (Rich: "separate
+   page") — ruling-queue item 5 is now FULLY DISCHARGED.**
 6. Lane 6: the robot app-distribution design pass (comes back to him before build).
    **DELIVERED 2026-08-07** — the design-pass doc's seven gate questions E1–E7 (see the
    Lane 6 step 2 cell). **✅ GATE CLOSED same day (Rich, in-session — all seven ruled,
