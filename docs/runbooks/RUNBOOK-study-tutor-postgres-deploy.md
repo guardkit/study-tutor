@@ -160,6 +160,11 @@ STUDY_TUTOR_PG_DSN="postgresql://study_tutor:${STUDY_TUTOR_PG_PASSWORD}@${NAS_HO
 
 - **Backup (REQUIRED — this is the key divergence from fleet-memory).** The learner state is **not** reindexable, so a crash-consistent snapshot alone is insufficient:
   1. Confirm `/volume1/docker/study_tutor` is in the Hyper Backup / Snapshot schedule (volume-level).
+     > **Dated outcome (2026-08-13, Rich in the DSM console):** this confirm step, run for the
+     > first time, FAILED — **Hyper Backup is not installed** (nor Snapshot Replication, nor any
+     > cloud backup). No volume-level schedule exists; the nightly `pg_dump` (14-day retention)
+     > is the ONLY backup layer. Gap ledgered in `known-issues.md`; ADR-ARCH-028/033 carry
+     > dated corrections.
   2. **Add a nightly logical dump** into the backup share. Productized as [`deploy/postgres/backup.sh`](../../deploy/postgres/backup.sh) (atomic temp-then-rename, `PGDMP`-magic validity check, 14-day retention, logs to `backups/backup.log`, non-zero exit on failure); installed at `/volume1/docker/study_tutor/backup.sh` and scheduled nightly via **DSM Task Scheduler** (user `root`, e.g. daily 03:15 → `bash /volume1/docker/study_tutor/backup.sh`). The raw command it wraps:
      ```bash
      # NAS cron (Control Panel → Task Scheduler), nightly:

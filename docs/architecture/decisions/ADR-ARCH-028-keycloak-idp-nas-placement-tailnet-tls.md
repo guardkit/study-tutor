@@ -10,6 +10,15 @@ effective on ratification: the design's KC-D1/D2 checklist item is discharged; C
 regenerated to add the Keycloak IdP trust boundary (and, incidentally, the D9 HTTP/WS App Access adapter
 that hosts the token-validation seam — previously absent from L2). Supersedes nothing.
 
+> **Dated correction (2026-08-13, verified by Rich in the DSM console):** this ADR's
+> durability claims ("the NAS is the documented durability home (**Hyper Backup** +
+> nightly logical dumps)", :79; "volume-level Hyper Backup covers it implicitly too",
+> :87; ":5434 … Hyper Backup", :130) are **wrong on the Hyper Backup half — it was
+> never installed** (no Snapshot Replication or cloud backup either). The nightly
+> logical dumps are real (14-day retention). The resulting no-off-box-copy gap is
+> ledgered in `known-issues.md`; ADR-ARCH-033's erasure path carries the corrected
+> story.
+
 > **Dated note (2026-08-13):** the "ADR-015 rules out any cloud IdP" reading in this
 > ADR's context/alternatives is **relaxed by
 > [ADR-ARCH-033](ADR-ARCH-033-pilot-residency-governance-eu-west-2.md) D4** (ratified by

@@ -11,9 +11,13 @@ this ADR's claims — four of five confirmed verbatim from the originals (age-13
 one-month erasure + child-ISS ground, DUAA s81, the AWS UK Addendum's self-executing
 applicability clause; AADC scope + 15 standards); the DPIA-mandatory leg (standard 2)
 rests on secondary confirmation and was accepted knowingly in the ratify word — the DPIA
-is commissioned regardless (D8). **One named pending line:** the Hyper Backup retention
-number (Q5's documented-roll posture) — being read off the Synology now; recorded here
-by dated note when it lands. *Drafted 2026-08-07.*
+is commissioned regardless (D8). **Pending line RESOLVED same day (2026-08-13, Rich in
+the DSM console, screenshot receipt): Hyper Backup is NOT INSTALLED on the NAS** — no
+Snapshot Replication or cloud backup either. **The Q5 residual does not exist:** erasure
+completes when the 14-day `pg_dump` retention rolls, full stop — cleaner than drafted
+(D6.4 carries the dated correction in place). The flip side is a real durability gap —
+the learner data's only copies live on one physical box — ledgered in
+`known-issues.md` the same day. *Drafted 2026-08-07.*
 
 This is the residency/governance rung of the mission's S3 pilot-readiness ladder
 (mission [S3](../../study-tutor-mission-statement-2026-08-01.md), lines 140–143):
@@ -254,6 +258,12 @@ withdrawal.** The path, component by component, with receipts:
    (ADR-028:79; `RUNBOOK-study-tutor-postgres-deploy.md:162–169`) — an additional copy
    whose own retention is not dated in this repo. That residual is Rich's **Q5**: accept
    "erasure completes when backup generations roll, documented" or require an active purge.
+   > **Dated correction (2026-08-13, verified by Rich in the DSM console):** Hyper
+   > Backup was NEVER INSTALLED (nor Snapshot Replication, nor any cloud backup) — the
+   > "implicit volume-level copy" inherited from ADR-028 never existed. **The Q5
+   > residual is nil**: the 14-day dump roll is the complete backup half of the erasure
+   > story. The corresponding durability gap (no off-box copy of non-reindexable
+   > learner data) is ledgered in `known-issues.md` with its exit path.
 5. **Voice audio — nothing to erase, ever, and say it loudly:** no voice recording is
    persisted anywhere in this system. Audio chunks live in an in-memory store with a TTL
    (`src/study_tutor/voice/service.py:154–186`) and the streaming design states the

@@ -257,7 +257,10 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    primary-source exports (`docs/research/ICO/`, five PDFs; 4 of 5 claims confirmed
    verbatim from the originals, the DPIA leg accepted knowingly on secondary sources);
    dated supersession notes landed on ADR-015 + ADR-028; the S3 ladder's rung 2 is
-   CLIMBED. Pending line: the Hyper Backup retention number (Q5) by dated note.
+   CLIMBED. ~~Pending line: the Hyper Backup retention number (Q5)~~ **RESOLVED
+   2026-08-13: Hyper Backup was never installed — the Q5 residual is nil (erasure =
+   the 14-day dump roll, full stop); the durability gap this exposed (no off-box copy
+   of learner data) is ledgered in known-issues with its exit path.**
 2. **The multi-user ADR**: pilot accounts on the existing `student_id` partition + Keycloak
    provisioning (both already multi-user-shaped); concurrency posture (the spark cannot
    serve a concurrent cohort — cloud sizing is part of this); voice-on-Keycloak-mode flip.

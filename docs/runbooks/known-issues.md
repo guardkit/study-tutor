@@ -90,7 +90,24 @@ Exit: fold at the next contract re-pin.
   will self-diagnose. (Delete this line when one is diagnosed or after
   a quiet month.)
 
-### Retrieval (Lane 2 receipts, 2026-08-01; step-3 disposition 2026-08-07)
+### Durability (found 2026-08-13, during the ADR-033 ratification's Q5 check)
+
+- **The NAS learner data has NO off-box or volume-level backup (open).**
+  Hyper Backup was never installed on `whitestocks` (verified by Rich in
+  the DSM console — no Snapshot Replication or cloud backup either),
+  despite three doc claims to the contrary (ADR-028 :79/:87/:130 and the
+  postgres runbook's never-executed confirm step — all now carry dated
+  corrections). Today's only copies of the non-reindexable learner state:
+  the live Postgres volume + 14 days of nightly `pg_dump`s, **on the same
+  physical box** — a disk-array loss, filesystem corruption, theft, or
+  fire takes both. Exit (Rich's act, ~15 min + a USB disk): install Hyper
+  Backup from Package Center and create an **encrypted job to a locally
+  attached USB disk** covering `/volume1/docker` — a LOCAL target keeps a
+  minor's data inside the household (law 2); a cloud target (Synology C2
+  etc.) would be a NEW third-party data recipient and trips ADR-033's
+  "what would change this posture" item 4, so it needs a dated ADR note
+  first. Set rotation so the oldest version is ≤30 days (the erasure
+  SLA), or document the real number by dated note on ADR-033 D6.4.
 
 - **Citation anchors: 581/581 corpus chunks anchorless** since the
   2026-05-10 docling-VLM re-ingest. Lane 2 step 3 (2026-08-07) split the
