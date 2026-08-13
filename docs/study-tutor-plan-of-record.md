@@ -321,8 +321,13 @@ than a hand-deployed integration.
    completion ticks. Runs on the fleet-gateway host, not from here.
    **✅ RUN 2026-08-13 — text path DONE + verified end-to-end** (see the Robot row for
    the full receipt chain; real `ask_tutor` Socratic round trip through the robot's own
-   tool code). **Remaining tail:** restart the GB10 speech unit `:8765` (down; not a
-   flip problem), then the spoken smoke + phone-mirror cross-check tick the step closed.
+   tool code). **The spoken smoke is SUPERSEDED, not pending (Rich's ruling, same day):**
+   the GB10 `:8765` speech unit was found down and STAYS down — restarting it would
+   re-entangle the factory's box (busy on product-owner dataset work) to serve a robot
+   whose spoken path hasn't worked for weeks anyway, and the Lane 6 packaging build's
+   E1-(c) ruling deletes that dependency outright (spark server-side voice). **The GB10
+   is study-tutor-free as of today, in fact.** The robot speaks again when the packaging
+   build lands; its spoken receipt replaces this runbook's spoken-smoke tick.
 2. **Investigation/design pass first, build second:** how Pollen's Reachy Mini app
    packaging/distribution actually works (the app hub/store mechanism and its
    install-from-companion-app flow); what the Scholar integration in fleet-gateway must
@@ -439,11 +444,19 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    personal account). Rich re-ruled in-session: the seed lands as **branch
    `study-tutor-multisubject-seed` on the existing public repo**, additively — **and
    MERGED to its main 2026-08-08 on Rich's merge word (`7cad33d`; branch deleted; direct
-   merge, no PR — the solo convention)**; **the weekend operator batch (Rich, ruled
-   2026-08-07):** the fleet-gateway re-point + the `gemma4-base` llama-swap seat
-   (~16GB download + config + restart) + the GGUF provenance checksum (Rich's origin
-   word banked: fine-tuned on the Dell ProMax GB10, files on the GB10 and backed up to
-   the whitestocks NAS — checksum the NAS copy against local sha `675424b0…3144`).
+   merge, no PR — the solo convention)**; ~~the weekend operator batch~~ **✅ EXECUTED
+   2026-08-13 (Rich attended, three terminals):** the re-point DONE + text-path verified
+   (Robot row; spoken tail = the GB10 `:8765` speech unit, found down); the `gemma4-base`
+   seat REGISTERED (sha-verified download, `-watch-config` hot-reload, Gate 2.1 pass);
+   provenance PROVEN (the GB10's `gcse-tutor-gemma4-26b-moe-2026-04-18` quantisation is
+   byte-identical to the served file; the NAS↔HF adapter chain also sha-proven) — **all
+   three scored-run blockers CLOSED; the fleet-evals venue is eval-ready.** Still Rich's:
+   the Hyper Backup task (known-issues Durability entry). **The GB10-offline question is
+   RULED (Rich, 2026-08-13): the Dell is factory-only NOW** — the dead `:8765` speech
+   unit stays retired (restarting it would re-entangle the factory box and rebuild a
+   thing E1-(c) deletes); the robot's spoken experience returns with the Lane 6
+   packaging build (spark server-side voice, one box), which carries **"zero study-tutor
+   dependency on the GB10" as an explicit success criterion**.
 
 ## Standing rules (how work runs here — already the convention, now written)
 
