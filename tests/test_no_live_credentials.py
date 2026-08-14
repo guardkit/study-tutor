@@ -47,15 +47,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 #: contain the literal it bans (it would match its own fence).
 RETIRED_CREDENTIALS = ("token-" "lilymay", "token-" "alex", "token-" "suite")
 
-#: The one file still allowed to name a retired bearer, and why. Editing it
-#: re-pins a frozen contract, which is the owner's call — so the exception
-#: is explicit, asserted on below, and deleted the moment he rules.
-PENDING_REDACTION = {
-    "docs/design/contracts/API-session-http-binding.md": (
-        "§5.1 dev token table; SHA-pinned contract, re-pin is Rich's call "
-        "(plan ruling queue #11)"
-    ),
-}
+#: Files still allowed to name a retired bearer, and why. Empty since
+#: 2026-08-14, when Rich ruled on the last one (the contract's §5.1 table).
+#: Kept — with its expiry test — because the next rotation will want it.
+PENDING_REDACTION: dict[str, str] = {}
 
 #: The shape the live replacements take: ``st_`` plus a urlsafe-base64
 #: body. Long enough that no ordinary identifier trips it.

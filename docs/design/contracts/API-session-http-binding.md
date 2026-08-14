@@ -268,14 +268,19 @@ These endpoints are **environment-flag-gated** and absent from production.
 
 ### 5.1 Dev Token Table
 
-The fake auth server's token-to-student mapping (mirrors `app/lib/fakes/fake_identity_provider.dart` lines 22-25, **read-only reference**):
+The fake auth server's token-to-student mapping (mirrors
+`app/lib/fakes/fake_identity_provider.dart`, **read-only reference**):
 
 | Token | `student_id` |
 |---|---|
-| `token-lilymay` | `lilymay` |
-| `token-alex` | `alex` |
+| `<bearer-lilymay>` | `lilymay` |
+| `<bearer-alex>` | `alex` |
 
-**CRITICAL:** These values MUST equal the app's fake IdP constants at `app/lib/fakes/fake_identity_provider.dart:16,19`. **Never edit `app/**`** — this is a read-only reference.
+> **Dated annotation 2026-08-14 (credential redaction — in-place, per the 2026-08-07 precedent; RATIFIED by Rich, 2026-08-14, in-session):** this table used to spell out two literal bearers. They were rotated on 2026-08-14 after being found published in two public repos, and are redacted here to `<bearer-…>` placeholders because the retired values still authenticated while the cutover window was open — a documented credential is a credential. **No shape, field, or status-code change; no re-pin** (the §7 six-verb freeze and both header pins are untouched, and `BINDING_SHA` names a ratification *commit* that this edit cannot alter).
+>
+> **The invariant this section used to assert is itself withdrawn.** It read: *"These values MUST equal the app's fake IdP constants at `app/lib/fakes/fake_identity_provider.dart:16,19`"* — i.e. it required a live deployment credential to be a literal in Flutter source, which is precisely the mechanism that published a child's bearer. **The rule now runs the other way:** the app's constants are build-time defines (`--dart-define=STUDENT_TOKEN=…`, `STUDENT_TOKEN_2`) whose compiled-in defaults are self-evident non-credentials; the real values live only in the deployment's `STUDY_TUTOR_HTTP_TOKENS` and the operator's mode-600 token file. What must still agree is the **shape** — one bearer per `student_id`, resolved server-side per §3 — not the literals. `tests/test_no_live_credentials.py` enforces it.
+
+**Never edit `app/**` from the contract side** — this remains a read-only reference.
 
 ### 5.2 Reset Route
 
