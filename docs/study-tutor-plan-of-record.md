@@ -354,8 +354,21 @@ than a hand-deployed integration.
 **Ruled IN (Rich, 2026-08-01: "we should definitely re-run the fine-tune"):** re-run the
 fine-tune on Google's **updated Gemma 4 base** (better tool-call handling + other fixes).
 Options riding with it, assessed on receipts:
-1. **Dataset re-creation from a stronger teacher** — DeepSeek v4 Flash in a teacher role on
-   the 2×Spark (standup in prospect); do it if the eval receipts say it helps.
+1. **Dataset re-creation from a stronger teacher** — ~~do it if the eval receipts say it
+   helps~~ **✅ WORDED (Rich, 2026-08-14): DeepSeek v4 Flash 0731 as the teacher** — the
+   2026-08-13 three-instrument eval receipts say the current self-distilled data HURT
+   (agreement-set base 106/7 single-turn, 20/0 multi-turn, accuracy tax measured).
+   **The re-train's design input is recorded** in the eval RESULTS' autopsy +
+   `fleet-evals/multisubject/docs/STORY-when-your-finetune-loses-2026-08-14.md`
+   (also the YouTube content source, Rich's ask): (a) **batch mode in the
+   agentic-dataset-factory** (Rich's directive — build brief in preparation);
+   (b) **every training sample passes the fabrication gate** (quotes verified against
+   the real corpora by the Lane 2 harness before entering the dataset); (c) visible-
+   answer pedagogy/AO framing, mixed answer lengths, direct-answers-allowed, longer
+   max-seq; (d) **eval-in-the-loop**: checkpoints judged vs base on the three-instrument
+   harness, pre-registered bar = beats base on ALL THREE or it doesn't ship; the judge
+   pipeline doubles as DPO preference data if SFT can't clear it; (e) generality-
+   protection data mix.
 2. **Side-by-side bake-off**: fine-tune the updated Gemma 4 AND Qwen 3.6 on the same
    dataset, judge blind via `fleet-evals` — the winner enters Lane 1's serving ruling, and
    the run makes good YouTube content either way.
