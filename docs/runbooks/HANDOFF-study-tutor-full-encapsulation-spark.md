@@ -98,7 +98,7 @@ Then **edit both files on spark** (the values that implicitly meant "the GB10"):
 1. Spark: `cd deploy/http && docker compose up -d` → `curl :8100/healthz` → `ok`.
    (No `seed-students` — the NAS DB is live and seeded; that step is for fresh DBs.)
 2. Smoke **as alex, never lilymay**: text turn, then the voice-turn curl
-   (POST `/api/sessions/{id}/voice-turn`, form field `audio`, `Bearer token-alex`)
+   (POST `/api/sessions/{id}/voice-turn`, form field `audio`, `Bearer <bearer-alex>`)
    → 200 with transcript + audio chunk.
 3. Rebuild the table-mode APK with
    `--dart-define=API_BASE_URL=http://spark-fcf6.tailebf801.ts.net:8100`

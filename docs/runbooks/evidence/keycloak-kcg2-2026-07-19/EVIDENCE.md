@@ -122,7 +122,7 @@ exit code: 1
 | Dev-reset never in keycloak mode | `POST :8101/__dev__/reset` → **404** (route not mounted; code check verified at `cli/main.py` — forced `dev_reset=false` in keycloak branch, check NOT disabled) |
 | Missing auth header | 401 |
 | Garbage token (`not.a.jwt`) | 401 (fail-closed, no 500) |
-| Old table token (`token-alex`) | 401 (table resolver inactive in keycloak mode) |
+| Old table token (`<bearer-alex>`) | 401 (table resolver inactive in keycloak mode) |
 
 ## Fences honoured
 

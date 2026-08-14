@@ -60,7 +60,7 @@ task binds it to the wire, it must not change it.
 - ASSUM-001 recorded: an authenticated-but-unseeded student is refused as
   `Unauthenticated` (never a 500).
 - **Dev endpoints section** (required entries):
-  - Dev token table: `token-lilymay` → `lilymay`, `token-alex` → `alex`.
+  - Dev token table: `<bearer-lilymay>` → `lilymay`, `<bearer-alex>` → `alex`.
     These values MUST equal the app's fake-IdP constants
     (`app/lib/fakes/fake_identity_provider.dart:16,19` — read-only reference;
     NEVER edit `app/**`).

@@ -70,7 +70,7 @@ sequenceDiagram
     participant Store as Postgres store
     participant Bus as EventBus
 
-    App->>Auth: Authorization: Bearer token-lilymay
+    App->>Auth: Authorization: Bearer <bearer-lilymay>
     Auth->>Store: student row exists? (ASSUM-001 guard)
     Store-->>Auth: yes
     Auth->>Routes: student_id="lilymay" (server-resolved)
@@ -123,7 +123,7 @@ push immediately after merge (the Mac's `BINDING_SHA`).*
 - **Consumer task(s):** TASK-APP1-06 (compose sets them per flavour)
 - **Artifact type:** environment variables
 - **Format constraint:** `STUDY_TUTOR_HTTP_TOKENS` is a JSON object mapping
-  token → student_id, e.g. `{"token-lilymay": "lilymay", "token-alex": "alex"}`;
+  token → student_id, e.g. `{"<bearer-lilymay>": "lilymay", "<bearer-alex>": "alex"}`;
   `STUDY_TUTOR_HTTP_DEV_RESET` present/truthy only in the dev flavour
 - **Validation method:** Coach verifies the compose env blocks parse with
   TASK-APP1-02's loader (round-trip test in TASK-APP1-07)

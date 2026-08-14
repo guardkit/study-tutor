@@ -18,13 +18,19 @@ Three fences:
 3. Every ``*TOKEN*`` / ``*PASSWORD*`` value in ``.env.example`` must still
    look like a placeholder.
 
-Deliberately NOT scanned: ``docs/`` and ``tasks/``, which are dated
-records of what was true at the time, and the SHA-pinned contract
-``docs/design/contracts/API-session-http-binding.md`` — its §5.1 table
-still names a retired token, and editing it re-pins a frozen contract
-(root CLAUDE.md: "additive or re-pin, never silent edits"). That re-pin is
-flagged in the plan, not smuggled in here. Retired values are inert once
-the rotation window closes; the fence that matters going forward is #2.
+Scope, corrected the same day by the fleet-gateway session: the first cut
+of this guard scanned only executable surfaces, on the reasoning that
+``docs/`` and ``tasks/`` are dated records of what was true. That was
+wrong while the rotation window is open — the retired bearers still
+authenticate, so a copy-pasteable ``curl -H 'Authorization: Bearer …'`` in
+a public runbook is a live credential, not a historical note. Both were
+true at once and only one of them got weighed. The scan is now repo-wide.
+
+The single exception is listed in :data:`PENDING_REDACTION` and is itself
+asserted on, so it cannot be forgotten: the SHA-pinned contract, whose
+§5.1 table still names a retired token. Redacting it is a re-pin decision
+that belongs to the owner (root CLAUDE.md: "additive or re-pin, never
+silent edits"), so it is flagged in the plan rather than smuggled in here.
 """
 from __future__ import annotations
 
@@ -41,9 +47,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 #: contain the literal it bans (it would match its own fence).
 RETIRED_CREDENTIALS = ("token-" "lilymay", "token-" "alex", "token-" "suite")
 
-#: Directories whose contents are executable or deployable — the surfaces
-#: where a credential is a credential rather than a historical note.
-SCANNED_DIRS = ("src", "tests", "features", "app/lib", "app/test_live", "deploy")
+#: The one file still allowed to name a retired bearer, and why. Editing it
+#: re-pins a frozen contract, which is the owner's call — so the exception
+#: is explicit, asserted on below, and deleted the moment he rules.
+PENDING_REDACTION = {
+    "docs/design/contracts/API-session-http-binding.md": (
+        "§5.1 dev token table; SHA-pinned contract, re-pin is Rich's call "
+        "(plan ruling queue #11)"
+    ),
+}
 
 #: The shape the live replacements take: ``st_`` plus a urlsafe-base64
 #: body. Long enough that no ordinary identifier trips it.
@@ -71,28 +83,47 @@ def _readable_text(path: Path) -> str | None:
         return None  # binary asset (fonts, images, wavs)
 
 
-def _in_scanned_dirs(path: Path) -> bool:
-    rel = path.relative_to(REPO_ROOT).as_posix()
-    return any(rel == d or rel.startswith(f"{d}/") for d in SCANNED_DIRS)
+def test_no_retired_credential_anywhere_in_the_repo() -> None:
+    """A rotated-out bearer must not survive anywhere published.
 
-
-def test_no_retired_credential_in_executable_surfaces() -> None:
-    """A rotated-out bearer must not survive as a test fixture."""
+    Not just in code: a runbook's ``curl -H 'Authorization: Bearer …'`` is
+    a working credential for as long as the old value still authenticates,
+    and this repo is public.
+    """
     offenders: list[str] = []
     for path in _tracked_files():
-        if not _in_scanned_dirs(path) or path.resolve() == Path(__file__).resolve():
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        if rel in PENDING_REDACTION or path.resolve() == Path(__file__).resolve():
             continue
         text = _readable_text(path)
         if text is None:
             continue
         for retired in RETIRED_CREDENTIALS:
             if retired in text:
-                rel = path.relative_to(REPO_ROOT)
                 offenders.append(f"{rel}: {retired}")
     assert not offenders, (
-        "Retired credentials found. Use a self-evidently fake fixture "
-        "(test-token-student-a) — a real-looking token in a test is how the "
-        "2026-08-14 leak spread:\n  " + "\n  ".join(offenders)
+        "Retired credentials found. In code, use a self-evidently fake "
+        "fixture (test-token-student-a); in prose, a <bearer-…> placeholder "
+        "— a real-looking token anywhere is how the 2026-08-14 leak "
+        "spread:\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_pending_redactions_are_still_pending() -> None:
+    """The carve-out must expire, not calcify.
+
+    If the exception no longer contains a retired credential, it has been
+    redacted — delete the entry rather than leave a stale hole in the fence.
+    """
+    stale: list[str] = []
+    for rel, reason in PENDING_REDACTION.items():
+        text = _readable_text(REPO_ROOT / rel)
+        if text is None or not any(r in text for r in RETIRED_CREDENTIALS):
+            stale.append(f"{rel} — {reason}")
+    assert not stale, (
+        "These files are exempted from the credential fence but no longer "
+        "need to be. Remove them from PENDING_REDACTION:\n  "
+        + "\n  ".join(stale)
     )
 
 

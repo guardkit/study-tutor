@@ -33,7 +33,7 @@ blocked counterpart legs are named per item.
 ### 1. Suite isolation — dedicated suite student + per-student reset (GATING)
 
 **Why (receipt):** `test_live` signs in as the REAL primary student
-(`token-lilymay`) and its `reset()` hits `POST /__dev__/reset`, which
+(`<bearer-lilymay>`) and its `reset()` hits `POST /__dev__/reset`, which
 `truncate_sessions()` — the WHOLE session+turn store, all students
 (`src/study_tutor/http/app.py` ~line 591). Yesterday's three runs wiped all
 transcripts before ~16:56Z, and stray `subject:'maths'` test sessions (shared
@@ -42,7 +42,7 @@ one believing it was Lilymay's Macbeth session.
 
 **Ask (design sketch — adjust as the code prefers):**
 - Add a dedicated suite identity to the dev token table (e.g.
-  `token-suite` → student `suite-runner`). The dev table is deployment config
+  `<bearer-suite>` → student `suite-runner`). The dev table is deployment config
   (env), not contract — verify no binding edit is needed (the binding §3 names
   the table's EXISTENCE; entries are config).
 - Make `__dev__/reset` scope to the CALLER's student (derive from the bearer,

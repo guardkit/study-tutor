@@ -520,12 +520,20 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    silently emitting nothing; it deliberately does **not** invent learner-facing text (the
    orchestrator owns fallbacks — cf. `FINAL_VERIFICATION_FALLBACK`). Rich's call whether a
    failed generation should retry once or speak an honest fallback line.
-11. **Two things this session did NOT do, on purpose.** (a) `API-session-http-binding.md`
-   §5.1 line 275 still names a retired token — it is a SHA-pinned frozen contract, so
-   scrubbing it is a **re-pin**, not an edit (root `CLAUDE.md`), and the no-live-credentials
-   guard excludes `docs/`+`tasks/` for the same reason. (b) **Nothing is committed** — the
-   credential scrub, the sanitiser, and the app change sit in the working tree awaiting the
-   word; the public repos still show the retired values until then (inert once #9 closes).
+11. **The docs scrub — and the one file left.** The first pass scrubbed source and config
+   only, on the reasoning that `docs/`+`tasks/` are dated records. **The fleet-gateway
+   session was right to push back (2026-08-14):** while #9's window is open the retired
+   bearers still authenticate, so a copy-pasteable
+   `curl -H 'Authorization: Bearer …'` in a public runbook is a live credential, not a
+   historical note — and `RUNBOOK-study-tutor-http-dev-deploy.md` had three of them against
+   the live host. 38 of 40 occurrences across 17 files are now redacted to `<bearer-…>`
+   placeholders, and the guard scans the **whole repo**, not just executable surfaces.
+   **Still Rich's:** `API-session-http-binding.md` §5.1 lines 275–276 name two retired
+   tokens. Redacting them changes no wire term, but the file is SHA-pinned, so it is a
+   **re-pin decision, not an edit** (root `CLAUDE.md`). It is the guard's single declared
+   exception (`PENDING_REDACTION`), with a second test asserting the exception expires
+   rather than calcifies. *Note the pins survive either way: `BINDING_SHA` names a
+   ratification **commit**, which today's edit cannot alter.*
 12. **The Keycloak-for-the-phone move has one real blocker.** Moving Lilymay's phone off
    table mode is not the config flip it looks like: `deploy/http/.env.kc` leaves
    `STUDY_TUTOR_VOICE_ENABLED` empty, so `:8101` mounts **no voice routes** — the phone's

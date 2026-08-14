@@ -59,7 +59,7 @@ is done and live-verified. Full runtime evidence is the execution record in
 | AC | Status | Evidence |
 |----|--------|----------|
 | **AC-OP-01** GB10 `:8100/healthz` from GB10 | ✅ verified | Runbook phase 3 (`{"status":"ok"}`); re-confirmed live at completion time via `http://100.84.90.91:8100/healthz` |
-| **AC-OP-02** seed + `start_session` both tokens | ✅ verified | Runbook phase 4 — seed 2 students; 200 for `token-lilymay` + `token-alex`; 401 unknown token; 403 cross-student; real tutored turn; ordered resume; end → `resumable:false`; reset roundtrip |
+| **AC-OP-02** seed + `start_session` both tokens | ✅ verified | Runbook phase 4 — seed 2 students; 200 for `<bearer-lilymay>` + `<bearer-alex>`; 401 unknown token; 403 cross-student; real tutored turn; ordered resume; end → `resumable:false`; reset roundtrip |
 | **AC-OP-03** Tailscale ACL Mac→GB10 `:8100` | ✅ verified (2026-07-05, Mac) | Mac-side `healthz` 200 in 16ms; tailnet allow-all, no ACL work needed |
 | **AC-OP-04** Mac live contract suite green | 🟢 running green (Mac, 2026-07-05) | `app/test_live/` `--concurrency=1` detached; §9 unknown-session mapping green; full result ~30 min. Gate for `/feature-complete`, not this task. |
 | **AC-OP-05** Cross-device walk end-to-end | ⏳ GB10/operator, pending | Phase-2 scope §3.6; needs emulator observed on screen. Gate for `/feature-complete`. |
