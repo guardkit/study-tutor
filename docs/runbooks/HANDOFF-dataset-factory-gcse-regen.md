@@ -148,16 +148,31 @@ check.
   run and the fine-tune itself are the NEXT lane (training venue + eval-in-the-loop),
   not this one.*
 
-## Preconditions and Rich's asks (kept short)
+## Preconditions — RESOLVED (Rich, 2026-08-14) + his remaining acts
 
-1. **Where does DeepSeek v4 Flash 0731 serve?** The prior framing was the 2×Spark
-   standup (in prospect). The GB10 is busy with product-owner work; the spark serves
-   the live tutor. Options: the 2×Spark when stood up / a temporary seat somewhere
-   Rich names / a hosted API (would be paid frontier usage — only on an explicitly
-   priced word, per the Judge-B precedent). **The lane can build Stages 1–2 fully and
-   Stage 3 except the smoke without the teacher being live.**
-2. **The three old GCSE output dirs:** reference baselines to diff against, or archive?
-3. Spec word on this brief; pilot gate tap at Stage 4; merge word at the end.
+1. **✅ Teacher serving RESOLVED:** DeepSeek-V4-Flash-0731 serves per
+   `dgx-spark/RUNBOOK-deepseek-v4-flash-0731-two-spark.md` — the two-Spark pair,
+   TP=2, OpenAI-compatible API on Node A `:8888/v1`, model id
+   `DeepSeek-V4-Flash-0731` (optionally the LiteLLM `deepseek` alias on `:4000`).
+   **284B/13B-active MoE, MIT licence** — an MIT teacher means no licence
+   complication attaches to the generated dataset. **The decisive operational fact:
+   that runbook DRAINS the fleet for the session** (llama-swap `:9000` STOPPED on
+   both nodes while DeepSeek serves, provably revived at the end) — so teacher legs
+   and Coach legs are MUTUALLY EXCLUSIVE serving states. **Batched legs is therefore
+   REQUIRED, not an optimisation**: Stage 1's batch mode must support a
+   two-window run — (window 1, fleet drained) ALL teacher legs against `:8888` →
+   checkpoint → (window 2, fleet revived) ALL Coach legs against `:9000` — with the
+   drain/revive acts staying the operator's, per that runbook's own gated phases.
+   Generation windows are attended/scheduled (the live tutor is DOWN during window 1
+   — never run one while Lilymay might study).
+2. **✅ Old GCSE output dirs RULED: archive, not baselines** (Rich: the evals were
+   too damning for them to be useful references) — with ONE named diagnostic use
+   first: run the Stage-2 fabrication gate ONCE over the old accepted rows as a
+   poisoning census ("N% of the old training data contained fabricated quotes") —
+   a number for the story doc and a real-data shakedown of the gate — then archive
+   the dirs to a dated location.
+3. Remaining acts: pilot gate tap at Stage 4; merge word at the end. (Spec word ✅
+   GIVEN 2026-08-14: "go on the brief to start stages 1 and 2".)
 
 ## Fences (standing)
 
