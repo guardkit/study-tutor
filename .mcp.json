@@ -5,6 +5,10 @@
       "defer_loading": false,
       "command": "/Users/richardwoollcott/Projects/appmilla_github/study-tutor/scripts/mcp-wrapper.sh",
       "env": {}
+    },
+    "fleet_memory": {
+      "type": "http",
+      "url": "http://promaxgb10-41b1:8005/mcp/"
     }
   }
 }
