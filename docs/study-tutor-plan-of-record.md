@@ -528,12 +528,16 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    historical note — and `RUNBOOK-study-tutor-http-dev-deploy.md` had three of them against
    the live host. 38 of 40 occurrences across 17 files are now redacted to `<bearer-…>`
    placeholders, and the guard scans the **whole repo**, not just executable surfaces.
-   **Still Rich's:** `API-session-http-binding.md` §5.1 lines 275–276 name two retired
-   tokens. Redacting them changes no wire term, but the file is SHA-pinned, so it is a
-   **re-pin decision, not an edit** (root `CLAUDE.md`). It is the guard's single declared
-   exception (`PENDING_REDACTION`), with a second test asserting the exception expires
-   rather than calcifies. *Note the pins survive either way: `BINDING_SHA` names a
-   ratification **commit**, which today's edit cannot alter.*
+   **✅ CLOSED — the contract too (Rich ruled in-session, 2026-08-14: redact).** Recorded
+   as a **dated in-place annotation, not a re-pin**, per the doc's own 2026-08-07
+   precedent: a credential redaction is no shape/field/status-code change, and calling it
+   a re-pin would have bumped `CONTRACT_SHA`/`BINDING_SHA` into five other files for
+   nothing (the pins name a ratification *commit*, which the edit cannot alter). **The
+   annotation also WITHDRAWS §5.1's old invariant** — it required the table's values to
+   equal the app's Flutter constants, i.e. it *mandated* a live credential as a literal in
+   public source; that rule is the leak's mechanism, and it now runs the other way (shape
+   must agree, literals must not exist). `PENDING_REDACTION` is empty; its expiry test
+   stays for the next rotation. **origin/main: 0 retired bearers, 0 files.**
 12. **The Keycloak-for-the-phone move has one real blocker.** Moving Lilymay's phone off
    table mode is not the config flip it looks like: `deploy/http/.env.kc` leaves
    `STUDY_TUTOR_VOICE_ENABLED` empty, so `:8101` mounts **no voice routes** — the phone's
