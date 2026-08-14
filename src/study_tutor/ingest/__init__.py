@@ -34,6 +34,7 @@ from study_tutor.ingest.converter import (
     PassthroughConverter,
 )
 from study_tutor.ingest.errors import (
+    EmptyUpload,
     FileTooLarge,
     InvalidFilename,
     InvalidJobRecord,
@@ -57,6 +58,7 @@ from study_tutor.ingest.staging import StagingTree
 
 __all__ = [
     "ALLOWED_EXTENSIONS",
+    "EmptyUpload",
     "CheckedUpload",
     "ConversionError",
     "ConversionNote",

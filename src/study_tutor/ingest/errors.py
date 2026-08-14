@@ -24,19 +24,41 @@ class UploadError(Exception):
     http_status: int = 400
 
 
+class EmptyUpload(UploadError):
+    """The uploaded file has no bytes.
+
+    A refusal, not a server fault: a failed scan or a wrong drag produces an
+    empty file often enough that the operator must see a 400 with a reason,
+    never a 500 (2026-08-15 coach finding — this used to escape the hierarchy
+    as a bare ``ValueError``).
+    """
+
+    http_status = 400
+
+    def __init__(self) -> None:
+        super().__init__(
+            "The file is empty — there is nothing to upload. Re-scan the "
+            "page or pick the right file."
+        )
+
+
 class InvalidSubject(UploadError):
     """Subject slug does not match the registry's subject pattern.
 
     Args:
         subject: The rejected slug (echoed back so the operator sees the typo).
+        reason: Optional replacement message when the generic
+            shape-explanation would mislead (e.g. a too-long slug is shaped
+            fine — its problem is length).
     """
 
     http_status = 400
 
-    def __init__(self, subject: str):
+    def __init__(self, subject: str, reason: str | None = None):
         self.subject = subject
         super().__init__(
-            f"Subject {subject!r} is not a valid subject name. Use lower-case "
+            reason
+            or f"Subject {subject!r} is not a valid subject name. Use lower-case "
             "letters, digits, hyphens or underscores, starting with a letter "
             "(for example: english, demo_history)."
         )

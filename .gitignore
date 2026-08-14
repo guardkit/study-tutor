@@ -406,3 +406,9 @@ app/app/
 !*.env.sample
 !.env.deploy.example
 !deploy/http/.env.validation
+# Upload staging (scans of copyrighted study guides + a child's uploads)
+# must never be committed; the tree is operator-local state (2026-08-15).
+data/uploads/
+
+# Playbook worktrees are per-build scratch, never repo content.
+.claude/worktrees/

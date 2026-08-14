@@ -38,6 +38,7 @@ from study_tutor.cli.rag_wiring import (
 )
 from study_tutor.ingest.config import UploadConfig
 from study_tutor.ingest.errors import (
+    EmptyUpload,
     FileTooLarge,
     InvalidFilename,
     InvalidSourceType,
@@ -70,6 +71,13 @@ ALLOWED_EXTENSIONS: tuple[str, ...] = (
 #: Longest filename we will store. Comfortably under the 255-byte limit
 #: common filesystems impose once a uuid4 job directory is in the path.
 MAX_FILENAME_LENGTH: int = 200
+
+#: Subject slugs are path components exactly as filenames are, and the
+#: registry pattern is unbounded — without a cap a 300-char slug passes
+#: validation and then dies as an uncaught OSError (ENAMETOOLONG) inside the
+#: staging tree, a 500 on ordinary operator input (2026-08-15 coach finding).
+#: 64 comfortably fits any real subject name.
+MAX_SUBJECT_LENGTH: int = 64
 
 #: Path separators to strip when reducing an uploaded name to a basename.
 #: Both flavours: a browser on Windows can send a backslash-separated path.
@@ -113,6 +121,15 @@ def validate_subject(subject: str) -> str:
     """
     if not isinstance(subject, str) or not subject:
         raise InvalidSubject(subject)
+    if len(subject) > MAX_SUBJECT_LENGTH:
+        raise InvalidSubject(
+            subject,
+            reason=(
+                f"Subject name is {len(subject)} characters long — the limit "
+                f"is {MAX_SUBJECT_LENGTH}. Pick a short name like 'english' "
+                "or 'maths'."
+            ),
+        )
     candidate = subject_collection_name(subject)
     if SUBJECT_COLLECTION_PATTERN.fullmatch(candidate) is None:
         raise InvalidSubject(subject)
@@ -223,11 +240,13 @@ def validate_file_size(size_bytes: int, config: UploadConfig) -> int:
 
     Raises:
         FileTooLarge: If the file exceeds ``config.max_file_bytes``.
-        ValueError: If ``size_bytes`` is negative or zero (an empty upload is
-            a client bug, not a policy refusal).
+        EmptyUpload: If ``size_bytes`` is zero or negative. A refusal like
+            every other guard failure — a failed scan produces an empty file
+            routinely, and the operator must see a 400 with a reason, not
+            a 500 (this used to raise a bare ``ValueError``).
     """
     if size_bytes <= 0:
-        raise ValueError("Upload is empty — there are no bytes to stage.")
+        raise EmptyUpload()
     if size_bytes > config.max_file_bytes:
         raise FileTooLarge(size_bytes, config.max_file_bytes)
     return size_bytes

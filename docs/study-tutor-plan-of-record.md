@@ -338,9 +338,18 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    merging the deliverable no longer silently drops it): 10 tests running the real
    `ingest_corpus.py` against a crafted `demo_history` fixture corpus in a temp persist dir,
    with `data/chroma/chroma.sqlite3` verified byte-identical across the run. Tests:
-   **299 new** (240 `tests/unit/ingest/`, 49 `tests/unit/http/test_upload_routes.py`,
+   **301 new** (242 `tests/unit/ingest/`, 49 `tests/unit/http/test_upload_routes.py`,
    10 `tests/unit/knowledge/test_second_subject_proof.py`), hermetic suite on the branch
-   **2067 passed / 0 failed / 29 skipped** (2026-08-14, at E-close).
+   **2069 passed / 0 failed / 29 skipped** (2026-08-15, after the coordinator's review
+   pass — which took three coach findings the gates had ranked non-blocking and fixed
+   them before the merge word: an empty upload now 400s instead of 500ing, an over-long
+   subject slug is refused with a length reason instead of dying as ENAMETOOLONG in the
+   staging tree, and one corrupted job file no longer kills the whole worker loop or the
+   jobs listing. Two items deliberately NOT code-fixed and named in the runbook's failure
+   table instead: the crash-mid-conversion requeue can duplicate a document's chunks
+   (manual check documented; fix queued), and the AQA refusal regex misses
+   space-separated names — that regex belongs to the corpus contract, so widening it is
+   a ruling, not a patch: **ruling queue #14**).
    **What is NOT done, named honestly:** nothing is deployed or enabled anywhere; no scan
    has been through the pipeline; no multi-user tenancy (ADR-034's keying is not precluded,
    not implemented); and — **the named activation step** — a newly-ingested subject is
@@ -641,6 +650,18 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    an incident. Fix is a real keystore + `key.properties` kept out of the repo; the
    no-live-credentials guard already fences the second half. *(The Mac session cited
    `build.gradle`; the file is `build.gradle.kts`.)*
+14. **The AQA refusal regex misses the most natural filename form** *(surfaced by the
+   upload-surface coaches, 2026-08-15 — driven, not speculated)*. `AQA_REFUSAL_PATTERN`
+   (`src/study_tutor/knowledge/corpus.py:93`) allows `_`/`-` between words but not a
+   space, so `mark scheme.pdf`, `past paper.pdf` and `Examiner Report.pdf` are **not**
+   refused, while the underscore/hyphen forms are. A space-separated name is exactly what
+   an operator types when naming a scan, and the guard exists for a **mission-law**
+   reason (no AQA assessment material in the corpus). The upload surface imports the
+   regex rather than widening a copy — correct per the corpus contract — and pins the gap
+   honestly in `test_space_separated_assessment_names_slip_through_today`. Widening the
+   pattern (add `[ _-]?`, or `\s`) is a one-line change to the corpus contract's own
+   guard: **Rich's ruling**, because the same regex governs the original ingest path,
+   and until it is ruled the upload page's wording says what the guard really catches.
 
 ## Standing rules (how work runs here — already the convention, now written)
 

@@ -22,13 +22,16 @@ hermetically against the same tree.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from study_tutor.ingest.config import UploadConfig
-from study_tutor.ingest.errors import JobNotFound
+from study_tutor.ingest.errors import InvalidJobRecord, JobNotFound
+
+logger = logging.getLogger(__name__)
 from study_tutor.ingest.guards import (
     SOURCE_TYPE_NAMES,
     CheckedUpload,
@@ -308,26 +311,36 @@ class StagingTree:
         return JobRecord.from_json(path.read_text(encoding="utf-8"))
 
     def list_jobs(self, subject: str) -> list[JobRecord]:
-        """Return every job record for ``subject``, newest first.
+        """Return every parseable job record for ``subject``, newest first.
+
+        A malformed job file is SKIPPED with a warning, never raised: this
+        listing feeds both the worker's queue scan and the jobs route, so one
+        corrupted file (a partial write, a stray hand edit) must not kill the
+        whole worker loop or 500 every job listing — one bad record quarantines
+        itself, the rest of the queue keeps moving (2026-08-15 coach finding).
+        ``get_job`` stays strict: asking for a specific job by id still raises
+        ``InvalidJobRecord`` so the operator sees exactly what is wrong with it.
 
         Args:
             subject: Subject slug.
 
         Returns:
-            Records sorted by ``created_at`` descending, then ``job_id`` — an
-            empty list when the subject has no staging area.
-
-        Raises:
-            InvalidJobRecord: If any job file is malformed.
+            Parseable records sorted by ``created_at`` descending, then
+            ``job_id`` — an empty list when the subject has no staging area.
         """
         jobs_dir = self.jobs_dir(subject)
         if not jobs_dir.is_dir():
             return []
-        records = [
-            JobRecord.from_json(path.read_text(encoding="utf-8"))
-            for path in sorted(jobs_dir.glob(f"*{JOB_FILE_SUFFIX}"))
-            if path.is_file()
-        ]
+        records: list[JobRecord] = []
+        for path in sorted(jobs_dir.glob(f"*{JOB_FILE_SUFFIX}")):
+            if not path.is_file():
+                continue
+            try:
+                records.append(JobRecord.from_json(path.read_text(encoding="utf-8")))
+            except InvalidJobRecord as exc:
+                logger.warning(
+                    "Skipping malformed job file %s: %s", path.name, exc
+                )
         records.sort(key=lambda r: (r.created_at, r.job_id), reverse=True)
         return records
 

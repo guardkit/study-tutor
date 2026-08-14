@@ -14,6 +14,7 @@ import pytest
 
 from study_tutor.ingest.config import BYTES_PER_MB, UploadConfig
 from study_tutor.ingest.errors import (
+    EmptyUpload,
     FileTooLarge,
     InvalidFilename,
     InvalidSourceType,
@@ -240,8 +241,13 @@ def test_oversized_upload_refused_and_not_written(tmp_path: Path) -> None:
 
 
 def test_empty_upload_refused(tree: StagingTree, config: UploadConfig) -> None:
-    with pytest.raises(ValueError):
+    """As a policy refusal with a status code, not a bare ValueError — the
+    route maps ``UploadError.http_status``, so this is what turns an empty
+    scan into a 400 instead of a 500 (coach finding, 2026-08-15)."""
+    with pytest.raises(EmptyUpload) as exc:
         upload(tree, config, data=b"")
+
+    assert exc.value.http_status == 400
 
 
 # ---------------------------------------------------------------------------
@@ -324,6 +330,30 @@ def test_list_jobs_is_newest_first(tree: StagingTree, config: UploadConfig) -> N
 
 def test_list_jobs_is_empty_for_an_unknown_subject(tree: StagingTree) -> None:
     assert tree.list_jobs("demo_history") == []
+
+
+def test_a_malformed_job_file_is_skipped_not_fatal(
+    tree: StagingTree,
+    config: UploadConfig,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """One corrupted job file must not kill the worker loop or 500 the jobs
+    route (coach finding, 2026-08-15). The listing skips it with a warning;
+    ``read_job`` on the specific id stays strict so the operator can still
+    see exactly what is wrong with the file."""
+    good = upload(tree, config, filename="good.txt")
+    bad_path = tree.jobs_dir("english") / "corrupted.json"
+    bad_path.write_text("{not json", encoding="utf-8")
+
+    with caplog.at_level("WARNING"):
+        listed = tree.list_jobs("english")
+
+    assert [r.job_id for r in listed] == [good.job_id]
+    assert "corrupted.json" in caplog.text
+    # The worker's queue view survives too — it filters this same listing.
+    assert [r.job_id for r in tree.jobs_with_status("english", JobStatus.QUEUED)] == [
+        good.job_id
+    ]
 
 
 def test_jobs_with_status_is_the_workers_queue_oldest_first(

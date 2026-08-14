@@ -18,6 +18,7 @@ from study_tutor.cli.rag_wiring import (
 )
 from study_tutor.ingest.config import BYTES_PER_MB, UploadConfig
 from study_tutor.ingest.errors import (
+    EmptyUpload,
     FileTooLarge,
     InvalidFilename,
     InvalidSourceType,
@@ -28,6 +29,7 @@ from study_tutor.ingest.errors import (
 )
 from study_tutor.ingest.guards import (
     ALLOWED_EXTENSIONS,
+    MAX_SUBJECT_LENGTH,
     SOURCE_TYPE_NAMES,
     check_upload_request,
     refuse_assessment_material,
@@ -338,11 +340,34 @@ def test_size_over_cap_refused(config: UploadConfig) -> None:
     assert "STUDY_TUTOR_UPLOAD_MAX_FILE_MB" in str(exc.value)
 
 
-def test_empty_upload_is_a_client_bug_not_a_policy_refusal(
+def test_empty_upload_is_a_refusal_with_a_status_not_a_500(
     config: UploadConfig,
 ) -> None:
-    with pytest.raises(ValueError):
+    """A failed scan produces an empty file routinely — the operator must see
+    a 400 with a reason. This used to escape the hierarchy as a bare
+    ``ValueError`` and would have surfaced as a 500 (coach finding,
+    2026-08-15)."""
+    with pytest.raises(EmptyUpload) as exc:
         validate_file_size(0, config)
+
+    assert exc.value.http_status == 400
+    assert "empty" in str(exc.value)
+    with pytest.raises(EmptyUpload):
+        validate_file_size(-1, config)
+
+
+def test_subject_longer_than_the_cap_is_refused_with_a_length_reason() -> None:
+    """The registry pattern is unbounded, but a slug is a path component: a
+    300-char subject used to pass validation and die as an uncaught OSError
+    (ENAMETOOLONG) in the staging tree (coach finding, 2026-08-15). The
+    message must talk about length, not shape — the slug's shape is fine."""
+    long_slug = "a" * (MAX_SUBJECT_LENGTH + 1)
+    with pytest.raises(InvalidSubject) as exc:
+        validate_subject(long_slug)
+
+    assert str(MAX_SUBJECT_LENGTH) in str(exc.value)
+    assert "letters" not in str(exc.value)
+    assert validate_subject("a" * MAX_SUBJECT_LENGTH) == "a" * MAX_SUBJECT_LENGTH
 
 
 def test_size_cap_follows_the_env_override() -> None:

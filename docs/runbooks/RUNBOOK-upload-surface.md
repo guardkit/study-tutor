@@ -297,6 +297,8 @@ is your own archive decision).
 | Ingest ran, but the tutor answers as if the subject does not exist | the live container serves a **baked** store | §6 — this needs an image rebuild |
 | Retrieval returns nonsense for the new subject only | it was ingested with a different embedding model from everything else | check `LLM_EMBEDDINGS_MODEL=embed` was exported, then re-ingest that subject |
 | A job stuck in `converting` | a worker died holding it | restart the worker — it re-queues stranded jobs at startup |
+| A subject's answers cite the same passage twice after a worker crash | KNOWN ISSUE: re-converting a re-queued job writes its markdown under a fresh de-collided name, so the earlier partial output is ingested TOO — duplicate chunks | before restarting a crashed worker, look in `sources/<source_type>/` for two names differing only by a `-1` style suffix and delete the older one; a code fix (clear the job's own staged outputs on requeue) is queued |
+| A job file the listing skips with "Skipping malformed job file …" in the worker log | a partial write or a hand edit corrupted it | the rest of the queue keeps moving; read the named file, fix or delete it — `GET /api/corpus/jobs/{id}` on that id still shows the exact parse error (a 500 whose body names what is malformed) |
 
 ---
 
