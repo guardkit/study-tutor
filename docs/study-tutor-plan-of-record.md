@@ -361,7 +361,12 @@ Options riding with it, assessed on receipts:
    **The re-train's design input is recorded** in the eval RESULTS' autopsy +
    `fleet-evals/multisubject/docs/STORY-when-your-finetune-loses-2026-08-14.md`
    (also the YouTube content source, Rich's ask): (a) **batch mode in the
-   agentic-dataset-factory** (Rich's directive — build brief in preparation);
+   agentic-dataset-factory** (Rich's directive — **build brief DRAFTED:**
+   [`HANDOFF-dataset-factory-gcse-regen.md`](runbooks/HANDOFF-dataset-factory-gcse-regen.md),
+   grounded in a factory-repo recon: the qa-verifier batched-legs/co-residency
+   precedent, the generation_loop.py:1240 gate plug-point, TASK-G4D-006's real
+   fabricated quotes as fixtures; two preconditions carried — the DeepSeek serving
+   venue and the old-output-dirs ruling);
    (b) **every training sample passes the fabrication gate** (quotes verified against
    the real corpora by the Lane 2 harness before entering the dataset); (c) visible-
    answer pedagogy/AO framing, mixed answer lengths, direct-answers-allowed, longer
