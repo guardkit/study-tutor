@@ -14,7 +14,7 @@ second consumer of the proven `SessionService` — the MCP surface stays byte-fo
 untouched (contract §10). The build publishes the HTTP binding table
 (`docs/design/contracts/API-session-http-binding.md`) **in its first task** and freezes
 it once pushed: the Mac-side Flutter build consumes it at a pinned SHA, and its dev
-section records the fixed dev tokens (`token-lilymay`→`lilymay`, `token-alex`→`alex`),
+section records the fixed dev tokens (`test-token-student-a`→`lilymay`, `test-token-student-b`→`alex`),
 the reset route, and the reset-is-global caveat (live suite runs `--concurrency=1`).
 Interim auth is a static token→student config table (prod: Lilymay only; dev: two
 tokens + reject-unknown). A dev-only, env-flag-gated reset truncates `session` +

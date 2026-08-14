@@ -25,9 +25,19 @@ services:
       # Postgres DSN — required; fail fast if missing
       STUDY_TUTOR_PG_DSN: ${STUDY_TUTOR_PG_DSN:?set STUDY_TUTOR_PG_DSN in .env}
 
-      # HTTP auth token table (JSON) — required; fail fast if missing
-      # Dev: {"token-lilymay": "lilymay", "token-alex": "alex"}
-      # Prod: {"token-lilymay": "lilymay"}
+      # Auth mode — required; fail fast if missing. This stack is the TABLE
+      # mode deployment and must say so: an unset mode used to fall back to
+      # 'table' silently, i.e. fall back to accepting static bearers, which
+      # is half of why the 2026-08-14 rotation was needed. The keycloak-mode
+      # stack is docker-compose.keycloak.yml on :8101. Table mode survives
+      # here for ONE consumer — the Reachy robot, whose bearer is ruling E3
+      # (2026-08-13) until FEAT-AUTH-004 device pairing lands.
+      STUDY_TUTOR_AUTH_MODE: ${STUDY_TUTOR_AUTH_MODE:?set STUDY_TUTOR_AUTH_MODE in .env (table|keycloak)}
+
+      # HTTP auth token table (JSON) — required; fail fast if missing.
+      # Values are operator-generated random tokens, never committed and
+      # never meaningful strings: {"<random>": "lilymay", …}. See
+      # docs/runbooks/RUNBOOK-study-tutor-http-dev-deploy.md.
       STUDY_TUTOR_HTTP_TOKENS: ${STUDY_TUTOR_HTTP_TOKENS:?set STUDY_TUTOR_HTTP_TOKENS in .env}
 
       # Dev-only reset flag — gates POST /__dev__/reset (TASK-APP1-05)

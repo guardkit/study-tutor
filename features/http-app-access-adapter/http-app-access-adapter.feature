@@ -8,7 +8,7 @@
 #   §10); the HTTP binding table (docs/design/contracts/API-session-http-binding.md,
 #   published in the FIRST task and frozen once pushed — the Mac-side app codes
 #   against it at a pinned SHA); interim auth via a static token→student config
-#   table (prod: lilymay only; dev: token-lilymay→lilymay + token-alex→alex with
+#   table (prod: lilymay only; dev: test-token-student-a→lilymay + test-token-student-b→alex with
 #   reject-unknown); a dev-only reset truncating session/session_turn rows only;
 #   an idempotent Postgres student-identity seed; a serve-http CLI subcommand +
 #   a new compose under deploy/http/; a READY boot smoke.

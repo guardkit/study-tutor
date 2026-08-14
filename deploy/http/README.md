@@ -36,7 +36,7 @@ The deployment supports two **flavours** via environment variables. The compose 
 ```bash
 # .env for dev
 STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@<host>:5434/study_tutor
-STUDY_TUTOR_HTTP_TOKENS={"token-lilymay": "lilymay", "token-alex": "alex"}
+STUDY_TUTOR_HTTP_TOKENS={"st_<random>": "lilymay", "st_<random-2>": "alex"}
 STUDY_TUTOR_HTTP_DEV_RESET=1
 ```
 
@@ -49,7 +49,7 @@ With `STUDY_TUTOR_HTTP_DEV_RESET=1`, the `POST /__dev__/reset` endpoint is mount
 ```bash
 # .env for prod
 STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<password>@<host>:5434/study_tutor
-STUDY_TUTOR_HTTP_TOKENS={"token-lilymay": "lilymay"}
+STUDY_TUTOR_HTTP_TOKENS={"st_<random>": "lilymay"}
 # STUDY_TUTOR_HTTP_DEV_RESET is NOT set — reset route does not exist
 ```
 
@@ -60,7 +60,7 @@ With `STUDY_TUTOR_HTTP_DEV_RESET` unset, `POST /__dev__/reset` returns 404 (unkn
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `STUDY_TUTOR_PG_DSN` | **Yes** | Postgres connection string (e.g., `postgresql://study_tutor:pass@host:5434/study_tutor`) |
-| `STUDY_TUTOR_HTTP_TOKENS` | **Yes** | JSON object mapping Bearer tokens to student IDs (e.g., `{"token-lilymay": "lilymay"}`) |
+| `STUDY_TUTOR_HTTP_TOKENS` | **Yes** | JSON object mapping Bearer tokens to student IDs (e.g., `{"st_<random>": "lilymay"}`) |
 | `STUDY_TUTOR_HTTP_DEV_RESET` | No | Dev-only flag (`1` to enable reset endpoint; unset for prod) |
 | `HTTP_PORT` | No | Host-side port mapping (default: `8100`) |
 
@@ -77,10 +77,10 @@ With `STUDY_TUTOR_HTTP_DEV_RESET` unset, `POST /__dev__/reset` returns 404 (unkn
 
 | Token | student_id |
 |-------|------------|
-| `token-lilymay` | `lilymay` |
-| `token-alex` | `alex` |
+| `st_<random>` | `lilymay` |
+| `st_<random-2>` | `alex` |
 
-**Prod:** Use `token-lilymay` only (or a production-appropriate token for the deployed student).
+**Prod:** Use `st_<random>` only (or a production-appropriate token for the deployed student).
 
 ## Maintenance
 

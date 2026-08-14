@@ -14,6 +14,7 @@ No Keycloak/JWT imports — table lookup only (AC-005).
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from dataclasses import dataclass
@@ -22,6 +23,21 @@ from typing import Protocol
 from study_tutor.session.errors import Unauthenticated
 
 logger = logging.getLogger(__name__)
+
+
+def token_fingerprint(token: str) -> str:
+    """A short, stable, non-reversible label for a bearer, safe to log.
+
+    Two devices can legitimately share a ``student_id`` — the robot holds a
+    bearer that resolves to Lilymay, because to the tutor it IS Lilymay
+    (2026-08-14 rotation). ``student_id`` alone therefore cannot answer
+    "which device was that?", and printing the token itself would put a
+    live credential in the log file the way it was once put in a repo. A
+    truncated SHA-256 distinguishes the callers without carrying the
+    secret; correlate it with the fingerprints recorded beside the token
+    table when the table is issued.
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()[:12]
 
 
 class TokenResolver(Protocol):
@@ -72,9 +88,13 @@ class TableTokenResolver:
         """
         student_id = self.token_to_student.get(token)
         if student_id is None:
+            # Fingerprint, not a prefix: a rejected token is still somebody's
+            # credential (a stale one, a typo'd one, or an attacker's guess
+            # at a real one), and 20 characters of it in a log file is a
+            # credential in a log file.
             logger.warning(
-                "Auth failed: Unknown token: %s", token[:20]
-            )  # Truncate for logs
+                "Auth failed: Unknown token (fp=%s)", token_fingerprint(token)
+            )
             raise Unauthenticated("Unknown token")
         return student_id
 
@@ -128,7 +148,7 @@ class HTTPAuthConfig:
         """Parse HTTP auth config from environment variables.
 
         Args:
-            tokens_json: STUDY_TUTOR_HTTP_TOKENS JSON string (e.g. '{"token-lilymay": "lilymay"}').
+            tokens_json: STUDY_TUTOR_HTTP_TOKENS JSON string (e.g. '{"test-token-student-a": "lilymay"}').
             dev_reset: STUDY_TUTOR_HTTP_DEV_RESET flag string ("true"/"false"/"1"/"0" etc).
             resolver: Optional TokenResolver instance. If None, defaults to TableTokenResolver
                 with the parsed token_to_student mapping (table mode default).
@@ -141,11 +161,11 @@ class HTTPAuthConfig:
 
         Examples:
             >>> config = HTTPAuthConfig.from_env(
-            ...     tokens_json='{"token-lilymay": "lilymay"}',
+            ...     tokens_json='{"test-token-student-a": "lilymay"}',
             ...     dev_reset="false",
             ... )
             >>> config.token_to_student
-            {'token-lilymay': 'lilymay'}
+            {'test-token-student-a': 'lilymay'}
             >>> config.dev_reset
             False
         """
@@ -154,7 +174,7 @@ class HTTPAuthConfig:
             raise ValueError(
                 "STUDY_TUTOR_HTTP_TOKENS cannot be empty. "
                 "Provide a JSON object mapping tokens to student_ids, e.g. "
-                '{"token-lilymay": "lilymay"}'
+                '{"test-token-student-a": "lilymay"}'
             )
 
         # AC-001: Clear failure on malformed JSON
@@ -164,7 +184,7 @@ class HTTPAuthConfig:
             raise ValueError(
                 f"Failed to parse STUDY_TUTOR_HTTP_TOKENS as JSON: {e}. "
                 "Expected a JSON object like "
-                '{"token-lilymay": "lilymay"}'
+                '{"test-token-student-a": "lilymay"}'
             ) from e
 
         # AC-001: Clear failure when not a dict
@@ -172,7 +192,7 @@ class HTTPAuthConfig:
             raise ValueError(
                 "STUDY_TUTOR_HTTP_TOKENS must be a JSON object (dict), not "
                 f"{type(parsed).__name__}. "
-                'Expected format: {"token-lilymay": "lilymay"}'
+                'Expected format: {"test-token-student-a": "lilymay"}'
             )
 
         # Parse dev_reset flag
@@ -225,12 +245,12 @@ async def resolve_student_from_token(
 
     Examples:
         >>> config = HTTPAuthConfig(
-        ...     token_to_student={"token-lilymay": "lilymay"},
+        ...     token_to_student={"test-token-student-a": "lilymay"},
         ...     dev_reset=False,
         ... )
         >>> # In async context:
         >>> student_id = await resolve_student_from_token(
-        ...     authorization_header="Bearer token-lilymay",
+        ...     authorization_header="Bearer test-token-student-a",
         ...     config=config,
         ...     student_store=fake_store,
         ... )
@@ -276,7 +296,11 @@ async def resolve_student_from_token(
             "StudentStore seed is required before session access."
         )
 
-    logger.info("Auth success: Resolved student_id=%s from token", student_id)
+    logger.info(
+        "Auth success: Resolved student_id=%s from token (fp=%s)",
+        student_id,
+        token_fingerprint(token),
+    )
     return student_id
 
 
@@ -286,4 +310,5 @@ __all__ = [
     "TokenResolver",
     "TableTokenResolver",
     "resolve_student_from_token",
+    "token_fingerprint",
 ]

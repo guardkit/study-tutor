@@ -26,7 +26,7 @@ def auth_config() -> HTTPAuthConfig:
     from study_tutor.http.auth import TableTokenResolver
 
     # token-ghost resolves to a student that is never seeded (ASSUM-001 case).
-    token_to_student = {"token-lilymay": "lilymay", "token-ghost": "ghost"}
+    token_to_student = {"test-token-student-a": "lilymay", "token-ghost": "ghost"}
     return HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -86,7 +86,7 @@ def test_unseeded_student_is_401_not_500(client: TestClient) -> None:
 def test_missing_subject_is_400_without_error_type(client: TestClient) -> None:
     resp = client.get(
         "/api/student-model",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     assert resp.status_code == 400
     body = resp.json()
@@ -97,7 +97,7 @@ def test_missing_subject_is_400_without_error_type(client: TestClient) -> None:
 def test_wrong_method_is_405(client: TestClient) -> None:
     resp = client.post(
         "/api/student-model?subject=english",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     assert resp.status_code == 405
 
@@ -118,7 +118,7 @@ def test_happy_projection_returns_real_gamification(
 
     resp = client.get(
         "/api/student-model?subject=english&student_name=lilymay",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -157,7 +157,7 @@ def test_seeded_but_empty_is_data_available_false(client: TestClient) -> None:
     # lilymay is seeded but has no sessions and no confidence.
     resp = client.get(
         "/api/student-model?subject=english",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -181,15 +181,15 @@ def test_subject_param_filters_the_mastery_read(
 
     english = client.get(
         "/api/student-model?subject=english",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     french = client.get(
         "/api/student-model?subject=french",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     chemistry = client.get(
         "/api/student-model?subject=chemistry",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     assert english.status_code == french.status_code == chemistry.status_code == 200

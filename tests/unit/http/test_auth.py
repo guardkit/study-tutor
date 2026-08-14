@@ -44,21 +44,21 @@ class InMemoryFakeStore:
 # AC-001: STUDY_TUTOR_HTTP_TOKENS JSON parsing tests
 def test_config_parse_valid_single_entry():
     """AC-001: Prod config works with a single entry."""
-    config_json = '{"token-lilymay": "lilymay"}'
+    config_json = '{"test-token-student-a": "lilymay"}'
     config = HTTPAuthConfig.from_env(tokens_json=config_json, dev_reset="false")
-    assert config.token_to_student == {"token-lilymay": "lilymay"}
+    assert config.token_to_student == {"test-token-student-a": "lilymay"}
     assert config.dev_reset is False
 
 
 def test_config_parse_valid_multiple_entries():
     """AC-001: Dev config works with two + any number of entries."""
     config_json = (
-        '{"token-lilymay": "lilymay", "token-alex": "alex", "token-test": "test"}'
+        '{"test-token-student-a": "lilymay", "test-token-student-b": "alex", "token-test": "test"}'
     )
     config = HTTPAuthConfig.from_env(tokens_json=config_json, dev_reset="true")
     assert config.token_to_student == {
-        "token-lilymay": "lilymay",
-        "token-alex": "alex",
+        "test-token-student-a": "lilymay",
+        "test-token-student-b": "alex",
         "token-test": "test",
     }
     assert config.dev_reset is True
@@ -66,7 +66,7 @@ def test_config_parse_valid_multiple_entries():
 
 def test_config_parse_malformed_json_raises_clear_error():
     """AC-001: Clear failure message on malformed JSON input."""
-    malformed = '{"token-lilymay": "lilymay"'  # Missing closing brace
+    malformed = '{"test-token-student-a": "lilymay"'  # Missing closing brace
     with pytest.raises(ValueError, match="Failed to parse STUDY_TUTOR_HTTP_TOKENS"):
         HTTPAuthConfig.from_env(tokens_json=malformed, dev_reset="false")
 
@@ -82,14 +82,14 @@ def test_config_parse_non_dict_json_raises_clear_error():
     with pytest.raises(
         ValueError, match="STUDY_TUTOR_HTTP_TOKENS must be a JSON object"
     ):
-        HTTPAuthConfig.from_env(tokens_json='["token-lilymay"]', dev_reset="false")
+        HTTPAuthConfig.from_env(tokens_json='["test-token-student-a"]', dev_reset="false")
 
 
 # AC-002: Missing token, unknown token, non-header placement tests
 @pytest.mark.asyncio
 async def test_missing_authorization_header_raises_unauthenticated():
     """AC-002: Missing token resolves to Unauthenticated."""
-    token_to_student = {"token-lilymay": "lilymay"}
+    token_to_student = {"test-token-student-a": "lilymay"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -108,7 +108,7 @@ async def test_missing_authorization_header_raises_unauthenticated():
 @pytest.mark.asyncio
 async def test_malformed_authorization_header_raises_unauthenticated():
     """AC-002: Non-Bearer auth scheme resolves to Unauthenticated."""
-    token_to_student = {"token-lilymay": "lilymay"}
+    token_to_student = {"test-token-student-a": "lilymay"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -129,7 +129,7 @@ async def test_malformed_authorization_header_raises_unauthenticated():
 @pytest.mark.asyncio
 async def test_unknown_token_raises_unauthenticated():
     """AC-002: Unknown token resolves to Unauthenticated."""
-    token_to_student = {"token-lilymay": "lilymay"}
+    token_to_student = {"test-token-student-a": "lilymay"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -154,7 +154,7 @@ async def test_token_only_from_header_not_body():
     valid token in the header works, while missing header fails regardless of what
     might be in the body/query.
     """
-    token_to_student = {"token-lilymay": "lilymay"}
+    token_to_student = {"test-token-student-a": "lilymay"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -164,7 +164,7 @@ async def test_token_only_from_header_not_body():
 
     # Valid header works
     student_id = await resolve_student_from_token(
-        authorization_header="Bearer token-lilymay",
+        authorization_header="Bearer test-token-student-a",
         config=config,
         student_store=fake_store,
     )
@@ -186,7 +186,7 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 
     Verified with a fake store: no create_session call should happen.
     """
-    token_to_student = {"token-lilymay": "lilymay"}
+    token_to_student = {"test-token-student-a": "lilymay"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -197,7 +197,7 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 
     with pytest.raises(Unauthenticated, match="Student .* is not seeded"):
         await resolve_student_from_token(
-            authorization_header="Bearer token-lilymay",
+            authorization_header="Bearer test-token-student-a",
             config=config,
             student_store=fake_store,
         )
@@ -209,7 +209,7 @@ async def test_unseeded_student_raises_unauthenticated_before_store_write():
 @pytest.mark.asyncio
 async def test_seeded_student_resolves_successfully():
     """AC-003: Seeded student with valid token resolves successfully."""
-    token_to_student = {"token-lilymay": "lilymay"}
+    token_to_student = {"test-token-student-a": "lilymay"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -218,7 +218,7 @@ async def test_seeded_student_resolves_successfully():
     fake_store = InMemoryFakeStore(known_students={"lilymay"})
 
     student_id = await resolve_student_from_token(
-        authorization_header="Bearer token-lilymay",
+        authorization_header="Bearer test-token-student-a",
         config=config,
         student_store=fake_store,
     )
@@ -237,7 +237,7 @@ async def test_token_derived_student_id_is_authoritative():
     student_id returned from resolve_student_from_token is always the one
     from the token table, not client-provided.
     """
-    token_to_student = {"token-lilymay": "lilymay", "token-alex": "alex"}
+    token_to_student = {"test-token-student-a": "lilymay", "test-token-student-b": "alex"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -247,7 +247,7 @@ async def test_token_derived_student_id_is_authoritative():
 
     # Token says "lilymay", regardless of what client might claim
     student_id = await resolve_student_from_token(
-        authorization_header="Bearer token-lilymay",
+        authorization_header="Bearer test-token-student-a",
         config=config,
         student_store=fake_store,
     )
@@ -255,7 +255,7 @@ async def test_token_derived_student_id_is_authoritative():
 
     # Token says "alex", not what client might claim
     student_id = await resolve_student_from_token(
-        authorization_header="Bearer token-alex",
+        authorization_header="Bearer test-token-student-b",
         config=config,
         student_store=fake_store,
     )
@@ -363,7 +363,7 @@ def test_dev_reset_not_mounted_in_keycloak_mode():
 @pytest.mark.asyncio
 async def test_full_auth_flow_valid_token_seeded_student():
     """Integration: Full auth flow with valid token and seeded student."""
-    token_to_student = {"token-lilymay": "lilymay", "token-alex": "alex"}
+    token_to_student = {"test-token-student-a": "lilymay", "test-token-student-b": "alex"}
     config = HTTPAuthConfig(
         token_to_student=token_to_student,
         dev_reset=False,
@@ -373,7 +373,7 @@ async def test_full_auth_flow_valid_token_seeded_student():
 
     # Lilymay
     student_id = await resolve_student_from_token(
-        authorization_header="Bearer token-lilymay",
+        authorization_header="Bearer test-token-student-a",
         config=config,
         student_store=fake_store,
     )
@@ -381,7 +381,7 @@ async def test_full_auth_flow_valid_token_seeded_student():
 
     # Alex
     student_id = await resolve_student_from_token(
-        authorization_header="Bearer token-alex",
+        authorization_header="Bearer test-token-student-b",
         config=config,
         student_store=fake_store,
     )
@@ -394,7 +394,7 @@ def test_dev_reset_flag_parsing():
     # True cases
     for value in ["true", "True", "TRUE", "1", "yes"]:
         config = HTTPAuthConfig.from_env(
-            tokens_json='{"token-lilymay": "lilymay"}',
+            tokens_json='{"test-token-student-a": "lilymay"}',
             dev_reset=value,
         )
         assert config.dev_reset is True
@@ -402,7 +402,7 @@ def test_dev_reset_flag_parsing():
     # False cases
     for value in ["false", "False", "FALSE", "0", "no", ""]:
         config = HTTPAuthConfig.from_env(
-            tokens_json='{"token-lilymay": "lilymay"}',
+            tokens_json='{"test-token-student-a": "lilymay"}',
             dev_reset=value,
         )
         assert config.dev_reset is False

@@ -106,8 +106,8 @@ def auth_config() -> HTTPAuthConfig:
     """Dev token table (mirrors app/lib/fakes/fake_identity_provider.dart)."""
     return HTTPAuthConfig(
         token_to_student={
-            "token-lilymay": "lilymay",
-            "token-alex": "alex",
+            "test-token-student-a": "lilymay",
+            "test-token-student-b": "alex",
         },
         dev_reset=True,
     )
@@ -572,7 +572,7 @@ def _when_submit_voice_turn(
 
     headers = {}
     if not context.get("no_auth"):
-        headers["Authorization"] = "Bearer token-lilymay"
+        headers["Authorization"] = "Bearer test-token-student-a"
 
     # Add false Content-Length if specified
     if "false_content_length" in context:
@@ -609,7 +609,7 @@ def _when_resume_from_another_device(
     # Second device uses same TestClient (same app/store)
     response = test_client.get(
         f"/api/sessions/{session_id}/resume",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["resume_response"] = response
@@ -627,7 +627,7 @@ def _when_fetch_reply_audio(
 
     response = test_client.get(
         f"/api/sessions/{session_id}/voice-audio/{chunk_id}",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["audio_response"] = response
@@ -648,7 +648,7 @@ def _when_fetch_expired_audio(
 
     response = test_client.get(
         f"/api/sessions/{session_id}/voice-audio/{chunk_id}",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["expired_audio_response"] = response
@@ -669,7 +669,7 @@ def _when_attempt_voice_turn(
     response = client.post(
         f"/api/sessions/{session_id}/voice-turn",
         files=files,
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["last_response"] = response
@@ -692,7 +692,7 @@ def _then_typed_turn_succeeds(
     response = test_client.post(
         f"/api/sessions/{session_id}/turn",
         json={"user_message": "What is mitosis?"},
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["text_turn_response"] = response
@@ -722,7 +722,7 @@ def _submit_two_voice_turns(
     response1 = test_client.post(
         f"/api/sessions/{session_id}/voice-turn",
         files=files1,
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     # Submit second turn
@@ -730,7 +730,7 @@ def _submit_two_voice_turns(
     response2 = test_client.post(
         f"/api/sessions/{session_id}/voice-turn",
         files=files2,
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["turn_responses"] = [response1, response2]
@@ -787,7 +787,7 @@ def _when_submit_to_other_session(
     files = {"audio": ("q.wav", io.BytesIO(b"audio" * 100), "audio/wav")}
     headers = {}
     if not context.get("no_auth"):
-        headers["Authorization"] = "Bearer token-lilymay"
+        headers["Authorization"] = "Bearer test-token-student-a"
 
     response = test_client.post(
         f"/api/sessions/{other_session_id}/voice-turn",
@@ -810,7 +810,7 @@ def _when_submit_to_ended_session(
     response = test_client.post(
         f"/api/sessions/{session_id}/voice-turn",
         files=files,
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["last_response"] = response

@@ -92,8 +92,8 @@ def auth_config() -> HTTPAuthConfig:
     """Dev token table per binding doc §5.1 (mirrors app/lib/fakes/fake_identity_provider.dart)."""
     return HTTPAuthConfig(
         token_to_student={
-            "token-lilymay": "lilymay",
-            "token-alex": "alex",
+            "test-token-student-a": "lilymay",
+            "test-token-student-b": "alex",
         },
         dev_reset=True,  # Enable /__dev__/reset for test isolation
     )
@@ -488,7 +488,7 @@ def _service_with_prod_config(
 ) -> None:
     """Create client with prod config (single token, no dev_reset)."""
     prod_config = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"},
+        token_to_student={"test-token-student-a": "lilymay"},
         dev_reset=False,
     )
 
@@ -612,7 +612,7 @@ def _when_list_active_sessions(
     """Execute list_sessions with status filter."""
     response = test_client.get(
         "/api/sessions?status=active",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["last_response"] = response
@@ -789,7 +789,7 @@ def _when_alex_claims_to_be_lilymay(
     response = test_client.post(
         "/api/sessions/start",
         json={"subject": "English", "student_id": "lilymay"},  # Ignored
-        headers={"Authorization": "Bearer token-alex"},
+        headers={"Authorization": "Bearer test-token-student-b"},
     )
 
     context["last_response"] = response
@@ -832,9 +832,9 @@ def _when_alex_calls_verb_on_session(
     post_body = {"user_message": "hello"} if verb == "turn" else {}
 
     if method == "POST":
-        response = test_client.post(path, json=post_body, headers={"Authorization": "Bearer token-alex"})
+        response = test_client.post(path, json=post_body, headers={"Authorization": "Bearer test-token-student-b"})
     else:
-        response = test_client.get(path, headers={"Authorization": "Bearer token-alex"})
+        response = test_client.get(path, headers={"Authorization": "Bearer test-token-student-b"})
 
     context["last_response"] = response
 
@@ -855,7 +855,7 @@ def _when_alex_sends_message(
     response = test_client.post(
         f"/api/sessions/{session_id}/turn",
         json={"user_message": "hello"},
-        headers={"Authorization": "Bearer token-alex"},
+        headers={"Authorization": "Bearer test-token-student-b"},
     )
 
     context["last_response"] = response
@@ -890,7 +890,7 @@ def _when_send_malformed_request(
         f"/api/sessions/{session_id}/turn",
         data="not-json",
         headers={
-            "Authorization": "Bearer token-lilymay",
+            "Authorization": "Bearer test-token-student-a",
             "Content-Type": "application/json",
         },
     )
@@ -913,7 +913,7 @@ def _when_dev_reset_invoked(
 @when("alex's token is presented")
 def _when_alex_token_presented(context: dict[str, Any]) -> None:
     """Set up for prod config assertion - actual call in then step."""
-    context["test_token"] = "token-alex"
+    context["test_token"] = "test-token-student-b"
 
 
 @when("the seed is applied again")
@@ -931,7 +931,7 @@ def _when_app_starts_session(
     response = test_client.post(
         "/api/sessions/start",
         json={"subject": "English"},
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
 
     context["last_response"] = response
@@ -950,7 +950,7 @@ def _when_token_in_url(
 ) -> None:
     """Execute with token in query param instead of header."""
     response = test_client.post(
-        "/api/sessions/start?token=token-lilymay",
+        "/api/sessions/start?token=test-token-student-a",
         json={"subject": "English"},
     )
 
@@ -1286,11 +1286,11 @@ def _then_reset_refused_unknown_route(context: dict[str, Any]) -> None:
 def _then_prod_auth_enforced(context: dict[str, Any], test_client: TestClient) -> None:
     """Assert prod token restrictions."""
     prod_client = context.get("prod_client")
-    if prod_client and context.get("test_token") == "token-alex":
+    if prod_client and context.get("test_token") == "test-token-student-b":
         response = prod_client.post(
             "/api/sessions/start",
             json={"subject": "English"},
-            headers={"Authorization": "Bearer token-alex"},
+            headers={"Authorization": "Bearer test-token-student-b"},
         )
         assert response.status_code == 401
 
@@ -1527,7 +1527,7 @@ def test_no_whitestocks_or_5434_targets(test_client: TestClient, auth_config: HT
     assert isinstance(test_client, TestClient), "Tests must use TestClient, not real HTTP client"
 
     # Verify auth config uses dev tokens (not production)
-    assert "token-lilymay" in auth_config.token_to_student, "Tests must use dev token table"
+    assert "test-token-student-a" in auth_config.token_to_student, "Tests must use dev token table"
     assert auth_config.dev_reset is True, "Tests must enable dev_reset (hermetic posture)"
 
     # Check that no environment variables point to production

@@ -23,6 +23,11 @@ class OIDCSettings:
         jwks_url: JWKS fetch URL override (optional, derived from issuer if absent)
         student_claim: Token claim carrying the student ID
         leeway: Clock skew leeway in seconds for exp/nbf validation
+        auth_mode_explicit: Whether STUDY_TUTOR_AUTH_MODE was actually set in
+            the environment. ``from_env`` still falls back to ``table`` so the
+            attribute reads the same, but :meth:`validate` refuses the fallback
+            — see the 2026-08-14 rotation note there. Direct construction
+            defaults to True: a caller naming the mode has made the choice.
     """
 
     auth_mode: str
@@ -31,6 +36,7 @@ class OIDCSettings:
     jwks_url: str | None
     student_claim: str
     leeway: int
+    auth_mode_explicit: bool = True
 
     @classmethod
     def from_env(cls) -> OIDCSettings:
@@ -47,7 +53,8 @@ class OIDCSettings:
         Returns:
             OIDCSettings instance with parsed configuration.
         """
-        auth_mode = os.getenv("STUDY_TUTOR_AUTH_MODE", "table")
+        raw_auth_mode = os.getenv("STUDY_TUTOR_AUTH_MODE")
+        auth_mode = raw_auth_mode or "table"
         issuer = os.getenv("STUDY_TUTOR_OIDC_ISSUER") or None
         audience = os.getenv("STUDY_TUTOR_OIDC_AUDIENCE") or None
         jwks_url = os.getenv("STUDY_TUTOR_OIDC_JWKS_URL") or None
@@ -66,6 +73,7 @@ class OIDCSettings:
             jwks_url=jwks_url,
             student_claim=student_claim,
             leeway=leeway,
+            auth_mode_explicit=bool(raw_auth_mode),
         )
 
     def validate(self) -> list[str]:
@@ -76,11 +84,24 @@ class OIDCSettings:
             Caller (TASK-KCA2-004) turns non-empty list into boot SystemExit.
 
         Validation rules (ASSUM-002/005/007):
-            - auth_mode must be 'table' or 'keycloak'
+            - auth_mode must be SET, and be 'table' or 'keycloak'
             - In keycloak mode: issuer and audience are required
             - In table mode: no OIDC validation needed
         """
         errors: list[str] = []
+
+        # An unset mode used to fall back to 'table' silently — which is a
+        # silent fallback to "accept static bearers". The 2026-08-14 leak
+        # (a child's bearer published in a public repo) was reachable partly
+        # because no deployment ever had to say which mode it wanted. Saying
+        # 'table' out loud is fine; not saying anything is not.
+        if not self.auth_mode_explicit:
+            errors.append(
+                "STUDY_TUTOR_AUTH_MODE is not set. Set it explicitly to "
+                "'keycloak' (OIDC) or 'table' (static bearers — currently the "
+                "Reachy robot only, until FEAT-AUTH-004 device pairing lands). "
+                "There is no default: an unset mode was a silent 'table'."
+            )
 
         # Validate auth_mode value
         if self.auth_mode not in ("table", "keycloak"):
