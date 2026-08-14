@@ -210,6 +210,11 @@ Eval-first, then plumbing, then content packs:
    modes, the architect-fine-tune precedent) → per-subject corpora. Every subject now has a
    law-4-compliant corpus path; pick the first second subject by scan effort + Lilymay's
    need. *Receipt per subject: the S1 parity definition, ending in a real session.*
+   **2026-08-14 (Rich): the guides for ALL subjects are now in hand, and each scan now
+   feeds TWO consumers** — this lane's RAG corpora AND the Lane 7 fine-tune dataset's
+   grounding sources (the factory brief's Stage 3 gates per-subject generation on that
+   subject's corpus landing; the fabrication gate verifies dataset quotes against the
+   same stores). One scanning effort, two receipts per subject.
 
 ### Lane 4 — the copyright/fair-use posture *(gated Lane 3's uploads; S3 rung 1)* — **✅ LANE DONE: RATIFIED 2026-08-02 (Rich)**
 The ADR below is Accepted; Lane 3's residency ADR may now draft and ratify (rung 2).

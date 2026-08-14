@@ -92,7 +92,38 @@ An explicit, additive batching layer in the live loop — NOT a rewrite:
   verbatim quote (must pass), the store-absent edge (analysis-mode sample: no quotes,
   passes). *Gate: suite green + gate report on a replayed sample set.*
 
-### Stage 3 — the GCSE domain refresh
+### Stage 3 — the GCSE domain refresh (MULTI-SUBJECT — Rich's extension, 2026-08-14)
+
+**Rich's word (2026-08-14): the family now holds study guides for ALL of Lilymay's
+subjects, and the GOAL extends to a multi-subject fine-tune dataset.** This matches the
+serving architecture exactly (ADR-TUTOR-MULTI-SUBJECT: ONE fine-tune + per-subject
+prompts + corpora ⇒ ONE training set spanning subjects, every sample subject-stamped).
+The scans serve TWO consumers from one effort: the live tutor's RAG corpora (study-tutor
+Lane 1 step 3's already-ruled path — scan → docling → `ingest_corpus.py --subject`) and
+this dataset's grounding sources. The interlock is the point: **generation is grounded
+in the real guide content per subject, and the Stage-2 fabrication gate verifies quotes
+against that subject's OWN store** — the dataset cannot fabricate what the corpus can
+check.
+
+- GOAL.md's Generation Targets become a per-subject target table (subject-stamped
+  samples; category spread per subject mirroring the fleet-evals golden-set categories
+  so the eval and the training distribution speak the same language).
+- Source Documents points at the per-subject corpora; generation for a subject is
+  **GATED on that subject's corpus existing** (scan+ingest first — English's store
+  exists today; each other subject unlocks as Rich's scans land; the pilot can run
+  English-only if scans lag).
+- **Legal register (carried, not new):** the guides are school-bought copyrighted
+  material — ingest and household use ride ADR-ARCH-031's ratified posture, and the
+  DATASET DERIVED FROM THEM STAYS PRIVATE (the previous model card already said
+  exactly this). Publishing any resulting WEIGHTS is a separate, explicit Rich
+  decision (the old HF upload was Kaggle-forced; nothing forces one now). AQA
+  assessment material stays absolutely excluded (law 4) — guides are fine, papers
+  never.
+- Future-proofing note only (no scope): Dulcie's KS3 level dimension (mission dated
+  note 1) means subject packs eventually carry a level tag — name the field, don't
+  build it.
+
+**Original Stage 3 content (now the per-subject template):**
 - Rewrite `domains/gcse-english-tutor/GOAL.md` (9-section format enforced by
   `domain_config/parser.py:142-159`) to the current truth: target = the Lane 7
   candidate (updated Gemma 4 base; Qwen 3.6 rides the bake-off), **teacher =
