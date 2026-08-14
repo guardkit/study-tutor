@@ -366,7 +366,14 @@ Options riding with it, assessed on receipts:
    **The re-train's design input is recorded** in the eval RESULTS' autopsy +
    `fleet-evals/multisubject/docs/STORY-when-your-finetune-loses-2026-08-14.md`
    (also the YouTube content source, Rich's ask): (a) **batch mode in the
-   agentic-dataset-factory** (Rich's directive — **build brief DRAFTED:**
+   agentic-dataset-factory** — **✅ STAGES 1–2 BUILT + MERGED to the factory's main
+   2026-08-14 (Rich's merge word; merge `110120a`)**: the two-window batched-legs
+   machinery (teacher window against DeepSeek `:8888` with the fleet drained →
+   operator boundary → Coach window on llama-swap; crash-resume proven by hard-kill
+   simulation) AND the per-sample fabrication gate (the two real TASK-G4D-006
+   fabricated quotes are must-catch fixtures; no-corpus subjects skip-and-count).
+   Stages 3–4 (multi-subject GOAL refresh; attended pilot) follow per the brief
+   (**build brief:**
    [`HANDOFF-dataset-factory-gcse-regen.md`](runbooks/HANDOFF-dataset-factory-gcse-regen.md),
    grounded in a factory-repo recon: the qa-verifier batched-legs/co-residency
    precedent, the generation_loop.py:1240 gate plug-point, TASK-G4D-006's real
