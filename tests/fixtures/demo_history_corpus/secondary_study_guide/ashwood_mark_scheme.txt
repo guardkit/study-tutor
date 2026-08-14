@@ -1,0 +1,10 @@
+Crafted fixture file. The CONTENT is throwaway placeholder prose; the FILENAME is the
+point. "mark_scheme" matches study_tutor.knowledge.corpus.AQA_REFUSAL_PATTERN, so the
+loader must refuse this file rather than chunk it — the proof asserts that the refusal
+gate applies to a second subject exactly as it does to english.
+
+Nothing below this line is real assessment material, and no exam board wrote any of it.
+
+Band 1: the candidate mentions the bridge.
+Band 2: the candidate mentions the bridge and the labour owed for it.
+Band 3: the candidate notices that the labour clause is the unpopular half.

@@ -1,0 +1,47 @@
+The Ashwood Charter
+
+An invented source document, written for a test fixture. Ashwood is not a real place and
+the charter is not a real document; both exist only to give the corpus loader something
+chapter-structured to chew on.
+
+Chapter 1
+
+The charter opens with a list of the people who signed it. Fourteen names are given, and
+the order of them is the first thing any reader notices, because the miller is written
+above the reeve and the reeve is written above the priest. Whoever drafted the list was
+making an argument about who mattered in Ashwood, and the argument was about grain.
+
+The second passage sets out the days on which the market may be held. Two days a week are
+named, and a third is promised for the weeks after harvest. The clause is short, but it is
+the clause that made the charter worth keeping, because a market day is a right that can
+be counted and therefore a right that can be defended.
+
+The third passage concerns the bridge. It says that the bridge belongs to nobody and that
+everybody must maintain it, which sounds generous until the next sentence explains that
+maintenance is owed in labour, three days a year, from every household that uses it. The
+charter is at its plainest here, and at its least popular.
+
+A fourth passage, added in a different hand, forbids the felling of the ash trees along
+the river bank. No reason is recorded. Later readers have supplied several, none of which
+can be checked against anything else in the document.
+
+Chapter 2
+
+The second half of the charter is a set of penalties, and it is much less careful than the
+first. Fines are given in shillings for some offences and in days of labour for others,
+with no rule offered for converting between them. A dispute about the conversion appears
+in the margin, undated, in a third hand.
+
+The penalty for blocking the market road is heavier than the penalty for striking a
+neighbour. Readers meeting the charter for the first time usually find this shocking, and
+it is worth sitting with the shock before explaining it away, because the explanation is
+the whole point: the road was the town's income and the neighbour's bruises were not.
+
+The closing passage promises that the charter will be read aloud twice a year in the
+market square. That promise is the only mention of an audience anywhere in the text, and
+it tells us the document was meant to be heard rather than consulted. Its short sentences
+and repeated phrasings make sense once you read it out loud.
+
+The charter ends without a date. Every claim about when it was written rests on the
+handwriting, on the names in the opening list, and on the bridge, which is mentioned in
+one other invented document and not in any real one.
