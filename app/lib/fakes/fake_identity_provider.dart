@@ -12,20 +12,49 @@ import '../domain/principal.dart';
 import '../ports/identity_provider.dart';
 
 class FakeIdentityProvider implements IdentityProvider, PrincipalChooser {
+  /// The bearer this build presents to the real backend, supplied at build
+  /// time and never committed:
+  ///
+  ///     flutter build apk --dart-define=STUDENT_TOKEN=<operator value>
+  ///
+  /// The default is a self-evident non-credential. It is what every hermetic
+  /// test run sees, where the fake backend consults [_studentIdByToken] below
+  /// rather than a server, so the default never authenticates anything.
+  ///
+  /// Literals here were the 2026-08-14 exposure: this repo is public, so a
+  /// real token in app source is a published credential — and because the
+  /// composition root has no settings UI (see main.dart), rotating one costs
+  /// a rebuild and a reinstall on the phone. Keep the value out of source.
+  static const _studentToken = String.fromEnvironment(
+    'STUDENT_TOKEN',
+    defaultValue: 'fake-token-student-a-not-a-credential',
+  );
+
+  /// The second principal's bearer, same rules as [_studentToken].
+  static const _secondStudentToken = String.fromEnvironment(
+    'STUDENT_TOKEN_2',
+    defaultValue: 'fake-token-student-b-not-a-credential',
+  );
+
   /// Default student — the contract §3 interim single-user mode.
-  static const lilymay = Principal(token: 'token-lilymay', displayName: 'Lilymay');
+  static const lilymay =
+      Principal(token: _studentToken, displayName: 'Lilymay');
 
   /// Second principal so ownership violations are constructible (scope §2.2).
-  static const secondStudent = Principal(token: 'token-alex', displayName: 'Alex');
+  static const secondStudent =
+      Principal(token: _secondStudentToken, displayName: 'Alex');
 
   /// The dev principals surfaced by the SignIn chooser (spec §3).
   @override
   List<Principal> get availablePrincipals => const [lilymay, secondStudent];
 
-  /// The fake auth server's token table (token → student_id).
-  static const _studentIdByToken = <String, String>{
-    'token-lilymay': 'lilymay',
-    'token-alex': 'alex',
+  /// The fake auth server's token table (token → student_id). `final`, not
+  /// `const`: the values are build-time defines, and a const map whose two
+  /// keys collided (both defines given the same value) would be a compile
+  /// error rather than an operator's typo.
+  static final Map<String, String> _studentIdByToken = {
+    _studentToken: 'lilymay',
+    _secondStudentToken: 'alex',
   };
 
   Principal? _current;

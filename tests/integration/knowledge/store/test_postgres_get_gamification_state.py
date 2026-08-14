@@ -277,7 +277,7 @@ def test_http_endpoint_happy_over_real_postgres(clean_store, postgres_container)
     """
     asyncio.run(_seed_full_record(postgres_container))
     cfg = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay", "token-ghost": "ghost"},
+        token_to_student={"test-token-student-a": "lilymay", "token-ghost": "ghost"},
         dev_reset=False,
     )
     client = TestClient(
@@ -290,7 +290,7 @@ def test_http_endpoint_happy_over_real_postgres(clean_store, postgres_container)
     )
     resp = client.get(
         "/api/student-model?subject=english",
-        headers={"Authorization": "Bearer token-lilymay"},
+        headers={"Authorization": "Bearer test-token-student-a"},
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -398,7 +398,7 @@ def test_banked_xp_flows_through_end_and_student_model(postgres_container) -> No
 
     app_store = PostgresStudentStore(postgres_container)
     cfg = HTTPAuthConfig(
-        token_to_student={"token-lilymay": "lilymay"}, dev_reset=False
+        token_to_student={"test-token-student-a": "lilymay"}, dev_reset=False
     )
     app = create_app(
         service=SessionService(store=app_store),
@@ -412,7 +412,7 @@ def test_banked_xp_flows_through_end_and_student_model(postgres_container) -> No
         # End the session through the app → settlement banks 120 XP (20-min band).
         end_resp = client.post(
             f"/api/sessions/{session_id}/end",
-            headers={"Authorization": "Bearer token-lilymay"},
+            headers={"Authorization": "Bearer test-token-student-a"},
         )
         assert end_resp.status_code == 200
         block = end_resp.json()["gamification"]
@@ -421,7 +421,7 @@ def test_banked_xp_flows_through_end_and_student_model(postgres_container) -> No
         # (total_xp = SUM(session.xp_awarded) + SUM(achievement.xp_awarded), D2).
         model_resp = client.get(
             "/api/student-model?subject=english",
-            headers={"Authorization": "Bearer token-lilymay"},
+            headers={"Authorization": "Bearer test-token-student-a"},
         )
 
     # Session bands at 120 XP (20-min standard); the cascade then unlocks

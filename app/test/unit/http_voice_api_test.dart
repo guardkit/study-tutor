@@ -32,7 +32,7 @@ void main() {
 
   setUp(() async {
     identity = FakeIdentityProvider();
-    await identity.signIn(); // token-lilymay
+    await identity.signIn(); // dev table entry #1
   });
 
   /// Build an adapter whose "server" is [handler]; requests captured there.
@@ -93,7 +93,8 @@ void main() {
         expect(seen.url.path, '/api/sessions/sess-123/voice-turn');
 
         // assert: Authorization bearer present
-        expect(seen.headers['authorization'], 'Bearer token-lilymay');
+        expect(seen.headers['authorization'],
+            'Bearer ${FakeIdentityProvider.lilymay.token}');
 
         // assert: multipart field 'audio' present with correct extension
         final request = seen as http.MultipartRequest;
@@ -410,7 +411,9 @@ void main() {
 
       await api.fetchAudioChunk('sess-123', 'chunk-456');
 
-      expect(seen.headers['authorization'], 'Bearer token-lilymay');
+      expect(seen.headers['authorization'],
+
+          'Bearer ${FakeIdentityProvider.lilymay.token}');
       expect(seen.method, 'GET');
       // binding: GET /api/sessions/{id}/voice-audio/{chunk_id}
       expect(seen.url.path, '/api/sessions/sess-123/voice-audio/chunk-456');

@@ -1,5 +1,5 @@
-// The dedicated live-suite identity (server-queue item 1, 2026-08-04):
-// token `token-suite` → student `suite-runner`, seeded in the deployed dev
+// The dedicated live-suite identity (server-queue item 1, 2026-08-04): a
+// bearer resolving to student `suite-runner`, seeded in the deployed dev
 // table so suite runs never touch a real learner's rows. `__dev__/reset`
 // authenticates and deletes ONLY the caller's sessions, so a reset with
 // these tokens can never repeat the 2026-08-03 whole-store wipe.
@@ -10,8 +10,17 @@ import 'package:study_tutor_app/domain/principal.dart';
 import 'package:study_tutor_app/fakes/fake_identity_provider.dart';
 
 /// The suite's own principal — NEVER a real learner.
+///
+/// Supplied at run time (`--dart-define=SUITE_TOKEN=…`) alongside
+/// `API_BASE_URL`, for the same reason the app's own bearer is
+/// (see [FakeIdentityProvider]): this repo is public. The default is a
+/// non-credential, so a live run without the define fails auth loudly
+/// instead of quietly authenticating as whoever the literal used to name.
 const suitePrincipal = Principal(
-  token: 'token-suite',
+  token: String.fromEnvironment(
+    'SUITE_TOKEN',
+    defaultValue: 'fake-bearer-suite-not-a-credential',
+  ),
   displayName: 'Suite Runner',
 );
 

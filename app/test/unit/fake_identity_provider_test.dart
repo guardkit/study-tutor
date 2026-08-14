@@ -49,7 +49,8 @@ void main() {
   group('token → student_id derivation (§3)', () {
     test('valid token derives a student id', () {
       final idp = FakeIdentityProvider();
-      expect(idp.studentIdForToken('token-lilymay'), 'lilymay');
+      expect(
+          idp.studentIdForToken(FakeIdentityProvider.lilymay.token), 'lilymay');
     });
 
     test('unknown token derives nothing', () {
@@ -92,7 +93,8 @@ void main() {
     test('invalidating while signed out is a no-op', () {
       final idp = FakeIdentityProvider();
       idp.invalidateCurrentToken();
-      expect(idp.studentIdForToken('token-lilymay'), 'lilymay');
+      expect(
+          idp.studentIdForToken(FakeIdentityProvider.lilymay.token), 'lilymay');
     });
 
     test('re-signing in restores validity — the recovery loop closes', () async {

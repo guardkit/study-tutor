@@ -46,7 +46,7 @@ def store() -> FakeStudentStore:
 @pytest.fixture
 def client(store: FakeStudentStore) -> TestClient:
     auth = HTTPAuthConfig.from_env(
-        tokens_json='{"token-lilymay": "lilymay", "token-suite": "suite-runner"}',
+        tokens_json='{"test-token-student-a": "lilymay", "test-bearer-suite": "suite-runner"}',
         dev_reset="true",
     )
     app = create_app(
@@ -67,7 +67,7 @@ def test_reset_deletes_only_the_callers_sessions(
     client: TestClient, store: FakeStudentStore
 ) -> None:
     resp = client.post(
-        "/__dev__/reset", headers={"Authorization": "Bearer token-suite"}
+        "/__dev__/reset", headers={"Authorization": "Bearer test-bearer-suite"}
     )
     assert resp.status_code == 200
     assert resp.json() == {"deleted": {"sessions": 1, "turns": 1}}
@@ -81,7 +81,7 @@ def test_reset_as_primary_touches_only_their_own(
     client: TestClient, store: FakeStudentStore
 ) -> None:
     resp = client.post(
-        "/__dev__/reset", headers={"Authorization": "Bearer token-lilymay"}
+        "/__dev__/reset", headers={"Authorization": "Bearer test-token-student-a"}
     )
     assert resp.status_code == 200
     assert resp.json()["deleted"]["sessions"] == 2

@@ -20,7 +20,7 @@ void main() {
 
   setUp(() async {
     identity = FakeIdentityProvider();
-    await identity.signIn(); // token-lilymay (binding §5.1)
+    await identity.signIn(); // dev table entry #1 (binding §5.1)
   });
 
   StudentModelApi apiWith(
@@ -83,7 +83,8 @@ void main() {
       expect(seen.method, 'GET');
       expect(seen.url.path, '/api/student-model');
       expect(seen.url.queryParameters, {'subject': 'english'});
-      expect(seen.headers['authorization'], 'Bearer token-lilymay');
+      expect(seen.headers['authorization'],
+          'Bearer ${FakeIdentityProvider.lilymay.token}');
     });
 
     test('signed out → no auth header (server 401s, never a client guess)',

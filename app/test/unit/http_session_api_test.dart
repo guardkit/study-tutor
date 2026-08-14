@@ -19,7 +19,7 @@ void main() {
 
   setUp(() async {
     identity = FakeIdentityProvider();
-    await identity.signIn(); // token-lilymay — dev table entry #1 (binding §5.1)
+    await identity.signIn(); // dev table entry #1 (binding §5.1)
   });
 
   /// An adapter whose "server" is [handler]; requests are captured there.
@@ -50,7 +50,8 @@ void main() {
 
       expect(seen.method, 'POST');
       expect(seen.url.toString(), 'http://gb10.tail:8100/api/sessions/start');
-      expect(seen.headers['authorization'], 'Bearer token-lilymay');
+      expect(seen.headers['authorization'],
+          'Bearer ${FakeIdentityProvider.lilymay.token}');
       expect(seen.headers['content-type'], startsWith('application/json'));
       expect(jsonDecode(seen.body), {
         'subject': 'maths',
@@ -82,7 +83,8 @@ void main() {
       final api = apiWith((request) async {
         urls.add(request.url);
         expect(request.method, 'GET');
-        expect(request.headers['authorization'], 'Bearer token-lilymay');
+        expect(request.headers['authorization'],
+            'Bearer ${FakeIdentityProvider.lilymay.token}');
         return jsonResponse([]);
       });
 
@@ -113,7 +115,8 @@ void main() {
       expect(seen.method, 'GET');
       expect(seen.url.path, '/api/sessions/s-7/turns');
       expect(seen.url.queryParameters, {'since': '4'});
-      expect(seen.headers['authorization'], 'Bearer token-lilymay');
+      expect(seen.headers['authorization'],
+          'Bearer ${FakeIdentityProvider.lilymay.token}');
     });
 
     test('turn: POST /api/sessions/{id}/turn with {user_message}, no stream '
@@ -128,7 +131,8 @@ void main() {
 
       expect(seen.method, 'POST');
       expect(seen.url.path, '/api/sessions/s-42/turn');
-      expect(seen.headers['authorization'], 'Bearer token-lilymay');
+      expect(seen.headers['authorization'],
+          'Bearer ${FakeIdentityProvider.lilymay.token}');
       expect(jsonDecode(seen.body), {'user_message': 'what is a fraction?'});
     });
 
@@ -137,7 +141,8 @@ void main() {
       final calls = <String>[];
       final api = apiWith((request) async {
         calls.add('${request.method} ${request.url.path}');
-        expect(request.headers['authorization'], 'Bearer token-lilymay');
+        expect(request.headers['authorization'],
+            'Bearer ${FakeIdentityProvider.lilymay.token}');
         if (request.url.path.endsWith('/end')) {
           expect(request.body, isEmpty,
               reason: 'binding §2: end_session takes a path param only');
