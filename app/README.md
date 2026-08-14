@@ -69,6 +69,28 @@ flutter run
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8100
 ```
 
+### Bearer defines — one rule for a learner's build
+
+Since the 2026-08-14 rotation the table-flavour bearer comes from
+`--dart-define=STUDENT_TOKEN=…`, never from source. A build for a **real
+learner's phone passes `STUDENT_TOKEN` and nothing else** — in particular
+**never `STUDENT_TOKEN_2`**.
+
+The sign-in screen shows a principal chooser whenever the identity is a
+`PrincipalChooser` with more than one principal, which in the table flavour
+means the second student's button renders on the device. Without
+`STUDENT_TOKEN_2` that button carries the compiled-in non-credential and the
+server answers 401 — it is inert, which is exactly what you want on a child's
+phone. Pass the define "for testing" and you have shipped her a working
+second identity. (In a Keycloak build the question does not arise:
+`KeycloakIdentityProvider` is not a `PrincipalChooser`, so no chooser
+renders at all.)
+
+`STUDENT_TOKEN_2` and `SUITE_TOKEN` are for dev machines and the live
+contract suite. Values live in the operator's `~/.config/study-tutor/`
+token file on the spark; a real one must never reach a commit, a build log,
+or this repo — `tests/test_no_live_credentials.py` fails the build if it does.
+
 Base-URL rule: on the **Android emulator**, `10.0.2.2` is the host machine's
 **own loopback** (127.0.0.1 of the dev machine) — not a gateway onto the
 host's tailnet. To reach the GB10 adapter from the emulator, either forward

@@ -5,8 +5,15 @@
 # phone binding and is NEVER touched by this overlay:
 #   - separate compose project name  (-p study_tutor_http_kc)
 #   - separate container name        (study_tutor_http_kc)
-#   - separate image tag             (study-tutor:kc-a2) so `build` here can
+#   - separate image tag             (study-tutor:kc-<date>) so `build` here can
 #     never retag the study-tutor:latest the :8100 container was created from
+#
+# 2026-08-14: re-tagged from `kc-a2` (built 2026-08-07) to `kc-20260814`, which
+# is `study-tutor:latest` at the credential-rotation merge. `kc-a2` predates
+# BOTH the channel-scaffolding sanitiser and the auth-log fingerprints, so a
+# phone moved to keycloak mode against it would have started leaking model
+# internals into a child's transcript again — the defect fixed that same day on
+# :8100. `kc-a2` is kept as the rollback tag; retag forward, never in place.
 #
 # Usage (from deploy/http/):
 #   docker compose -p study_tutor_http_kc \
@@ -15,6 +22,7 @@
 #
 # .env.kc (gitignored) is a copy of .env with: HTTP_PORT=8101,
 # STUDY_TUTOR_HTTP_TOKENS={} (table unused in keycloak mode), dev-reset unset,
+# the voice block (2026-08-14 — without it :8101 mounts no voice routes),
 # plus STUDY_TUTOR_AUTH_MODE / STUDY_TUTOR_OIDC_* below. Same PG DSN and spark
 # LLM env as :8100.
 #
@@ -26,7 +34,7 @@
 services:
   study_tutor_http:
     container_name: study_tutor_http_kc
-    image: study-tutor:kc-a2
+    image: study-tutor:kc-20260814
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "whitestocks.tailebf801.ts.net:100.92.74.2"

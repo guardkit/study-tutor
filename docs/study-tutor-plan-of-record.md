@@ -544,15 +544,27 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    public source; that rule is the leak's mechanism, and it now runs the other way (shape
    must agree, literals must not exist). `PENDING_REDACTION` is empty; its expiry test
    stays for the next rotation. **origin/main: 0 retired bearers, 0 files.**
-12. **The Keycloak-for-the-phone move has one real blocker.** Moving Lilymay's phone off
-   table mode is not the config flip it looks like: `deploy/http/.env.kc` leaves
-   `STUDY_TUTOR_VOICE_ENABLED` empty, so `:8101` mounts **no voice routes** — the phone's
-   voice turns would 404 by design. Enable voice on the keycloak stack and re-run the
-   voice gate first; the app side already composes `KeycloakIdentityProvider` from
-   `--dart-define=KEYCLOAK_ISSUER=…` (`app/lib/main.dart`), so no app rewrite is needed.
-   Table mode then survives for the robot alone until FEAT-AUTH-004 device pairing — and
-   the realm already advertises `urn:ietf:params:oauth:grant-type:device_code`, so the
-   headless flow it needs is available server-side today.
+12. **The Keycloak-for-the-phone move — server side DONE 2026-08-14, one human step left.**
+   Was listed as blocked because `:8101` mounted no voice routes. Now fixed and, more
+   importantly, a **second blocker was found that nobody had listed**: the keycloak stack
+   was pinned to `study-tutor:kc-a2` (built 2026-08-07), which predates the
+   channel-scaffolding sanitiser — moving her phone to keycloak mode would have **restored
+   the transcript leak fixed that same day on `:8100`**. Both closed: `.env.kc` gained the
+   voice block (the base compose already passed the vars through; the env file simply never
+   set them — and the model names are load-bearing, since `VoiceConfig` fails loud at boot
+   on empty ones), and the overlay was re-tagged forward to `study-tutor:kc-20260814`
+   (= `latest` at the rotation merge), keeping `kc-a2` as rollback. **Verified on `:8101`:**
+   `voice_services_wired enabled=true` + `rag_wired` at boot; `/voice-turn` now **401 not
+   404** (mounted); `/ws` byte-for-byte parity with `:8100` (404 plain, 403 on upgrade);
+   the sanitiser and the auth fingerprints both present in the running container; static
+   bearers still **401** (keycloak mode intact); `:8100` untouched. **What is left is not
+   spark-side:** the authenticated end-to-end spoken gate needs a real Keycloak token —
+   i.e. the phone built with `--dart-define=KEYCLOAK_ISSUER=…` (no app rewrite; `main.dart`
+   already composes `KeycloakIdentityProvider`), or a realm credential this session does
+   not hold. Table mode then survives for the robot alone until FEAT-AUTH-004 device
+   pairing — the realm already advertises
+   `urn:ietf:params:oauth:grant-type:device_code`, so the headless flow it needs exists
+   server-side today.
 
 13. **Release APKs are debug-signed** *(found by the Mac session during the 2026-08-14
    cutover; not urgent, but it is on a child's phone)*. `app/android/app/build.gradle.kts`
