@@ -33,20 +33,25 @@
 # no lint receipt is claimed — run it on the walk. The file is deliberately left
 # NON-EXECUTABLE (no chmod +x): making it runnable is a decision, not a default.
 #
-# EVERY live call sits behind an explicit confirm prompt. There is no
+# EVERY live WRITE sits behind an explicit confirm prompt — the user create, the
+# role mapping, the enable, and the seed CLI. Read-only GETs (existence check,
+# role lookup, read-backs) are not individually confirmed; first contact with the
+# identity server is still gated, by the admin-token confirm. There is no
 # --yes/--force flag on purpose: this creates an account for a child.
 #
 # Usage:
 #   ./provision-pilot-student.sh --student-id <slug> --username <login> \
 #       --consent-ref <reference> [--year-group N] [--target-grade G] \
-#       [--name "Display Name"] [--kc-base URL] [--api-base URL]
+#       [--name "Display Name"] [--kc-base URL]
 #
 # Reads admin creds exactly like provision-live-suite.sh:
 #   deploy/keycloak/.env.deploy (gitignored, preferred), else the sops-encrypted
 #   ${SECRETS_ROOT}/study-tutor/keycloak-env-deploy.enc.env
 # Needs STUDY_TUTOR_PG_DSN in the environment for the seed step.
-# The student's password is typed at a prompt: never an argument, never a file,
-# never echoed, never logged.
+# The student's password is typed at a prompt: never an argument — not this
+# script's, and not curl's either, since the create body is fed to curl on stdin
+# (`--data @-`) so it never appears in `ps` — never a file, never echoed, never
+# logged.
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -63,7 +68,7 @@ TARGET_GRADE=""
 die() { echo "ERROR: $*" >&2; exit 1; }
 note() { echo "-- $*"; }
 
-# confirm PROMPT — every live call goes through this. Reads from the terminal,
+# confirm PROMPT — every live write goes through this. Reads from the terminal,
 # not stdin, so a piped/redirected run cannot answer on the operator's behalf.
 confirm() {
     local prompt="$1" reply=""
@@ -77,7 +82,7 @@ confirm() {
 }
 
 usage() {
-    sed -n '1,45p' "$0"
+    sed -n '1,54p' "$0"
     exit 2
 }
 
@@ -131,8 +136,13 @@ TOKEN=""
 api() { # api METHOD PATH [JSON_BODY]
     local m="$1" p="$2" body="${3:-}"
     if [ -n "$body" ]; then
-        curl -fsS -X "$m" "${KC_BASE}/admin/realms/${REALM}${p}" \
-            -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" -d "$body"
+        # Body goes in on stdin (--data @-), NOT in curl's argv: the A3 user
+        # representation carries the student's plaintext password, and an argv
+        # copy is readable in `ps`/`/proc` by any other user on the host. The
+        # model script (provision-live-suite.sh:132-141) passes it as an
+        # argument; this is the one place this script deliberately diverges.
+        printf '%s' "$body" | curl -fsS -X "$m" "${KC_BASE}/admin/realms/${REALM}${p}" \
+            -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" --data @-
     else
         curl -fsS -X "$m" "${KC_BASE}/admin/realms/${REALM}${p}" \
             -H "Authorization: Bearer ${TOKEN}"
@@ -192,7 +202,11 @@ EXISTING=$(api GET "/users?username=${USERNAME}&exact=true" \
 if [ -n "$EXISTING" ]; then
     die "user '${USERNAME}' already exists (${EXISTING}).
      STOP and inspect it by hand: a pre-existing user may be a half-provisioned
-     account (runbook section 1, H1/H2), and this script will not repair one."
+     account (runbook section 1, H1/H2), and this script will not repair one.
+     NOTE: A2 already ran, so a 'student' row for '${STUDENT_ID}' is left behind.
+     It is inert (half-state H3 — nothing resolves to it), but if you are not
+     continuing, roll it back per runbook A2:
+       DELETE FROM student WHERE student_id = '${STUDENT_ID}';"
 fi
 
 [ -r /dev/tty ] || die "no terminal available"

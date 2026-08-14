@@ -70,6 +70,20 @@ away. H3 is inert. H4 is the one the machine will not catch.
 account's identity **disabled at birth**, and make *enabling it* the last, single, reversible
 act — taken only after every other piece has been read back.
 
+**Stated deviation from ADR-034 D3's listing.** D3 names the procedure as *"Keycloak user →
+`student_id` attribute → `student` realm role → `seed-students` row → consent + attestation
+record (D6)"* (ADR-ARCH-034:148–153). Part A below runs that **backwards at the ends**:
+consent first (A1), `student` row second (A2), identity user third (A3). D3's arrow list is
+read here as *the set of components an account must have*, not a commissioned sequence — the
+sentence it exists to support is the next one, *"a partial subset of these steps produces a
+broken account by construction."* Two reasons for the inversion, both from the ADRs
+themselves: consent last would contradict ADR-033 D5's *"No consent record, no session"*
+(ADR-ARCH-033:203), since the account would be sign-in-ready before the record existed; and
+creating the identity user before the `student` row would pass through half-state H2 — the
+silent 401 — as a *live* state rather than an inert one. Every intermediate state in the
+order below is either inert (H3) or unreachable (disabled). If the attended walk disagrees,
+that is an ADR amendment, not a quiet edit here (Part D, Q8).
+
 ---
 
 ## 2. Preconditions (check all five before starting)
@@ -107,7 +121,10 @@ export UNAME="<login-username>"
 ```
 
 The draft helper script `deploy/keycloak/provision-pilot-student.sh` performs A2–A6 with a
-confirm prompt in front of every live call. It is **DRAFT and has never been executed** — the
+confirm prompt in front of every live **write** (the seed CLI, the user create, the role
+mapping, the enable) and in front of first contact with the identity server (the admin
+token); the read-only GETs it makes in between — existence check, role lookup, read-backs —
+are not individually confirmed. It is **DRAFT and has never been executed** — the
 attended walk is its first run, and the walk should follow the manual steps below with the
 script open alongside, not the other way round. What has been checked: `bash -n` and an
 `ast.parse` of every embedded Python block, both clean; `shellcheck` is **not installed** on
@@ -155,7 +172,7 @@ Idempotent by construction — `INSERT … ON CONFLICT DO NOTHING`
 `name = student_id.title()`, `year_group = 10`, `target_grade = "7"`
 (`src/study_tutor/cli/main.py:1336–1341`). There is **no** flag for them, and there is **no**
 `list-students` command in the CLI despite the Keycloak standup runbook citing one
-(`RUNBOOK-study-tutor-keycloak-standup.md:245–247` — the CLI's commands are `serve-nats`,
+(`RUNBOOK-study-tutor-keycloak-standup.md:241` — the CLI's commands are `serve-nats`,
 `serve-http`, `seed-students`, `settle-sessions` and the role-manifest command; verified
 2026-08-14). So for any student who is not Year 10 targeting grade 7, correct the row
 immediately after seeding:
@@ -185,9 +202,10 @@ succeeds and the attribute is there, or it fails and no user was created.
 off; A6 is the only thing that turns it on.
 
 ```bash
-# ATTENDED-ONLY — admin token, then create. The password is typed at a prompt, never echoed.
+# ATTENDED-ONLY — admin token, then create. The password is typed at a prompt, never echoed,
+# and the create body is fed to curl on stdin so the password never lands in `ps`.
 # The draft script deploy/keycloak/provision-pilot-student.sh does exactly this, with a
-# confirm prompt in front of each call.
+# confirm prompt in front of each write.
 ```
 
 The user representation must carry:
@@ -448,6 +466,13 @@ posture for.
 
 **Q7 — Does the account need the ADR-034 D5 voice walk to have passed first?** B6 treats it as
 a separate gate. Confirm that reading.
+
+**Q8 — Is Part A's inverted order accepted, and should ADR-034 D3 be amended to match?**
+Section 1 states the deviation and its reasoning (consent first, `student` row second,
+identity user third, enable last), reading D3's arrow list as a set of required components
+rather than a sequence. If the walk agrees, D3's wording should be amended so the ADR and the
+runbook cannot be read as contradicting each other; if the walk disagrees, this runbook's
+order changes rather than the ADR's.
 
 ---
 
