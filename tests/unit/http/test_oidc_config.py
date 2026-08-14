@@ -71,8 +71,13 @@ class TestOIDCSettingsValidate:
     """Test OIDCSettings.validate() validation logic."""
 
     def test_table_mode_valid(self, monkeypatch):
-        """AC-003: table mode with no OIDC config is valid (returns empty list)."""
-        monkeypatch.delenv("STUDY_TUTOR_AUTH_MODE", raising=False)
+        """AC-003: table mode with no OIDC config is valid (returns empty list).
+
+        The mode is named explicitly — see
+        :meth:`test_unset_auth_mode_is_a_validation_error` for why the
+        unset case no longer validates.
+        """
+        monkeypatch.setenv("STUDY_TUTOR_AUTH_MODE", "table")
         monkeypatch.delenv("STUDY_TUTOR_OIDC_ISSUER", raising=False)
         monkeypatch.delenv("STUDY_TUTOR_OIDC_AUDIENCE", raising=False)
 
@@ -80,6 +85,31 @@ class TestOIDCSettingsValidate:
         errors = settings.validate()
 
         assert errors == []
+
+    def test_unset_auth_mode_is_a_validation_error(self, monkeypatch):
+        """An unset mode is a silent 'accept static bearers' — refuse it.
+
+        ``from_env`` still reports ``table`` so every reader of the
+        attribute is unchanged; it is boot that refuses to serve on a
+        fallback nobody chose (2026-08-14 rotation follow-up).
+        """
+        monkeypatch.delenv("STUDY_TUTOR_AUTH_MODE", raising=False)
+
+        settings = OIDCSettings.from_env()
+
+        assert settings.auth_mode == "table"
+        assert settings.auth_mode_explicit is False
+        errors = settings.validate()
+        assert len(errors) == 1
+        assert "STUDY_TUTOR_AUTH_MODE is not set" in errors[0]
+
+    def test_empty_auth_mode_is_treated_as_unset(self, monkeypatch):
+        """``STUDY_TUTOR_AUTH_MODE=`` in a .env file is not a choice either."""
+        monkeypatch.setenv("STUDY_TUTOR_AUTH_MODE", "")
+
+        errors = OIDCSettings.from_env().validate()
+
+        assert any("is not set" in e for e in errors)
 
     def test_keycloak_mode_valid_with_full_config(self, monkeypatch):
         """AC-003: keycloak mode with issuer and audience is valid."""
