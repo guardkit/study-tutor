@@ -196,8 +196,13 @@ Eval-first, then plumbing, then content packs:
    visible and threading; voice remains the pending human-attended piece);
    **the device install + attended walk RAN 2026-08-03** (Rich's Samsung dev
    phone standing in for Lilymay's — real-transport APK, picker + real replies +
-   audible voice against the live spark; her own phone still needs the install
-   when she's back); **the live contract suite re-run RAN 2026-08-03 — 47/47**
+   audible voice against the live spark). **Her own phone took the install
+   2026-08-14** — the token-rotation cutover (ruling queue #9): release build from
+   `29e85ef`, `adb install -r` onto the Galaxy A23 5G (`SM-A236B`, serial `R5CX51CLQBD`),
+   attended walk. **One discrepancy for Rich to settle:** that is the same physical handset
+   this cell calls his dev phone — its pre-cutover APK carried the retired `lilymay` bearer
+   and dated to the 2026-08-03 install — and Rich confirmed in-session it is Lilymay's. So
+   the "standing in for Lilymay's" framing looks wrong: one device, not two; **the live contract suite re-run RAN 2026-08-03 — 47/47**
    (see the Suites row; the two red runs before it surfaced and fixed real
    deployment/app defects — voice env, WS path, lying fixture).
    Still open: subject on `topic_confidence` *reads* the planner ranks over
