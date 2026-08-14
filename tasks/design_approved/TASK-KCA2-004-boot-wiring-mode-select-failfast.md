@@ -97,7 +97,7 @@ def test_token_resolver_injected_without_callsite_change():
     from study_tutor.http.auth import HTTPAuthConfig, TokenResolver
 
     config = HTTPAuthConfig.from_env(
-        tokens_json='{"token-lilymay": "lilymay"}', dev_reset="false"
+        tokens_json='{"<bearer-lilymay>": "lilymay"}', dev_reset="false"
     )
     # Table mode default wires a TokenResolver:
     assert isinstance(config.resolver, TokenResolver) or hasattr(config.resolver, "resolve")

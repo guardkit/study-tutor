@@ -95,7 +95,7 @@ The data layer needs **zero structural work** for multiple accounts. Receipts:
   session per student per subject — so "concurrent load" for this system is **N students ×
   1 session each**, never one student multiplied. D4's sizing uses exactly this shape.
 - The live token table already proves plural accounts end-to-end in table mode:
-  `token-lilymay` → lilymay, `token-alex` → alex, `token-suite` → suite-runner.
+  `<bearer-lilymay>` → lilymay, `<bearer-alex>` → alex, `<bearer-suite>` → suite-runner.
 
 **Decision: pilot accounts are rows, not architecture.** Adding a friend = a Keycloak user
 + a `student` row + a consent record (D3, D6). Nothing else changes.

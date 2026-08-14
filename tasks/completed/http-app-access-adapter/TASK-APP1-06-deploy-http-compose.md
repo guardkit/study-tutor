@@ -14,8 +14,8 @@ consumer_context:
   consumes: STUDY_TUTOR_HTTP_TOKENS
   framework: docker compose environment blocks
   driver: env var (JSON object)
-  format_note: 'JSON object mapping token to student_id, e.g. {"token-lilymay": "lilymay",
-    "token-alex": "alex"}; dev flavour carries two entries + STUDY_TUTOR_HTTP_DEV_RESET=1,
+  format_note: 'JSON object mapping token to student_id, e.g. {"<bearer-lilymay>": "lilymay",
+    "<bearer-alex>": "alex"}; dev flavour carries two entries + STUDY_TUTOR_HTTP_DEV_RESET=1,
     prod carries one entry and no reset flag'
 status: in_review
 autobuild_state:

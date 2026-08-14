@@ -139,7 +139,7 @@ TTS_BASE_URL=http://100.105.247.62:9000/v1
 `docker compose up -d` (recreates), then smoke as **alex** (never lilymay — her real
 session state matters): `/healthz`; text turn; the voice-turn curl from
 `docs/runbooks/` history (POST `/api/sessions/{id}/voice-turn`, form field `audio`,
-Bearer `token-alex`) returns 200 with transcript + audio chunk. Then the phone
+Bearer `<bearer-alex>`) returns 200 with transcript + audio chunk. Then the phone
 tap-to-talk re-test. **Rollback:** delete/revert those five lines, `docker compose up
 -d` — back on GB10 inference in <1 min.
 

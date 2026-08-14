@@ -46,7 +46,7 @@ in a new `src/study_tutor/http/` package; nothing existing changes.
 
 **In scope**
 - Config loading: `STUDY_TUTOR_HTTP_TOKENS` env var — JSON object mapping
-  token → student_id (e.g. `{"token-lilymay": "lilymay"}`); and
+  token → student_id (e.g. `{"<bearer-lilymay>": "lilymay"}`); and
   `STUDY_TUTOR_HTTP_DEV_RESET` flag (consumed by TASK-APP1-05). Fail fast with
   a clear message on malformed/missing token config.
 - Auth resolution used by every route: extract the Bearer token from the

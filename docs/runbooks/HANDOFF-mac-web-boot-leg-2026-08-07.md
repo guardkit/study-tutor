@@ -45,8 +45,8 @@ valid receipt):**
    blocking error if not (conditional imports, plugin support, `dart:io` usage —
    record_platform/audio plugins are the likely suspects).
 2. If it compiles: `flutter run -d chrome` against the LIVE spark `:8100`
-   (table auth, `token-lilymay` — read-only walk, do NOT start real sessions as
-   lilymay; use `token-alex` if you need a session receipt). Walk: sign-in →
+   (table auth, `<bearer-lilymay>` — read-only walk, do NOT start real sessions as
+   lilymay; use `<bearer-alex>` if you need a session receipt). Walk: sign-in →
    subject picker → one text turn → history. Voice is EXPECTED to be broken on
    web (record/audio plugins) — say so plainly rather than chasing it.
 3. Note CORS/cleartext-HTTP behaviour — web hits the browser's rules the

@@ -110,7 +110,7 @@ docker run --rm postgres:16 psql "$STUDY_TUTOR_PG_DSN" -tAc \
 #    && docker compose -p study_tutor_http_kc -f docker-compose.yml -f docker-compose.keycloak.yml --env-file .env.kc up -d
 # 5. healthz both; boot log shows rag_wired + voice_services_wired;
 #    live-prove the new behaviour (two starts with resume_if_active:false as
-#    suite-runner via token-suite — second start ends the first; counts via psql).
+#    suite-runner via <bearer-suite> — second start ends the first; counts via psql).
 ```
 
 ## State of the world (verified 2026-08-04, origin `d95add0`)
@@ -119,8 +119,8 @@ docker run --rm postgres:16 psql "$STUDY_TUTOR_PG_DSN" -tAc \
   (ADR-ARCH-027), incremental think filter, subject-scoped RAG, scoped
   authenticated `__dev__/reset`, VoiceConfig fail-loud. Both healthy.
 - **Dev token table** (`deploy/http/.env`, gitignored, reconstructed +
-  verified): `token-lilymay`→`lilymay`, `token-alex`→`alex`,
-  `token-suite`→`suite-runner` (student row seeded). kc mode (`:8101`) uses
+  verified): `<bearer-lilymay>`→`lilymay`, `<bearer-alex>`→`alex`,
+  `<bearer-suite>`→`suite-runner` (student row seeded). kc mode (`:8101`) uses
   Keycloak, table unused there.
 - **Suites**: python hermetic 1701/0; dart 423/423; live 48/48 as
   `suite-runner` in 6:44 (2026-08-04, post-isolation — lilymay's rows

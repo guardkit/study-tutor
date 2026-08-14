@@ -72,13 +72,21 @@ cat > .env <<'EOF'
 # DSN uses the NAS TAILNET IP, not the MagicDNS name — the container's
 # embedded DNS may not resolve *.ts.net names.
 STUDY_TUTOR_PG_DSN=postgresql://study_tutor:<pw>@100.92.74.2:5434/study_tutor
-# Dev flavour: BOTH tokens + reset armed (values are the binding doc's §5.1)
-STUDY_TUTOR_HTTP_TOKENS={"token-lilymay": "lilymay", "token-alex": "alex"}
+# Explicit since 2026-08-14 — an unset mode used to mean a silent 'table'
+STUDY_TUTOR_AUTH_MODE=table
+# Dev flavour: BOTH tokens + reset armed. `<bearer-…>` are PLACEHOLDERS —
+# substitute the real random values from the operator's
+# ~/.config/study-tutor/tokens-<date>.json (mode 600) on the spark, and
+# never paste one back into this repo: it is public, and the bearers this
+# runbook used to spell out were rotated on 2026-08-14 for exactly that
+# reason. Generate a fresh one with
+#   python -c "import secrets; print('st_' + secrets.token_urlsafe(32))"
+STUDY_TUTOR_HTTP_TOKENS={"<bearer-lilymay>": "lilymay", "<bearer-alex>": "alex"}
 STUDY_TUTOR_HTTP_DEV_RESET=1
 EOF
 ```
 
-Prod flavour later: single `token-lilymay` entry, DELETE the
+Prod flavour later: single `<bearer-lilymay>` entry, DELETE the
 `STUDY_TUTOR_HTTP_DEV_RESET` line.
 
 Model config: the compose defaults already point the tutor loop at llama-swap
@@ -108,10 +116,10 @@ docker compose exec study_tutor_http study-tutor seed-students
 
 # Smoke — both tokens can start a session (proves the FK gap is closed):
 curl -s -X POST http://localhost:8100/api/sessions/start \
-  -H 'Authorization: Bearer token-lilymay' -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <bearer-lilymay>' -H 'Content-Type: application/json' \
   -d '{"subject": "english-literature"}'
 curl -s -X POST http://localhost:8100/api/sessions/start \
-  -H 'Authorization: Bearer token-alex' -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <bearer-alex>' -H 'Content-Type: application/json' \
   -d '{"subject": "english-literature"}'
 
 # Negative smoke — unknown token refused per the binding doc (401):
@@ -121,7 +129,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:8100/api/sessi
 # Optional: a real turn (exercises the tutor loop → llama-swap; expect a
 # tutored reply within the p95<10s budget, first call may pay model load):
 curl -s -m 60 -X POST http://localhost:8100/api/sessions/<session_id>/turn \
-  -H 'Authorization: Bearer token-lilymay' -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <bearer-lilymay>' -H 'Content-Type: application/json' \
   -d '{"user_message": "What does the dagger symbolise in Macbeth?"}'
 
 # Reset roundtrip (dev flavour only — wipes ALL session rows, learner state
