@@ -248,14 +248,146 @@ def _strip_think_tokens(raw: str) -> str:
     return cleaned.lstrip()
 
 
+# --- Channel control tokens (2026-08-14) -------------------------------
+# A second scaffolding family, from the model behind the current
+# ``gemma4-tutor`` alias: pipe-delimited channel markers rather than
+# ``<think>`` tags. Observed shape, from session b07d8924 (7 of 22 tutor
+# rows, 32%) and one 2026-08-03 row:
+#
+#     <|channel>thought\n<channel|>That's a great question…
+#     <|channel>thought\nm_context_001_528_500\nThat's a really important…
+#     <|channel>thought\n<channel|>          ← the WHOLE reply (turn 27)
+#
+# The header carries a channel name and, sometimes, an internal context
+# identifier — never prose, in every row observed. The regexes below are
+# deliberately narrow on that evidence: a pattern permissive enough to
+# swallow reasoning prose would also swallow the tutoring around it, and
+# deleting a child's lesson is worse than leaking a marker (the same
+# Hippocratic ordering the ``<think>`` rules above record).
+#
+# Closed header pair — ``<|channel>name … <channel|>`` where the span
+# between the markers is header material only (a bare name, optional
+# ``m_context_…`` identifier lines). Prose between the markers does NOT
+# match, so a block strip can never eat a reply.
+_CHANNEL_BLOCK_RE = re.compile(
+    r"<\|channel>[ \t]*\w*[ \t]*\n?(?:[ \t]*m_context_[0-9_]+[ \t]*\n?)*<channel\|>",
+    re.IGNORECASE,
+)
+# Unclosed head-anchored header: the opener's own line plus any internal
+# identifier lines under it. Line-oriented, NOT blank-line-delimited like
+# the ``<think>`` prefix rule above — turn 13 put real tutoring on the
+# line straight after the identifier, and a strip-to-``\n\n`` would have
+# eaten the first paragraph of the lesson.
+_CHANNEL_HEADER_RE = re.compile(
+    r"\A\s*<\|channel>[^\n]*\n(?:[ \t]*m_context_[0-9_]+[ \t]*\n)*",
+    re.IGNORECASE,
+)
+# Any control marker left over anywhere — an unpaired ``<channel|>``, an
+# ``<|im_end|>``, a header whose line never terminated. Markers only: the
+# text around them is kept.
+_CONTROL_TOKEN_RE = re.compile(r"<\|[^<>\n]{0,40}>|<[^<>\n]{0,40}\|>")
+#: The closing half alone, for the streaming plane (see ``_visible_prefix``).
+_CLOSING_MARKER_RE = re.compile(r"<[^<>\n]{0,40}\|>")
+
+
+def _strip_channel_tokens(raw: str) -> str:
+    """Remove pipe-delimited channel scaffolding from model output.
+
+    Three passes, narrowest first: closed header pairs, then a head-anchored
+    unclosed header, then any leftover marker anywhere in the text. Mirrors
+    :func:`_strip_think_tokens` in shape and in its head ``lstrip``.
+    """
+    cleaned = _CHANNEL_BLOCK_RE.sub("", raw)
+    cleaned = _CHANNEL_HEADER_RE.sub("", cleaned, count=1)
+    cleaned = _CONTROL_TOKEN_RE.sub("", cleaned)
+    return cleaned.lstrip()
+
+
+def _strip_model_scaffolding(raw: str) -> str:
+    """Remove every known model-internal artefact from a Player reply.
+
+    The single sanitisation point for learner-facing text. It runs at the
+    model boundary rather than at persistence because four consumers read
+    the same generation — the durable ``session_turn`` row, the HTTP turn
+    response, the ``/ws`` token frames, and the TTS input — and a strip at
+    the store would leave the other three leaking (fleet-gateway's
+    2026-08-14 finding makes exactly that point about the frame stream).
+
+    Think blocks first: a ``<think>`` block may contain channel markers,
+    and removing the block wholesale is cheaper than sanitising its
+    innards.
+    """
+    return _strip_channel_tokens(_strip_think_tokens(raw))
+
+
+def _sanitised_or_flagged(raw: str) -> str:
+    """:func:`_strip_model_scaffolding`, plus an alarm when it empties a reply.
+
+    Session b07d8924 turn 27 was scaffolding end to end
+    (``<|channel>thought\\n<channel|>`` and nothing else): the model produced
+    no tutoring at all that turn, and the markers were the only reason
+    anything appeared in the transcript. Sanitising it yields an empty
+    tutor row — better than showing a child control tokens, still not a
+    reply. This adapter does not invent learner-facing text to cover it
+    (that would be indistinguishable from model output downstream, and the
+    orchestrator owns the learner-facing fallbacks); it makes the case
+    loud instead, so an empty bubble is never silent.
+    """
+    cleaned = _strip_model_scaffolding(raw)
+    if raw.strip() and not cleaned:
+        logger.error(
+            "player reply was model scaffolding end to end — nothing to show",
+            extra={"raw_chars": len(raw)},
+        )
+    return cleaned
+
+
 # An in-flight ``<think`` opener (possibly still missing its ``>``): from
 # here on, everything is potential reasoning — hold it back.
 _THINK_OPENER_ANYWHERE_RE = re.compile(r"<think\b", re.IGNORECASE)
 
-#: Proper prefixes of ``<think`` — a raw-stream tail matching one of these
-#: might be a marker split across model tokens ("<th" + "ink>"), so it is
-#: withheld until the next token disambiguates.
-_THINK_MARKER_PREFIXES = ("<", "<t", "<th", "<thi", "<thin")
+#: An in-flight control marker: ``<|`` begins no legitimate tutoring text,
+#: so everything from it onward is withheld until the marker terminates.
+_CONTROL_OPENER_ANYWHERE_RE = re.compile(r"<think\b|<\|", re.IGNORECASE)
+
+#: A tail that could still become a marker: ``<``, ``<|``, or either
+#: followed by the run of name characters a marker is built from, with an
+#: optional trailing ``|`` for a closer whose ``>`` has not landed yet
+#: (``<channel|``). "2 <" qualifies (it might be "<think"); "2 <3 means"
+#: does not — the space settles it as prose, and the learner sees it
+#: without waiting.
+_PARTIAL_MARKER_TAIL_RE = re.compile(r"<\|?[\w-]{0,40}\|?\Z")
+
+
+#: An identifier line inside a channel header, whole or half-arrived
+#: (``m``, ``m_cont``, ``m_context_001_528``). Only meaningful while the
+#: stream is still inside the header — see ``_visible_prefix``.
+_ID_LINE_STEM = "m_context_"
+_ID_LINE_RE = re.compile(r"m_context_[0-9_]*")
+
+
+def _is_partial_id_line(line: str) -> bool:
+    """True while ``line`` could still complete into a header identifier."""
+    stripped = line.strip()
+    if not stripped:
+        return False
+    return _ID_LINE_STEM.startswith(stripped) or bool(
+        _ID_LINE_RE.fullmatch(stripped)
+    )
+
+
+def _withhold_partial_marker(visible: str) -> str:
+    """Trim a tail that might be a marker split across model tokens.
+
+    Model tokenisation splits markers anywhere — ``"<th" + "ink>"``,
+    ``"<chan" + "nel|>"`` — and a per-token check sees neither half. A
+    tail that could still become one is held back until the next token
+    disambiguates it; ``flush`` releases it if it never does. The rule
+    keys on the bare ``<`` rather than on known opener spellings because
+    the closing ``<channel|>`` reveals itself only at its ``|``.
+    """
+    match = _PARTIAL_MARKER_TAIL_RE.search(visible)
+    return visible[: match.start()] if match else visible
 
 
 class _IncrementalThinkFilter:
@@ -284,18 +416,44 @@ class _IncrementalThinkFilter:
 
     def _visible_prefix(self) -> str:
         visible = _THINK_BLOCK_RE.sub("", self._raw)
-        opener = _THINK_OPENER_ANYWHERE_RE.search(visible)
+        # Channel scaffolding, in the same order as the batch path: closed
+        # header pairs, then the head-anchored unclosed header. The header
+        # rule needs its terminating newline, so it fires only once the
+        # header is complete — until then the opener check below withholds
+        # everything anyway, and the reply streams from the first character
+        # of real content rather than waiting for end-of-stream.
+        visible = _CHANNEL_BLOCK_RE.sub("", visible)
+        visible = _CHANNEL_HEADER_RE.sub("", visible, count=1)
+        # Leftover CLOSING markers go the same way they do in the batch
+        # path — without this, a ``<channel|>`` whose opener was already
+        # consumed by the header rule would be released the moment its
+        # ``>`` arrived and the partial-marker guard stopped holding it.
+        # Openers are deliberately not swept here: ``<|channel>`` looks
+        # complete but may still be the head of a header whose name and
+        # identifier lines are yet to arrive, so it stays withheld by the
+        # opener rule below until the whole header can be judged.
+        visible = _CLOSING_MARKER_RE.sub("", visible)
+        # Still inside a channel header, with an identifier line only
+        # half-arrived: hold it. The header regex above needs the line's
+        # newline before it can absorb it, and without this guard the
+        # first pieces of ``m_context_001_528_500`` reach the learner as
+        # if they were the start of her answer. Scoped to the pre-content
+        # head of a channel-headed reply, so an ordinary reply's first
+        # sentence still streams a word at a time.
+        if not self._emitted and _CHANNEL_HEADER_RE.match(self._raw):
+            head, sep, last_line = visible.rpartition("\n")
+            if not sep and _is_partial_id_line(visible):
+                visible = ""
+            elif sep and _is_partial_id_line(last_line):
+                visible = head + sep
+        opener = _CONTROL_OPENER_ANYWHERE_RE.search(visible)
         if opener is not None:
-            # Everything from an unclosed opener onward is reasoning
-            # until its ``</think>`` arrives (at which point the block
-            # regex removes the whole span).
+            # Everything from an unclosed opener onward is reasoning or
+            # scaffolding until its terminator arrives (at which point the
+            # block/header regexes remove the whole span).
             visible = visible[: opener.start()]
         else:
-            lowered = visible.lower()
-            for prefix in _THINK_MARKER_PREFIXES:
-                if lowered.endswith(prefix):
-                    visible = visible[: len(visible) - len(prefix)]
-                    break
+            visible = _withhold_partial_marker(visible)
         return visible
 
     def feed(self, token: str) -> str:
@@ -315,7 +473,7 @@ class _IncrementalThinkFilter:
         return chunk
 
     def flush(self) -> str:
-        final = _strip_think_tokens(self._raw)
+        final = _strip_model_scaffolding(self._raw)
         if not final.startswith(self._emitted):
             # Defensive: the incremental prefix should always be a prefix
             # of the canonical strip; if not, never re-emit or contradict
@@ -329,8 +487,10 @@ class _IncrementalThinkFilter:
         # Stricter than the batch function in one pathological case: a
         # MID-response dangling ``<think`` (no close, not at the head)
         # survives the canonical strip's head-anchored rules — never
-        # release it here; reasoning must not reach the learner.
-        opener = _THINK_OPENER_ANYWHERE_RE.search(tail)
+        # release it here; reasoning must not reach the learner. A bare
+        # ``<`` is NOT withheld at flush: "x < y" is legitimate tutoring
+        # and end-of-stream is the last chance to say it.
+        opener = _CONTROL_OPENER_ANYWHERE_RE.search(tail)
         if opener is not None:
             tail = tail[: opener.start()]
         return tail
@@ -390,7 +550,7 @@ class LLMPlayerAdapter:
             raw = await asyncio.to_thread(
                 client.generate, prompt, self._player_prompt
             )
-        return _strip_think_tokens(raw)
+        return _sanitised_or_flagged(raw)
 
     @staticmethod
     def _weave_context_prompt(
@@ -489,7 +649,7 @@ class LLMPlayerAdapter:
         raw = await asyncio.to_thread(
             client.generate, prompt, self._player_prompt
         )
-        return _strip_think_tokens(raw)
+        return _sanitised_or_flagged(raw)
 
     @staticmethod
     def _assemble_revise_prompt(
