@@ -312,6 +312,44 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    a service instead of an operator ritual; **per-account corpus tenancy** (per-user
    collections; the global primary-text registry gets user/subject keying); quota + format
    guards.
+   **✅ BUILT ON A BRANCH 2026-08-14 — `lane3/upload-surface`, NOT MERGED, NOT DEPLOYED,
+   NOT PUSHED** (Rich's scope ruling that day: *build it ready for upload, no uploads
+   tonight* — the scans happen this weekend). Binding spec:
+   [`upload-surface-build-spec-2026-08-14.md`](design/upload-surface-build-spec-2026-08-14.md)
+   (`d5ed9cb`). **What exists on the branch**, in three pieces whose only shared contract
+   is files on disk: (a) the staging core `src/study_tutor/ingest/` (`364f920`) — guards
+   (subject slug round-tripped through the *existing* `rag_wiring` registry pattern, the
+   four `SOURCE_TYPE_FOLDERS` verbatim, the corpus loader's **AQA refusal regex imported,
+   not duplicated**, filename sanitising, 50 MB per-file cap, 500 MB per-subject quota,
+   both env-overridable), job records, and the `data/uploads/<subject>/` tree whose
+   `sources/` is the existing four-folder corpus shape; (b) the HTTP surface (`e97816d`) —
+   `GET /upload` (one self-contained HTML page, no framework, no CDN, no `StaticFiles`
+   mount; the operator pastes the bearer and it is held in JS memory only) plus
+   `POST /api/corpus/upload` and the two `GET /api/corpus/jobs…` reads, **existence-gated
+   exactly like voice**: no `STUDY_TUTOR_UPLOAD_ENABLED` ⇒ the routes are not built ⇒ 404,
+   not 403, and no deployed environment sets it; (c) the host-side worker
+   `scripts/process_uploads.py` + the docling adapter (`a3e2d3e`) — converts queued jobs to
+   markdown (passthrough for `.txt`/`.md`, docling for scans/PDFs, `[ingest]` extra pinned
+   `docling>=2.120.1,<3`, **installed and importing clean in this checkout**), then drives the
+   **existing** `scripts/ingest_corpus.py` per subject with the embedding config taken from
+   the environment, never hardcoded. **The serving process never converts and never imports
+   docling; the worker never serves HTTP.** Tests: **282 new** (235 `tests/unit/ingest/`,
+   47 `tests/unit/http/test_upload_routes.py`), hermetic suite on the branch **2050 passed /
+   0 failed / 29 skipped** (2026-08-14). The second-subject seam proof lives on a **sibling
+   branch, also unmerged** — `lane3/upload-surface-d-proof` (`27ccdad`), 10 tests running
+   the real ingest against a crafted `demo_history` fixture corpus in a temp persist dir.
+   **What is NOT done, named honestly:** nothing is deployed or enabled anywhere; no scan
+   has been through the pipeline; no multi-user tenancy (ADR-034's keying is not precluded,
+   not implemented); and — **the named activation step** — a newly-ingested subject is
+   invisible to the live container because `Dockerfile:88` bakes `data/` into the image and
+   the compose mounts only the HF cache, so activating one requires **an image rebuild +
+   stack recreate on the deploy host**, a deploy action out of scope for this branch.
+   Operator instructions, including that step and the weekend scan→upload→ingest procedure:
+   [`RUNBOOK-upload-surface.md`](runbooks/RUNBOOK-upload-surface.md). Two housekeeping
+   consequences of the same bake line, found while writing it: `data/uploads/` is in neither
+   `.gitignore` nor any `.dockerignore` (the repo has none), so staged scans would be
+   git-addable and image-copyable — clear the tree before a build, don't `git add -A` on an
+   upload host.
 5. **The pilot**: friends provisioned (**runbook to be WRITTEN — ADR-ARCH-034 D3
    corrected this cell's former "runbook exists" claim, 2026-08-13**: one attended
    procedure doing Keycloak user + `student_id` attribute + role + `seed-students` row +
