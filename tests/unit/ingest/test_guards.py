@@ -7,6 +7,9 @@ happens before a single byte is counted against a quota.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import pytest
 
 from study_tutor.cli.rag_wiring import (
@@ -231,10 +234,83 @@ def test_space_separated_assessment_names_slip_through_today(filename: str) -> N
 
 
 @pytest.mark.parametrize(
+    "filename",
+    ["specimen-paper.pdf", "Specimen Paper 2024.pdf", "aqa_specimen_paper_1.pdf"],
+)
+def test_specimen_papers_slip_through_today(filename: str) -> None:
+    """The second half of the same honest pin: no ``specimen`` term exists.
+
+    Mission law 4 (``docs/study-tutor-mission-statement-2026-08-01.md``) names
+    **four** categories — past papers, mark schemes, examiner reports and
+    *specimen papers*. ``AQA_REFUSAL_PATTERN`` implements the first three. A
+    specimen paper is therefore accepted by this surface, and the operator is
+    the filter (RUNBOOK-upload-surface.md §7, second row).
+
+    Widening the regex is a change to the corpus contract that owns it, not to
+    the upload surface — recorded here so the gap cannot be discovered by a
+    specimen paper landing in a collection.
+    """
+    assert AQA_REFUSAL_PATTERN.search(filename) is None
+    refuse_assessment_material(filename)
+
+
+@pytest.mark.parametrize(
     "filename", ["macbeth-notes.pdf", "inspector-calls-guide.md", "context.txt"]
 )
 def test_ordinary_study_material_not_refused(filename: str) -> None:
     refuse_assessment_material(filename)
+
+
+# ---------------------------------------------------------------------------
+# The runbook's guard table must describe THIS regex, not a wider imagined one
+# ---------------------------------------------------------------------------
+#
+# The operator executes RUNBOOK-upload-surface.md by hand at the scanner. Its
+# §7 table and §8 failure modes are the only place the AQA guard's real reach
+# is stated, and an over-claim there ("renaming it does not make it
+# acceptable") is worse than no claim: it invites the operator to trust a check
+# that a single space defeats. These tests fail if the runbook drifts back.
+
+_RUNBOOK = (
+    Path(__file__).resolve().parents[3]
+    / "docs"
+    / "runbooks"
+    / "RUNBOOK-upload-surface.md"
+)
+
+
+def _runbook_text() -> str:
+    return _RUNBOOK.read_text(encoding="utf-8")
+
+
+def test_runbook_aqa_row_lists_only_spellings_the_regex_actually_matches() -> None:
+    rows = [
+        line
+        for line in _runbook_text().splitlines()
+        if line.startswith("| **AQA assessment material**")
+    ]
+    assert len(rows) == 1, "§7's AQA row is missing or duplicated"
+
+    spellings = re.findall(r"`([^`]+)`", rows[0])
+    assert spellings, "the row must spell out what it matches"
+    for spelling in spellings:
+        assert AQA_REFUSAL_PATTERN.search(f"{spelling}.pdf"), (
+            f"runbook claims {spelling!r} is refused; the regex does not match it"
+        )
+
+
+def test_runbook_states_the_gap_the_regex_leaves() -> None:
+    text = _runbook_text()
+
+    assert "What that guard does NOT catch" in text, (
+        "§7 must carry the row naming what gets through"
+    )
+    # The two shapes that get through, each named by example in the runbook.
+    assert "mark scheme.pdf" in text
+    assert "specimen" in text.lower()
+
+    # And it must not tell the operator that renaming cannot help — it can.
+    assert "renaming it does not make it acceptable" not in text
 
 
 def test_refusal_uses_the_loaders_regex_not_a_copy() -> None:

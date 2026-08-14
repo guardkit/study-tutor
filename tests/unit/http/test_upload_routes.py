@@ -233,6 +233,44 @@ def test_unauthenticated_upload_writes_nothing(
     assert not staging_root.exists()
 
 
+def test_any_seeded_learner_may_upload_there_is_no_operator_role(
+    client: TestClient,
+) -> None:
+    """Posture pin: these routes are **authed, not authorised**.
+
+    ``_resolve_student_id`` — which the spec ordered these routes use, exactly
+    like every other route — accepts any bearer in the token table that has a
+    ``StudentStore`` row. ``test-token-student-a`` here is the *learner's* own
+    token (``lilymay``, the child), not a privileged operator credential; there
+    is no operator role, group or scope in the token table to check, and adding
+    one was outside the build spec (no auth changes).
+
+    So the learner's token can write to the corpus staging tree whenever the
+    flag is on. That is harmless while the flag is set nowhere and the surface
+    is tailnet-only, and it is stated in RUNBOOK-upload-surface.md §3 and §9 —
+    pinned here so nobody reads "bearer-authed" as "operator-only".
+    """
+    assert _post(client).status_code == 202
+    assert client.get("/api/corpus/jobs", headers=BEARER).status_code == 200
+
+    job_id = _post(client, filename="second.md").json()["job_id"]
+    resp = client.get(f"/api/corpus/jobs/{job_id}", headers=BEARER)
+    assert resp.status_code == 200
+
+
+def test_runbook_does_not_promise_an_operator_credential() -> None:
+    """The runbook must not imply a privileged bearer that does not exist."""
+    runbook = (
+        Path(__file__).resolve().parents[3]
+        / "docs"
+        / "runbooks"
+        / "RUNBOOK-upload-surface.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Paste the operator bearer" not in runbook
+    assert "There is no operator role." in runbook
+
+
 def test_wrong_method_is_405(client: TestClient) -> None:
     assert client.get("/api/corpus/upload", headers=BEARER).status_code == 405
     assert client.post("/api/corpus/jobs", headers=BEARER).status_code == 405

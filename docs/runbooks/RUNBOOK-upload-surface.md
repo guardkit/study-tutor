@@ -108,7 +108,13 @@ Open `http://<host>:8100/upload`. The page is served unauthenticated on purpose:
 static HTML with no learner data in it, on a tailnet-only surface. Every API call it
 makes is authenticated.
 
-1. **Token.** Paste the operator bearer and press *Use this token*. The input clears
+1. **Token.** Paste a bearer and press *Use this token*. **There is no operator role.**
+   The three API routes resolve the caller exactly like every other route
+   (`_resolve_student_id`), which accepts **any** bearer in the token table that has a
+   student row — the learner's own token opens them just as well as yours. Nothing about
+   these routes is privileged; what keeps them shut is that they do not exist unless you
+   export the flag (§2), and that the surface is tailnet-only. Treat that as the posture,
+   not as an accident to work around. The input clears
    itself; the token lives in one JavaScript variable for that tab only — not
    localStorage, not a cookie, not in the page source. Reloading the page loses it, which
    is the intended behaviour. *Forget* clears it immediately.
@@ -242,8 +248,9 @@ build an image on a machine you have been uploading to:
 - `data/uploads/` sits under `data/`, and there is **no `.dockerignore` in this repo**,
   so a staging tree full of scanned books would be copied into the image. Clear or move
   `data/uploads/` before a build.
-- `data/uploads/` is **not** in `.gitignore` either (only `data/chroma/` is). Do not
-  `git add -A` on a host you have uploaded scans to.
+- `data/uploads/` **is** in `.gitignore` now (added alongside `data/chroma/`), so
+  `git add -A` on an upload host will not sweep scans into a commit. That closes the git
+  half only — the image-build half above is still yours to do by hand.
 
 ---
 
@@ -257,7 +264,8 @@ build an image on a machine you have been uploading to:
 | Subject slug | must be a real registry slug — `^[a-z][a-z0-9_-]*$`, becoming `gcse-<subject>-v1` | 400 |
 | Source type | exactly one of the four folder names | 400 |
 | Filename | basename only; no traversal, no null bytes or control characters, no leading dot, ≤ 200 characters | 400 |
-| **AQA assessment material** | filenames matching `past paper`, `mark scheme`, `examiner report` (any casing, hyphen/underscore) | **422 — refused, mission law 4** |
+| **AQA assessment material** | filenames *containing* `pastpaper` / `past_paper` / `past-paper`, `markscheme` / `mark_scheme` / `mark-scheme`, `examinerreport` / `examiner_report` / `examiner-report` — any casing, anywhere in the name | **422 — refused, mission law 4** |
+| **What that guard does NOT catch** — read this one | The check is the corpus loader's regex (`corpus.py:93`), imported not copied. It allows `_` or `-` between the two words but **not a space**, and it has no `specimen` term at all — while [mission law 4](../study-tutor-mission-statement-2026-08-01.md) excludes **four** categories, specimen papers included. Driven live: `mark_scheme.pdf` → 422, but `mark scheme.pdf`, `Mark Scheme.pdf`, `past paper.pdf` and `specimen-paper.pdf` are all **accepted (202)**. | none — they go through. **You are the filter**: check the pile by eye before uploading, and see §8 if one gets in |
 
 Which converter handles what: `.txt`/`.md` are copied through (UTF-8 normalised, CRLF
 flattened); `.pdf`, `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff` go through docling.
@@ -277,7 +285,8 @@ is your own archive decision).
 | `/upload` returns 404 | `STUDY_TUTOR_UPLOAD_ENABLED` was not truthy at boot | export it and restart `serve-http` (§2) |
 | API calls return 401 | no/!valid bearer — the page's token was forgotten on reload | paste the token again |
 | `refused: Files of type … are not accepted` (400) | extension off the allowlist | re-export the scan as PDF |
-| `refused: … looks like AQA assessment material` (422) | past paper / mark scheme / examiner report — mission law 4, never negotiable | do not upload it; renaming it does not make it acceptable |
+| `refused: … looks like AQA assessment material` (422) | the filename contains `past_paper` / `mark_scheme` / `examiner_report` in one of the spellings §7 lists — mission law 4, never negotiable | do not upload it. Renaming it *does* get it past the guard (a space, or the word `specimen`, is enough — §7) but law 4 still forbids the material; the guard is a filename check, not a judge |
+| A past paper, mark scheme or **specimen paper** went through as `queued` | its name had a space (`mark scheme.pdf`) or said `specimen` — §7's second row: not caught today | before the worker runs: delete `data/uploads/<subject>/incoming/<job_id>/` and `jobs/<job_id>.json`. If it already reached `staged`/`ingested`, also delete its markdown from `data/uploads/<subject>/sources/<source_type>/` and re-run the ingest for that subject with `--reset` — plain re-ingest upserts and would leave the old chunks in the collection |
 | 413 on a single file | over the per-file cap | scan at lower DPI, or split the document |
 | 413 mentioning the subject's quota | the subject's staging area is full | delete ingested jobs' `incoming/` dirs, or raise `STUDY_TUTOR_UPLOAD_SUBJECT_QUOTA_MB` |
 | 400 on the subject | slug is not registry-shaped | lower-case, start with a letter, only `a-z0-9_-` |
@@ -294,6 +303,15 @@ is your own archive decision).
 ## 9. What this runbook does **not** claim
 
 - Nothing here is deployed. The routes exist only when you export the flag yourself.
+- **No operator privilege.** The upload routes are authed, not authorised: any seeded
+  learner's bearer can write to the corpus staging tree while the flag is on (the tests
+  prove it — they upload as `lilymay`). There is no operator role, group or scope in the
+  token table to check, and inventing one was out of scope (the spec forbade auth changes).
+  With the flag off everywhere and the surface tailnet-only this costs nothing today; it
+  becomes a real decision the moment the flag goes on anywhere shared.
+- **The AQA guard is a filename check, not a judge**, and it misses two whole shapes —
+  space-separated names and every `specimen` paper (§7, second row). Mission law 4 is
+  wider than the regex that enforces it here.
 - No multi-user tenancy: uploads are keyed by subject, not by account. The collection
   keying does not preclude ADR-ARCH-034's pilot tenancy; it does not implement it.
 - The upload surface is **not** part of the frozen app contract

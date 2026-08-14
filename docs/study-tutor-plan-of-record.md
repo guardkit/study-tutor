@@ -333,23 +333,45 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    `docling>=2.120.1,<3`, **installed and importing clean in this checkout**), then drives the
    **existing** `scripts/ingest_corpus.py` per subject with the embedding config taken from
    the environment, never hardcoded. **The serving process never converts and never imports
-   docling; the worker never serves HTTP.** Tests: **282 new** (235 `tests/unit/ingest/`,
-   47 `tests/unit/http/test_upload_routes.py`), hermetic suite on the branch **2050 passed /
-   0 failed / 29 skipped** (2026-08-14). The second-subject seam proof lives on a **sibling
-   branch, also unmerged** — `lane3/upload-surface-d-proof` (`27ccdad`), 10 tests running
-   the real ingest against a crafted `demo_history` fixture corpus in a temp persist dir.
+   docling; the worker never serves HTTP.** The second-subject seam proof is **on the same
+   branch** (cherry-picked out of the sibling `lane3/upload-surface-d-proof` at E-close, so
+   merging the deliverable no longer silently drops it): 10 tests running the real
+   `ingest_corpus.py` against a crafted `demo_history` fixture corpus in a temp persist dir,
+   with `data/chroma/chroma.sqlite3` verified byte-identical across the run. Tests:
+   **299 new** (240 `tests/unit/ingest/`, 49 `tests/unit/http/test_upload_routes.py`,
+   10 `tests/unit/knowledge/test_second_subject_proof.py`), hermetic suite on the branch
+   **2067 passed / 0 failed / 29 skipped** (2026-08-14, at E-close).
    **What is NOT done, named honestly:** nothing is deployed or enabled anywhere; no scan
    has been through the pipeline; no multi-user tenancy (ADR-034's keying is not precluded,
    not implemented); and — **the named activation step** — a newly-ingested subject is
    invisible to the live container because `Dockerfile:88` bakes `data/` into the image and
    the compose mounts only the HF cache, so activating one requires **an image rebuild +
    stack recreate on the deploy host**, a deploy action out of scope for this branch.
-   Operator instructions, including that step and the weekend scan→upload→ingest procedure:
-   [`RUNBOOK-upload-surface.md`](runbooks/RUNBOOK-upload-surface.md). Two housekeeping
-   consequences of the same bake line, found while writing it: `data/uploads/` is in neither
-   `.gitignore` nor any `.dockerignore` (the repo has none), so staged scans would be
-   git-addable and image-copyable — clear the tree before a build, don't `git add -A` on an
-   upload host.
+   **Three more things the coach review made explicit, all now in the runbook too:**
+   (i) **the AQA guard is narrower than mission law 4** — the reused loader regex
+   (`corpus.py:93`) allows `_`/`-` between the words but **not a space**, and has no
+   `specimen` term, so `mark_scheme.pdf` is refused 422 while `mark scheme.pdf`,
+   `Mark Scheme.pdf`, `past paper.pdf` and `specimen-paper.pdf` are all accepted; the gap is
+   pinned by test (`tests/unit/ingest/test_guards.py`) and the operator filters those by
+   hand (RUNBOOK §7's second row, §8). Widening the regex is a change to the *corpus
+   contract*, not to this surface — not taken tonight. (ii) **the upload routes are authed,
+   not authorised**: `_resolve_student_id` accepts any bearer with a student row, so the
+   learner's own token can write to the staging tree while the flag is on; there is no
+   operator role to check and the spec forbade auth changes. Harmless with the flag off
+   everywhere and the surface tailnet-only; a real decision before it goes on anywhere
+   shared. (iii) the branch carries **one unrelated commit** — `d9ccb2f`
+   `chore(mcp): connect the fleet_memory door`, a four-line `.mcp.json` addition pointing at
+   the same `promaxgb10-41b1:8005` endpoint ai-transition uses. Nothing to do with the
+   upload surface and outside the spec's path-limited fence; it is named here rather than
+   rewritten out so the reviewed SHAs stay the reviewed SHAs — **drop it or keep it
+   deliberately at merge.**
+   Operator instructions, including the activation step and the weekend
+   scan→upload→ingest procedure:
+   [`RUNBOOK-upload-surface.md`](runbooks/RUNBOOK-upload-surface.md). Housekeeping from the
+   same bake line: `data/uploads/` is now in `.gitignore` (added at E-close), so scans can
+   no longer be `git add -A`'d in; the repo still has **no `.dockerignore`**, so
+   `Dockerfile:88`'s `COPY data/` would copy a staging tree of scanned books into an image —
+   clear `data/uploads/` before any build.
 5. **The pilot**: friends provisioned (**runbook to be WRITTEN — ADR-ARCH-034 D3
    corrected this cell's former "runbook exists" claim, 2026-08-13**: one attended
    procedure doing Keycloak user + `student_id` attribute + role + `seed-students` row +
