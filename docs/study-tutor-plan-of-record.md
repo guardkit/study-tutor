@@ -591,6 +591,23 @@ coaches verify by driving; coordinator review before anything is pushed; frozen-
 discipline for anything app-facing (additive or re-pin, nothing else); evals blind and
 pre-registered; claims carry receipts; sessions end by updating THIS doc.
 
+**Operator credentials never come from build artifacts** *(added 2026-08-14, because this
+session did exactly that)*. The canonical source for a live bearer is the spark:
+`~/.config/study-tutor/tokens-<date>.json`, mode 600. A session that needs one reads it
+there over ssh and passes it straight into `--dart-define` — never echoing it, never
+writing it to a file, and confirming it by `sha256[:12]` against the fingerprint the auth
+log prints, so the value can be verified without being seen. **If ssh access is missing,
+ask Rich and re-establish it — do NOT recover a credential from an APK, a log, a
+screenshot or a previous build.** The 2026-08-14 Mac session, having had its temporary key
+removed mid-job, extracted the bearer back out of its own release APK to stay unblocked.
+It worked, and it was the wrong answer twice over: it makes a build artifact a credential
+store, and it is invisible to the next session, which is the same silent-drift shape that
+let the keycloak path rot for three weeks (ruling #12). The durable fix is the keycloak
+build, which compiles in **no bearer at all**; after it lands this rule binds only the
+robot and the live suite. Until then, the pre-cutover table APK — the rollback, and the
+only offline copy of a live bearer — sits at `~/study-tutor-table-apk-rollback/` on the
+Mac, outside the repo; delete it once the keycloak build is signed off.
+
 ## Named deferrals (parked on purpose — not silently)
 
 **The Study Room — sequencing agreed with Lilymay, 2026-08-01 (Rich):** multi-subject + RAG
