@@ -8,10 +8,10 @@
 # The identical mapper block was applied to the live-suite client in July by
 # provision-live-suite.sh — same precedent, same shape, same API.
 #
-# WHERE: run this wherever the Keycloak admin credential lives (the Mac, per
-# custody — the spark deliberately holds neither .env.deploy nor the
-# keycloak-env sops file). Attended, per the playbook: live surfaces stay a
-# human step.
+# WHERE: the GB10 — SECRETS.md's vault table keys keycloak-env-deploy.enc.env
+# to that machine (the spark deliberately cannot decrypt it). Attended, Rich
+# present, per SECRETS.md rule 5 and the playbook: live surfaces stay a human
+# step.
 #
 # SAFE: additive only, idempotent (re-run says "already applied"), and the
 # rollback is printed with the real mapper id after the apply. It never
@@ -58,10 +58,12 @@ read -r -p "Apply to the LIVE realm '${REALM}'? [y/N] " answer
 [ "${answer}" = "y" ] || { echo "aborted — nothing touched"; exit 0; }
 
 echo "== admin token (realm master, admin-cli) =="
-TOKEN=$(curl -fsS "${KC_BASE}/realms/master/protocol/openid-connect/token" \
+# SECRETS.md rule 4: the password reaches curl via stdin (@-), never argv —
+# a value in argv is readable in /proc for the life of the process.
+TOKEN=$(printf '%s' "${KC_BOOTSTRAP_ADMIN_PASSWORD}" | curl -fsS "${KC_BASE}/realms/master/protocol/openid-connect/token" \
   -d grant_type=password -d client_id=admin-cli \
   --data-urlencode "username=${KC_BOOTSTRAP_ADMIN_USERNAME}" \
-  --data-urlencode "password=${KC_BOOTSTRAP_ADMIN_PASSWORD}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+  --data-urlencode "password@-" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 
 CID=$(api GET "/clients?clientId=${CLIENT_ID_NAME}" | python3 -c 'import sys,json;r=json.load(sys.stdin);print(r[0]["id"] if r else "")')
 [ -n "$CID" ] || { echo "client ${CLIENT_ID_NAME} not found in realm ${REALM} — is the realm the one you think it is?" >&2; exit 1; }

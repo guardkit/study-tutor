@@ -64,10 +64,12 @@ api() { # api METHOD PATH [JSON_BODY]
 }
 
 echo "== admin token (realm master, admin-cli) =="
-TOKEN=$(curl -fsS "${KC_BASE}/realms/master/protocol/openid-connect/token" \
+# SECRETS.md rule 4: the password reaches curl via stdin (@-), never argv —
+# a value in argv is readable in /proc for the life of the process.
+TOKEN=$(printf '%s' "${KC_BOOTSTRAP_ADMIN_PASSWORD}" | curl -fsS "${KC_BASE}/realms/master/protocol/openid-connect/token" \
   -d grant_type=password -d client_id=admin-cli \
   --data-urlencode "username=${KC_BOOTSTRAP_ADMIN_USERNAME}" \
-  --data-urlencode "password=${KC_BOOTSTRAP_ADMIN_PASSWORD}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+  --data-urlencode "password@-" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 
 echo "== client live-suite: create-if-absent =="
 CID=$(api GET "/clients?clientId=live-suite" | python3 -c 'import sys,json;r=json.load(sys.stdin);print(r[0]["id"] if r else "")')
