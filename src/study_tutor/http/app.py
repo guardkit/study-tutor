@@ -9,12 +9,13 @@ No WebSocket streaming this wave — turn_stream stays NotImplementedError per A
 from __future__ import annotations
 
 import logging
-from importlib import metadata
+from functools import lru_cache
+from importlib import metadata, resources
 from typing import Any, Awaitable, Callable
 
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import BaseRoute, Route, WebSocketRoute
 
 from study_tutor.gamification import build_student_model_response
@@ -636,6 +637,272 @@ async def dev_reset(request: Request) -> JSONResponse:
         )
 
 
+# -------------------- Upload surface (Lane 3 step 4, B-stage) --------------------
+#
+# The operator-facing mouth of the ingest pipeline: a page plus three API
+# routes, existence-gated exactly like voice. The serving process does ONE
+# thing here — run the guards and write a ``queued`` job into the staging tree.
+# It never converts, never imports a converter, never touches ChromaDB; the
+# host-side worker owns everything after ``queued``.
+#
+# Every ``study_tutor.ingest`` import below is deferred into the function that
+# needs it (the deferred-import pattern this module already uses for the SSE
+# and voice routes): the ingest guards reach into ``cli.rag_wiring`` for the
+# subject registry, and the HTTP module's import surface should not grow that
+# tail on every process that imports it, enabled or not.
+
+#: Slack allowed on the Content-Length pre-check, over the per-file cap: the
+#: multipart envelope (boundaries, the subject/source_type parts, the file's
+#: own headers) is counted by Content-Length but is not part of the file.
+_MULTIPART_OVERHEAD_ALLOWANCE: int = 64 * 1024
+
+
+class UploadService:
+    """The upload surface's seam into the HTTP app.
+
+    Carries the two things the routes need — the resolved limits and the
+    staging tree they are enforced against — so ``create_app`` can gate on one
+    object being present, the same way it gates on ``voice_service``. Its
+    presence IS the flag: when the boot path builds one, the routes exist; when
+    it does not, they 404 like any unknown path.
+
+    Attributes:
+        config: Resolved :class:`study_tutor.ingest.config.UploadConfig`.
+        tree: :class:`study_tutor.ingest.staging.StagingTree` the jobs land in.
+    """
+
+    def __init__(self, *, config: Any, tree: Any) -> None:
+        self.config = config
+        self.tree = tree
+
+    @classmethod
+    def from_config(cls, config: Any) -> UploadService:
+        """Build a service (and its staging tree) from a resolved config.
+
+        Args:
+            config: An ``UploadConfig``.
+
+        Returns:
+            The service. The staging tree's directories are created lazily, on
+            the first accepted upload — booting with the surface enabled must
+            not create empty subject folders for subjects nobody uploaded to.
+        """
+        from study_tutor.ingest.staging import StagingTree
+
+        return cls(config=config, tree=StagingTree.from_config(config))
+
+
+@lru_cache(maxsize=1)
+def _upload_page_html() -> str:
+    """Return the upload page's HTML, read once from package data.
+
+    The page is a single self-contained file under ``study_tutor/ingest/`` —
+    no ``StaticFiles`` mount, no CDN, no build step. Read through
+    ``importlib.resources`` so it resolves identically from the repo, the
+    wheel, and the container image.
+
+    Returns:
+        The page source.
+    """
+    return (
+        resources.files("study_tutor.ingest")
+        .joinpath("upload_page.html")
+        .read_text(encoding="utf-8")
+    )
+
+
+def _map_upload_error_to_response(error: Exception) -> JSONResponse:
+    """Map an upload guard failure to its status code and flat envelope.
+
+    Guard failures carry their own ``http_status`` (400 for a malformed
+    request, 413 for a size/quota refusal, 422 for refused assessment
+    material, 404 for an unknown job), so the policy lives with the error
+    rather than being re-derived per route. The body is the binding §4.2 shape
+    — ``{"error": "..."}`` with NO ``error_type`` — because these are
+    validation failures, not the contract's closed-set domain errors.
+
+    Args:
+        error: Exception raised by the ingest guards, staging tree, or auth.
+
+    Returns:
+        JSONResponse with the mapped status.
+    """
+    from study_tutor.ingest.errors import UploadError
+
+    if isinstance(error, Unauthenticated):
+        return _map_error_to_response(error)
+
+    if isinstance(error, UploadError):
+        status = error.http_status
+        if status >= 500:
+            # A malformed job file on disk is the operator's to fix, so the
+            # reason is worth saying out loud — but it is still logged as the
+            # server-side fault it is.
+            logger.error("Upload surface server-side fault: %s", error)
+        return JSONResponse({"error": str(error)}, status_code=status)
+
+    if isinstance(error, (ValueError, KeyError, TypeError)):
+        logger.warning("Validation error in upload surface: %s", error)
+        return JSONResponse({"error": f"Validation failed: {error}"}, status_code=400)
+
+    logger.exception("Unexpected error in upload handler: %s", error)
+    return JSONResponse({"error": "Internal server error"}, status_code=500)
+
+
+async def upload_page(request: Request) -> Response:
+    """GET /upload — the operator's upload page.
+
+    Unauthenticated by design: it is static HTML with no learner data in it,
+    on a tailnet-only surface. Every API call the page makes carries the bearer
+    the operator pastes into it, and those routes are authed like every other.
+    """
+    return HTMLResponse(_upload_page_html(), status_code=200)
+
+
+async def upload_corpus_file(request: Request) -> JSONResponse:
+    """POST /api/corpus/upload — stage one uploaded file as a queued job.
+
+    Multipart fields: ``file``, ``subject``, ``source_type`` (one of the four
+    corpus folder names). Runs every upload guard, writes the bytes plus a
+    ``queued`` job record, and returns immediately — conversion and ingest are
+    the worker's, not this process's.
+
+    Returns:
+        202 ``{"job_id": ..., "status": "queued"}``; guard failures map to
+        400 (malformed subject/source_type/filename/extension), 413 (over the
+        per-file cap or the per-subject quota), or 422 (refused AQA assessment
+        material), each with a plain-language ``error``.
+    """
+    try:
+        await _resolve_student_id(request)
+
+        service: UploadService = request.app.state.upload_service
+
+        # Cheap pre-check before the body is parsed: a grossly oversized upload
+        # is refused on its declared length rather than after being read into
+        # memory. Content-Length covers the WHOLE multipart body (boundaries,
+        # the two text fields), so the cap is allowed some slack — otherwise a
+        # file a few hundred bytes under the limit would be refused for its
+        # envelope. The real verdict is always the guard on the actual bytes
+        # below; a client can lie about, or omit, Content-Length.
+        declared = request.headers.get("content-length")
+        if declared is not None and declared.isdigit():
+            ceiling = service.config.max_file_bytes + _MULTIPART_OVERHEAD_ALLOWANCE
+            if int(declared) > ceiling:
+                from study_tutor.ingest.errors import FileTooLarge
+
+                raise FileTooLarge(int(declared), service.config.max_file_bytes)
+
+        async with request.form() as form:
+            upload = form.get("file")
+            filename = getattr(upload, "filename", None)
+            read = getattr(upload, "read", None)
+            if filename is None or read is None:
+                raise ValueError("multipart field 'file' is required")
+            data = await read()
+            subject = str(form.get("subject") or "")
+            source_type = str(form.get("source_type") or "")
+
+        record = service.tree.accept_upload(
+            subject=subject,
+            source_type=source_type,
+            filename=filename,
+            data=data,
+            config=service.config,
+        )
+
+        logger.info(
+            "event=upload_job_queued job_id=%s subject=%s source_type=%s bytes=%d",
+            record.job_id,
+            record.subject,
+            record.source_type,
+            record.size_bytes,
+        )
+
+        return JSONResponse(
+            {"job_id": record.job_id, "status": record.status.value},
+            status_code=202,
+        )
+
+    except Exception as error:
+        return _map_upload_error_to_response(error)
+
+
+async def list_upload_jobs(request: Request) -> JSONResponse:
+    """GET /api/corpus/jobs — list staged upload jobs, newest first.
+
+    Query params: ``subject`` (optional). Omitted, every subject with a
+    staging area is listed — the page's job table before a subject is chosen.
+
+    Returns:
+        200 with a JSON array of job records (the same shape the job files
+        hold); 400 when ``subject`` is not a valid subject slug.
+    """
+    try:
+        await _resolve_student_id(request)
+
+        service: UploadService = request.app.state.upload_service
+        subject = request.query_params.get("subject")
+
+        if subject:
+            from study_tutor.ingest.guards import validate_subject
+
+            records = service.tree.list_jobs(validate_subject(subject))
+        else:
+            records = [
+                record
+                for known in service.tree.subjects()
+                for record in service.tree.list_jobs(known)
+            ]
+            records.sort(key=lambda r: (r.created_at, r.job_id), reverse=True)
+
+        return JSONResponse([r.to_dict() for r in records], status_code=200)
+
+    except Exception as error:
+        return _map_upload_error_to_response(error)
+
+
+async def upload_job(request: Request) -> JSONResponse:
+    """GET /api/corpus/jobs/{job_id} — one staged upload job.
+
+    Query params: ``subject`` (optional) narrows the lookup to one subject's
+    staging area; without it every staged subject is searched, because the
+    page holds a job id long after the subject box has moved on.
+
+    Returns:
+        200 with the job record; 404 when no such job exists (including a
+        job_id that is not a uuid — an id that cannot exist and one that does
+        not are the same answer to a caller).
+    """
+    try:
+        await _resolve_student_id(request)
+
+        from study_tutor.ingest.errors import JobNotFound
+
+        service: UploadService = request.app.state.upload_service
+        job_id = request.path_params["job_id"]
+        subject = request.query_params.get("subject")
+
+        if subject:
+            from study_tutor.ingest.guards import validate_subject
+
+            candidates = [validate_subject(subject)]
+        else:
+            candidates = service.tree.subjects()
+
+        for known in candidates:
+            try:
+                record = service.tree.read_job(known, job_id)
+            except JobNotFound:
+                continue
+            return JSONResponse(record.to_dict(), status_code=200)
+
+        raise JobNotFound(str(job_id))
+
+    except Exception as error:
+        return _map_upload_error_to_response(error)
+
+
 # -------------------- App factory --------------------
 
 
@@ -651,6 +918,7 @@ def create_app(
     voice_service: Any | None = None,
     chunk_store: Any | None = None,
     turn_notifier: Any | None = None,
+    upload_service: UploadService | None = None,
 ) -> Starlette:
     """Create Starlette app with the six session routes and optional voice routes.
 
@@ -677,6 +945,11 @@ def create_app(
             pings, so the SSE mirror stream wakes the moment a row is persisted.
             ``None`` ⇒ the stream degrades to timeout ticking (still correct,
             just at the poll cadence).
+        upload_service: Optional :class:`UploadService` (Lane 3 step 4). When
+            supplied, the upload page + the three corpus-upload routes are
+            mounted; when ``None`` they do not exist (404, not 403 — the same
+            existence gate voice and dev_reset use). The boot path builds one
+            only when ``STUDY_TUTOR_UPLOAD_ENABLED`` is truthy.
 
     Returns:
         Configured Starlette application.
@@ -773,6 +1046,21 @@ def create_app(
             WebSocketRoute("/api/sessions/{session_id:str}/ws", websocket_endpoint)
         )
 
+    # Lane 3 step 4: mount the upload surface ONLY when the boot path built an
+    # UploadService (STUDY_TUTOR_UPLOAD_ENABLED). Absent ⇒ the paths are unknown
+    # paths — 404, not 403 — exactly like voice and dev_reset. The collection
+    # route is declared before the item route so ``/api/corpus/jobs`` is not
+    # swallowed as a job id.
+    if upload_service is not None:
+        routes.append(Route("/upload", upload_page, methods=["GET"]))
+        routes.append(
+            Route("/api/corpus/upload", upload_corpus_file, methods=["POST"])
+        )
+        routes.append(Route("/api/corpus/jobs", list_upload_jobs, methods=["GET"]))
+        routes.append(
+            Route("/api/corpus/jobs/{job_id:str}", upload_job, methods=["GET"])
+        )
+
     app = Starlette(debug=False, routes=routes)
 
     # Inject dependencies into app.state for handlers to access
@@ -791,9 +1079,15 @@ def create_app(
         app.state.voice_service = voice_service
         app.state.chunk_store = chunk_store
 
+    # Lane 3 step 4: set unconditionally (possibly None), unlike the voice
+    # trio above — the attribute always exists, so app.state has one honest
+    # answer to "is the upload surface here?" whether or not it is mounted.
+    app.state.upload_service = upload_service
+
     return app
 
 
 __all__ = [
+    "UploadService",
     "create_app",
 ]

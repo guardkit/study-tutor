@@ -1,0 +1,23 @@
+Reading the Ashwood Charter as an argument, not a record
+
+Crafted fixture text, written for this test.
+
+The temptation with a charter is to read it as a description of how a place worked. It is
+better read as an attempt to settle something that was not settled. Each clause is doing
+work against an opposing position that the document never states, and the shape of the
+missing position can usually be recovered from how hard the clause pushes.
+
+The signatory list pushes hardest. Fourteen names in a fixed order, in a document that
+otherwise spends its care on days and fines, is a lot of effort spent on precedence. The
+plain reading is that precedence was in dispute and that the drafter was on the miller's
+side.
+
+The bridge clause pushes in the opposite direction. It begins by giving the bridge to
+nobody, which reads as a concession, and ends by taxing everybody who crosses it, which
+reads as the actual proposal. Charters are frequently generous in their first sentence and
+specific in their second.
+
+The penalties are the least argued part of the document and, for that reason, the most
+revealing. Nobody bothered to reconcile shillings with labour days because nobody expected
+the two kinds of offence to be compared. The marginal dispute about conversion is a later
+reader discovering the gap and being annoyed by it.

@@ -1,0 +1,356 @@
+<!doctype html>
+<!--
+  The upload page — the operator-facing mouth of the ingest pipeline.
+
+  Served verbatim by GET /upload (study_tutor.http.app.upload_page) as package
+  data. Self-contained on purpose: no CDN, no framework, no external font, no
+  build step — the page is read off disk and returned as one string, so what is
+  in this file is exactly what the browser runs.
+
+  The bearer token is NEVER written to localStorage, sessionStorage, a cookie,
+  or the page source: the operator pastes it, the script copies it into one
+  module-scoped variable, and the input is cleared. Reloading the page loses it,
+  which is the intended trade — this is a tailnet-only operator surface, and a
+  token that outlives the tab is a token that outlives its usefulness.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Upload study material</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #16191d;
+    --muted: #5b6470;
+    --line: #d9dde3;
+    --accent: #1f5fa9;
+    --ok: #1c6b3f;
+    --bad: #a32222;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171b;
+      --panel: #1c2026;
+      --ink: #e7eaee;
+      --muted: #9aa4b1;
+      --line: #2d333c;
+      --accent: #6aa9e9;
+      --ok: #6fce9b;
+      --bad: #ef8f8f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 1.5rem 1rem 4rem;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
+  p.lede { color: var(--muted); margin: 0 0 1.5rem; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1rem 1.1rem 1.2rem;
+    margin-bottom: 1.1rem;
+  }
+  label { display: block; font-weight: 600; margin: .8rem 0 .3rem; }
+  label.radio { font-weight: 400; margin: .2rem 0; }
+  input[type=text], input[type=password], input[type=file] {
+    width: 100%;
+    padding: .5rem .6rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+  }
+  button {
+    margin-top: .9rem;
+    padding: .5rem .95rem;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--accent); }
+  button[disabled] { opacity: .55; cursor: not-allowed; }
+  .hint { color: var(--muted); font-size: .87rem; margin: .3rem 0 0; }
+  .status { margin-top: .7rem; font-size: .9rem; }
+  .ok { color: var(--ok); }
+  .bad { color: var(--bad); }
+  ul.results { list-style: none; padding: 0; margin: .9rem 0 0; }
+  ul.results li {
+    padding: .45rem 0;
+    border-top: 1px solid var(--line);
+    font-size: .92rem;
+    overflow-wrap: anywhere;
+  }
+  .tablewrap { overflow-x: auto; margin-top: .6rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { text-align: left; padding: .4rem .55rem; border-top: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+  .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Upload study material</h1>
+  <p class="lede">
+    Scans and notes go in here, per subject. Each file becomes one job: uploaded now,
+    converted and ingested later by the worker on the host.
+  </p>
+
+  <section>
+    <h2>1. Token</h2>
+    <label for="token">Bearer token</label>
+    <input id="token" type="password" autocomplete="off" spellcheck="false"
+           placeholder="paste the operator bearer token">
+    <p class="hint">
+      Held in memory for this tab only — never stored, never in the page source.
+      Reloading loses it.
+    </p>
+    <div class="row">
+      <button id="use-token" type="button">Use this token</button>
+      <button id="forget-token" type="button" class="secondary">Forget</button>
+    </div>
+    <p class="status" id="token-status">No token yet.</p>
+  </section>
+
+  <section>
+    <h2>2. Files</h2>
+    <form id="upload-form">
+      <label for="subject">Subject</label>
+      <input id="subject" type="text" value="english" spellcheck="false"
+             placeholder="english">
+      <p class="hint">
+        Lower-case letters, digits, hyphens or underscores, starting with a letter.
+        This is the subject the material is ingested under.
+      </p>
+
+      <label>Source type</label>
+      <label class="radio"><input type="radio" name="source_type" value="primary_text" checked>
+        primary_text — the set text itself</label>
+      <label class="radio"><input type="radio" name="source_type" value="secondary_study_guide">
+        secondary_study_guide — revision guides, study notes</label>
+      <label class="radio"><input type="radio" name="source_type" value="secondary_critical">
+        secondary_critical — criticism and essays</label>
+      <label class="radio"><input type="radio" name="source_type" value="context_historical">
+        context_historical — background and context</label>
+
+      <label for="files">Files</label>
+      <input id="files" type="file" multiple
+             accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt,.md">
+      <p class="hint">
+        PDF, PNG, JPG, TIFF, TXT or MD. Past papers, mark schemes and examiner
+        reports are refused — AQA prohibits redistributing them.
+      </p>
+
+      <button id="upload" type="submit">Upload</button>
+    </form>
+    <ul class="results" id="results"></ul>
+  </section>
+
+  <section>
+    <h2>3. Jobs</h2>
+    <div class="row">
+      <button id="refresh" type="button" class="secondary">Refresh</button>
+      <label class="radio"><input id="autopoll" type="checkbox" checked> Poll every 5s</label>
+    </div>
+    <p class="status" id="jobs-status">Not loaded.</p>
+    <div class="tablewrap">
+      <table id="jobs">
+        <thead>
+          <tr><th>File</th><th>Subject</th><th>Source type</th><th>Status</th><th>Updated</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // The only place the token lives. Not localStorage, not a cookie, not the DOM
+  // after capture — one closure variable, gone on reload.
+  var bearer = "";
+
+  var tokenInput = document.getElementById("token");
+  var tokenStatus = document.getElementById("token-status");
+  var subjectInput = document.getElementById("subject");
+  var filesInput = document.getElementById("files");
+  var uploadButton = document.getElementById("upload");
+  var results = document.getElementById("results");
+  var jobsBody = document.querySelector("#jobs tbody");
+  var jobsStatus = document.getElementById("jobs-status");
+  var autopoll = document.getElementById("autopoll");
+
+  function setStatus(node, text, kind) {
+    node.textContent = text;
+    node.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function authHeaders() {
+    return bearer ? { "Authorization": "Bearer " + bearer } : {};
+  }
+
+  function sourceType() {
+    var picked = document.querySelector("input[name=source_type]:checked");
+    return picked ? picked.value : "";
+  }
+
+  // Every API error in this surface is a plain {"error": "..."} body, so one
+  // reader covers all of them; a non-JSON body (a proxy's 502 page) falls back
+  // to the status line rather than throwing over the top of the real problem.
+  function readError(response) {
+    return response.text().then(function (text) {
+      try {
+        var body = JSON.parse(text);
+        if (body && body.error) { return body.error; }
+      } catch (ignored) { /* not JSON */ }
+      return "HTTP " + response.status + " " + response.statusText;
+    });
+  }
+
+  function addResult(text, kind) {
+    var item = document.createElement("li");
+    item.textContent = text;
+    if (kind) { item.className = kind; }
+    results.appendChild(item);
+  }
+
+  document.getElementById("use-token").addEventListener("click", function () {
+    var value = tokenInput.value.trim();
+    if (!value) {
+      setStatus(tokenStatus, "Paste a token first.", "bad");
+      return;
+    }
+    bearer = value;
+    tokenInput.value = "";  // the DOM does not keep it
+    setStatus(tokenStatus, "Token held in memory for this tab.", "ok");
+    loadJobs();
+  });
+
+  document.getElementById("forget-token").addEventListener("click", function () {
+    bearer = "";
+    tokenInput.value = "";
+    setStatus(tokenStatus, "Token forgotten.");
+  });
+
+  document.getElementById("upload-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (!bearer) {
+      setStatus(tokenStatus, "Set the token before uploading.", "bad");
+      return;
+    }
+    var files = Array.prototype.slice.call(filesInput.files || []);
+    if (!files.length) {
+      addResult("Pick at least one file.", "bad");
+      return;
+    }
+    var subject = subjectInput.value.trim();
+    var type = sourceType();
+
+    results.innerHTML = "";
+    uploadButton.disabled = true;
+
+    // One request per file, in sequence: each file gets its own job and its own
+    // verdict, so a refused scan never hides the ones that went through.
+    var chain = Promise.resolve();
+    files.forEach(function (file) {
+      chain = chain.then(function () { return uploadOne(file, subject, type); });
+    });
+    chain.then(function () {
+      uploadButton.disabled = false;
+      filesInput.value = "";
+      loadJobs();
+    });
+  });
+
+  function uploadOne(file, subject, type) {
+    var form = new FormData();
+    form.append("file", file, file.name);
+    form.append("subject", subject);
+    form.append("source_type", type);
+
+    return fetch("/api/corpus/upload", {
+      method: "POST",
+      headers: authHeaders(),
+      body: form
+    }).then(function (response) {
+      if (response.status === 202) {
+        return response.json().then(function (body) {
+          addResult(file.name + " → queued (job " + body.job_id + ")", "ok");
+        });
+      }
+      return readError(response).then(function (message) {
+        addResult(file.name + " → refused: " + message, "bad");
+      });
+    }).catch(function (error) {
+      addResult(file.name + " → failed to reach the server: " + error, "bad");
+    });
+  }
+
+  function loadJobs() {
+    if (!bearer) {
+      setStatus(jobsStatus, "Set the token to see jobs.", "bad");
+      return;
+    }
+    var subject = subjectInput.value.trim();
+    var url = "/api/corpus/jobs" + (subject ? "?subject=" + encodeURIComponent(subject) : "");
+    fetch(url, { headers: authHeaders() }).then(function (response) {
+      if (!response.ok) {
+        return readError(response).then(function (message) {
+          setStatus(jobsStatus, message, "bad");
+        });
+      }
+      return response.json().then(renderJobs);
+    }).catch(function (error) {
+      setStatus(jobsStatus, "Could not reach the server: " + error, "bad");
+    });
+  }
+
+  function renderJobs(jobs) {
+    jobsBody.innerHTML = "";
+    if (!jobs.length) {
+      setStatus(jobsStatus, "No jobs yet.");
+      return;
+    }
+    setStatus(jobsStatus, jobs.length + " job(s).");
+    jobs.forEach(function (job) {
+      var row = document.createElement("tr");
+      [job.original_filename, job.subject, job.source_type, job.status, job.updated_at]
+        .forEach(function (value, index) {
+          var cell = document.createElement("td");
+          cell.textContent = value === null || value === undefined ? "" : String(value);
+          if (index === 4) { cell.className = "mono"; }
+          row.appendChild(cell);
+        });
+      if (job.error) { row.title = job.error; }
+      jobsBody.appendChild(row);
+    });
+  }
+
+  document.getElementById("refresh").addEventListener("click", loadJobs);
+
+  window.setInterval(function () {
+    if (autopoll.checked && bearer) { loadJobs(); }
+  }, 5000);
+})();
+</script>
+</body>
+</html>

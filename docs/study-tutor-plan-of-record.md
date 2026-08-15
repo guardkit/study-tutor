@@ -312,6 +312,75 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    a service instead of an operator ritual; **per-account corpus tenancy** (per-user
    collections; the global primary-text registry gets user/subject keying); quota + format
    guards.
+   **✅ BUILT ON A BRANCH 2026-08-14 — `lane3/upload-surface`, NOT MERGED, NOT DEPLOYED,
+   NOT PUSHED** (Rich's scope ruling that day: *build it ready for upload, no uploads
+   tonight* — the scans happen this weekend). Binding spec:
+   [`upload-surface-build-spec-2026-08-14.md`](design/upload-surface-build-spec-2026-08-14.md)
+   (`d5ed9cb`). **What exists on the branch**, in three pieces whose only shared contract
+   is files on disk: (a) the staging core `src/study_tutor/ingest/` (`364f920`) — guards
+   (subject slug round-tripped through the *existing* `rag_wiring` registry pattern, the
+   four `SOURCE_TYPE_FOLDERS` verbatim, the corpus loader's **AQA refusal regex imported,
+   not duplicated**, filename sanitising, 50 MB per-file cap, 500 MB per-subject quota,
+   both env-overridable), job records, and the `data/uploads/<subject>/` tree whose
+   `sources/` is the existing four-folder corpus shape; (b) the HTTP surface (`e97816d`) —
+   `GET /upload` (one self-contained HTML page, no framework, no CDN, no `StaticFiles`
+   mount; the operator pastes the bearer and it is held in JS memory only) plus
+   `POST /api/corpus/upload` and the two `GET /api/corpus/jobs…` reads, **existence-gated
+   exactly like voice**: no `STUDY_TUTOR_UPLOAD_ENABLED` ⇒ the routes are not built ⇒ 404,
+   not 403, and no deployed environment sets it; (c) the host-side worker
+   `scripts/process_uploads.py` + the docling adapter (`a3e2d3e`) — converts queued jobs to
+   markdown (passthrough for `.txt`/`.md`, docling for scans/PDFs, `[ingest]` extra pinned
+   `docling>=2.120.1,<3`, **installed and importing clean in this checkout**), then drives the
+   **existing** `scripts/ingest_corpus.py` per subject with the embedding config taken from
+   the environment, never hardcoded. **The serving process never converts and never imports
+   docling; the worker never serves HTTP.** The second-subject seam proof is **on the same
+   branch** (cherry-picked out of the sibling `lane3/upload-surface-d-proof` at E-close, so
+   merging the deliverable no longer silently drops it): 10 tests running the real
+   `ingest_corpus.py` against a crafted `demo_history` fixture corpus in a temp persist dir,
+   with `data/chroma/chroma.sqlite3` verified byte-identical across the run. Tests:
+   **301 new** (242 `tests/unit/ingest/`, 49 `tests/unit/http/test_upload_routes.py`,
+   10 `tests/unit/knowledge/test_second_subject_proof.py`), hermetic suite on the branch
+   **2069 passed / 0 failed / 29 skipped** (2026-08-15, after the coordinator's review
+   pass — which took three coach findings the gates had ranked non-blocking and fixed
+   them before the merge word: an empty upload now 400s instead of 500ing, an over-long
+   subject slug is refused with a length reason instead of dying as ENAMETOOLONG in the
+   staging tree, and one corrupted job file no longer kills the whole worker loop or the
+   jobs listing. Two items deliberately NOT code-fixed and named in the runbook's failure
+   table instead: the crash-mid-conversion requeue can duplicate a document's chunks
+   (manual check documented; fix queued), and the AQA refusal regex misses
+   space-separated names — that regex belongs to the corpus contract, so widening it is
+   a ruling, not a patch: **ruling queue #14**).
+   **What is NOT done, named honestly:** nothing is deployed or enabled anywhere; no scan
+   has been through the pipeline; no multi-user tenancy (ADR-034's keying is not precluded,
+   not implemented); and — **the named activation step** — a newly-ingested subject is
+   invisible to the live container because `Dockerfile:88` bakes `data/` into the image and
+   the compose mounts only the HF cache, so activating one requires **an image rebuild +
+   stack recreate on the deploy host**, a deploy action out of scope for this branch.
+   **Three more things the coach review made explicit, all now in the runbook too:**
+   (i) **the AQA guard is narrower than mission law 4** — the reused loader regex
+   (`corpus.py:93`) allows `_`/`-` between the words but **not a space**, and has no
+   `specimen` term, so `mark_scheme.pdf` is refused 422 while `mark scheme.pdf`,
+   `Mark Scheme.pdf`, `past paper.pdf` and `specimen-paper.pdf` are all accepted; the gap is
+   pinned by test (`tests/unit/ingest/test_guards.py`) and the operator filters those by
+   hand (RUNBOOK §7's second row, §8). Widening the regex is a change to the *corpus
+   contract*, not to this surface — not taken tonight. (ii) **the upload routes are authed,
+   not authorised**: `_resolve_student_id` accepts any bearer with a student row, so the
+   learner's own token can write to the staging tree while the flag is on; there is no
+   operator role to check and the spec forbade auth changes. Harmless with the flag off
+   everywhere and the surface tailnet-only; a real decision before it goes on anywhere
+   shared. (iii) the branch carries **one unrelated commit** — `d9ccb2f`
+   `chore(mcp): connect the fleet_memory door`, a four-line `.mcp.json` addition pointing at
+   the same `promaxgb10-41b1:8005` endpoint ai-transition uses. Nothing to do with the
+   upload surface and outside the spec's path-limited fence; it is named here rather than
+   rewritten out so the reviewed SHAs stay the reviewed SHAs — **drop it or keep it
+   deliberately at merge.**
+   Operator instructions, including the activation step and the weekend
+   scan→upload→ingest procedure:
+   [`RUNBOOK-upload-surface.md`](runbooks/RUNBOOK-upload-surface.md). Housekeeping from the
+   same bake line: `data/uploads/` is now in `.gitignore` (added at E-close), so scans can
+   no longer be `git add -A`'d in; the repo still has **no `.dockerignore`**, so
+   `Dockerfile:88`'s `COPY data/` would copy a staging tree of scanned books into an image —
+   clear `data/uploads/` before any build.
 5. **The pilot**: friends provisioned (**runbook to be WRITTEN — ADR-ARCH-034 D3
    corrected this cell's former "runbook exists" claim, 2026-08-13**: one attended
    procedure doing Keycloak user + `student_id` attribute + role + `seed-students` row +
@@ -601,6 +670,18 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    an incident. Fix is a real keystore + `key.properties` kept out of the repo; the
    no-live-credentials guard already fences the second half. *(The Mac session cited
    `build.gradle`; the file is `build.gradle.kts`.)*
+14. **The AQA refusal regex misses the most natural filename form** *(surfaced by the
+   upload-surface coaches, 2026-08-15 — driven, not speculated)*. `AQA_REFUSAL_PATTERN`
+   (`src/study_tutor/knowledge/corpus.py:93`) allows `_`/`-` between words but not a
+   space, so `mark scheme.pdf`, `past paper.pdf` and `Examiner Report.pdf` are **not**
+   refused, while the underscore/hyphen forms are. A space-separated name is exactly what
+   an operator types when naming a scan, and the guard exists for a **mission-law**
+   reason (no AQA assessment material in the corpus). The upload surface imports the
+   regex rather than widening a copy — correct per the corpus contract — and pins the gap
+   honestly in `test_space_separated_assessment_names_slip_through_today`. Widening the
+   pattern (add `[ _-]?`, or `\s`) is a one-line change to the corpus contract's own
+   guard: **Rich's ruling**, because the same regex governs the original ingest path,
+   and until it is ruled the upload page's wording says what the guard really catches.
 
 ## Standing rules (how work runs here — already the convention, now written)
 

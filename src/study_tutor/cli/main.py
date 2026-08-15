@@ -445,6 +445,37 @@ def _build_voice_service(voice_config, *, session_service, reply_fn_factory):
     return voice_service, chunk_store
 
 
+def _build_upload_service(env):
+    """Construct the upload surface's ``UploadService`` when it is enabled.
+
+    The existence gate, in one place: ``STUDY_TUTOR_UPLOAD_ENABLED`` truthy ⇒
+    an ``UploadService``, which is what makes ``create_app`` mount the upload
+    page and the three corpus routes. Anything else ⇒ ``None``, and the surface
+    does not exist in that process. Extracted from ``serve_http`` for the same
+    reason ``_build_voice_service`` was: the construction is unit-testable
+    without a boot that needs Postgres.
+
+    Args:
+        env: Environment mapping to read the upload variables from
+            (``os.environ`` in production, a dict in tests).
+
+    Returns:
+        The ``UploadService``, or ``None`` when the surface is disabled.
+
+    Raises:
+        ValueError: On a malformed flag or size override — the config parses
+            loudly, so a typo'd limit fails boot rather than silently
+            reverting to the default.
+    """
+    from study_tutor.http.app import UploadService
+    from study_tutor.ingest.config import UploadConfig
+
+    config = UploadConfig.from_env(env)
+    if not config.enabled:
+        return None
+    return UploadService.from_config(config)
+
+
 @click.group()
 def cli() -> None:
     """study-tutor — fine-tuned English tutoring MCP runtime."""
@@ -1191,6 +1222,26 @@ def serve_http(port: int, host: str, log_level: str) -> None:
     if voice_service is not None:
         logger.info("event=voice_services_wired enabled=true")
 
+    # Lane 3 step 4: the upload surface. Off unless STUDY_TUTOR_UPLOAD_ENABLED
+    # says otherwise — no deployed environment sets it today.
+    try:
+        upload_service = _build_upload_service(os.environ)
+    except ValueError as exc:
+        click.echo(
+            f"[study-tutor] Error: Upload surface configuration failed: {exc}",
+            err=True,
+        )
+        raise SystemExit(1) from exc
+
+    if upload_service is not None:
+        logger.info(
+            "event=upload_surface_wired enabled=true staging_root=%s "
+            "max_file_bytes=%d subject_quota_bytes=%d",
+            upload_service.config.staging_root,
+            upload_service.config.max_file_bytes,
+            upload_service.config.subject_quota_bytes,
+        )
+
     # Create the Starlette app with all production dependencies
     from study_tutor.http.app import create_app
 
@@ -1206,6 +1257,7 @@ def serve_http(port: int, host: str, log_level: str) -> None:
         # The SAME notifier instance build_session_service handed the service —
         # so the SSE mirror stream wakes on the row the robot's turn just wrote.
         turn_notifier=get_turn_notifier(),
+        upload_service=upload_service,
     )
 
     click.echo(
