@@ -49,13 +49,95 @@ def _has_live_realm_env() -> bool:
     ])
 
 
+def _parse_live_suite_users() -> dict[str, str]:
+    """Resolve the live-suite username -> password map.
+
+    Two shapes are accepted, because the provisioning script and this module were
+    written to different ones and the mismatch hard-failed every live run:
+
+    - **JSON object** -- ``{"lilymay": "..."}``. The shape this module originally
+      documented.
+    - **Comma list of usernames** -- ``lilymay,alex``. What
+      ``deploy/keycloak/provision-live-suite.sh`` actually writes, and it does so
+      deliberately: passwords stay in ``.env.deploy`` rather than being copied
+      into a second file. Each password is then read from ``<USERNAME>_PASSWORD``
+      (``LILYMAY_PASSWORD``, ``ALEX_PASSWORD``) -- the convention the script
+      already uses for provisioning.
+
+    Returns:
+        Username -> password. Empty dict when the surface is unset.
+
+    Raises:
+        ValueError: the value is neither parseable JSON nor a usable username
+            list, or a listed user has no ``<USERNAME>_PASSWORD`` in the
+            environment. Messages name variables only, never values.
+    """
+    raw = os.getenv("STUDY_TUTOR_LIVE_SUITE_USERS", "").strip()
+    if not raw:
+        return {}
+
+    if raw[0] in "{[":
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"STUDY_TUTOR_LIVE_SUITE_USERS looks like JSON but does not parse: {e}"
+            ) from e
+        if not isinstance(parsed, dict):
+            raise ValueError(
+                "STUDY_TUTOR_LIVE_SUITE_USERS JSON must be an object mapping "
+                f"username to password, got {type(parsed).__name__}"
+            )
+        return {str(k): str(v) for k, v in parsed.items()}
+
+    users: dict[str, str] = {}
+    missing: list[str] = []
+    for name in (part.strip() for part in raw.split(",")):
+        if not name:
+            continue
+        password = os.getenv(f"{name.upper()}_PASSWORD")
+        if not password:
+            missing.append(f"{name.upper()}_PASSWORD")
+            continue
+        users[name] = password
+
+    if missing:
+        raise ValueError(
+            "STUDY_TUTOR_LIVE_SUITE_USERS is a username list, so each password is "
+            f"read from <USERNAME>_PASSWORD; missing: {', '.join(sorted(missing))}. "
+            "These live in deploy/keycloak/.env.deploy (see SECRETS.md section 4)."
+        )
+    return users
+
+
+# Opt-in strictness: without it, an absent live surface skips every live test and
+# the run still reports green -- "0 live tests ran" is indistinguishable from
+# "live tests passed". Set STUDY_TUTOR_REQUIRE_LIVE_KEYCLOAK=1 to make that loud.
+_REQUIRE_LIVE = os.getenv("STUDY_TUTOR_REQUIRE_LIVE_KEYCLOAK", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
+
+if _REQUIRE_LIVE and not _has_live_realm_env():
+    raise RuntimeError(
+        "STUDY_TUTOR_REQUIRE_LIVE_KEYCLOAK is set, but the live-realm surface is "
+        "absent -- every live Keycloak test would skip and the run would still be "
+        "green. Provide STUDY_TUTOR_OIDC_ISSUER, STUDY_TUTOR_LIVE_SUITE_CLIENT_ID, "
+        "STUDY_TUTOR_LIVE_SUITE_CLIENT_SECRET and STUDY_TUTOR_LIVE_SUITE_USERS "
+        "(see SECRETS.md section 4), or unset the flag."
+    )
+
+
 # Skip marker for tests that require live realm
 _skip_no_live_realm = pytest.mark.skipif(
     not _has_live_realm_env(),
     reason=(
         "Live-realm environment surface absent (STUDY_TUTOR_OIDC_ISSUER, "
         "STUDY_TUTOR_LIVE_SUITE_CLIENT_ID, STUDY_TUTOR_LIVE_SUITE_CLIENT_SECRET, "
-        "STUDY_TUTOR_LIVE_SUITE_USERS not set) — skipping live Keycloak contract tests"
+        "STUDY_TUTOR_LIVE_SUITE_USERS not set) — skipping live Keycloak contract "
+        "tests. A green run here proves nothing: set "
+        "STUDY_TUTOR_REQUIRE_LIVE_KEYCLOAK=1 to turn this skip into a failure."
     ),
 )
 
@@ -147,13 +229,8 @@ async def mint_live_suite_token(username: str) -> str:
             "STUDY_TUTOR_LIVE_SUITE_CLIENT_SECRET, STUDY_TUTOR_LIVE_SUITE_USERS are set."
         )
 
-    # Parse users mapping
-    try:
-        users = json.loads(users_json)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"STUDY_TUTOR_LIVE_SUITE_USERS is not valid JSON: {e}"
-        ) from e
+    # Parse users mapping (JSON object or username list — see _parse_live_suite_users)
+    users = _parse_live_suite_users()
 
     if username not in users:
         raise ValueError(
@@ -284,8 +361,7 @@ async def test_mint_token_for_test_student() -> None:
         Run with `pytest -m integration` or `pytest -m keycloak` to include it.
     """
     # Try to mint a token for the first available test student
-    users_json = os.getenv("STUDY_TUTOR_LIVE_SUITE_USERS", "{}")
-    users = json.loads(users_json)
+    users = _parse_live_suite_users()
 
     if not users:
         pytest.skip("STUDY_TUTOR_LIVE_SUITE_USERS is empty — no test students available")

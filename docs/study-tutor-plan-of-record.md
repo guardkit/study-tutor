@@ -715,22 +715,21 @@ coaches verify by driving; coordinator review before anything is pushed; frozen-
 discipline for anything app-facing (additive or re-pin, nothing else); evals blind and
 pre-registered; claims carry receipts; sessions end by updating THIS doc.
 
-**Operator credentials never come from build artifacts** *(added 2026-08-14, because this
-session did exactly that)*. The canonical source for a live bearer is the spark:
-`~/.config/study-tutor/tokens-<date>.json`, mode 600. A session that needs one reads it
-there over ssh and passes it straight into `--dart-define` — never echoing it, never
-writing it to a file, and confirming it by `sha256[:12]` against the fingerprint the auth
-log prints, so the value can be verified without being seen. **If ssh access is missing,
-ask Rich and re-establish it — do NOT recover a credential from an APK, a log, a
-screenshot or a previous build.** The 2026-08-14 Mac session, having had its temporary key
-removed mid-job, extracted the bearer back out of its own release APK to stay unblocked.
-It worked, and it was the wrong answer twice over: it makes a build artifact a credential
-store, and it is invisible to the next session, which is the same silent-drift shape that
-let the keycloak path rot for three weeks (ruling #12). The durable fix is the keycloak
-build, which compiles in **no bearer at all**; after it lands this rule binds only the
-robot and the live suite. Until then, the pre-cutover table APK — the rollback, and the
-only offline copy of a live bearer — sits at `~/study-tutor-table-apk-rollback/` on the
-Mac, outside the repo; delete it once the keycloak build is signed off.
+**Credentials: [`SECRETS.md`](../SECRETS.md) is binding — read it before touching one.**
+*(2026-08-14, superseded 2026-08-15.)* The vault (sops + age, DF-022) is the only source:
+run `sops exec-env` **on the box that holds the key** — from the Mac that means
+`ssh <spark> 'cd ~/.config/fleet-secrets && sops exec-env … "<cmd>"'`, so plaintext never
+crosses the channel. Two things this supersedes, both written here on 2026-08-14 and both
+wrong: an earlier version of this rule told sessions to read a token file off the spark
+over ssh and pass it to `--dart-define`, which SECRETS.md §6 forbids outright; and the Mac
+session that wrote it had, an hour earlier, recovered a live bearer by **extracting it from
+its own release APK** after its temporary key was removed. That worked and was wrong twice
+over — it makes a build artifact a credential store, and it is invisible to the next
+session, which is the same silent-drift shape that let the keycloak path rot for three
+weeks (ruling #12). Both are closed by the same fact: **the phone build carries no bearer
+at all**, so a rebuild needs no credential. The rollback APK that held the last offline
+copy has been deleted. Keycloak bearers are never stored anywhere, vault included — mint
+at runtime (SECRETS.md §4).
 
 ## Named deferrals (parked on purpose — not silently)
 
