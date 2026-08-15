@@ -5,7 +5,8 @@ description: 'FEAT-SMP-001 / W1: write path + first Alembic migration for the st
   and encodes schema_reference.sql. SQLAlchemy 2.0 async + asyncpg + Alembic. Reads
   (SMP-002) and session CRUD (SMP-003) out of scope.'
 created: '2026-07-03T16:24:17.898832'
-status: planned
+# STATUS TRUTHED 2026-08-15 (coordinator, Rich confirmed built): the store exists and serves production (knowledge/store/*, the persisted student model the 08-14 exam design pass cited live at the HTTP surface). Tracker had drifted.
+status: completed
 complexity: 6
 estimated_tasks: 7
 tasks:

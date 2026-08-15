@@ -8,7 +8,8 @@ description: 'FEAT-SMP-003 / W3: the 6 PostgresStudentStore session methods over
   preserved). Durable + resumable cross-device sessions. Out of scope: HTTP/WS transport,
   real XP engine, Coach-verdict misconceptions, graph teardown (SMP-004).'
 created: '2026-07-04T13:05:00.603251'
-status: planned
+# STATUS TRUTHED 2026-08-15 (coordinator, Rich confirmed built): cross-device sessions live; its OWN acceptance suite runs 22/23 green. THE ONE RED IS A REAL DEFECT, ledgered: test_redelivering_the_same_completed_session_records_the_learnerstate_deltas_only_once — redelivery of a completed session double-records learner-state deltas. A named fix-journey candidate.
+status: completed
 complexity: 6
 estimated_tasks: 7
 tasks:

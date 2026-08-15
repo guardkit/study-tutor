@@ -6,7 +6,8 @@ description: 'FEAT-SMP-002 / W2: read path over the merged W1 schema (get_topic_
   Graphiti read copies from queries.py. Graceful degradation preserved. Reads only
   — write-path removal (SMP-004) and session CRUD (SMP-003) out of scope.'
 created: '2026-07-03T22:28:32.805748'
-status: planned
+# STATUS TRUTHED 2026-08-15 (coordinator, Rich confirmed built): read paths live (session/service.py list_sessions:669 et al). Tracker had drifted.
+status: completed
 complexity: 6
 estimated_tasks: 7
 tasks:
