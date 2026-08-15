@@ -26,5 +26,9 @@ Quick facts a session always needs:
   edits.
 - Broker isolation is standing for build lanes: never connect to any NATS broker
   (no `nats://`, no `:4222`) — operator runbooks are exempt.
+- **Secrets are BINDING:** no credential value (token, password, client secret, DSN)
+  ever enters this repo — Keycloak bearer tokens are minted at runtime, never stored.
+  The fleet vault (sops+age) already holds this repo's env files; rules + how-to:
+  [`SECRETS.md`](SECRETS.md).
 - The `.claude/CLAUDE.md` in this repo is GuardKit template boilerplate about the task
   workflow; it is NOT project truth — this file and the two docs above are.
