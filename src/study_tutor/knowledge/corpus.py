@@ -90,8 +90,21 @@ SOURCE_TYPE_FOLDERS: dict[str, SourceType] = {
 # (case-insensitive) that look like past papers, mark schemes, or examiner
 # reports — AQA prohibits redistribution of these materials, so the loader
 # refuses them at the folder boundary regardless of their parent source-type.
+#
+# Widened 2026-08-15 (Rich's ruling, plan queue #14): the original
+# ``[_-]?`` separator missed the SPACE-separated forms — "mark scheme.pdf",
+# "past paper.pdf" — which are the most natural names an operator types when
+# scanning, and the upload surface made the gap reachable from a page. The
+# separator class now admits whitespace. This is the corpus contract's own
+# guard: it governs the original ingest path and the upload path identically,
+# which is exactly why the upload build pinned the gap and queued the ruling
+# instead of widening a private copy. The same change adds the FOURTH
+# category mission law 4 has named since ratification — specimen papers —
+# which this pattern had simply never implemented (the upload build's
+# second honest pin). That one is not a new ruling: it is the ratified
+# mission finally enforced where ingest happens.
 AQA_REFUSAL_PATTERN: re.Pattern[str] = re.compile(
-    r"(?i)(past[_-]?paper|mark[_-]?scheme|examiner[_-]?report)"
+    r"(?i)(past[\s_-]?paper|mark[\s_-]?scheme|examiner[\s_-]?report|specimen[\s_-]?paper)"
 )
 
 # Chunker tuning: 23-Apr empirical findings §3d.

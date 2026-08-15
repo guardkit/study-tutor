@@ -312,9 +312,11 @@ research (Bedrock Custom Model Import dead ×3; default = EC2 g6.xlarge London +
    a service instead of an operator ritual; **per-account corpus tenancy** (per-user
    collections; the global primary-text registry gets user/subject keying); quota + format
    guards.
-   **✅ BUILT ON A BRANCH 2026-08-14 — `lane3/upload-surface`, NOT MERGED, NOT DEPLOYED,
-   NOT PUSHED** (Rich's scope ruling that day: *build it ready for upload, no uploads
-   tonight* — the scans happen this weekend). Binding spec:
+   **✅ MERGED to main 2026-08-15 (Rich's merge word: "merge"; merge `079e1b9`) — still
+   NOT DEPLOYED**: no environment sets `STUDY_TUTOR_UPLOAD_ENABLED`, and activating a new
+   subject in the live container remains the runbook §6 attended rebuild (the baked
+   store). Built overnight 2026-08-14 on Rich's scope ruling (*build it ready for upload,
+   no uploads tonight* — the scans happen this weekend). Binding spec:
    [`upload-surface-build-spec-2026-08-14.md`](design/upload-surface-build-spec-2026-08-14.md)
    (`d5ed9cb`). **What exists on the branch**, in three pieces whose only shared contract
    is files on disk: (a) the staging core `src/study_tutor/ingest/` (`364f920`) — guards
@@ -670,18 +672,35 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    an incident. Fix is a real keystore + `key.properties` kept out of the repo; the
    no-live-credentials guard already fences the second half. *(The Mac session cited
    `build.gradle`; the file is `build.gradle.kts`.)*
-14. **The AQA refusal regex misses the most natural filename form** *(surfaced by the
-   upload-surface coaches, 2026-08-15 — driven, not speculated)*. `AQA_REFUSAL_PATTERN`
-   (`src/study_tutor/knowledge/corpus.py:93`) allows `_`/`-` between words but not a
-   space, so `mark scheme.pdf`, `past paper.pdf` and `Examiner Report.pdf` are **not**
-   refused, while the underscore/hyphen forms are. A space-separated name is exactly what
-   an operator types when naming a scan, and the guard exists for a **mission-law**
-   reason (no AQA assessment material in the corpus). The upload surface imports the
-   regex rather than widening a copy — correct per the corpus contract — and pins the gap
-   honestly in `test_space_separated_assessment_names_slip_through_today`. Widening the
-   pattern (add `[ _-]?`, or `\s`) is a one-line change to the corpus contract's own
-   guard: **Rich's ruling**, because the same regex governs the original ingest path,
-   and until it is ruled the upload page's wording says what the guard really catches.
+14. ~~The AQA refusal regex misses the most natural filename form~~ **✅ RULED + EXECUTED
+   2026-08-15 (Rich: "yes to 3")**. The separator class now admits whitespace, so
+   `mark scheme.pdf` / `past paper.pdf` / `Examiner Report.pdf` refuse like their
+   underscore/hyphen forms — and the same change closed the SECOND honest pin the build
+   left: **mission law 4 names four categories and the regex implemented three**, so
+   `specimen paper` (every spelling) joins the pattern. The specimen half needed no fresh
+   ruling — it is the ratified mission finally enforced where ingest happens. Both former
+   gap-pinning tests flipped to refusal pins; the runbook's honest NOT-catch row now names
+   the true residual (a neutral filename — `june-2023.pdf` — walks past any filename
+   check; the operator's eye remains the real gate), and the doc-pinning tests that
+   enforce runbook-matches-regex were re-pinned to the new truth. One reach note: the
+   widened regex also governs the ORIGINAL ingest path, so any existing corpus file named
+   with spaces would now refuse on re-ingest — today's corpus (581 english chunks from
+   Standard Ebooks names) contains none.
+
+15. **FEAT-AUTH-004 (robot device pairing) — SPEC WORD GIVEN 2026-08-15 (Rich: "spec",
+   on the digest per amendment 6).** The spec:
+   [`FEAT-AUTH-004-device-pairing-spec.md`](design/FEAT-AUTH-004-device-pairing-spec.md)
+   (+ [digest](design/FEAT-AUTH-004-digest.md)), coach-verified against ~60 receipts.
+   With her phone now credential-free on `:8101` (ruling #12), the robot is the LAST
+   table-mode consumer — this feature ends ruling E3 and retires table mode entirely.
+   Build order: **R1 first** (the spec's own discovery: the `reachy-robot` realm client
+   has NO audience mapper — `study-tutor-realm.json:148-164` — so a device-grant token
+   would 401 today; two-minute realm-as-code edit + a hermetic CI test, in THIS repo),
+   then the robot-side build in fleet-gateway (the three consumers), then the **KC-G4
+   gate** (the D8 same-subject resume proof) for Rich's gate tap. The spec's five
+   questions (Q1 pairing UX, Q2 the 30-day offline idle-out, Q3 the port collapse, …)
+   are answered by the spec word except where the digest marks them for the attended
+   walk.
 
 ## Standing rules (how work runs here — already the convention, now written)
 

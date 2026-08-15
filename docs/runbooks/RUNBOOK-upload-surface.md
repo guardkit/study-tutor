@@ -264,8 +264,8 @@ build an image on a machine you have been uploading to:
 | Subject slug | must be a real registry slug — `^[a-z][a-z0-9_-]*$`, becoming `gcse-<subject>-v1` | 400 |
 | Source type | exactly one of the four folder names | 400 |
 | Filename | basename only; no traversal, no null bytes or control characters, no leading dot, ≤ 200 characters | 400 |
-| **AQA assessment material** | filenames *containing* `pastpaper` / `past_paper` / `past-paper`, `markscheme` / `mark_scheme` / `mark-scheme`, `examinerreport` / `examiner_report` / `examiner-report` — any casing, anywhere in the name | **422 — refused, mission law 4** |
-| **What that guard does NOT catch** — read this one | The check is the corpus loader's regex (`corpus.py:93`), imported not copied. It allows `_` or `-` between the two words but **not a space**, and it has no `specimen` term at all — while [mission law 4](../study-tutor-mission-statement-2026-08-01.md) excludes **four** categories, specimen papers included. Driven live: `mark_scheme.pdf` → 422, but `mark scheme.pdf`, `Mark Scheme.pdf`, `past paper.pdf` and `specimen-paper.pdf` are all **accepted (202)**. | none — they go through. **You are the filter**: check the pile by eye before uploading, and see §8 if one gets in |
+| **AQA assessment material** | filenames *containing* `past paper`, `mark scheme`, `examiner report` or `specimen paper` — with a space, underscore, hyphen or nothing between the words (`mark_scheme`, `pastpaper`, `specimen-paper`), any casing, anywhere in the name (widened + specimen added 2026-08-15, ruling #14) | **422 — refused, mission law 4** |
+| **What that guard does NOT catch** — read this one | The check is a FILENAME check (the corpus loader's regex, imported not copied). All four of [mission law 4](../study-tutor-mission-statement-2026-08-01.md)'s categories are refused in every separator spelling since 2026-08-15 — but a paper whose name says none of those words (`june-2023.pdf`, `paper1.pdf`) sails through, and renaming is trivial. | **You are still the filter**: the guard catches accidents, not intent — check the pile by eye, and see §8 if one gets in |
 
 Which converter handles what: `.txt`/`.md` are copied through (UTF-8 normalised, CRLF
 flattened); `.pdf`, `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff` go through docling.
@@ -285,8 +285,8 @@ is your own archive decision).
 | `/upload` returns 404 | `STUDY_TUTOR_UPLOAD_ENABLED` was not truthy at boot | export it and restart `serve-http` (§2) |
 | API calls return 401 | no/!valid bearer — the page's token was forgotten on reload | paste the token again |
 | `refused: Files of type … are not accepted` (400) | extension off the allowlist | re-export the scan as PDF |
-| `refused: … looks like AQA assessment material` (422) | the filename contains `past_paper` / `mark_scheme` / `examiner_report` in one of the spellings §7 lists — mission law 4, never negotiable | do not upload it. Renaming it *does* get it past the guard (a space, or the word `specimen`, is enough — §7) but law 4 still forbids the material; the guard is a filename check, not a judge |
-| A past paper, mark scheme or **specimen paper** went through as `queued` | its name had a space (`mark scheme.pdf`) or said `specimen` — §7's second row: not caught today | before the worker runs: delete `data/uploads/<subject>/incoming/<job_id>/` and `jobs/<job_id>.json`. If it already reached `staged`/`ingested`, also delete its markdown from `data/uploads/<subject>/sources/<source_type>/` and re-run the ingest for that subject with `--reset` — plain re-ingest upserts and would leave the old chunks in the collection |
+| `refused: … looks like AQA assessment material` (422) | the filename names one of law 4's four categories in any separator spelling — mission law 4, never negotiable | do not upload it. Renaming it to something neutral *does* get it past the guard (it is a filename check, not a judge) but law 4 still forbids the material |
+| A past paper, mark scheme or specimen paper went through as `queued` | its name said none of the four category terms (`june-2023.pdf`) — §7's second row: a filename check cannot catch a neutral name | before the worker runs: delete `data/uploads/<subject>/incoming/<job_id>/` and `jobs/<job_id>.json`. If it already reached `staged`/`ingested`, also delete its markdown from `data/uploads/<subject>/sources/<source_type>/` and re-run the ingest for that subject with `--reset` — plain re-ingest upserts and would leave the old chunks in the collection |
 | 413 on a single file | over the per-file cap | scan at lower DPI, or split the document |
 | 413 mentioning the subject's quota | the subject's staging area is full | delete ingested jobs' `incoming/` dirs, or raise `STUDY_TUTOR_UPLOAD_SUBJECT_QUOTA_MB` |
 | 400 on the subject | slug is not registry-shaped | lower-case, start with a letter, only `a-z0-9_-` |
@@ -311,9 +311,9 @@ is your own archive decision).
   token table to check, and inventing one was out of scope (the spec forbade auth changes).
   With the flag off everywhere and the surface tailnet-only this costs nothing today; it
   becomes a real decision the moment the flag goes on anywhere shared.
-- **The AQA guard is a filename check, not a judge**, and it misses two whole shapes —
-  space-separated names and every `specimen` paper (§7, second row). Mission law 4 is
-  wider than the regex that enforces it here.
+- **The AQA guard is a filename check, not a judge.** Since 2026-08-15 it covers all
+  four of law 4's categories in every separator spelling — but a neutral filename walks
+  past it, so the operator's eye remains the real gate (§7, second row).
 - No multi-user tenancy: uploads are keyed by subject, not by account. The collection
   keying does not preclude ADR-ARCH-034's pilot tenancy; it does not implement it.
 - The upload surface is **not** part of the frozen app contract

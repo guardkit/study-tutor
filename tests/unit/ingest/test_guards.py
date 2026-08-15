@@ -221,39 +221,28 @@ def test_assessment_material_refused(filename: str) -> None:
 @pytest.mark.parametrize(
     "filename", ["english mark scheme.pdf", "EXAMINER REPORT.txt", "past paper.pdf"]
 )
-def test_space_separated_assessment_names_slip_through_today(filename: str) -> None:
-    """Honest pin of a gap in the *loader's* regex, not a new rule here.
-
-    ``AQA_REFUSAL_PATTERN`` allows ``_`` or ``-`` between the words but not a
-    space, so ``mark scheme.pdf`` is not refused. The upload surface imports
-    that regex rather than a widened copy (build spec seam 1: "REUSE it,
-    never duplicate it"), so it inherits the gap. Widening is a change to the
-    loader, owned by the corpus contract — recorded here so it cannot be
-    mistaken for upload-surface behaviour.
-    """
-    assert AQA_REFUSAL_PATTERN.search(filename) is None
-    refuse_assessment_material(filename)
+def test_space_separated_assessment_names_are_refused(filename: str) -> None:
+    """RULED 2026-08-15 (plan queue #14): the loader's regex now admits a
+    space in the separator class, so the most natural scan names are refused
+    like their underscore/hyphen forms. This test was the honest pin of the
+    gap; it now pins the ruling."""
+    with pytest.raises(RefusedMaterial):
+        refuse_assessment_material(filename)
 
 
 @pytest.mark.parametrize(
     "filename",
     ["specimen-paper.pdf", "Specimen Paper 2024.pdf", "aqa_specimen_paper_1.pdf"],
 )
-def test_specimen_papers_slip_through_today(filename: str) -> None:
-    """The second half of the same honest pin: no ``specimen`` term exists.
+def test_specimen_papers_are_refused(filename: str) -> None:
+    """Mission law 4 names FOUR categories; the regex implemented three.
 
-    Mission law 4 (``docs/study-tutor-mission-statement-2026-08-01.md``) names
-    **four** categories — past papers, mark schemes, examiner reports and
-    *specimen papers*. ``AQA_REFUSAL_PATTERN`` implements the first three. A
-    specimen paper is therefore accepted by this surface, and the operator is
-    the filter (RUNBOOK-upload-surface.md §7, second row).
-
-    Widening the regex is a change to the corpus contract that owns it, not to
-    the upload surface — recorded here so the gap cannot be discovered by a
-    specimen paper landing in a collection.
-    """
-    assert AQA_REFUSAL_PATTERN.search(filename) is None
-    refuse_assessment_material(filename)
+    Closed 2026-08-15 alongside ruling #14: ``specimen paper`` joins the
+    pattern, so the ratified mission is finally enforced where ingest
+    happens. This test was the honest pin of the under-implementation; it
+    now pins the law."""
+    with pytest.raises(RefusedMaterial):
+        refuse_assessment_material(filename)
 
 
 @pytest.mark.parametrize(
@@ -302,17 +291,23 @@ def test_runbook_aqa_row_lists_only_spellings_the_regex_actually_matches() -> No
 
 
 def test_runbook_states_the_gap_the_regex_leaves() -> None:
+    """After ruling #14 the documented residual is the NEUTRAL filename.
+
+    All four law-4 categories now refuse in every separator spelling, so the
+    honest NOT-catch row names what is left: a paper whose name says none of
+    the category words. The runbook must keep saying the operator is the
+    real gate, and must not claim the guard judges content."""
     text = _runbook_text()
 
     assert "What that guard does NOT catch" in text, (
         "§7 must carry the row naming what gets through"
     )
-    # The two shapes that get through, each named by example in the runbook.
-    assert "mark scheme.pdf" in text
-    assert "specimen" in text.lower()
-
-    # And it must not tell the operator that renaming cannot help — it can.
-    assert "renaming it does not make it acceptable" not in text
+    # The residual, named by example: a neutral filename sails through.
+    assert "june-2023.pdf" in text
+    assert "filename check" in text.lower()
+    # The old gaps must no longer be documented as open.
+    assert "not a space" not in text
+    assert "no `specimen` term" not in text
 
 
 def test_refusal_uses_the_loaders_regex_not_a_copy() -> None:
