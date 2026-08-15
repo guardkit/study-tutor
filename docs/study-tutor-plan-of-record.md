@@ -693,11 +693,15 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    (+ [digest](design/FEAT-AUTH-004-digest.md)), coach-verified against ~60 receipts.
    With her phone now credential-free on `:8101` (ruling #12), the robot is the LAST
    table-mode consumer — this feature ends ruling E3 and retires table mode entirely.
-   Build order: **R1 first** (the spec's own discovery: the `reachy-robot` realm client
-   has NO audience mapper — `study-tutor-realm.json:148-164` — so a device-grant token
-   would 401 today; two-minute realm-as-code edit + a hermetic CI test, in THIS repo),
-   then the robot-side build in fleet-gateway (the three consumers), then the **KC-G4
-   gate** (the D8 same-subject resume proof) for Rich's gate tap. The spec's five
+   Build order: ~~R1 first~~ **R1 DONE repo-side same day (`b41bc7a`, merged `cf6ad47`
+   as an inert build step under the spec word — realm-as-code only, the FEAT-AUTH-002
+   flag-gated-merge precedent):** the `reachy-robot` client now stamps the
+   `study-tutor-app` audience, plus three hermetic realm-invariant tests (the
+   generalised fence: every client whose tokens carry `student_id` must stamp the
+   audience; proven to bite). **The LIVE realm on the NAS still lacks the mapper** —
+   applying it is the attended step that starts the robot-side build (spec §9 step 1).
+   Then the fleet-gateway build (the three consumers), then the **KC-G4 gate** (the D8
+   same-subject resume proof) for Rich's gate tap. The spec's five
    questions (Q1 pairing UX, Q2 the 30-day offline idle-out, Q3 the port collapse, …)
    are answered by the spec word except where the digest marks them for the attended
    walk.
