@@ -706,6 +706,14 @@ a subsequent, optional phase (deferrals — agreed with Lilymay 2026-08-01).
    are answered by the spec word except where the digest marks them for the attended
    walk.
 
+## Session pickup pointer (2026-09-04)
+
+**The 2026-08-07 → 2026-08-14 arc's full pickup handoff — loose ends, priority queue,
+and operational gotchas — is [`HANDOFF-codex-pickup-2026-09-04.md`](runbooks/HANDOFF-codex-pickup-2026-09-04.md)**
+(written for any successor agent at the Claude weekly limit). Verify its §2 loose ends
+FIRST: the keepalive timer state, Rich's three unanswered asks, the base-in-loop trial,
+the fleet-gateway commit, and the fleet-memory write-back debt.
+
 ## Standing rules (how work runs here — already the convention, now written)
 
 Orchestrated-build-playbook lanes with the owner's three acts (spec word / gate tap / merge
