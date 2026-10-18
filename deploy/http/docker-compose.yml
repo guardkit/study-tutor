@@ -82,6 +82,9 @@ services:
       # Reranker weights cache, persisted on the host so container restarts
       # don't re-download ~2.3GB. Set HF_HUB_OFFLINE=1 in .env ONLY once the
       # cache is warm (a cold cache with offline=1 breaks reranker load).
+      # 2026-10-18: set on the Dell (.env and .env.kc) — the cache at
+      # /opt/study-tutor/hf-cache holds bge-reranker-v2-m3 and was proven to load
+      # with HF_HUB_OFFLINE=1 and no network at all.
       HF_HOME: /hf-cache
       HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-}
     volumes:
