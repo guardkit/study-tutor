@@ -8,6 +8,8 @@
 
 **Addendum 2026-07-12 (Phase-R S-R2 — gamification settlement):** `tutor_session_end` gains the **same nullable `gamification` block** its HTTP sibling `end_session` gains in [API-session-cross-device.md §5 Revision 2](API-session-cross-device.md). Additive and nullable — the block is **absent until the engine settles the session**, so pinned MCP clients (Claude Desktop) are unaffected. The block shape and field semantics are the contract's ([API-session-cross-device.md §5 Rev 2](API-session-cross-device.md)): `{xp_awarded, total_xp, level_number, level_name, level_up, achievements_unlocked:[{id,name,xp}], streak_days, streak_extended}`. Per the D14 fence (scope & build plan D14; [ADR-ARCH-030](../../architecture/decisions/ADR-ARCH-030-gamification-settlement-pure-engine-finalize-transaction.md) D7) the adapter holds **no** settlement logic the HTTP path lacks — settlement is `SessionService.finalize_session`; `tutor_session_end` is a thin tool-shape skin that surfaces the same banked decision. This addendum touches only the `tutor_session_end` **output**; the four-tool inventory, the sync classification, and the transport invariants are unchanged.
 
+**Addendum 2026-10-18 (tutor busy — [API-session-cross-device.md](API-session-cross-device.md) Revision 3):** when the tutor model is busy or refused to load, `tutor_turn` returns the flat envelope `{"error": "The tutor is busy right now. Please try again in a minute.", "error_type": "TutorBusy"}` as its tool result — the same shape it already returns for `SessionEnded` / `SessionForbidden` — instead of raising a tool exception. Retryable. The tool inventory, sync classification and transport invariants are unchanged.
+
 ---
 
 ## 1. Purpose
