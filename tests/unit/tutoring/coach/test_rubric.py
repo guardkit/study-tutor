@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -44,6 +45,7 @@ from study_tutor.tutoring.coach import (
     CRITERION_AO_ALIGNMENT,
     CRITERION_CONSTRUCTIVE_FEEDBACK,
     CRITERION_CURRICULUM_ACCURACY,
+    CRITERION_FLOORS,
     CRITERION_GRADE_APPROPRIATE_LANGUAGE,
     CRITERION_IDS,
     CRITERION_QUOTE_FIDELITY,
@@ -107,6 +109,22 @@ def _scorers_per_criterion(scores_by_criterion: dict[str, float]) -> dict[str, A
         cid: _make_constant_scorer(cid, scores_by_criterion[cid])
         for cid in CRITERION_IDS
     }
+
+
+def _six_scores(score: float = 0.85, **overrides: float) -> list[dict[str, object]]:
+    """A complete six-criterion ``criterion_scores`` list for raw Coach output.
+
+    ``score`` applies to every criterion; ``overrides`` set individual ones
+    by criterion id (design C1: ``parse_coach_output`` needs all six).
+    """
+    return [
+        {
+            "criterion_id": cid,
+            "score": overrides.get(cid, score),
+            "evidence": f"evidence for {cid}",
+        }
+        for cid in CRITERION_IDS
+    ]
 
 
 @pytest.fixture
@@ -761,7 +779,7 @@ class TestMalformedCoachOutputFallback:
             {
                 "weighted_total": 0.85,
                 "decision": "accept",
-                "criterion_scores": [],
+                "criterion_scores": _six_scores(0.85),
                 "rubric_feedback": [],
                 "misconceptions": [],
                 "reasoning": "",
@@ -769,13 +787,14 @@ class TestMalformedCoachOutputFallback:
         )
         assert isinstance(verdict, CoachVerdict)
         assert verdict.decision == "accept"
+        assert verdict.weighted_total == pytest.approx(0.85)
 
     def test_well_formed_json_string_parses(self) -> None:
         payload = json.dumps(
             {
                 "weighted_total": 0.65,
                 "decision": "revise",
-                "criterion_scores": [],
+                "criterion_scores": _six_scores(0.65),
                 "rubric_feedback": [],
                 "misconceptions": [],
                 "reasoning": "below threshold",
@@ -783,6 +802,7 @@ class TestMalformedCoachOutputFallback:
         )
         verdict = parse_coach_output(payload)
         assert verdict.decision == "revise"
+        assert verdict.weighted_total == pytest.approx(0.65)
 
     def test_existing_coach_verdict_passes_through(self) -> None:
         v = CoachVerdict(weighted_total=0.5, decision="revise")
@@ -856,7 +876,7 @@ class TestUnknownCriterionDrop:
                 "weighted_total": 0.5,
                 "decision": "accept",
                 "criterion_scores": [
-                    self._canonical_score(),
+                    *_six_scores(0.7),
                     self._unknown_score(),
                 ],
                 "rubric_feedback": [],
@@ -864,7 +884,7 @@ class TestUnknownCriterionDrop:
             }
         )
         ids = [cs.criterion_id for cs in verdict.criterion_scores]
-        assert ids == ["curriculum_accuracy"]
+        assert ids == list(CRITERION_IDS)
 
     def test_unknown_criterion_id_dropped_from_json_string_input(self) -> None:
         payload = json.dumps(
@@ -872,7 +892,7 @@ class TestUnknownCriterionDrop:
                 "weighted_total": 0.5,
                 "decision": "accept",
                 "criterion_scores": [
-                    self._canonical_score(),
+                    *_six_scores(0.7),
                     self._unknown_score(),
                 ],
                 "rubric_feedback": [],
@@ -881,7 +901,7 @@ class TestUnknownCriterionDrop:
         )
         verdict = parse_coach_output(payload)
         ids = [cs.criterion_id for cs in verdict.criterion_scores]
-        assert ids == ["curriculum_accuracy"]
+        assert ids == list(CRITERION_IDS)
 
     def test_known_criteria_preserved_in_order_alongside_unknown(self) -> None:
         """A mixed list keeps the surviving canonical criteria in the
@@ -902,6 +922,9 @@ class TestUnknownCriterionDrop:
                         "evidence": "drop me too",
                     },
                     self._canonical_score("quote_fidelity"),
+                    self._canonical_score("scaffolding_depth"),
+                    self._canonical_score("grade_appropriate_language"),
+                    self._canonical_score("constructive_feedback"),
                 ],
                 "rubric_feedback": [],
                 "misconceptions": [],
@@ -912,6 +935,9 @@ class TestUnknownCriterionDrop:
             "ao_alignment",
             "curriculum_accuracy",
             "quote_fidelity",
+            "scaffolding_depth",
+            "grade_appropriate_language",
+            "constructive_feedback",
         ]
 
     def test_already_built_coach_verdict_passthrough_is_not_filtered(
@@ -959,7 +985,7 @@ class TestUnknownCriterionDrop:
         payload = {
             "weighted_total": 0.5,
             "decision": "accept",
-            "criterion_scores": [self._canonical_score()],
+            "criterion_scores": _six_scores(0.7),
             "rubric_feedback": [],
             "misconceptions": [],
         }
@@ -969,7 +995,313 @@ class TestUnknownCriterionDrop:
         # not invoked. We assert the survivor list count equals the
         # input count to lock the contract.
         verdict = parse_coach_output(payload)
-        assert len(verdict.criterion_scores) == 1
+        assert len(verdict.criterion_scores) == 6
+
+
+# ---------------------------------------------------------------------------
+# Coach-measured-verdict design C1: computed total + decision, law floors
+# ---------------------------------------------------------------------------
+
+
+def _raw(scores: list[dict[str, object]], **fields: object) -> dict[str, object]:
+    """Raw Coach output with the given criterion scores (model total 0.95 accept)."""
+    payload: dict[str, object] = {
+        "weighted_total": 0.95,
+        "decision": "accept",
+        "criterion_scores": scores,
+        "rubric_feedback": [],
+        "misconceptions": [],
+    }
+    payload.update(fields)
+    return payload
+
+
+class TestComputedVerdict:
+    """``parse_coach_output`` ignores the model's total/decision (design C1)."""
+
+    @pytest.mark.parametrize("as_json", [False, True])
+    def test_recompute_overrides_model_accept_with_revise(self, as_json: bool) -> None:
+        payload = _raw(_six_scores(0.6))  # model says 0.95 / accept
+        verdict = parse_coach_output(json.dumps(payload) if as_json else payload)
+        assert verdict.weighted_total == pytest.approx(0.6)
+        assert verdict.decision == "revise"
+
+    def test_recompute_overrides_model_revise_with_accept(self) -> None:
+        verdict = parse_coach_output(
+            _raw(_six_scores(0.9), weighted_total=0.3, decision="revise")
+        )
+        assert verdict.weighted_total == pytest.approx(0.9)
+        assert verdict.decision == "accept"
+
+    def test_weighted_total_uses_default_weights(self) -> None:
+        scores = {cid: 0.0 for cid in CRITERION_IDS}
+        scores[CRITERION_CURRICULUM_ACCURACY] = 1.0
+        scores[CRITERION_QUOTE_FIDELITY] = 1.0
+        scores[CRITERION_SCAFFOLDING_DEPTH] = 1.0
+        verdict = parse_coach_output(_raw(_six_scores(0.0, **scores)))
+        weights = DEFAULT_WEIGHTS.as_mapping()
+        assert verdict.weighted_total == pytest.approx(
+            weights[CRITERION_CURRICULUM_ACCURACY]
+            + weights[CRITERION_QUOTE_FIDELITY]
+            + weights[CRITERION_SCAFFOLDING_DEPTH]
+        )
+
+    @pytest.mark.parametrize("as_json", [False, True])
+    def test_missing_criterion_is_malformed(self, as_json: bool) -> None:
+        payload = _raw(_six_scores(0.9)[:-1])  # quote_fidelity missing
+        with pytest.raises(MalformedCoachOutputError) as exc_info:
+            parse_coach_output(json.dumps(payload) if as_json else payload)
+        assert "incomplete rubric: missing ['quote_fidelity']" in str(exc_info.value)
+
+    def test_empty_rubric_lists_all_six_missing(self) -> None:
+        with pytest.raises(MalformedCoachOutputError) as exc_info:
+            parse_coach_output(_raw([]))
+        assert f"incomplete rubric: missing {list(CRITERION_IDS)!r}" in str(
+            exc_info.value
+        )
+
+    def test_unknown_criterion_does_not_fill_a_missing_slot(self) -> None:
+        scores = _six_scores(0.9)[:-1] + [
+            {"criterion_id": "bogus", "score": 0.9, "evidence": "x"}
+        ]
+        with pytest.raises(MalformedCoachOutputError, match="incomplete rubric"):
+            parse_coach_output(_raw(scores))
+
+    def test_schema_invalid_partial_rubric_reports_schema_validation(self) -> None:
+        # Schema validation runs before the completeness check, so a
+        # schema-invalid payload keeps its "schema validation" message.
+        payload = json.dumps(
+            {"weighted_total": 0.5, "criterion_scores": _six_scores(0.9)[:2]}
+        )
+        with pytest.raises(MalformedCoachOutputError) as exc_info:
+            parse_coach_output(payload)
+        assert "schema validation" in str(exc_info.value)
+
+    def test_duplicate_criterion_keeps_lowest_score(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        scores = _six_scores(0.9)
+        scores.insert(
+            1,
+            {
+                "criterion_id": CRITERION_CURRICULUM_ACCURACY,
+                "score": 0.3,
+                "evidence": "second, lower",
+            },
+        )
+        scores.append(
+            {
+                "criterion_id": CRITERION_CURRICULUM_ACCURACY,
+                "score": 0.6,
+                "evidence": "third, higher than the second",
+            }
+        )
+        with caplog.at_level(logging.WARNING):
+            verdict = parse_coach_output(_raw(scores))
+        assert [cs.criterion_id for cs in verdict.criterion_scores] == list(
+            CRITERION_IDS
+        )
+        kept = verdict.criterion_scores[0]
+        assert kept.score == 0.3
+        assert kept.evidence == "second, lower"
+        # 0.3 is below the curriculum_accuracy floor.
+        assert verdict.decision == "revise"
+        assert any(
+            r.__dict__.get("event") == "coach_duplicate_criterion"
+            and "curriculum_accuracy" in r.getMessage()
+            for r in caplog.records
+        )
+
+    @pytest.mark.parametrize(
+        "criterion_id", [CRITERION_CURRICULUM_ACCURACY, CRITERION_QUOTE_FIDELITY]
+    )
+    @pytest.mark.parametrize("score,expected", [(0.49, "revise"), (0.50, "accept")])
+    def test_floor_in_parse(
+        self, criterion_id: str, score: float, expected: str
+    ) -> None:
+        overrides = {criterion_id: score}
+        verdict = parse_coach_output(_raw(_six_scores(1.0, **overrides)))
+        # The total is far above the threshold either way: only the floor decides.
+        assert verdict.weighted_total >= 0.89
+        assert verdict.decision == expected
+
+    @pytest.mark.parametrize(
+        "criterion_id", [CRITERION_CURRICULUM_ACCURACY, CRITERION_QUOTE_FIDELITY]
+    )
+    @pytest.mark.parametrize("score,expected", [(0.49, "revise"), (0.50, "accept")])
+    def test_floor_in_score_rubric(
+        self,
+        criterion_id: str,
+        score: float,
+        expected: str,
+        turn_context: TurnContext,
+    ) -> None:
+        scores = {cid: 1.0 for cid in CRITERION_IDS}
+        scores[criterion_id] = score
+        verdict = score_rubric(
+            player_response="r",
+            turn_context=turn_context,
+            scorers=_scorers_per_criterion(scores),
+        )
+        assert verdict.weighted_total >= 0.89
+        assert verdict.decision == expected
+
+    def test_floors_are_the_two_law_level_criteria(self) -> None:
+        assert dict(CRITERION_FLOORS) == {
+            CRITERION_CURRICULUM_ACCURACY: 0.5,
+            CRITERION_QUOTE_FIDELITY: 0.5,
+        }
+
+    def test_non_floor_criterion_at_zero_does_not_force_revise(self) -> None:
+        verdict = parse_coach_output(
+            _raw(_six_scores(1.0, **{CRITERION_GRADE_APPROPRIATE_LANGUAGE: 0.0}))
+        )
+        assert verdict.weighted_total == pytest.approx(0.9)
+        assert verdict.decision == "accept"
+
+    @pytest.mark.parametrize("score,expected", [(0.69, "revise"), (0.70, "accept")])
+    def test_threshold_in_parse(self, score: float, expected: str) -> None:
+        verdict = parse_coach_output(_raw(_six_scores(score)))
+        assert verdict.weighted_total == pytest.approx(score)
+        assert verdict.decision == expected
+
+    def test_parse_and_score_rubric_agree(self, turn_context: TurnContext) -> None:
+        scores = {
+            CRITERION_CURRICULUM_ACCURACY: 0.8,
+            CRITERION_AO_ALIGNMENT: 0.3,
+            CRITERION_SCAFFOLDING_DEPTH: 0.9,
+            CRITERION_GRADE_APPROPRIATE_LANGUAGE: 1.0,
+            CRITERION_CONSTRUCTIVE_FEEDBACK: 0.2,
+            CRITERION_QUOTE_FIDELITY: 0.7,
+        }
+        parsed = parse_coach_output(_raw(_six_scores(0.0, **scores)))
+        scored = score_rubric(
+            player_response="r",
+            turn_context=turn_context,
+            scorers=_scorers_per_criterion(scores),
+        )
+        assert parsed.weighted_total == scored.weighted_total
+        assert parsed.decision == scored.decision
+
+    def test_feedback_filled_on_computed_revise(self) -> None:
+        verdict = parse_coach_output(
+            _raw(
+                _six_scores(
+                    0.9,
+                    **{CRITERION_CURRICULUM_ACCURACY: 0.1, CRITERION_AO_ALIGNMENT: 0.6},
+                )
+            )
+        )
+        assert verdict.decision == "revise"
+        assert [fb.criterion_id for fb in verdict.rubric_feedback] == [
+            CRITERION_CURRICULUM_ACCURACY,
+            CRITERION_AO_ALIGNMENT,
+        ]
+        for fb in verdict.rubric_feedback:
+            assert fb.suggested_focus == fb.criterion_id
+            assert fb.target_score == ACCEPTANCE_THRESHOLD
+
+    def test_model_feedback_kept_on_revise(self) -> None:
+        model_feedback = [
+            {
+                "criterion_id": CRITERION_AO_ALIGNMENT,
+                "suggested_focus": "AO2",
+                "target_score": 0.8,
+            }
+        ]
+        verdict = parse_coach_output(
+            _raw(_six_scores(0.5), rubric_feedback=model_feedback)
+        )
+        assert verdict.decision == "revise"
+        assert [fb.suggested_focus for fb in verdict.rubric_feedback] == ["AO2"]
+
+    def test_no_feedback_added_on_accept(self) -> None:
+        verdict = parse_coach_output(_raw(_six_scores(0.9)))
+        assert verdict.decision == "accept"
+        assert verdict.rubric_feedback == []
+
+    def test_disagreement_logged_with_values_in_message(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level(logging.WARNING):
+            parse_coach_output(_raw(_six_scores(0.6)))  # model 0.95 / accept
+        records = [
+            r
+            for r in caplog.records
+            if r.__dict__.get("event") == "coach_total_disagreement"
+        ]
+        assert len(records) == 1
+        message = records[0].getMessage()
+        assert "event=coach_total_disagreement" in message
+        assert "model_total=0.9500" in message
+        assert "computed_total=0.6000" in message
+        assert "model_decision=accept" in message
+        assert "computed_decision=revise" in message
+
+    def test_decision_disagreement_logged_even_when_totals_close(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level(logging.WARNING):
+            parse_coach_output(
+                _raw(_six_scores(0.72), weighted_total=0.72, decision="revise")
+            )
+        assert any(
+            r.__dict__.get("event") == "coach_total_disagreement"
+            for r in caplog.records
+        )
+
+    def test_agreement_within_tolerance_not_logged(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level(logging.WARNING):
+            # Model 0.95 vs computed 1.00: within 0.05, same decision.
+            parse_coach_output(_raw(_six_scores(1.0)))
+        assert not any(
+            r.__dict__.get("event") == "coach_total_disagreement"
+            for r in caplog.records
+        )
+
+    def test_prebuilt_verdict_is_not_recomputed(self) -> None:
+        verdict = CoachVerdict(
+            weighted_total=0.95,
+            decision="accept",
+            criterion_scores=[
+                CriterionScore(criterion_id="c1", score=0.1, evidence="e")
+            ],
+        )
+        assert parse_coach_output(verdict) is verdict
+
+
+class TestMayEvalReplay:
+    """Offline replay of the committed 18 Oct Coach verdicts (design C1).
+
+    Each fixture item holds the Coach model's raw output; the computed
+    decisions are what C1 claims on the evidence.
+    """
+
+    _FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "coach"
+
+    def _decisions(self, name: str) -> dict[tuple[str, str], str]:
+        items = json.loads((self._FIXTURES / name).read_text(encoding="utf-8"))
+        return {
+            (item["id"], item["side"]): parse_coach_output(item["raw"]).decision
+            for item in items
+        }
+
+    def test_baseline_verdicts_all_accept(self) -> None:
+        decisions = self._decisions("may-eval-baseline-verdicts-2026-10-18.json")
+        assert len(decisions) == 14
+        assert set(decisions.values()) == {"accept"}
+
+    def test_candidate1_verdicts_revise_exactly_two_weak(self) -> None:
+        decisions = self._decisions("may-eval-candidate1-verdicts-2026-10-18.json")
+        assert len(decisions) == 32
+        revised = {key for key, d in decisions.items() if d == "revise"}
+        assert revised == {
+            ("misconception-01", "finetune"),
+            ("boundary-01", "finetune"),
+        }
+        assert sum(1 for d in decisions.values() if d == "accept") == 30
 
 
 # ---------------------------------------------------------------------------

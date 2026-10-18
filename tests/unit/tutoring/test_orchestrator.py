@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
+import logging
 import time
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -46,6 +48,7 @@ from study_tutor.tutoring.coach import (
     PlayerConfig,
     RubricFeedback,
     create_coach,
+    parse_coach_output,
 )
 from study_tutor.tutoring.orchestrator import (
     LATENCY_BUDGET_SECONDS,
@@ -675,3 +678,49 @@ async def test_async_mode_coach_failure_never_affects_the_turn() -> None:
     # Draining the failed background task must not raise.
     await _drain_background_coach()
     coach.evaluate.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_async_mode_incomplete_rubric_logs_failure_and_emits_no_flag(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Design C1 (R3): an incomplete rubric is a failed evaluation, not a judgement.
+
+    In async mode the ``MalformedCoachOutputError`` from ``parse_coach_output``
+    is logged as ``orchestrator_async_coach_failed`` and NO review flag is
+    emitted (unlike the sync path's ``decision=fallback`` flag).
+    """
+    incomplete = json.dumps(
+        {
+            "weighted_total": 0.95,
+            "decision": "accept",
+            "criterion_scores": [
+                {"criterion_id": "curriculum_accuracy", "score": 1.0, "evidence": "e"},
+                {"criterion_id": "ao_alignment", "score": 1.0, "evidence": "e"},
+            ],
+        }
+    )
+    player = _make_player(responses=["A reply that was delivered."])
+    coach = MagicMock()
+    coach.evaluate = AsyncMock(side_effect=lambda **_: parse_coach_output(incomplete))
+    on_flag = MagicMock()
+
+    orch = PlayerCoachOrchestrator(
+        player=player, coach=coach, on_flag=on_flag, coach_evaluation="async"
+    )
+    with caplog.at_level(logging.WARNING):
+        result = await orch.run_turn(session_state={}, learner_message="q")
+        await _drain_background_coach()
+
+    assert result.response == "A reply that was delivered."
+    assert result.decision == "deferred"
+    coach.evaluate.assert_awaited_once()
+    failures = [
+        r
+        for r in caplog.records
+        if r.__dict__.get("event") == "orchestrator_async_coach_failed"
+    ]
+    assert len(failures) == 1
+    assert "MalformedCoachOutputError" in failures[0].getMessage()
+    assert "incomplete rubric" in failures[0].getMessage()
+    on_flag.assert_not_called()
