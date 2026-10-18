@@ -66,17 +66,35 @@ question the learner has moved past).
    (chained, logged at WARNING with the upstream status). Any other failure is unchanged. For `turn_stream`, the
    existing in-band error event carries `error_type="TutorBusy"` instead of `"generation_failed"`, and the socket
    stays open — it is not a terminal error, the learner can send again.
-3. Transport mapping, every place a reply is generated:
+3. Transport mapping, every place a reply is generated (all four reach the Player through
+   `SessionService.turn` / `turn_stream`):
    * `POST …/turn` and `POST …/voice-turn` → `503` with
      `{"error": "The tutor is busy right now. Please try again in a minute.", "error_type": "TutorBusy"}` and
      `Retry-After: 30`.
    * WS text and voice turns → the error frame `{type: "error", error, error_type: "TutorBusy"}`; socket kept open.
-4. **Contract — additive.** `docs/design/contracts/API-session-http-binding.md` §4.1 gains one row
-   (`TutorBusy` · 503 · upstream tutor model busy or refused to load), marked *(Rev 2, additive)*. Already-installed
-   apps map an unknown `error_type` to `TransportError` → the connection-problem treatment they show today for the
-   500, so no installed client gets worse. The app side (a `TutorBusy` exception, both adapters' mappings, and the
-   "busy" copy) is a separate small change made and tested on the Mac with `flutter test`; this server change does
-   not depend on it.
+   * MCP `tutor_turn` (`src/study_tutor/mcp/adapter.py`, the robot's path — both the orchestrator-backed and the
+     Phase-0 `reply_fn`) → the same flat envelope returned as the tool result, exactly as it already returns
+     `SessionEnded` / `SessionForbidden`. The orchestrator's existing revision-time fallback is unchanged (it
+     already absorbs provider failures after a first response exists).
+4. **Contract — a formal revision, not an addendum** (the closed error set grows and an existing failure changes
+   from 500 to 503):
+   * `API-session-cross-device.md` **Revision 3**: §9 gains `TutorBusy` — "the tutor model is busy or refused to
+     load; valid on `turn`, `voice_turn`, the WS turn frames and MCP `tutor_turn`; retryable" — and §10 gains
+     change 6 recording it. The sentence "the four original types remain the complete set for the six original
+     verbs" is amended to name `TutorBusy` as the one Rev 3 addition on `turn`.
+   * `API-session-http-binding.md` §4.1 gains the `TutorBusy · 503` row (*Rev 3*), with `Retry-After`;
+     `API-mcp-transport.md` gains a one-paragraph addendum for `tutor_turn`.
+   * **Pins:** the commit that lands these doc changes is the new `CONTRACT_SHA` and `BINDING_SHA`; the app's
+     pins (`app/README.md`, the adapter headers at `53f2fc5…`) move to it in the app change below. The previous
+     pins stay valid.
+   * **Installed clients (the compatibility plan):** the phone app pinned at `53f2fc5` maps an unknown
+     `error_type` to `TransportError` (`http_session_api.dart:141-153`, `http_voice_api.dart:171-201`) → the same
+     connection-problem treatment it shows for today's 500, so no installed app gets worse and none needs a forced
+     update. The robot (fleet-gateway) today gets a tool exception for this case; it will get the flat envelope
+     shape it already receives for `SessionEnded`. No migration is needed.
+   * **App change (separate, on the Mac):** a `TutorBusy` exception, both adapters' mappings, the "the tutor is
+     busy, try again in a minute" copy, and the pin bump — tested there with `flutter test`. The server change does
+     not depend on it.
 
 ### F3 — the tutor model serves two conversations at once (option a; Dell config, not code)
 
@@ -96,6 +114,8 @@ touched.
   the old rule, (e) a single over-budget newest pair; each asserts the strict alternation the template enforces.
 * New tests: `LLMProviderError.status_code` from both client paths; service raises `TutorBusy` for 429/502/503 and
   not for 400/500/connection errors; `/turn` and `/voice-turn` return 503 + envelope + `Retry-After`; WS emits the
-  `TutorBusy` frame and keeps the socket open.
+  `TutorBusy` frame and keeps the socket open; MCP `tutor_turn` returns the envelope on both the orchestrator-backed
+  and Phase-0 paths.
 * Runtime on the Dell after deploy (F3 config + rebuilt images): a session with an orphaned learner row answers
-  its next turn; two concurrent learners are both answered; a third/fourth concurrent request gets `TutorBusy`.
+  its next turn; two concurrent learners are both answered; a third concurrent request waits and is then answered;
+  a fourth is refused by llama-swap (429) and the learner gets `TutorBusy`.
