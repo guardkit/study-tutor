@@ -48,7 +48,17 @@ hand-built verdicts) is unchanged.
 **Floors (law-level only):** `curriculum_accuracy < 0.5` or `quote_fidelity < 0.5` forces revise whatever the total —
 a factual error or a misquotation is never outweighed by friendliness. Applied in `score_rubric` too.
 
-### C2 — anchor the Coach prompt on the failure patterns it misses, and measure
+### C2 — anchor the Coach prompt on the failure patterns it misses, and measure — **PENDING (not in this change)**
+
+Codex design review round 2 (R2): C2 ships only after a **required** gate on independently labelled replies the anchors
+never saw. Gate (fixed before scoring): a fresh set of ≥ 10 weak and ≥ 10 good single-turn replies, labelled blind
+(Rich, or a judge given only the eval's expected-behaviour rubric) before the frozen prompt scores them; pass = ≥ 70 % of
+weak revised and ≤ 10 % of good revised under C1's rule; the 32 May replies remain regression evidence. The candidate
+prompt is kept as evidence (`~/cross-model-evidence/2026-10-18-coach/coach-candidate-1.md` on the Spark), **not**
+committed to `roles/`. Until then the deployed prompt is unchanged, so C1 alone changes flags only through honest totals
+and the two law-level floors.
+
+The candidate's design and measurement, for the record:
 
 `coach.md` gains short scoring anchors drawn from the five missed replies (no new criteria, no weights in the prompt):
 
