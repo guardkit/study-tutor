@@ -1,0 +1,322 @@
+[
+ {
+  "id": "socratic-01",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 9.7,
+  "raw": "{\"weighted_total\":0.85,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Accurate references to tyrant, witches, and character arcs.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.9,\"evidence\":\"Aligns with AO1/AO2 by demanding analytical argument over identification.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses Socratic questioning to guide theme selection effectively.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear register suitable for Year 10 GCSE students.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.7,\"evidence\":\"Next step is picking a theme, not immediate essay writing.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"Quote 'tyrant' is verbatim and correctly attributed.\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "socratic-01",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 12.8,
+  "raw": "{\n  \"weighted_total\": 0.35,\n  \"decision\": \"revise\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"No factual errors present.\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 0.4, \"evidence\": \"Lacks content for AO1 theme identification.\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 0.9, \"evidence\": \"Uses Socratic questioning effectively.\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Register suitable for Year 10.\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.2, \"evidence\": \"No usable next step or content provided.\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"No quotations used.\"}\n  ],\n  \"rubric_feedback\": [\n    {\"criterion_id\": \"constructive_feedback\", \"suggested_focus\": \"Provide specific thematic pointers alongside questions.\", \"target_score\": 0.8},\n    {\"criterion_id\": \"ao_alignment\", \"suggested_focus\": \"Include key themes like ambition/guilt to aid AO1.\", \"target_score\": 0.8}\n  ],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "socratic-02",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 10.9,
+  "raw": "{\n  \"weighted_total\": 0.85,\n  \"decision\": \"accept\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"Correctly identifies Goole/ghoul and Birling context\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 0.9, \"evidence\": \"Explicitly references AO1/AO2 and Grade 7-9 criteria\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 1.0, \"evidence\": \"Uses Socratic questions to guide interpretation\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Encouraging tone suitable for Year 10\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.7, \"evidence\": \"Directly refuses answer; limits immediate utility\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"Verbatim quote from Act 1 correctly attributed\"}\n  ],\n  \"rubric_feedback\": [\n    {\"criterion_id\": \"constructive_feedback\", \"suggested_focus\": \"Provide a model sentence or partial answer to demonstrate expected depth\", \"target_score\": 0.9}\n  ],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "socratic-02",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 9.3,
+  "raw": "{\"weighted_total\":0.4,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"No factual errors present.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.4,\"evidence\":\"Lacks AO2/AO3 content despite request.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic questioning on stage directions.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible register for Year 10.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"No specific next step or usable content.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific textual evidence or analytical framework\",\"target_score\":0.8},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Integrate AO2/AO3 concepts explicitly\",\"target_score\":0.8}],\"misconceptions\":[{\"topic_name\":\"unspecified\",\"misconception_text\":\"Tutor assumes pure Socratic questioning suffices when learner explicitly requests direct answer.\"}]}",
+  "error": null
+ },
+ {
+  "id": "essay-feedback-01",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 6.2,
+  "raw": "{\"weighted_total\":0.95,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correct grade assessment and AO references\"},{\"criterion_id\":\"ao_alignment\",\"score\":1.0,\"evidence\":\"Explicitly targets AO1 and AO2 skills\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Socratic steps guide without giving answers\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, encouraging tone for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":1.0,\"evidence\":\"Specific next step: find specific quote\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No direct quotes used, no errors\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "essay-feedback-01",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 10.8,
+  "raw": "{\"weighted_total\":0.65,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies Act 1 Scene 7 context\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.6,\"evidence\":\"Questions only, lacks explicit AO criteria\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Strong Socratic questioning on language/context\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible register for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.4,\"evidence\":\"No specific next step or model provided\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotes cited, no errors\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide a specific model sentence or structural tip for Grade 7\",\"target_score\":1.0},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explicitly name AO1/AO2 requirements for Grade 7\",\"target_score\":1.0}],\"misconceptions\":[{\"topic_name\":\"unspecified\",\"misconception_text\":\"Learner assumes simple plot summary suffices for Grade 7 analysis\"}]}",
+  "error": null
+ },
+ {
+  "id": "essay-feedback-02",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 7.1,
+  "raw": "{\"weighted_total\":0.95,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correct AQA AO definitions and context\"},{\"criterion_id\":\"ao_alignment\",\"score\":1.0,\"evidence\":\"Explicitly maps feedback to AO1-3\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Socratic steps guide without giving answers\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible Year 10 register\"},{\"criterion_id\":\"constructive_feedback\",\"score\":1.0,\"evidence\":\"Specific next step: find quote\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"Quotes cited are verbatim from text\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "essay-feedback-02",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 9.6,
+  "raw": "{\"weighted_total\":0.45,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":0.9,\"evidence\":\"Correctly identifies need for evidence/analysis\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.4,\"evidence\":\"Questions only, no method or technique provided\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.8,\"evidence\":\"Uses Socratic questioning effectively\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Register suitable for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"No specific next step or model provided\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotes cited\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific exam technique or model sentence\",\"target_score\":0.8},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explicitly name AO1/AO2 and give method\",\"target_score\":0.8}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "quote-analysis-01",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 7.0,
+  "raw": "{\"weighted_total\":0.85,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies quote and context\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.9,\"evidence\":\"Explicitly targets AO1 and AO2 methods\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Socratic questioning guides without giving answer\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Accessible register for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.7,\"evidence\":\"Asks for thoughts but lacks specific technique model\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"Quote is verbatim and attributed\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "quote-analysis-01",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 9.1,
+  "raw": "{\"weighted_total\":0.6,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Quote and context factually correct\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.5,\"evidence\":\"AO2 focus but lacks explicit technique naming\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Strong Socratic questioning without giving answers\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible register for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"No specific next step or method provided\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"Quote is verbatim and attributed correctly\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide a specific analytical method or sentence stem\",\"target_score\":0.8},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explicitly name the technique (antithesis/imagery)\",\"target_score\":0.8}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "quote-analysis-02",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 11.7,
+  "raw": "{\n  \"weighted_total\": 0.65,\n  \"decision\": \"revise\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"Correctly identifies Shelley and poem context.\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 0.4, \"evidence\": \"Lacks specific AO2 terminology or exam technique.\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 1.0, \"evidence\": \"Effective Socratic breakdown of key terms.\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Clear, accessible register for Year 10.\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.4, \"evidence\": \"No specific next step or model answer provided.\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"Quotation is verbatim and accurate.\"}\n  ],\n  \"rubric_feedback\": [\n    {\"criterion_id\": \"constructive_feedback\", \"suggested_focus\": \"Provide a model sentence linking sneer/command to tyranny.\", \"target_score\": 1.0},\n    {\"criterion_id\": \"ao_alignment\", \"suggested_focus\": \"Explicitly reference AO2 language analysis.\", \"target_score\": 1.0}\n  ],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "quote-analysis-02",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 9.4,
+  "raw": "{\n  \"weighted_total\": 0.45,\n  \"decision\": \"revise\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"No factual errors present.\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 0.4, \"evidence\": \"Lacks concrete exam technique or content.\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 1.0, \"evidence\": \"Uses effective Socratic questioning.\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Register suitable for Year 10.\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.2, \"evidence\": \"No specific next step or model answer.\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"Quote is verbatim and accurate.\"}\n  ],\n  \"rubric_feedback\": [\n    {\"criterion_id\": \"constructive_feedback\", \"suggested_focus\": \"Provide a model sentence or specific analytical vocabulary.\", \"target_score\": 1.0},\n    {\"criterion_id\": \"ao_alignment\", \"suggested_focus\": \"Link questioning to AO2 language analysis explicitly.\", \"target_score\": 1.0}\n  ],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "misconception-01",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 6.9,
+  "raw": "{\"weighted_total\":0.95,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Corrects 1912 writing error to 1945\"},{\"criterion_id\":\"ao_alignment\",\"score\":1.0,\"evidence\":\"Explicitly links context to AO3\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Asks why setting differs from writing date\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible Year 10 register\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.9,\"evidence\":\"Corrects fact, prompts reflection on purpose\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used\"}],\"rubric_feedback\":[],\"misconceptions\":[{\"topic_name\":\"unspecified\",\"misconception_text\":\"Learner confuses the play's setting date with its publication date.\"}]}",
+  "error": null
+ },
+ {
+  "id": "misconception-01",
+  "side": "finetune",
+  "label": "weak",
+  "behaviour_score": 0.17,
+  "red_flags": 1,
+  "seconds": 14.9,
+  "raw": "{\"weighted_total\":0.0,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":0.1,\"evidence\":\"Agrees with false date 1912\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.8,\"evidence\":\"Prompts contextual analysis effectively\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic questioning on context\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible Year 10 register\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"No correction of factual error\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used\"}],\"rubric_feedback\":[{\"criterion_id\":\"curriculum_accuracy\",\"suggested_focus\":\"Correct play written 1945\",\"target_score\":1.0}],\"misconceptions\":[{\"topic_name\":\"unspecified\",\"misconception_text\":\"Learner believes play was written in 1912\"}]}",
+  "error": null
+ },
+ {
+  "id": "misconception-02",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 12.3,
+  "raw": "{\"weighted_total\":0.95,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies prediction vs command distinction\"},{\"criterion_id\":\"ao_alignment\",\"score\":1.0,\"evidence\":\"Explicitly links to AO1 and AO2 requirements\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses Socratic questions and courtroom analogy\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Accessible register for Year 10 students\"},{\"criterion_id\":\"constructive_feedback\",\"score\":1.0,\"evidence\":\"Specific task to find choice-based quote\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No direct quotes used, no errors\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "misconception-02",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 10.7,
+  "raw": "{\"weighted_total\":0.65,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies Macbeth's agency and soliloquy.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.5,\"evidence\":\"Questions only; lacks explicit AO1/AO3 technique guidance.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Effective Socratic questioning on Macbeth's internal conflict.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible register for Year 10 students.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.4,\"evidence\":\"No specific next step or analytical method provided.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No direct quotations used, so no fidelity issues.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide a specific analytical step or sentence starter.\",\"target_score\":1.0},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explicitly link questioning to AO1/AO3 exam criteria.\",\"target_score\":1.0}],\"misconceptions\":[{\"topic_name\":\"macbeth_agency\",\"misconception_text\":\"Learner incorrectly attributes sole responsibility for Duncan's murder to the witches.\"}]}",
+  "error": null
+ },
+ {
+  "id": "exam-technique-01",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 7.3,
+  "raw": "{\"weighted_total\":0.75,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correct mark allocation and AO breakdown\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.8,\"evidence\":\"Aligns with AOs but lacks specific technique guidance\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses Socratic questioning effectively\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible register for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.4,\"evidence\":\"No specific next step or actionable technique\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific writing techniques or structural strategies\",\"target_score\":0.8}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "exam-technique-01",
+  "side": "finetune",
+  "label": "weak",
+  "behaviour_score": 0.17,
+  "red_flags": 0,
+  "seconds": 7.6,
+  "raw": "{\"weighted_total\":0.4,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies AO5 and AO6\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.3,\"evidence\":\"No concrete method or technique provided\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic questioning approach\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible register for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.2,\"evidence\":\"No specific next step or actionable advice\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific writing techniques or structural strategies\",\"target_score\":0.8},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explain how to demonstrate sophisticated control\",\"target_score\":0.8}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "exam-technique-02",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 8.5,
+  "raw": "{\"weighted_total\":0.3,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Analogy correctly distinguishes content from method\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.4,\"evidence\":\"No explicit AO2 definition or Literature link\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic film analogy guides thinking\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Accessible register for Year 10 students\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"No specific next step or technique provided\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No primary text quotes used\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide explicit AO2 definition and Literature example\",\"target_score\":1.0},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Link analogy directly to writer's methods in texts\",\"target_score\":1.0}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "exam-technique-02",
+  "side": "finetune",
+  "label": "weak",
+  "behaviour_score": 0.33,
+  "red_flags": 0,
+  "seconds": 8.1,
+  "raw": "{\"weighted_total\":0.4,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"AO2 definition implied correctly\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.3,\"evidence\":\"No actual AO2 explanation provided\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic questioning approach\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible Year 10 register\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.2,\"evidence\":\"No usable next step or method\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotes used\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific AO2 definition and exam technique\",\"target_score\":1.0},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explain AO2 criteria explicitly before questioning\",\"target_score\":1.0}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "scaffolding-01",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 7.7,
+  "raw": "{\n  \"weighted_total\": 0.95,\n  \"decision\": \"accept\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"Correct distinction simile vs metaphor\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 1.0, \"evidence\": \"Explicitly links to AO2 language analysis\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 1.0, \"evidence\": \"Socratic questioning prompts student rewrite\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Clear, encouraging Year 10 register\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.9, \"evidence\": \"Clear next step: rewrite sentence as metaphor\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"No primary text quotes used\"}\n  ],\n  \"rubric_feedback\": [],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "scaffolding-01",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 10.1,
+  "raw": "{\"weighted_total\":0.45,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Examples correctly distinguish metaphor and simile\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.4,\"evidence\":\"No explicit AO2 link or exam technique provided\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses Socratic questioning to guide discovery\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, accessible language for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"Lacks specific next step or usable definition\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No primary text quotes used\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide clear definitions and exam application tips\",\"target_score\":0.9},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explicitly link to AO2 language analysis requirements\",\"target_score\":0.8}],\"misconceptions\":[{\"topic_name\":\"metaphor_simile\",\"misconception_text\":\"Learner confuses metaphor with simile due to lack of structural distinction\"}]}",
+  "error": null
+ },
+ {
+  "id": "scaffolding-02",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 8.2,
+  "raw": "{\n  \"weighted_total\": 0.85,\n  \"decision\": \"accept\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"Correct AO definitions and grade descriptors\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 0.9, \"evidence\": \"Explicitly targets AO1, AO2, AO3 diagnostic\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 1.0, \"evidence\": \"Socratic diagnostic questions to identify gaps\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Encouraging tone suitable for Year 10\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.7, \"evidence\": \"Next step is diagnostic, not direct technique\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"No primary text quotes used\"}\n  ],\n  \"rubric_feedback\": [],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "scaffolding-02",
+  "side": "finetune",
+  "label": "weak",
+  "behaviour_score": 0.33,
+  "red_flags": 0,
+  "seconds": 9.2,
+  "raw": "{\"weighted_total\":0.4,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"No factual errors present.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.3,\"evidence\":\"No specific AO guidance provided.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic questioning approach.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Tone suitable for Year 10.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.2,\"evidence\":\"No usable next step given.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotes used.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific AO1/2/3 criteria for Grade 7\",\"target_score\":0.8},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Explicitly link advice to AQA Assessment Objectives\",\"target_score\":0.8}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "boundary-01",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 6.0,
+  "raw": "{\"weighted_total\":1.0,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies AQA texts and exam structure\"},{\"criterion_id\":\"ao_alignment\",\"score\":1.0,\"evidence\":\"Strictly redirects to GCSE English topics\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Offers specific revision options for choice\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, encouraging Year 10 register\"},{\"criterion_id\":\"constructive_feedback\",\"score\":1.0,\"evidence\":\"Provides three concrete next steps\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "boundary-01",
+  "side": "finetune",
+  "label": "weak",
+  "behaviour_score": 0.33,
+  "red_flags": 0,
+  "seconds": 7.9,
+  "raw": "{\"weighted_total\":0.0,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies scope as English\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.0,\"evidence\":\"Engages with off-subject CS request\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.5,\"evidence\":\"Offers CS logic help, not English\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Tone suitable for Year 10\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.4,\"evidence\":\"No specific English next step given\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotes used\"}],\"rubric_feedback\":[{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Decline CS request and redirect to English\",\"target_score\":1.0}],\"misconceptions\":[{\"topic_name\":\"unspecified\",\"misconception_text\":\"Tutor offers to assist with Computer Science logic instead of strictly redirecting to English.\"}]}",
+  "error": null
+ },
+ {
+  "id": "boundary-02",
+  "side": "base",
+  "label": "clean",
+  "behaviour_score": 1.0,
+  "red_flags": 0,
+  "seconds": 7.3,
+  "raw": "{\"weighted_total\":0.92,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies Priestley's political message and AO2.\"},{\"criterion_id\":\"ao_alignment\",\"score\":1.0,\"evidence\":\"Explicitly references AO2 and exam relevance.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses ranking task to scaffold character analysis.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Encouraging tone suitable for Year 10.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.8,\"evidence\":\"Clear next step, though lacks specific textual anchor.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used, so no errors.\"}],\"rubric_feedback\":[],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "boundary-02",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 8.5,
+  "raw": "{\"weighted_total\":0.85,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"Correctly identifies Priestley and Inspector's speech.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.9,\"evidence\":\"Aligns with AO1/AO2 via textual analysis focus.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses Socratic questioning to guide analysis.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Clear, supportive register for Year 10.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.7,\"evidence\":\"Directs to specific scene but lacks concrete next step.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No direct quotes used, so no errors.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide a specific sentence starter or structural tip.\",\"target_score\":1.0}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "tone-01",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 8.6,
+  "raw": "{\"weighted_total\":0.83,\"decision\":\"accept\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"No factual errors present.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.8,\"evidence\":\"Supportive but lacks specific exam technique.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":1.0,\"evidence\":\"Uses Socratic questioning to diagnose needs.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Register suits Year 10 anxiety.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.5,\"evidence\":\"Asks questions but gives no immediate actionable step.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide one immediate micro-strategy alongside questions\",\"target_score\":0.8}],\"misconceptions\":[{\"topic_name\":\"unspecified\",\"misconception_text\":\"Learner believes English ability is innate talent rather than a developable skill.\"}]}",
+  "error": null
+ },
+ {
+  "id": "tone-01",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.5,
+  "red_flags": 0,
+  "seconds": 8.1,
+  "raw": "{\"weighted_total\":0.6,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"No factual errors present.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.4,\"evidence\":\"No specific AQA technique or AO guidance.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Strong Socratic questioning to diagnose needs.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Supportive, accessible Year 10 register.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"Lacks specific next step or actionable advice.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide a specific, small actionable step or resource.\",\"target_score\":0.8},{\"criterion_id\":\"ao_alignment\",\"suggested_focus\":\"Link initial support to a specific AQA AO or skill.\",\"target_score\":0.7}],\"misconceptions\":[]}",
+  "error": null
+ },
+ {
+  "id": "tone-02",
+  "side": "base",
+  "label": "holdout",
+  "behaviour_score": 0.83,
+  "red_flags": 0,
+  "seconds": 9.8,
+  "raw": "{\n  \"weighted_total\": 0.45,\n  \"decision\": \"revise\",\n  \"criterion_scores\": [\n    {\"criterion_id\": \"curriculum_accuracy\", \"score\": 1.0, \"evidence\": \"No factual errors regarding grading.\"},\n    {\"criterion_id\": \"ao_alignment\", \"score\": 0.3, \"evidence\": \"No specific AO guidance provided.\"},\n    {\"criterion_id\": \"scaffolding_depth\", \"score\": 0.8, \"evidence\": \"Good diagnostic questions for blockage.\"},\n    {\"criterion_id\": \"grade_appropriate_language\", \"score\": 1.0, \"evidence\": \"Supportive, accessible tone for Year 10.\"},\n    {\"criterion_id\": \"constructive_feedback\", \"score\": 0.2, \"evidence\": \"No usable next step or technique given.\"},\n    {\"criterion_id\": \"quote_fidelity\", \"score\": 1.0, \"evidence\": \"No quotations used.\"}\n  ],\n  \"rubric_feedback\": [\n    {\"criterion_id\": \"constructive_feedback\", \"suggested_focus\": \"Provide specific exam technique or AO breakdown.\", \"target_score\": 0.8},\n    {\"criterion_id\": \"ao_alignment\", \"suggested_focus\": \"Link advice to specific AQA Assessment Objectives.\", \"target_score\": 0.8}\n  ],\n  \"misconceptions\": []\n}",
+  "error": null
+ },
+ {
+  "id": "tone-02",
+  "side": "finetune",
+  "label": "holdout",
+  "behaviour_score": 0.67,
+  "red_flags": 0,
+  "seconds": 7.9,
+  "raw": "{\"weighted_total\":0.6,\"decision\":\"revise\",\"criterion_scores\":[{\"criterion_id\":\"curriculum_accuracy\",\"score\":1.0,\"evidence\":\"No factual errors present.\"},{\"criterion_id\":\"ao_alignment\",\"score\":0.4,\"evidence\":\"No specific AQA technique or AO guidance.\"},{\"criterion_id\":\"scaffolding_depth\",\"score\":0.9,\"evidence\":\"Uses Socratic questioning effectively.\"},{\"criterion_id\":\"grade_appropriate_language\",\"score\":1.0,\"evidence\":\"Supportive, accessible Year 10 register.\"},{\"criterion_id\":\"constructive_feedback\",\"score\":0.3,\"evidence\":\"Lacks specific next step or method.\"},{\"criterion_id\":\"quote_fidelity\",\"score\":1.0,\"evidence\":\"No quotations used.\"}],\"rubric_feedback\":[{\"criterion_id\":\"constructive_feedback\",\"suggested_focus\":\"Provide specific AQA essay structure or AO1/2/3 technique.\",\"target_score\":0.8}],\"misconceptions\":[]}",
+  "error": null
+ }
+]

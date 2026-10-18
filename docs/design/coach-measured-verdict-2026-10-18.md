@@ -61,15 +61,37 @@ a factual error or a misquotation is never outweighed by friendliness. Applied i
 and the example's `weighted_total` / `decision` are labelled as computed by the app (the model may still emit them; C1
 ignores them for the decision).
 
-**Acceptance is measured, not asserted.** The same live run is repeated with the candidate prompt (the C1 decision rule
-applied to its criterion scores):
+**Acceptance is measured, and its claims are limited to what the data can show** (Codex design review round 1, R1/R2).
+The eval has 32 labelled replies (`criteria_judgements.jsonl`, keyed by `(id, side)`): **5 weak** (fine-tune, ≤ 1/3 of
+expected behaviours: misconception-01, exam-technique-01, exam-technique-02, scaffolding-02, boundary-01), **11 clean**
+(all behaviours, no red flag: nine base replies — the selected tuning controls — plus fine-tune essay-feedback-01 and
+quote-analysis-01), and 16 in between (8 at 5/6, 7 at 2/3, 1 at 1/2). All five weak replies were used to write the
+anchors, and the repo holds no other independently labelled weak replies (the multi-turn eval is judged per session,
+not per turn). So:
 
-* tuning set (the 14 above): **≥ 4 of 5 weak → revise, ≤ 1 of 9 clean → revise**;
-* hold-out (the eval's other 18 replies, never used while writing the anchors): the 9 replies meeting 5/6 of the expected
-  behaviours (0.83) with no red flag → **at most 2 revised**; reported in full either way.
+* **Detection is claimed only on the five seen weak replies**, not on unseen ones. Bar: more weak replies revised than the
+  baseline's 0 / 5.
+* **No-harm is claimed on all 27 others**, 18 of which were never looked at while writing the anchors. Bar: **0 of the 11
+  clean** revised, and **at most 2 of the 8** replies at 5/6 revised.
+* **Generalisation to unseen weak replies is explicitly not established.** Named follow-up: an independently labelled set
+  of weak and good single-turn replies (labelled blind, before scoring) to measure detection; the prompt is frozen until
+  then.
 
-The verdicts from the accepted run are committed as a fixture and an offline replay test asserts the C1 decisions on
-them (no model in the test).
+**Measured 18 Oct (candidate prompt 1, frozen; one sample per reply; verdicts committed as
+`tests/fixtures/coach/may-eval-candidate1-verdicts-2026-10-18.json`), with the C1 decision rule:** weak **2 / 5** revised
+(misconception-01: `curriculum_accuracy` 0.1, was 1.0; boundary-01: `ao_alignment` 0.0); clean **0 / 11**; the 8 at 5/6
+**0 / 8**; the other 8 **0 / 8**. The anchors move `ao_alignment` and `constructive_feedback` sharply on the three
+questions-only weak replies (0.3 / 0.2) but their weighted totals stay at 0.73, just above the threshold, because they
+are accurate, fluent and quote-free; the same pattern appears on several acceptable Socratic replies (0.4 / 0.2–0.4),
+so no further floor or threshold is chosen from this data — doing so would be tuning on the hold-out. An offline
+replay test asserts the C1 decisions on both committed fixtures.
+
+**Async failure path (R3).** C1 makes a rubric missing any criterion a failed evaluation. In production (async,
+`cli/main.py:408`) a failed evaluation is caught at `orchestrator.py:1125-1139`, logged as
+`orchestrator_async_coach_failed` at WARNING and **not** turned into a review flag — unlike the sync path's
+`_fallback_coach_unreachable` (`:1150-1188`), which flags `decision=fallback`. This stays as is (a failed evaluation is not
+a judgement on the reply), and is now stated; the implementation adds a test that an incomplete async rubric logs the
+warning and emits no flag. All 46 live verdicts gathered on 18 Oct were complete rubrics.
 
 ### Not chosen
 
@@ -84,4 +106,5 @@ them (no model in the test).
 * New unit tests: recompute overrides the model's total and decision (including model "accept" → computed "revise");
   missing criterion ⇒ malformed; duplicate keeps the lowest; each floor at 0.49 / 0.50; threshold at 0.69 / 0.70;
   feedback filled on revise; the disagreement log carries its values in the message.
-* The measured run above meets its tuning-set and hold-out bars; its raw verdicts committed; offline replay test green.
+* The measured run above meets its bars (detection above baseline on the seen weak replies; 0/11 clean and ≤ 2/8 at 5/6
+  revised); both fixtures committed; offline replay test green; the async incomplete-rubric test green.
