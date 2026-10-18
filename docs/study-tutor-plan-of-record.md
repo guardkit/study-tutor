@@ -55,9 +55,35 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 > `TutorBusy` case in `http_session_api.dart` and both `http_voice_api.dart` switches,
 > "the tutor is busy, try again in a minute" copy in place of the connection-problem
 > dialog, pins → `9b785c5`, `flutter test`; until then installed apps show the
-> connection-problem dialog (as they did for the 500). (2) Brief items still
-> open: coach speed under factory load, coach accepting weak replies / trusting the
-> model's own total, one-active session across 8100/8101, `HF_HUB_OFFLINE` empty.
+> connection-problem dialog (as they did for the 500).
+>
+> **18 Oct, later — law 3, the Coach, and a silent retrieval outage** (all Claude-led
+> `cross-model-build`, Codex-reviewed; evidence `~/cross-model-evidence/2026-10-18-*` on the Spark):
+> - **Retrieval was dead on the Dell since the move**: corpus embedded with `nomic-embed`
+>   (768-dim, 10 May) vs the Dell's `embed` = Qwen3-Embedding (1024-dim) → every query
+>   failed silently (`retrieval.query_failed`), so no quote had been checked against the texts.
+>   **Fixed**: re-ingested per RUNBOOK-rag-ingest (581 chunks, 1024-dim; old corpus at
+>   `~/backups/study-tutor-chroma-nomic768-20261018` on the Dell), image rebuilt (`54f3cee`).
+> - **Law 3 now holds in every session** ([design](design/quote-law3-no-unverified-quote-2026-10-18.md),
+>   merge `0ea2103`): unmatched, short, unterminated and verifier-exception quotes are removed
+>   (neutral line), never softened with "perhaps"; no set text ⇒ verify against all the
+>   subject's texts; the session's subject reaches the verifier; a stream-verifier race fixed.
+>   Live: a robot-shaped session logs `scope=all_primary_texts chunks=6`. **Known cost, being
+>   fixed now**: a genuine quote whose chunk isn't in the learner-message top 6 is also removed
+>   → [quote lookup by span](design/quote-lookup-by-span-2026-10-18.md) in review.
+> - **Coach verdict computed** (merge `3003b5e`): weighted total + threshold + floors
+>   (accuracy/quote < 0.5 ⇒ revise); the model's own total no longer trusted. Measured live:
+>   the deployed Coach accepted **5/5** weak May-eval replies; an anchored prompt reached 2/5
+>   with 0/27 false — **not shipped** (C2 pending a blind, independently labelled set: ≥10 weak
+>   + ≥10 good, pass ≥70% weak revised / ≤10% good). Production Coach is async: flags only.
+> - `HF_HUB_OFFLINE=1` on both apps (cache proven warm, offline load verified).
+> - **Rich's decisions needed**: (a) Coach speed under factory load — priority for
+>   `tutor-coach` on the factory model, or let the tutor model coach itself (weakens
+>   independence), or accept async lag; (b) one active session per learner across
+>   8100/8101 (approved semantics, 4 Aug) — keep, or scope one-active per client; (c) the
+>   robot's Scholar token resolves to `lilymay`, so robot testing writes her record — give
+>   the robot a test token for testing?; (d) robot voice: no spoken turn ever reached the
+>   Dell — needs the Scholar "What Scholar just did" list after an antenna attempt.
 
 | Piece | State | Receipt |
 |---|---|---|
