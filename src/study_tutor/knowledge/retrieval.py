@@ -194,6 +194,16 @@ def has_primary_text(text_name: str, subject: str = DEFAULT_SUBJECT) -> bool:
     return text_name in _PRIMARY_TEXT_INDEX.get(subject, ())
 
 
+def primary_texts_for(subject: str = DEFAULT_SUBJECT) -> frozenset[str]:
+    """Every ``text_name`` with primary chunks registered for ``subject``.
+
+    Used by :func:`should_retrieve` for a session with no set text
+    (``text_name=None``): retrieval runs across all of the subject's
+    primary texts when there is at least one.
+    """
+    return frozenset(_PRIMARY_TEXT_INDEX.get(subject, ()))
+
+
 # ---------------------------------------------------------------------------
 # Embedder availability probe
 # ---------------------------------------------------------------------------
@@ -280,7 +290,7 @@ def embedder_available_within(timeout_s: float) -> bool:
 
 
 def should_retrieve(
-    text_name: str,
+    text_name: str | None,
     focus_aos: set[str],
     subject: str = DEFAULT_SUBJECT,
 ) -> RetrievalDecision:
@@ -293,9 +303,12 @@ def should_retrieve(
 
     Parameters
     ----------
-    text_name : str
+    text_name : str | None
         Name of the literary work the student is studying (e.g.
-        ``"Macbeth"``). Looked up against the corpus index.
+        ``"Macbeth"``). Looked up against the corpus index. ``None`` means
+        the session has no set text: retrieve across ALL of the subject's
+        primary texts, skipping with ``REASON_NO_PRIMARY`` only when the
+        subject has none registered.
     focus_aos : set[str]
         Assessment Objectives the current turn is targeting (e.g.
         ``{"AO1", "AO2"}``). Compared against ``{"AO3"}`` for the bypass
@@ -315,8 +328,13 @@ def should_retrieve(
         return RetrievalDecision(False, REASON_AO3_ONLY, "ao3_bypass")
 
     # Branch 2: no primary text indexed — fall back to AnalysisMode.
-    # Player runs against secondary/context corpora downstream.
-    if not has_primary_text(text_name, subject):
+    # Player runs against secondary/context corpora downstream. With no
+    # set text, any primary text registered for the subject is enough.
+    if text_name is None:
+        has_primary = bool(primary_texts_for(subject))
+    else:
+        has_primary = has_primary_text(text_name, subject)
+    if not has_primary:
         return RetrievalDecision(False, REASON_NO_PRIMARY, "analysis_mode")
 
     # Branch 3: mixed AO3 + non-AO3 — retrieve, but tag mode="mixed" so
@@ -330,7 +348,7 @@ def should_retrieve(
 
 
 def decide_retrieval(
-    text_name: str,
+    text_name: str | None,
     focus_aos: set[str],
     *,
     subject: str = DEFAULT_SUBJECT,
@@ -643,7 +661,7 @@ def _passes_aqa_filter(chunk: CorpusChunk) -> bool:
 def _query_collection(
     collection: Any,
     query: str,
-    text_name: str,
+    text_name: str | None,
     candidate_count: int,
 ) -> tuple[list[CorpusChunk], list[float]]:
     """Run the ChromaDB query and hydrate results into ``CorpusChunk`` objects.
@@ -652,21 +670,24 @@ def _query_collection(
     Chroma's cosine/L2 distance values — *lower is better* — so the
     no-rerank fallback sorts ascending.
 
+    ``text_name=None`` omits the text-name clause (every text in this
+    subject's collection) and keeps the same ``NON_AO3_SOURCE_TYPES``
+    source filter as a set-text session.
+
     Failures here are returned as empty lists rather than propagated: an
     unreachable collection at retrieval time is functionally the same as
     an empty corpus from the AC's perspective ("no primary-text edition
     available" — the orchestrator records that reason).
     """
-    where: dict[str, Any] = {
-        "$and": [
-            {"text_name": text_name},
-            {
-                "source_type": {
-                    "$in": [s.value for s in NON_AO3_SOURCE_TYPES]
-                }
-            },
-        ]
+    source_filter: dict[str, Any] = {
+        "source_type": {"$in": [s.value for s in NON_AO3_SOURCE_TYPES]}
     }
+    where: dict[str, Any]
+    if text_name is None:
+        # Chroma rejects a one-clause ``$and``; the bare clause is the filter.
+        where = source_filter
+    else:
+        where = {"$and": [{"text_name": text_name}, source_filter]}
     try:
         raw = collection.query(
             query_texts=[query],
@@ -755,7 +776,7 @@ def _primary_first(
 
 def retrieve(
     query: str,
-    text_name: str,
+    text_name: str | None,
     focus_aos: set[str],
     top_k: int = DEFAULT_TOP_K,
     subject: str = DEFAULT_SUBJECT,
@@ -766,9 +787,11 @@ def retrieve(
     ----------
     query : str
         Natural-language query the Player is grounding its turn against.
-    text_name : str
+    text_name : str | None
         Literary work to filter by (e.g. ``"macbeth"``). Maps to the
-        ``text_name`` metadata field on each ``CorpusChunk``.
+        ``text_name`` metadata field on each ``CorpusChunk``. ``None``
+        (a session with no set text) applies no text-name filter: every
+        text in the subject's collection, same source-type filter.
     focus_aos : set[str]
         Assessment Objectives the turn targets. Currently advisory — the
         decision function (``should_retrieve``) handles AO3 routing
@@ -797,11 +820,12 @@ def retrieve(
     Raises
     ------
     ValueError
-        If ``top_k`` is non-positive or ``text_name`` is empty. We refuse
-        to silently treat these as "always empty" because both usually
+        If ``top_k`` is non-positive or ``text_name`` is the empty string
+        (``None`` is the explicit "all texts" value). We refuse to
+        silently treat these as "always empty" because both usually
         indicate a configuration bug at the call site.
     """
-    if not text_name:
+    if text_name is not None and not text_name:
         raise ValueError("text_name must be a non-empty string")
     if top_k <= 0:
         raise ValueError(f"top_k must be positive (got {top_k!r})")
@@ -882,6 +906,7 @@ __all__ = [
     "get_last_retrieval_mode",
     "has_corpus",
     "has_primary_text",
+    "primary_texts_for",
     "register_primary_text",
     "reset_collection_provider",
     "reset_embedder_probe",

@@ -117,13 +117,16 @@ def _build_coach_handover() -> CoachHandover:
 
     The closure routes the four-branch retrieval decision into the
     verifier seam (:func:`apply_quote_verification`) on every Player
-    turn:
+    turn. The verifier always runs in STRICT mode
+    (``redact_unmatched=True``, mission law 3 — no exception for sessions
+    with a set text): an unverifiable quote is replaced by neutral text,
+    never shown or heard as quotation.
 
-    * No ``text_name`` on the session_state (baseline-degraded plan) —
-      verifier runs against an empty corpus with
-      ``retrieval_skipped_reason=None``; ``quote_fidelity`` defaults
-      because there's nothing to ground against and no skip-reason to
-      surface to the Coach.
+    * No ``text_name`` on the session_state (robot / planner-pick
+      sessions) — retrieval runs with ``text_name=None``, i.e. across ALL
+      of the session subject's primary texts (same source-type filter),
+      logged as ``scope=all_primary_texts reason=no_text_name``; the
+      verifier treats every primary chunk as in scope.
     * ``decide_retrieval`` says skip (AO3-only / AnalysisMode /
       embedder-timeout) — verifier runs with empty chunks and the
       decision's ``reason`` forwarded to
@@ -163,19 +166,12 @@ def _build_coach_handover() -> CoachHandover:
         # service normalises at the boundary; this is the defensive
         # second copy for session states minted before that landed).
         subject = getattr(session_state, "subject", "") or DEFAULT_SUBJECT
-
-        if not text_name:
-            # Baseline-degraded plan with no text_name — verifier still
-            # runs against empty chunks so quote_fidelity defaults
-            # appropriately.
-            logger.info(
-                "event=orchestrator_turn_completed text_name=%s "
-                "retrieval_mode=skipped reason=no_text_name",
-                "",
-            )
-            return apply_quote_verification(
-                raw_response, [], "", retrieval_skipped_reason=None
-            )
+        # Law-3 design Q2: no set text ⇒ verify against all of the
+        # subject's primary texts (retrieval text_name=None, verifier
+        # session text ""), never against nothing.
+        retrieval_text_name: str | None = text_name or None
+        text_name = text_name or ""
+        scope = "" if text_name else " scope=all_primary_texts"
 
         if not has_corpus(subject):
             # The mandatory per-subject coverage check (ADR-ARCH-032 D3):
@@ -183,9 +179,10 @@ def _build_coach_handover() -> CoachHandover:
             # — never a cross-subject fallback. Same envelope as every
             # other skip: verifier still runs against empty chunks.
             logger.info(
-                "event=orchestrator_turn_completed text_name=%s "
+                "event=orchestrator_turn_completed text_name=%s%s "
                 "retrieval_mode=skipped reason=%s subject=%s",
                 text_name,
+                scope,
                 REASON_NO_SUBJECT_CORPUS,
                 subject,
             )
@@ -194,14 +191,18 @@ def _build_coach_handover() -> CoachHandover:
                 [],
                 text_name,
                 retrieval_skipped_reason=REASON_NO_SUBJECT_CORPUS,
+                redact_unmatched=True,
             )
 
-        decision = decide_retrieval(text_name, focus_aos, subject=subject)
+        decision = decide_retrieval(
+            retrieval_text_name, focus_aos, subject=subject
+        )
         if not decision.retrieve:
             logger.info(
-                "event=orchestrator_turn_completed text_name=%s "
+                "event=orchestrator_turn_completed text_name=%s%s "
                 "retrieval_mode=skipped reason=%s subject=%s",
                 text_name,
+                scope,
                 decision.reason,
                 subject,
             )
@@ -210,6 +211,7 @@ def _build_coach_handover() -> CoachHandover:
                 [],
                 text_name,
                 retrieval_skipped_reason=decision.reason,
+                redact_unmatched=True,
             )
 
         # TODO (TASK-RAG-002 / Phase 2 — AD-6): thread retrieval_mode
@@ -217,15 +219,16 @@ def _build_coach_handover() -> CoachHandover:
         # Phase 1 demo signal is the structured log line below.
         chunks = retrieve(
             query=learner_message,
-            text_name=text_name,
+            text_name=retrieval_text_name,
             focus_aos=focus_aos,
             subject=subject,
         )
         retrieval_mode = get_last_retrieval_mode()
         logger.info(
-            "event=orchestrator_turn_completed text_name=%s "
+            "event=orchestrator_turn_completed text_name=%s%s "
             "retrieval_mode=%s chunks=%d subject=%s",
             text_name,
+            scope + (" reason=no_text_name" if scope else ""),
             retrieval_mode,
             len(chunks),
             subject,
@@ -235,6 +238,7 @@ def _build_coach_handover() -> CoachHandover:
             chunks,
             text_name,
             retrieval_skipped_reason=None,
+            redact_unmatched=True,
         )
 
     return coach_handover
@@ -254,6 +258,10 @@ def _build_turn_verifier_factory() -> Any:
 
     Construction runs synchronously (retrieval blocks); the orchestrator
     hoists it onto a thread and overlaps it with Player generation.
+
+    Same law-3 posture as the closure: strict verification always, and a
+    session with no ``text_name`` retrieves across all of its subject's
+    primary texts (``scope=all_primary_texts reason=no_text_name``).
     """
 
     def make_turn_verifier(
@@ -263,29 +271,35 @@ def _build_turn_verifier_factory() -> Any:
         focus_aos = set(getattr(session_state, "focus_aos", ()) or ())
         subject = getattr(session_state, "subject", "") or DEFAULT_SUBJECT
 
+        # Law-3 design Q2 — mirrors the closure: no set text ⇒ all of the
+        # subject's primary texts, never an empty corpus.
+        retrieval_text_name: str | None = text_name or None
+        text_name = text_name or ""
+        scope = "" if text_name else " scope=all_primary_texts reason=no_text_name"
+
         chunks: list[Any] = []
         skip_reason: str | None = None
 
-        if not text_name:
-            text_name = ""
-            skip_reason = None  # matches the closure's no-text_name envelope
-        elif not has_corpus(subject):
+        if not has_corpus(subject):
             skip_reason = REASON_NO_SUBJECT_CORPUS
         else:
-            decision = decide_retrieval(text_name, focus_aos, subject=subject)
+            decision = decide_retrieval(
+                retrieval_text_name, focus_aos, subject=subject
+            )
             if not decision.retrieve:
                 skip_reason = decision.reason
             else:
                 chunks = retrieve(
                     query=learner_message,
-                    text_name=text_name,
+                    text_name=retrieval_text_name,
                     focus_aos=focus_aos,
                     subject=subject,
                 )
         logger.info(
-            "event=turn_verifier_built text_name=%s subject=%s chunks=%d "
+            "event=turn_verifier_built text_name=%s%s subject=%s chunks=%d "
             "skip_reason=%s",
             text_name,
+            scope,
             subject,
             len(chunks),
             skip_reason,
@@ -297,6 +311,7 @@ def _build_turn_verifier_factory() -> Any:
                 chunks,
                 text_name,
                 retrieval_skipped_reason=skip_reason,
+                redact_unmatched=True,
             )
 
         return verify

@@ -158,3 +158,50 @@ async def test_session_topic_misconceptions_lead_the_window() -> None:
         student_id="lilymay", session_id=record.session_id
     )
     assert state.recent_misconceptions[0] == "on-topic misc"
+
+
+# ---------------------------------------------------------------------------
+# Law-3 design Q2 (R4): the session's subject reaches the verifier closures
+# through SessionState, normalised the same way ``start_session`` does.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_subject_is_read_from_the_persisted_session_row() -> None:
+    store = FakeStudentStore()
+    await _seed_student(store, target_grade=None)
+    record, _ = await store.create_session(student_id="lilymay", subject="french")
+    service = SessionService(store=store)
+
+    state = await service.build_turn_session_state(
+        student_id="lilymay", session_id=record.session_id
+    )
+
+    assert state.subject == "french"
+
+
+@pytest.mark.asyncio
+async def test_empty_row_subject_normalises_to_the_default() -> None:
+    store = FakeStudentStore()
+    await _seed_student(store, target_grade=None)
+    record, _ = await store.create_session(student_id="lilymay", subject="")
+    service = SessionService(store=store)
+
+    state = await service.build_turn_session_state(
+        student_id="lilymay", session_id=record.session_id
+    )
+
+    assert state.subject == "english"
+
+
+@pytest.mark.asyncio
+async def test_unknown_session_subject_normalises_to_the_default() -> None:
+    store = FakeStudentStore()
+    await _seed_student(store, target_grade=None)
+    service = SessionService(store=store)
+
+    state = await service.build_turn_session_state(
+        student_id="lilymay", session_id="no-such-session"
+    )
+
+    assert state.subject == "english"

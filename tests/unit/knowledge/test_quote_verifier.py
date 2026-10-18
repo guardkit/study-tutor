@@ -633,3 +633,237 @@ def test_anchorless_primary_does_not_abort_other_quotes_in_the_response() -> Non
     assert metadata.anchorless_primary_matches == 1
     # The anchored second quote still gets its citation.
     assert "(5.1.36)" in rewritten
+
+
+# ---------------------------------------------------------------------------
+# Mission law 3 — strict mode (``redact_unmatched=True``) and sessions with
+# no set text. docs/design/quote-law3-no-unverified-quote-2026-10-18.md
+# (Q1 + Q2, Codex R1-R3).
+# ---------------------------------------------------------------------------
+
+from study_tutor.knowledge.quote_verifier import UNVERIFIED_QUOTE_TEXT  # noqa: E402
+
+#: The fabricated "quotation" delivered to the learner on 18 Oct 2026 (Dell
+#: :8100, robot session, no set text) — the Player's span as the verifier
+#: received it. The delivered text read "he says perhaps I have no spur / …":
+#: the "perhaps" was the verifier's softener, the invented words were kept.
+_INCIDENT_SPAN = (
+    "I have no spur / To prick the sides of my intent, but only / Remorse, "
+    "that when this deed is done, / Makes ne'er so much the trống than makes "
+    "me thus a backwardly"
+)
+_INCIDENT_REPLY = (
+    "Macbeth knows the murder is wrong. In his soliloquy he says "
+    f'"{_INCIDENT_SPAN}". What does that tell you about his ambition?'
+)
+
+
+def _law3_english_corpus() -> list[CorpusChunk]:
+    """Primary chunks from two English set texts, each with its own anchor."""
+    return [
+        CorpusChunk(
+            text=(
+                "I have no spur\nTo prick the sides of my intent, but only\n"
+                "Vaulting ambition, which o'erleaps itself\nAnd falls on th' other."
+            ),
+            source_type=SourceType.PRIMARY_TEXT,
+            source_path="/corpus/macbeth/7.txt",
+            text_name="macbeth",
+            citation_anchor=PlayCitationAnchor(act=1, scene=7, line=25),
+            chunk_index=7,
+        ),
+        CorpusChunk(
+            text="We don't live alone. We are members of one body.",
+            source_type=SourceType.PRIMARY_TEXT,
+            source_path="/corpus/an-inspector-calls/3.txt",
+            text_name="an-inspector-calls",
+            citation_anchor=PlayCitationAnchor(act=3, scene=1, line=210),
+            chunk_index=3,
+        ),
+    ]
+
+
+def test_strict_mode_redacts_unmatched_span_with_neutral_text() -> None:
+    """(1) The span and its marks go; the neutral text replaces them; no hedge."""
+    response = 'He says "a line that was never written by anyone at all" here.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert rewritten == f"He says {UNVERIFIED_QUOTE_TEXT} here."
+    assert "perhaps" not in rewritten
+    assert "never written" not in rewritten
+    assert len(metadata.no_match_strips) == 1
+    strip = metadata.no_match_strips[0]
+    assert strip.redacted is True
+    assert strip.softened is False
+    assert strip.original_span == "a line that was never written by anyone at all"
+
+
+def test_flag_off_keeps_the_soften_contract_unchanged() -> None:
+    """(2) Default ``redact_unmatched=False`` is the pre-law-3 behaviour."""
+    response = 'He says "a line that was never written by anyone at all" here.'
+    rewritten, metadata = verify_quotes(response, _law3_english_corpus(), "macbeth")
+
+    assert rewritten == (
+        "He says perhaps a line that was never written by anyone at all here."
+    )
+    assert metadata.no_match_strips[0].redacted is False
+    assert metadata.no_match_strips[0].softened is True
+    # Short spans and unterminated quotes are untouched with the flag off.
+    short, short_meta = verify_quotes('A "made up" word.', [], "macbeth")
+    assert short == 'A "made up" word.'
+    assert short_meta.no_match_strips == []
+    tail, _ = verify_quotes('He says "an open quote never closed', [], "macbeth")
+    assert tail == 'He says "an open quote never closed'
+
+
+def test_strict_short_span_exact_match_survives() -> None:
+    """R1: a 1-3 word span passes on a normalised, word-aligned exact match."""
+    response = 'Macbeth calls it "Vaulting ambition" in Act 1.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert '"Vaulting ambition" (1.7.25)' in rewritten
+    assert len(metadata.primary_matches) == 1
+    assert metadata.no_match_strips == []
+
+
+def test_strict_short_span_case_and_punctuation_normalised() -> None:
+    response = 'He fears "VAULTING  ambition," most.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert len(metadata.primary_matches) == 1
+    assert UNVERIFIED_QUOTE_TEXT not in rewritten
+
+
+@pytest.mark.parametrize(
+    "span",
+    [
+        "bloody tyrant",  # not in any chunk
+        "spu",  # a fragment inside a word is not an exact word match
+        "vaulting ambitions",  # 1 edit: short spans never fuzzy-correct
+        "a",  # single word, not present as a word
+    ],
+)
+def test_strict_short_span_without_exact_match_is_redacted(span: str) -> None:
+    response = f'He says "{span}" here.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert rewritten == f"He says {UNVERIFIED_QUOTE_TEXT} here."
+    assert metadata.fuzzy_corrections == []
+    assert metadata.no_match_strips[0].redacted is True
+
+
+@pytest.mark.parametrize("opening", ['"', "“"])
+def test_strict_unterminated_quote_is_redacted_to_the_end(opening: str) -> None:
+    """R2: an opening quote with no close is replaced from the mark to the end."""
+    response = f"A safe sentence. Then he says {opening}I have no spur to prick"
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert rewritten == f"A safe sentence. Then he says {UNVERIFIED_QUOTE_TEXT}"
+    assert metadata.no_match_strips[-1].redacted is True
+    assert metadata.no_match_strips[-1].original_span == "I have no spur to prick"
+
+
+def test_strict_unterminated_quote_swallows_later_spans() -> None:
+    """Everything after the unclosed mark was presented as quotation."""
+    response = 'He says “I have no spur and then "Vaulting ambition" ends.'
+    rewritten, _ = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert rewritten == f"He says {UNVERIFIED_QUOTE_TEXT}"
+
+
+def test_strict_closed_spans_before_an_unterminated_quote_are_verified() -> None:
+    response = 'He fears "Vaulting ambition". Later: "an invented line'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert rewritten == (
+        f'He fears "Vaulting ambition" (1.7.25). Later: {UNVERIFIED_QUOTE_TEXT}'
+    )
+    assert len(metadata.primary_matches) == 1
+
+
+def test_empty_session_text_exact_match_is_primary_with_chunk_citation() -> None:
+    """(3) No set text: any primary chunk is in scope; no cross-text event."""
+    response = 'Priestley writes "We are members of one body" in the final act.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "", redact_unmatched=True
+    )
+
+    assert metadata.cross_text_events == []
+    assert len(metadata.primary_matches) == 1
+    match = metadata.primary_matches[0]
+    assert match.text_name == "an-inspector-calls"
+    assert match.chunk_index == 3
+    assert '"We are members of one body" (3.1.210)' in rewritten
+
+
+def test_empty_session_text_fuzzy_works_across_all_texts() -> None:
+    response = 'He says "Vaulting ambitions, which o\'erleaps itself" there.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "", redact_unmatched=True
+    )
+
+    assert metadata.cross_text_events == []
+    assert len(metadata.fuzzy_corrections) == 1
+    assert metadata.fuzzy_corrections[0].text_name == "macbeth"
+    assert "(1.7.25)" in rewritten
+    assert UNVERIFIED_QUOTE_TEXT not in rewritten
+
+
+def test_set_text_session_still_routes_other_texts_to_cross_text() -> None:
+    """The cross-text branch is unchanged when the session HAS a set text."""
+    response = 'He says "We are members of one body" here.'
+    _, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert len(metadata.cross_text_events) == 1
+    assert metadata.primary_matches == []
+
+
+def test_incident_regression_fabricated_macbeth_line_is_removed() -> None:
+    """(8) The 18 Oct 2026 reply: the invented line never reaches the learner."""
+    # Pre-fix behaviour, reproduced with the flag off: the "perhaps" hedge
+    # and the invented words — exactly what the learner heard.
+    softened, _ = verify_quotes(_INCIDENT_REPLY, _law3_english_corpus(), "")
+    assert "he says perhaps I have no spur" in softened
+    assert "Remorse, that when this deed is done" in softened
+
+    rewritten, metadata = verify_quotes(
+        _INCIDENT_REPLY, _law3_english_corpus(), "", redact_unmatched=True
+    )
+
+    assert rewritten == (
+        "Macbeth knows the murder is wrong. In his soliloquy he says "
+        f"{UNVERIFIED_QUOTE_TEXT}. What does that tell you about his ambition?"
+    )
+    for invented in ("Remorse", "trống", "backwardly", "perhaps", "no spur"):
+        assert invented not in rewritten
+    assert [s.original_span for s in metadata.no_match_strips] == [_INCIDENT_SPAN]
+    assert metadata.no_match_strips[0].redacted is True
+
+
+def test_strict_empty_quote_pair_is_not_an_unterminated_quote() -> None:
+    """``""`` is a closed (empty) pair: nothing to verify, nothing redacted."""
+    response = 'He wrote "" on the page, then "Vaulting ambition" later.'
+    rewritten, metadata = verify_quotes(
+        response, _law3_english_corpus(), "macbeth", redact_unmatched=True
+    )
+
+    assert rewritten == (
+        'He wrote "" on the page, then "Vaulting ambition" (1.7.25) later.'
+    )
+    assert metadata.no_match_strips == []

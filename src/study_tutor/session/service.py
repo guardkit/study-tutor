@@ -920,6 +920,10 @@ class SessionService:
         # Canonical set-text slug captured at start (S-E4 / scope §4.2); reaches
         # the Player + the retrieval/quote-verifier path via SessionState.
         text_name = record.text_name if record is not None else None
+        # The session's subject reaches the retrieval/quote-verifier closures
+        # (law-3 design Q2), normalised exactly as ``start_session`` does —
+        # an empty/legacy row value means SUBJECT_DEFAULT.
+        subject = (record.subject if record is not None else "") or SUBJECT_DEFAULT
 
         # Single student-state read for the four §2.5 context fields.
         state = await store.get_student_state(student_id)
@@ -946,6 +950,7 @@ class SessionService:
             recent_misconceptions=_recent_misconception_texts(state, topic),
             grade_target=grade_target,
             transcript=transcript,
+            subject=subject,
         )
 
     async def session_status(

@@ -940,10 +940,14 @@ class PlayerCoachOrchestrator:
                     delta = await _release(boundary)
                     if delta is not None:
                         yield delta
-        finally:
-            # Never leak the verifier thread on cancellation/failure.
+        except BaseException:
+            # Never leak the verifier thread on cancellation/failure. Only
+            # then: on normal completion the final pass below still needs the
+            # verifier — a reply that finished before retrieval did (and had no
+            # releasable boundary) would otherwise await a cancelled task.
             if not verifier_task.done():
                 verifier_task.cancel()
+            raise
 
         # Final pass over the complete raw text — releases the tail (and,
         # after a fail-closed chunk, everything held back), and produces
@@ -955,9 +959,9 @@ class PlayerCoachOrchestrator:
             # Fail CLOSED (ADR-ARCH-027 posture; the ADR is silent on
             # final-pass errors, so mirror sentence_chunker's stance —
             # judgment call recorded in the Lane 2 step 3 receipt): on a
-            # verifier exception ``final_verified`` is the RAW response
-            # (the coach-handover's fail-open return), which must never
-            # reach the learner. Release only the honest fallback after
+            # verifier exception ``final_verified`` is untrustworthy (strict
+            # handover now returns every quoted span redacted — law 3 — but it
+            # is still unverified text), so it must never reach the learner. Release only the honest fallback after
             # whatever was already verified; the async Coach sees exactly
             # what was shown, with the exception flag intact.
             released_text = verified_full[:released_verified_len]
