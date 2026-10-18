@@ -28,6 +28,15 @@ What this seam guarantees
    the Coach then skips the ``quote_fidelity`` down-rank for the turn.
    Failing the entire turn on a verifier hiccup would surface as a
    worse learner experience than continuing with an unannotated reply.
+5. **Strict mode fails closed** (``redact_unmatched=True``, mission law
+   3 — both production call sites). The verifier runs in strict mode, and
+   on a verifier exception the fallback text is the Player's response with
+   EVERY double-quoted span (closed or unterminated) replaced by
+   :data:`~study_tutor.knowledge.quote_verifier.UNVERIFIED_QUOTE_TEXT` —
+   a plain regex pass that does not depend on the verifier — still flagged
+   ``verifier_exception=True``. The text returned is what the learner
+   receives and what the Coach evaluates, so nothing unverified is
+   released on the first attempt or on a revision.
 
 Why a tuple return rather than raising
 --------------------------------------
@@ -50,12 +59,32 @@ Two concurrent invocations are independent.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Sequence
 
 from study_tutor.knowledge.corpus_models import CorpusChunk
-from study_tutor.knowledge.quote_verifier import VerifierMetadata, verify_quotes
+from study_tutor.knowledge.quote_verifier import (
+    UNVERIFIED_QUOTE_TEXT,
+    VerifierMetadata,
+    verify_quotes,
+)
 
 logger = logging.getLogger(__name__)
+
+# Every double-quoted span, closed or not: a straight pair, a curly pair,
+# or an opening mark (straight or curly) with no close, through to the
+# end. Deliberately independent of the verifier's own extraction — this
+# runs precisely when the verifier has failed.
+_ANY_QUOTED_SPAN = re.compile(r'"[^"]*"|“[^”]*”|["“].*\Z', re.DOTALL)
+
+
+def redact_every_quoted_span(text: str) -> str:
+    """Replace every double-quoted span in ``text`` with the neutral text.
+
+    The strict-mode fail-closed fallback (law 3): used when the verifier
+    raised, so no span can be told verified from invented.
+    """
+    return _ANY_QUOTED_SPAN.sub(UNVERIFIED_QUOTE_TEXT, text)
 
 
 def apply_quote_verification(
@@ -63,6 +92,8 @@ def apply_quote_verification(
     corpus_chunks: Sequence[CorpusChunk],
     session_text_name: str,
     retrieval_skipped_reason: str | None = None,
+    *,
+    redact_unmatched: bool = False,
 ) -> tuple[str, VerifierMetadata]:
     """Run the verifier and return the Coach-ready ``(response, metadata)`` pair.
 
@@ -98,6 +129,10 @@ def apply_quote_verification(
         :class:`VerifierMetadata.retrieval_skipped_reason` so the Coach
         can apply analysis-mode scoring posture without re-deriving the
         decision.
+    redact_unmatched
+        Strict mode (mission law 3), forwarded to :func:`verify_quotes`.
+        Also makes the exception fallback fail CLOSED: every quoted span
+        is redacted instead of the raw response being returned.
 
     Returns
     -------
@@ -114,6 +149,7 @@ def apply_quote_verification(
             corpus_chunks,
             session_text_name,
             retrieval_skipped_reason=retrieval_skipped_reason,
+            redact_unmatched=redact_unmatched,
         )
     except Exception as exc:  # noqa: BLE001 — graceful-degradation boundary
         # Log with structured context so session-end review can spot
@@ -127,15 +163,19 @@ def apply_quote_verification(
                 "error_type": type(exc).__name__,
                 "error": str(exc),
                 "session_text_name": session_text_name,
+                "redact_unmatched": redact_unmatched,
             },
         )
         fallback_metadata = VerifierMetadata(
             retrieval_skipped_reason=retrieval_skipped_reason,
             verifier_exception=True,
         )
+        if redact_unmatched:
+            # Fail closed (law 3): nothing quoted survives an unverified turn.
+            return (redact_every_quoted_span(player_response), fallback_metadata)
         return (player_response, fallback_metadata)
 
     return (rewritten, metadata)
 
 
-__all__ = ["apply_quote_verification"]
+__all__ = ["apply_quote_verification", "redact_every_quoted_span"]

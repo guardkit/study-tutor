@@ -507,3 +507,58 @@ def test_apply_quote_verification_anchorless_primary_corpus_no_longer_fails_open
     assert metadata.anchorless_primary_matches == 1
     # Span verified and kept in quotes; nothing to cite so no annotation.
     assert rewritten == response
+
+
+# ---------------------------------------------------------------------------
+# Mission law 3 — strict mode fails CLOSED on a verifier exception (R3).
+# docs/design/quote-law3-no-unverified-quote-2026-10-18.md
+# ---------------------------------------------------------------------------
+
+from study_tutor.knowledge.coach_handover import redact_every_quoted_span  # noqa: E402
+from study_tutor.knowledge.quote_verifier import UNVERIFIED_QUOTE_TEXT  # noqa: E402
+
+
+def test_redact_every_quoted_span_covers_closed_and_unterminated_spans() -> None:
+    text = 'A "straight one" and a “curly one” then "x" and “an open one to the end'
+    assert redact_every_quoted_span(text) == (
+        f"A {UNVERIFIED_QUOTE_TEXT} and a {UNVERIFIED_QUOTE_TEXT} then "
+        f"{UNVERIFIED_QUOTE_TEXT} and {UNVERIFIED_QUOTE_TEXT}"
+    )
+    assert redact_every_quoted_span("No quotes here.") == "No quotes here."
+
+
+def test_strict_verifier_exception_redacts_every_quoted_span(monkeypatch) -> None:
+    def _raises(*args: Any, **kwargs: Any) -> Any:
+        raise ValueError("simulated verifier corruption")
+
+    monkeypatch.setattr(
+        "study_tutor.knowledge.coach_handover.verify_quotes", _raises
+    )
+    raw = 'He says "Out, damned spot! out, I say!" and “fair” and "an open one'
+
+    rewritten, metadata = apply_quote_verification(
+        raw,
+        _macbeth_corpus(),
+        session_text_name="Macbeth",
+        retrieval_skipped_reason="r",
+        redact_unmatched=True,
+    )
+
+    assert rewritten == (
+        f"He says {UNVERIFIED_QUOTE_TEXT} and {UNVERIFIED_QUOTE_TEXT} and "
+        f"{UNVERIFIED_QUOTE_TEXT}"
+    )
+    assert metadata.verifier_exception is True
+    assert metadata.retrieval_skipped_reason == "r"
+
+
+def test_strict_apply_quote_verification_redacts_unmatched_span() -> None:
+    rewritten, metadata = apply_quote_verification(
+        'He says "a line that is not in the play at all".',
+        _macbeth_corpus(),
+        session_text_name="Macbeth",
+        redact_unmatched=True,
+    )
+
+    assert rewritten == f"He says {UNVERIFIED_QUOTE_TEXT}."
+    assert metadata.no_match_strips[0].redacted is True

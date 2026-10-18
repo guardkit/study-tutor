@@ -78,3 +78,9 @@ class SessionState:
     #: (oldest → newest), rehydrated from the durable store by the service.
     #: The Player truncates this to the last N turns under a token cap.
     transcript: tuple[TranscriptTurn, ...] = field(default_factory=tuple)
+    #: Internal only (no app-facing field) — the session's subject from the
+    #: persisted row, normalised like ``start_session`` (empty → the
+    #: SUBJECT_DEFAULT value). Keys retrieval + quote verification to this
+    #: subject's corpus; ``""`` (pre-threading construction sites) makes the
+    #: ``cli/main.py`` closures fall back to the shared default subject.
+    subject: str = ""

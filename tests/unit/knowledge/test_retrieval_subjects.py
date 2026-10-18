@@ -136,3 +136,92 @@ def test_should_retrieve_consults_the_subjects_registry() -> None:
     assert default_decision.reason is REASON_NO_PRIMARY
     assert french_decision.reason is REASON_RETRIEVE_PRIMARY
     assert french_decision.retrieve
+
+
+# ---------------------------------------------------------------------------
+# Law-3 design Q2: ``text_name=None`` — a session with no set text retrieves
+# across all of its subject's corpus (docs/design/
+# quote-law3-no-unverified-quote-2026-10-18.md).
+# ---------------------------------------------------------------------------
+
+from study_tutor.knowledge.retrieval import (  # noqa: E402
+    NON_AO3_SOURCE_TYPES,
+    REASON_AO3_ONLY,
+    primary_texts_for,
+)
+
+
+def test_primary_texts_for_lists_only_that_subjects_texts() -> None:
+    register_primary_text("macbeth")
+    register_primary_text("an-inspector-calls")
+    register_primary_text("candide", "french")
+
+    assert primary_texts_for("english") == {"macbeth", "an-inspector-calls"}
+    assert primary_texts_for("french") == {"candide"}
+    assert primary_texts_for("history") == frozenset()
+
+
+def test_should_retrieve_none_retrieves_when_subject_has_primary_texts() -> None:
+    """(4) No set text + any registered primary text ⇒ retrieve."""
+    register_primary_text("macbeth")
+
+    decision = should_retrieve(None, {"AO1", "AO2"})
+
+    assert decision.retrieve is True
+    assert decision.reason is REASON_RETRIEVE_PRIMARY
+
+
+def test_should_retrieve_none_skips_with_no_primary_reason_otherwise() -> None:
+    register_primary_text("candide", "french")  # another subject's text only
+
+    decision = should_retrieve(None, {"AO1"}, "english")
+
+    assert decision.retrieve is False
+    assert decision.reason is REASON_NO_PRIMARY
+
+
+def test_should_retrieve_none_keeps_the_ao3_only_skip() -> None:
+    register_primary_text("macbeth")
+
+    decision = should_retrieve(None, {"AO3"})
+
+    assert decision.retrieve is False
+    assert decision.reason is REASON_AO3_ONLY
+
+
+def test_retrieve_none_builds_no_text_name_filter() -> None:
+    """(5) The where-filter is the source-type filter alone (R5: not primary-only)."""
+    english = _RecordingCollection()
+    set_collection_provider(lambda: english)
+
+    assert retrieve("ambition", None, {"AO1"}) == []
+
+    assert len(english.query_calls) == 1
+    where = english.query_calls[0]["where"]
+    assert where == {
+        "source_type": {"$in": [s.value for s in NON_AO3_SOURCE_TYPES]}
+    }
+    assert "text_name" not in repr(where)
+
+
+def test_retrieve_with_text_name_keeps_the_text_name_filter() -> None:
+    english = _RecordingCollection()
+    set_collection_provider(lambda: english)
+
+    retrieve("ambition", "macbeth", {"AO1"})
+
+    assert {"text_name": "macbeth"} in english.query_calls[0]["where"]["$and"]
+
+
+def test_retrieve_none_for_unwired_subject_returns_empty() -> None:
+    english = _RecordingCollection()
+    set_collection_provider(lambda: english)
+
+    assert retrieve("ambition", None, {"AO1"}, subject="history") == []
+    assert english.query_calls == []
+
+
+def test_retrieve_empty_string_text_name_still_rejected() -> None:
+    """``None`` is the explicit all-texts value; ``""`` stays a caller bug."""
+    with pytest.raises(ValueError):
+        retrieve("ambition", "", {"AO1"})

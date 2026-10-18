@@ -54,6 +54,7 @@ from study_tutor.knowledge.corpus_models import (
     PlayCitationAnchor,
     SourceType,
 )
+from study_tutor.knowledge.quote_verifier import UNVERIFIED_QUOTE_TEXT
 from study_tutor.knowledge.retrieval import (
     clear_primary_text_index,
     get_collection_provider,
@@ -449,8 +450,10 @@ def test_ao3_bypass(macbeth_corpus: list[CorpusChunk]) -> None:
 
 # ---------------------------------------------------------------------------
 # Test 5 — verifier-exception regression. The closure must surface the
-# fallback metadata + return the raw response unchanged; no exception
-# bubbles up.
+# fallback metadata; no exception bubbles up. Since the law-3 strict mode
+# (docs/design/quote-law3-no-unverified-quote-2026-10-18.md, R3) the
+# production closure fails CLOSED: every quoted span is redacted rather
+# than the raw response being passed through.
 # ---------------------------------------------------------------------------
 
 
@@ -458,7 +461,7 @@ def test_verifier_exception_regression(
     monkeypatch: pytest.MonkeyPatch,
     macbeth_corpus: list[CorpusChunk],
 ) -> None:
-    """``verify_quotes`` raises → original response, ``verifier_exception=True``."""
+    """``verify_quotes`` raises → quoted spans redacted, ``verifier_exception=True``."""
     register_primary_text("Macbeth")
     fake_collection = _FakeCollection(macbeth_corpus)
     set_collection_provider(lambda: fake_collection)
@@ -488,9 +491,11 @@ def test_verifier_exception_regression(
         raw_response, "Macbeth's ambition", session_state
     )
 
-    assert rewritten == raw_response, (
-        "verifier-exception path must pass through the raw response"
-    )
+    assert rewritten == (
+        "Macbeth's hesitation comes through when he admits "
+        f"{UNVERIFIED_QUOTE_TEXT}."
+    ), "verifier-exception path must redact every quoted span (fail closed)"
+    assert _MACBETH_VERBATIM not in rewritten
     assert metadata.verifier_exception is True
 
 

@@ -22,7 +22,29 @@ Precedence ordering (Open Question 3 closure)
    from :data:`SECONDARY_ATTRIBUTION_TEMPLATES`).
 4. Fuzzy match (≤3 edits) against a ``PRIMARY_TEXT`` chunk for the
    session text → :class:`FuzzyCorrection`.
-5. No match → :class:`NoMatchStrip` (quotes removed, certainty softened).
+5. No match → :class:`NoMatchStrip` (quotes removed, certainty softened;
+   or, in strict mode, the whole span replaced by
+   :data:`UNVERIFIED_QUOTE_TEXT` — see below).
+
+Strict mode (``redact_unmatched=True``) — mission law 3
+-------------------------------------------------------
+"Never an unverified quote." Both production call sites
+(``cli/main.py``) verify in strict mode, which changes three things:
+
+* a ``NoMatch`` span (marks and words) is **replaced** by the fixed
+  neutral :data:`UNVERIFIED_QUOTE_TEXT`, with no "perhaps" — on the voice
+  path quote marks are inaudible, so a kept span is heard as quotation;
+* every non-empty double-quoted span is checked whatever its length: a
+  span under ``MIN_QUOTE_WORDS`` passes only on an exact (case-,
+  whitespace- and punctuation-normalised, word-aligned) match in a chunk;
+  fuzzy correction stays for spans of ``MIN_QUOTE_WORDS`` or more;
+* an opening double quote with no closing quote is redacted from the
+  opening mark to the end of the response.
+
+An empty ``session_text_name`` (a session with no set text) puts every
+``PRIMARY_TEXT`` chunk in scope for the exact and fuzzy primary steps and
+turns the cross-text step off — no text is "the session's" text, and the
+citation comes from the matched chunk either way.
 
 **Fuzzy correction is restricted to the primary-text source.** This is
 the load-bearing invariant that prevents secondary phrasings from being
@@ -71,8 +93,16 @@ logger = logging.getLogger(__name__)
 # Constants (ASSUM-002, ASSUM-003, ASSUM-010, ASSUM-011)
 # ---------------------------------------------------------------------------
 
-#: Spans below this many words are not inspected (ASSUM-002).
+#: Spans below this many words are not inspected (ASSUM-002) — except in
+#: strict mode, where they are checked by exact match only (no fuzzy).
 MIN_QUOTE_WORDS: int = 4
+
+#: Strict-mode replacement for a quoted span that matched nothing (mission
+#: law 3). Deliberately neutral: it presents nothing as quotation, so it is
+#: safe to show AND to speak.
+UNVERIFIED_QUOTE_TEXT: str = (
+    "a line I'd want you to check in your own copy of the text"
+)
 
 #: Maximum Levenshtein edit distance for a fuzzy primary correction
 #: (ASSUM-003). Anything beyond this falls through to ``NoMatchStrip``.
@@ -157,10 +187,16 @@ class FuzzyCorrection(_StrictModel):
 
 
 class NoMatchStrip(_StrictModel):
-    """A quoted span that matched no corpus chunk; quotes stripped, certainty softened."""
+    """A quoted span that matched no corpus chunk; quotes stripped, certainty softened.
+
+    ``redacted`` (ADDITIVE, defaulted) is ``True`` when strict mode replaced
+    the whole span with :data:`UNVERIFIED_QUOTE_TEXT` instead of keeping
+    its words; ``softened`` is then ``False`` (no hedge is inserted).
+    """
 
     original_span: str
     softened: bool = True
+    redacted: bool = False
 
 
 class CrossTextEvent(_StrictModel):
@@ -267,6 +303,12 @@ class Quote:
 # reliably filter out.
 _QUOTE_PATTERN = re.compile(r'"([^"]+)"|“([^”]+)”')
 
+# Strict mode pairs marks the same way but also pairs an EMPTY span (``""``)
+# so it is never mistaken for an unterminated quote. Used for both span
+# extraction and the unterminated-quote scan, so the two always agree on
+# which marks are paired.
+_STRICT_QUOTE_PATTERN = re.compile(r'"([^"]*)"|“([^”]*)”')
+
 
 def _normalise(text: str) -> str:
     """Collapse whitespace, equate curly/straight quotes, lower-case.
@@ -296,14 +338,27 @@ def extract_quotes(response_text: str) -> list[Quote]:
     @boundary AC: 3 words → ignored, 4 words → inspected). Matches both
     typographic and straight double-quote pairs.
     """
+    return _extract(response_text, _QUOTE_PATTERN, MIN_QUOTE_WORDS)
+
+
+def _extract(
+    response_text: str, pattern: re.Pattern[str], min_words: int
+) -> list[Quote]:
+    """Shared extraction loop behind :func:`extract_quotes`.
+
+    Strict mode calls it with ``_STRICT_QUOTE_PATTERN`` and
+    ``min_words=1`` so every non-empty span is inspected whatever its
+    length (an empty or whitespace-only pair presents nothing as quotation
+    and is left alone).
+    """
     quotes: list[Quote] = []
-    for match in _QUOTE_PATTERN.finditer(response_text):
+    for match in pattern.finditer(response_text):
         # The pattern has two alternatives — pick whichever group matched.
         inner = match.group(1) if match.group(1) is not None else match.group(2)
         if inner is None:
             continue
         word_count = len(inner.split())
-        if word_count < MIN_QUOTE_WORDS:
+        if word_count < min_words:
             continue
         quotes.append(
             Quote(
@@ -315,6 +370,53 @@ def extract_quotes(response_text: str) -> list[Quote]:
             )
         )
     return quotes
+
+
+def _unterminated_quote_start(response_text: str) -> int | None:
+    """Offset of the first opening double quote that no closing quote pairs.
+
+    Strict mode only. Every straight ``"`` or curly ``“`` outside a paired
+    span (as :data:`_STRICT_QUOTE_PATTERN` pairs them) opens a quotation that
+    never closes before the end of the response; the earliest such mark is
+    where the redaction to end-of-text starts. ``None`` when every opening
+    mark is paired.
+    """
+    covered_until = 0
+    for match in _STRICT_QUOTE_PATTERN.finditer(response_text):
+        stray = _first_opening_mark(response_text, covered_until, match.start())
+        if stray is not None:
+            return stray
+        covered_until = match.end()
+    return _first_opening_mark(response_text, covered_until, len(response_text))
+
+
+def _first_opening_mark(text: str, start: int, end: int) -> int | None:
+    """Offset of the first ``"`` / ``“`` in ``text[start:end]``, or ``None``."""
+    for index in range(start, end):
+        if text[index] in '"“':
+            return index
+    return None
+
+
+def _words(normalised: str) -> list[str]:
+    """Split normalised text into words, dropping all punctuation but apostrophes."""
+    return re.findall(r"[\w']+", normalised)
+
+
+def _contains_word_sequence(quote_words: list[str], chunk_words: list[str]) -> bool:
+    """``True`` when ``quote_words`` occurs contiguously in ``chunk_words``.
+
+    The strict-mode exact match for spans under ``MIN_QUOTE_WORDS``: word-
+    aligned (so ``"art"`` never matches inside "heart") with case,
+    whitespace and punctuation normalised away.
+    """
+    if not quote_words:
+        return False
+    width = len(quote_words)
+    return any(
+        chunk_words[start : start + width] == quote_words
+        for start in range(0, len(chunk_words) - width + 1)
+    )
 
 
 def _edit_distance(a: str, b: str) -> int:
@@ -391,15 +493,31 @@ def verify_quote(
     """Classify a single ``Quote`` against the corpus using the precedence ordering.
 
     Order of operations is the load-bearing piece — see module docstring.
+    An empty ``session_text_name`` (no set text) makes every primary chunk
+    the session's for steps 1 and 4 and skips step 2 (Q2 of the law-3
+    design). A span under ``MIN_QUOTE_WORDS`` (only ever passed in strict
+    mode) is matched word-aligned and exactly, and never fuzzily.
     """
     normalised_quote = _normalise(quote.text)
+    short_span = quote.word_count < MIN_QUOTE_WORDS
+    quote_words = _words(normalised_quote)
+
+    def _exact_in(chunk: CorpusChunk) -> bool:
+        if short_span:
+            return _contains_word_sequence(
+                quote_words, _words(_normalise(chunk.text))
+            )
+        return normalised_quote in _normalise(chunk.text)
+
+    def _session_text(chunk: CorpusChunk) -> bool:
+        return not session_text_name or chunk.text_name == session_text_name
 
     # Step 1: exact match against PRIMARY_TEXT for the session text.
     for chunk in corpus_chunks:
         if (
             chunk.source_type == SourceType.PRIMARY_TEXT
-            and chunk.text_name == session_text_name
-            and normalised_quote in _normalise(chunk.text)
+            and _session_text(chunk)
+            and _exact_in(chunk)
         ):
             # An anchorless primary chunk (ingest-side inference gap —
             # e.g. the 2026-05-10 store: 581/581 anchorless) is a
@@ -417,11 +535,12 @@ def verify_quote(
             )
 
     # Step 2: exact match against PRIMARY_TEXT for a *different* text.
-    for chunk in corpus_chunks:
+    # Off when the session has no set text (every primary is in scope).
+    for chunk in corpus_chunks if session_text_name else ():
         if (
             chunk.source_type == SourceType.PRIMARY_TEXT
             and chunk.text_name != session_text_name
-            and normalised_quote in _normalise(chunk.text)
+            and _exact_in(chunk)
         ):
             return CrossTextEvent(
                 original_span=quote.text,
@@ -435,7 +554,7 @@ def verify_quote(
         if (
             chunk.source_type
             in (SourceType.SECONDARY_STUDY_GUIDE, SourceType.SECONDARY_CRITICAL)
-            and normalised_quote in _normalise(chunk.text)
+            and _exact_in(chunk)
         ):
             return SecondaryRewrite(
                 original_span=quote.text,
@@ -445,15 +564,16 @@ def verify_quote(
             )
 
     # Step 4: fuzzy match against PRIMARY_TEXT for the session text.
-    # Restricted to primary source — never inspects secondary chunks.
+    # Restricted to primary source — never inspects secondary chunks —
+    # and to spans of MIN_QUOTE_WORDS or more (a 1-3 word span is too
+    # short for a 3-edit window to mean "the same line").
     best_distance = FUZZY_MAX_EDIT_DISTANCE + 1
     best_chunk: CorpusChunk | None = None
     best_window = ""
     target_words = quote.word_count
-    for chunk in corpus_chunks:
-        if (
-            chunk.source_type != SourceType.PRIMARY_TEXT
-            or chunk.text_name != session_text_name
+    for chunk in corpus_chunks if not short_span else ():
+        if chunk.source_type != SourceType.PRIMARY_TEXT or not _session_text(
+            chunk
         ):
             continue
         distance, window = _best_fuzzy_window(
@@ -602,6 +722,10 @@ def _build_replacement(
         return result.paraphrase
 
     if isinstance(result, NoMatchStrip):
+        if result.redacted:
+            # Strict mode (law 3): marks AND words go — an unverified line
+            # must not be shown or heard as if it were the text.
+            return UNVERIFIED_QUOTE_TEXT
         # Quotes stripped, span content kept (so the response still
         # makes sense to the student) but not framed as a citation.
         return result.original_span
@@ -619,6 +743,8 @@ def verify_quotes(
     corpus_chunks: Sequence[CorpusChunk],
     session_text_name: str,
     retrieval_skipped_reason: str | None = None,
+    *,
+    redact_unmatched: bool = False,
 ) -> tuple[str, VerifierMetadata]:
     """Verify every quoted span in ``response_text`` against the corpus.
 
@@ -641,10 +767,16 @@ def verify_quotes(
     session_text_name
         The work the session is on (e.g. ``"Macbeth"``). Used to
         distinguish a session-text primary match from a cross-text one.
+        Empty means no set text: every primary chunk is in scope.
     retrieval_skipped_reason
         Forwarded from the retrieval-decision step (TASK-PRV-003). The
         verifier doesn't act on it; the Coach uses it for analysis-mode
         scoring posture.
+    redact_unmatched
+        Strict mode (mission law 3; see module docstring). ``False``
+        keeps the original contract: spans under ``MIN_QUOTE_WORDS`` pass
+        untouched, an unmatched span keeps its words with a softener, and
+        an unterminated quote is left alone.
     """
     if not isinstance(response_text, str):
         # Boundary guard — pydantic-typed callers can't trip this, but
@@ -653,8 +785,20 @@ def verify_quotes(
             f"response_text must be str, got {type(response_text).__name__}"
         )
 
-    quotes = extract_quotes(response_text)
+    quotes = (
+        _extract(response_text, _STRICT_QUOTE_PATTERN, 1)
+        if redact_unmatched
+        else extract_quotes(response_text)
+    )
     metadata = VerifierMetadata(retrieval_skipped_reason=retrieval_skipped_reason)
+
+    # Strict mode: an opening quote that never closes is redacted from the
+    # mark to the end, swallowing any paired span after it.
+    unterminated_at = (
+        _unterminated_quote_start(response_text) if redact_unmatched else None
+    )
+    if unterminated_at is not None:
+        quotes = [quote for quote in quotes if quote.end <= unterminated_at]
 
     # Walk quotes in source order so splicing offsets stay valid as we
     # build the rewritten response. We accumulate the rewritten text in
@@ -663,11 +807,15 @@ def verify_quotes(
     cursor = 0
     for quote in quotes:
         result = verify_quote(quote, corpus_chunks, session_text_name)
+        if isinstance(result, NoMatchStrip) and redact_unmatched:
+            result = NoMatchStrip(
+                original_span=result.original_span, softened=False, redacted=True
+            )
 
         # Emit the response slice between the previous quote (or start)
         # and this quote, applying the no-match softener if needed.
         before = response_text[cursor : quote.start]
-        if isinstance(result, NoMatchStrip):
+        if isinstance(result, NoMatchStrip) and result.softened:
             before = _soften_certainty_prefix(before)
         output_segments.append(before)
 
@@ -696,6 +844,20 @@ def verify_quotes(
 
         cursor = quote.end
 
+    if unterminated_at is not None:
+        # Everything from the unclosed opening mark onward was presented
+        # as quotation and can never be verified as a whole span.
+        output_segments.append(response_text[cursor:unterminated_at])
+        output_segments.append(UNVERIFIED_QUOTE_TEXT)
+        metadata.no_match_strips.append(
+            NoMatchStrip(
+                original_span=response_text[unterminated_at + 1 :],
+                softened=False,
+                redacted=True,
+            )
+        )
+        cursor = len(response_text)
+
     # Tail of the response after the last quote.
     output_segments.append(response_text[cursor:])
     rewritten = "".join(output_segments)
@@ -708,6 +870,7 @@ __all__ = [
     "LONG_PASSAGE_WORD_THRESHOLD",
     "SHORT_QUOTE_MAX_WORDS",
     "SECONDARY_ATTRIBUTION_TEMPLATES",
+    "UNVERIFIED_QUOTE_TEXT",
     "Quote",
     "PrimaryMatch",
     "SecondaryRewrite",
