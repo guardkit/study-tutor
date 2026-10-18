@@ -68,9 +68,17 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 >   merge `0ea2103`): unmatched, short, unterminated and verifier-exception quotes are removed
 >   (neutral line), never softened with "perhaps"; no set text ⇒ verify against all the
 >   subject's texts; the session's subject reaches the verifier; a stream-verifier race fixed.
->   Live: a robot-shaped session logs `scope=all_primary_texts chunks=6`. **Known cost, being
->   fixed now**: a genuine quote whose chunk isn't in the learner-message top 6 is also removed
->   → [quote lookup by span](design/quote-lookup-by-span-2026-10-18.md) in review.
+>   Live: a robot-shaped session logs `scope=all_primary_texts chunks=6`. **Quote lookup by
+>   span** ([design](design/quote-lookup-by-span-2026-10-18.md), merge `e7551a5`, deployed
+>   `kc-20261018c`): an unmatched quote is looked up by its own words before removal, so a
+>   genuine quote retrieval missed survives (proven through the production verifier: the
+>   "no spur" lines → primary match, Macbeth chunk 57). Live finding: the fine-tuned tutor
+>   **invents** quotes (e.g. "…but onlythane name, and thane of Cawdor…") and they are now
+>   removed — correct under law 3, but the tutor rarely quotes successfully. **Next lever
+>   (Rich's call, no design yet):** give the Player the retrieved passages so it quotes from
+>   the text, not memory; and/or the pending base-in-the-loop trial. Also: a RAG **boot
+>   probe** (merge `f85a636`) now logs ERROR if a corpus can't be queried (the dimension
+>   outage would have been loud), and `retrieval.query_failed` carries its cause.
 > - **Coach verdict computed** (merge `3003b5e`): weighted total + threshold + floors
 >   (accuracy/quote < 0.5 ⇒ revise); the model's own total no longer trusted. Measured live:
 >   the deployed Coach accepted **5/5** weak May-eval replies; an anchored prompt reached 2/5
