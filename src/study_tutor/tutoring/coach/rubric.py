@@ -8,7 +8,8 @@ TASK-DTL-002 spec:
    from injected per-criterion scorers, computes the weighted total via
    the configured :class:`RubricWeights` (sanity-checked at construction
    to sum to 1.0), derives the binary accept/revise decision against
-   :data:`ACCEPTANCE_THRESHOLD` (0.70 per ASSUM-001), and emits a
+   :data:`ACCEPTANCE_THRESHOLD` (0.70 per ASSUM-001) and the law-level
+   :data:`CRITERION_FLOORS`, and emits a
    :class:`RubricFeedback` entry per below-threshold criterion. The result
    is a fully-shaped :class:`CoachVerdict` (TASK-DTL-001 model).
 
@@ -37,7 +38,10 @@ TASK-DTL-002 spec:
    malformed-Coach-output safety net. Per ASSUM-007 + the @negative
    @rubric scenario, malformed output mirrors Coach-unreachable: apply the
    unevaluated-turn fallback, persist no misconception, flag the turn for
-   session-end review.
+   session-end review. For LLM output (dict / JSON string) the parser
+   recomputes ``weighted_total`` and ``decision`` from the six criterion
+   scores with the same helper as :func:`score_rubric` (coach-measured-
+   verdict design C1); an incomplete rubric is malformed output.
 
 :func:`evaluate_player_turn` is the thin pipeline that wires the three
 together. It calls ``coach.schedule_misconception_write`` for every
@@ -59,7 +63,8 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping, Protocol, runtime_checkable
+from types import MappingProxyType
+from typing import Any, Callable, Literal, Mapping, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -118,6 +123,22 @@ CRITERION_IDS: tuple[str, ...] = (
 #: would be cheap but allocating once at module import keeps the filter
 #: site allocation-free on the hot Coach-evaluate path.
 _CANONICAL_CRITERION_IDS: frozenset[str] = frozenset(CRITERION_IDS)
+
+#: Law-level per-criterion floors (coach-measured-verdict design C1,
+#: 2026-10-18). A score strictly below its floor forces ``"revise"`` whatever
+#: the weighted total — a factual error or a misquotation is never outweighed
+#: by friendliness. Applied by both :func:`score_rubric` and
+#: :func:`parse_coach_output` via :func:`_compute_total_and_decision`.
+CRITERION_FLOORS: Mapping[str, float] = MappingProxyType(
+    {
+        CRITERION_CURRICULUM_ACCURACY: 0.5,
+        CRITERION_QUOTE_FIDELITY: 0.5,
+    }
+)
+
+#: A model-emitted ``weighted_total`` further than this from the computed one
+#: is logged as ``event=coach_total_disagreement`` by :func:`parse_coach_output`.
+_TOTAL_DISAGREEMENT_TOLERANCE: float = 0.05
 
 #: Floating-point tolerance for the weights-sum-to-1.0 sanity check. The
 #: tolerance is intentionally tight (1e-9) — drift larger than this almost
@@ -438,6 +459,50 @@ def _exemption_score_for_skipped_retrieval() -> CriterionScore:
 
 
 # ---------------------------------------------------------------------------
+# Weighted total + decision (shared by score_rubric and parse_coach_output)
+# ---------------------------------------------------------------------------
+
+
+def _compute_total_and_decision(
+    scores: Mapping[str, float],
+    *,
+    weights: RubricWeights = DEFAULT_WEIGHTS,
+    threshold: float = ACCEPTANCE_THRESHOLD,
+) -> tuple[float, Literal["accept", "revise"]]:
+    """Return ``(weighted_total, decision)`` for one score per criterion.
+
+    The single place the verdict arithmetic lives, so :func:`score_rubric`
+    and :func:`parse_coach_output` cannot drift. ``scores`` must hold every
+    id in :data:`CRITERION_IDS` (callers check completeness first).
+
+    ``weighted_total = sum(score_i * weight_i)`` in :data:`CRITERION_IDS`
+    order, clamped to ``[0.0, 1.0]`` to absorb IEEE-754 drift on the ``1.0``
+    corner. ``decision`` is ``"accept"`` only when the total is ``>=``
+    ``threshold`` (so 0.70 is accepted) **and** no :data:`CRITERION_FLOORS`
+    floor is breached; otherwise ``"revise"``.
+    """
+    weight_map = weights.as_mapping()
+    weighted_total = 0.0
+    for criterion_id in CRITERION_IDS:
+        weighted_total += scores[criterion_id] * weight_map[criterion_id]
+    # Defensive clamp: each score is capped at [0.0, 1.0] and weights sum to
+    # 1.0, so the mathematical maximum is 1.0; float arithmetic can drift
+    # fractionally past it (e.g. 1.0000000000002), which would fail
+    # CoachVerdict's ``le=1.0`` field validation.
+    weighted_total = max(0.0, min(1.0, weighted_total))
+    floor_breached = any(
+        scores[criterion_id] < floor
+        for criterion_id, floor in CRITERION_FLOORS.items()
+    )
+    decision: Literal["accept", "revise"] = (
+        "accept"
+        if weighted_total >= threshold and not floor_breached
+        else "revise"
+    )
+    return weighted_total, decision
+
+
+# ---------------------------------------------------------------------------
 # score_rubric
 # ---------------------------------------------------------------------------
 
@@ -463,8 +528,10 @@ def score_rubric(
        exemption score).
     3. Compute ``weighted_total = sum(score_i * weight_i)`` over the six
        criteria, clamped defensively to ``[0.0, 1.0]`` to absorb IEEE-754
-       drift on the ``1.0`` corner.
-    4. Decision: ``weighted_total >= threshold → "accept"``; else
+       drift on the ``1.0`` corner (:func:`_compute_total_and_decision`,
+       shared with :func:`parse_coach_output`).
+    4. Decision: ``weighted_total >= threshold`` and no
+       :data:`CRITERION_FLOORS` floor breached → ``"accept"``; else
        ``"revise"``. Note ``>=`` (not ``>``) so 0.70 is accepted (per the
        @boundary @rubric Scenario Outline).
     5. Build a :class:`RubricFeedback` entry per below-threshold criterion.
@@ -502,10 +569,7 @@ def score_rubric(
     """
     _check_scorer_completeness(scorers)
 
-    weight_map = weights.as_mapping()
-
     scores: list[CriterionScore] = []
-    weighted_total: float = 0.0
 
     for criterion_id in CRITERION_IDS:
         if (
@@ -525,17 +589,12 @@ def score_rubric(
                 )
 
         scores.append(criterion_score)
-        weighted_total += criterion_score.score * weight_map[criterion_id]
 
-    # Defensive clamp: the per-criterion field validator caps each score at
-    # [0.0, 1.0] and weights sum to 1.0, so the mathematical maximum is 1.0.
-    # Float arithmetic can drift fractionally past 1.0 (e.g. 1.0000000000002)
-    # which would fail CoachVerdict's ``le=1.0`` field validation. Clamp
-    # before constructing the verdict so we don't have to widen the verdict's
-    # validation surface.
-    weighted_total = max(0.0, min(1.0, weighted_total))
-
-    decision = "accept" if weighted_total >= threshold else "revise"
+    weighted_total, decision = _compute_total_and_decision(
+        {cs.criterion_id: cs.score for cs in scores},
+        weights=weights,
+        threshold=threshold,
+    )
 
     feedback = _build_feedback(scores, threshold)
 
@@ -618,13 +677,9 @@ def _drop_unknown_criteria(verdict: CoachVerdict) -> CoachVerdict:
     its validity, and silently mutating that object would surprise tests
     that round-trip known-good verdicts.
 
-    ``weighted_total`` is **not** recomputed when criteria are dropped.
-    Phase-1 acceptance is intentionally lenient about post-drop
-    divergence (per ASSUM-LCA-010 — calibration is Phase-2 territory);
-    re-aggregating here would also re-introduce the rubric-weight
-    coupling we are trying to keep parser-side parser-only. The
-    downstream :func:`score_rubric` call site recomputes the weighted
-    total against the canonical scorer set anyway.
+    The filter only drops; :func:`_apply_computed_verdict` runs next on
+    the same branches and recomputes ``weighted_total`` and ``decision``
+    from the surviving canonical scores (raising on an incomplete rubric).
     """
     kept = [
         cs
@@ -637,6 +692,86 @@ def _drop_unknown_criteria(verdict: CoachVerdict) -> CoachVerdict:
         # verdict.
         return verdict
     return verdict.model_copy(update={"criterion_scores": kept})
+
+
+def _apply_computed_verdict(verdict: CoachVerdict) -> CoachVerdict:
+    """Replace the model's ``weighted_total`` / ``decision`` with computed ones.
+
+    Coach-measured-verdict design C1 (2026-10-18): the Coach LLM's own
+    arithmetic is not trusted. From the (already unknown-filtered)
+    ``criterion_scores``:
+
+    * a criterion listed more than once keeps its **lowest** score (logged
+      as ``event=coach_duplicate_criterion``) and the duplicates are dropped;
+    * a rubric missing any of the six :data:`CRITERION_IDS` raises
+      :class:`MalformedCoachOutputError` (``incomplete rubric: missing
+      [...]``) — the unevaluated-turn fallback, never invented scores;
+    * ``weighted_total`` and ``decision`` come from
+      :func:`_compute_total_and_decision` (the helper :func:`score_rubric`
+      uses, with :data:`DEFAULT_WEIGHTS`, :data:`ACCEPTANCE_THRESHOLD` and
+      :data:`CRITERION_FLOORS`);
+    * a computed ``"revise"`` with no model ``rubric_feedback`` gets
+      feedback from :func:`_build_feedback`;
+    * a model total more than 0.05 from the computed one, or a different
+      model decision, is logged as ``event=coach_total_disagreement`` with
+      both values in the message text.
+    """
+    kept: dict[str, CriterionScore] = {}
+    for cs in verdict.criterion_scores:
+        previous = kept.get(cs.criterion_id)
+        if previous is None:
+            kept[cs.criterion_id] = cs
+            continue
+        lowest = cs if cs.score < previous.score else previous
+        logger.warning(
+            "event=coach_duplicate_criterion criterion_id=%s scores=%s,%s "
+            "kept=%s",
+            cs.criterion_id,
+            previous.score,
+            cs.score,
+            lowest.score,
+            extra={"event": "coach_duplicate_criterion"},
+        )
+        kept[cs.criterion_id] = lowest
+
+    missing = [c for c in CRITERION_IDS if c not in kept]
+    if missing:
+        raise MalformedCoachOutputError(f"incomplete rubric: missing {missing!r}")
+
+    criterion_scores = list(kept.values())
+    weighted_total, decision = _compute_total_and_decision(
+        {criterion_id: cs.score for criterion_id, cs in kept.items()}
+    )
+
+    model_total, model_decision = verdict.weighted_total, verdict.decision
+    # The epsilon keeps a 0.95-vs-1.00 pair (float diff 0.05000000000000004)
+    # on the "agree" side of the 0.05 tolerance.
+    if (
+        abs(model_total - weighted_total) > _TOTAL_DISAGREEMENT_TOLERANCE + 1e-9
+        or model_decision != decision
+    ):
+        logger.warning(
+            "event=coach_total_disagreement model_total=%.4f "
+            "computed_total=%.4f model_decision=%s computed_decision=%s",
+            model_total,
+            weighted_total,
+            model_decision,
+            decision,
+            extra={"event": "coach_total_disagreement"},
+        )
+
+    rubric_feedback = verdict.rubric_feedback
+    if decision == "revise" and not rubric_feedback:
+        rubric_feedback = _build_feedback(criterion_scores, ACCEPTANCE_THRESHOLD)
+
+    return verdict.model_copy(
+        update={
+            "weighted_total": weighted_total,
+            "decision": decision,
+            "criterion_scores": criterion_scores,
+            "rubric_feedback": rubric_feedback,
+        }
+    )
 
 
 def parse_coach_output(raw: Any) -> CoachVerdict:
@@ -656,14 +791,18 @@ def parse_coach_output(raw: Any) -> CoachVerdict:
 
     Per ASSUM-LCA-005, unknown criterion IDs in ``criterion_scores`` are
     silently dropped on the ``dict`` and ``str`` parse branches via
-    :func:`_drop_unknown_criteria`. The already-built
-    :class:`CoachVerdict` pass-through branch is intentionally not
-    filtered — a caller that constructed the verdict directly is
-    asserting its validity.
+    :func:`_drop_unknown_criteria`. Those branches then recompute
+    ``weighted_total`` and ``decision`` from the six canonical scores via
+    :func:`_apply_computed_verdict` (coach-measured-verdict design C1):
+    the model's own total and decision are logged when they disagree but
+    never used. The already-built :class:`CoachVerdict` pass-through
+    branch is intentionally neither filtered nor recomputed — a caller
+    that constructed the verdict directly is asserting its validity.
 
     Raises:
-        MalformedCoachOutputError: If parsing or schema validation fails.
-            The orchestrator applies the unevaluated-turn fallback.
+        MalformedCoachOutputError: If parsing or schema validation fails,
+            or the rubric is missing any of the six criteria. The
+            orchestrator applies the unevaluated-turn fallback.
     """
     if isinstance(raw, CoachVerdict):
         return raw
@@ -675,7 +814,7 @@ def parse_coach_output(raw: Any) -> CoachVerdict:
             raise MalformedCoachOutputError(
                 f"Coach output dict failed CoachVerdict schema validation: {exc}"
             ) from exc
-        return _drop_unknown_criteria(verdict)
+        return _apply_computed_verdict(_drop_unknown_criteria(verdict))
 
     if isinstance(raw, str):
         try:
@@ -696,7 +835,7 @@ def parse_coach_output(raw: Any) -> CoachVerdict:
             raise MalformedCoachOutputError(
                 f"Coach output JSON failed CoachVerdict schema validation: {exc}"
             ) from exc
-        return _drop_unknown_criteria(verdict)
+        return _apply_computed_verdict(_drop_unknown_criteria(verdict))
 
     raise MalformedCoachOutputError(
         f"Coach output of type {type(raw).__name__} is not parseable; "
@@ -868,6 +1007,7 @@ __all__ = [
     "CRITERION_GRADE_APPROPRIATE_LANGUAGE",
     "CRITERION_CONSTRUCTIVE_FEEDBACK",
     "CRITERION_QUOTE_FIDELITY",
+    "CRITERION_FLOORS",
     "CRITERION_IDS",
     "CoachEvaluation",
     "CriterionScorer",

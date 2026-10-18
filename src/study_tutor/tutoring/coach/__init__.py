@@ -18,8 +18,8 @@ Public surface:
   :class:`QuoteVerificationResult`, :class:`QuoteAnnotation`,
   :class:`MalformedCoachOutputError`, :class:`UnevaluatedTurnFallback`,
   :class:`CoachEvaluation`, :data:`ACCEPTANCE_THRESHOLD`,
-  :data:`MIN_QUOTE_LENGTH_WORDS`, :data:`CRITERION_IDS`, :data:`DEFAULT_WEIGHTS`
-  — TASK-DTL-002 rubric scoring + quote-fidelity integration.
+  :data:`MIN_QUOTE_LENGTH_WORDS`, :data:`CRITERION_IDS`, :data:`DEFAULT_WEIGHTS`,
+  :data:`CRITERION_FLOORS` — TASK-DTL-002 rubric scoring + quote-fidelity integration.
 
 Per TASK-DTL-004 + Finding F9 of TASK-REV-DTL3, sanitisation of learner-derived
 misconception text lives **here** (caller-side), not inside the shared
@@ -46,6 +46,7 @@ from study_tutor.tutoring.coach.rubric import (
     CRITERION_AO_ALIGNMENT,
     CRITERION_CONSTRUCTIVE_FEEDBACK,
     CRITERION_CURRICULUM_ACCURACY,
+    CRITERION_FLOORS,
     CRITERION_GRADE_APPROPRIATE_LANGUAGE,
     CRITERION_IDS,
     CRITERION_QUOTE_FIDELITY,
@@ -93,6 +94,7 @@ __all__ = [
     "ACCEPTANCE_THRESHOLD",
     "MIN_QUOTE_LENGTH_WORDS",
     "CRITERION_IDS",
+    "CRITERION_FLOORS",
     "CRITERION_CURRICULUM_ACCURACY",
     "CRITERION_AO_ALIGNMENT",
     "CRITERION_SCAFFOLDING_DEPTH",

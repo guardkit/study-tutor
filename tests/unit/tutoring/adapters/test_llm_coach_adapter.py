@@ -227,7 +227,9 @@ class TestEvaluateHappyPath:
 
         assert isinstance(verdict, CoachVerdict)
         assert verdict.decision == "accept"
-        assert verdict.weighted_total == pytest.approx(0.82)
+        # Computed from the six scores with DEFAULT_WEIGHTS (design C1),
+        # not the model's own 0.82.
+        assert verdict.weighted_total == pytest.approx(0.83)
         assert len(verdict.criterion_scores) == 6
         # rubric_feedback and misconceptions default to empty lists from
         # the model; assert they exist as lists rather than e.g. None.
@@ -421,6 +423,32 @@ class TestEvaluateMalformedPropagation:
                     player_response="r",
                 )
 
+    @pytest.mark.asyncio
+    async def test_evaluate_propagates_malformed_on_incomplete_rubric(
+        self, role_config: RoleConfig, session_state: SessionState
+    ) -> None:
+        """Design C1: a schema-valid verdict missing a criterion is a
+        failed evaluation, propagated uncaught like any malformed output.
+        """
+        adapter = LLMCoachAdapter(role_config=role_config)
+        payload = dict(_VALID_COACH_PAYLOAD)
+        payload["criterion_scores"] = list(
+            _VALID_COACH_PAYLOAD["criterion_scores"]  # type: ignore[arg-type]
+        )[:-1]
+        with patch(
+            "study_tutor.tutoring.adapters.llm_coach_adapter.LLMClient"
+        ) as MockClient:
+            MockClient.return_value.generate.return_value = json.dumps(payload)
+
+            with pytest.raises(
+                MalformedCoachOutputError, match="incomplete rubric"
+            ):
+                await adapter.evaluate(
+                    session_state=session_state,
+                    learner_message="m",
+                    player_response="r",
+                )
+
 
 # ---------------------------------------------------------------------------
 # evaluate() — extra-criteria discard (ASSUM-LCA-005)
@@ -443,11 +471,7 @@ class TestEvaluateExtraCriteriaDiscard:
             "weighted_total": 0.5,
             "decision": "accept",
             "criterion_scores": [
-                {
-                    "criterion_id": "curriculum_accuracy",
-                    "score": 0.5,
-                    "evidence": "ok",
-                },
+                *_VALID_COACH_PAYLOAD["criterion_scores"],  # type: ignore[misc]
                 {
                     "criterion_id": "bogus_invented_criterion",
                     "score": 0.9,
@@ -468,7 +492,14 @@ class TestEvaluateExtraCriteriaDiscard:
             )
 
         surviving_ids = [cs.criterion_id for cs in verdict.criterion_scores]
-        assert surviving_ids == ["curriculum_accuracy"]
+        assert surviving_ids == [
+            "curriculum_accuracy",
+            "ao_alignment",
+            "scaffolding_depth",
+            "grade_appropriate_language",
+            "constructive_feedback",
+            "quote_fidelity",
+        ]
         assert "bogus_invented_criterion" not in surviving_ids
 
 

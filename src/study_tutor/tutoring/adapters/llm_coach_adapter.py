@@ -7,7 +7,11 @@ consumed by :class:`PlayerCoachOrchestrator`.
 Path C (hybrid) per the FEAT-6CC5 brief: the LLM emits per-criterion JSON;
 deterministic post-processing via
 :func:`study_tutor.tutoring.coach.rubric.parse_coach_output` assembles the
-:class:`CoachVerdict`. Coach prompt assembly mirrors the sister
+:class:`CoachVerdict`, recomputing ``weighted_total`` and ``decision`` from
+the six criterion scores (``DEFAULT_WEIGHTS``, the 0.70 threshold and the
+law-level ``CRITERION_FLOORS`` — coach-measured-verdict design C1). The
+LLM's own total and decision are only compared and logged
+(``event=coach_total_disagreement``), never used. Coach prompt assembly mirrors the sister
 :class:`~study_tutor.tutoring.adapters.llm_player_adapter.LLMPlayerAdapter`
 in shape: a static system prompt cached at construction, a freshly-built
 user prompt per call, no per-session state.
@@ -30,7 +34,8 @@ event loop on the network call (matching the existing MCP-adapter
 pattern at ``study_tutor.mcp.adapter.MCPAdapter.tutor_turn`` and
 the sister Player adapter).
 
-:class:`MalformedCoachOutputError` from :func:`parse_coach_output` is
+:class:`MalformedCoachOutputError` from :func:`parse_coach_output` (non-JSON,
+schema-invalid, or a rubric missing any of the six criteria) is
 deliberately NOT caught here — per AC-LCA-06 it propagates so the
 orchestrator's bounded-revision loop can route the turn to
 ``decision=fallback`` (the unevaluated-turn fallback policy from
@@ -110,8 +115,9 @@ class LLMCoachAdapter:
         adapter) so a future Phase-2 enhancement is a one-site grep.
 
         Raises:
-            MalformedCoachOutputError: When the LLM returns non-JSON or
-                schema-invalid output. Propagated unchanged so the
+            MalformedCoachOutputError: When the LLM returns non-JSON,
+                schema-invalid output, or a rubric missing any of the six
+                criteria. Propagated unchanged so the
                 orchestrator can route ``decision=fallback`` (per
                 AC-LCA-06 + ASSUM-007).
             LLMProviderError: When ``AGENT_MODELS__COACH_MODEL`` is
