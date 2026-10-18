@@ -15,6 +15,9 @@
 # internals into a child's transcript again — the defect fixed that same day on
 # :8100. `kc-a2` is kept as the rollback tag; retag forward, never in place.
 #
+# 2026-10-18: re-tagged forward to `kc-20261018` = `study-tutor:latest` built at merge
+# 9b785c5 (TutorBusy + history pairing, contract Rev 3). Rollback tag: `kc-20260814`.
+#
 # Usage (from deploy/http/):
 #   docker compose -p study_tutor_http_kc \
 #     -f docker-compose.yml -f docker-compose.keycloak.yml \
@@ -34,7 +37,7 @@
 services:
   study_tutor_http:
     container_name: study_tutor_http_kc
-    image: study-tutor:kc-20260814
+    image: study-tutor:kc-20261018
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "whitestocks.tailebf801.ts.net:100.92.74.2"
