@@ -56,6 +56,7 @@ from study_tutor.knowledge.corpus_models import (
 )
 from study_tutor.knowledge.quote_verifier import UNVERIFIED_QUOTE_TEXT
 from study_tutor.knowledge.retrieval import (
+    NON_AO3_SOURCE_TYPES,
     clear_primary_text_index,
     get_collection_provider,
     register_primary_text,
@@ -100,10 +101,18 @@ class _FakeCollection:
         where: dict[str, Any],
     ) -> dict[str, Any]:
         self.query_calls += 1
+        self.last_query = {
+            "query_texts": query_texts,
+            "n_results": n_results,
+            "where": where,
+        }
 
         text_name_filter: str | None = None
         allowed_source_types: set[str] = set()
-        for clause in where.get("$and", []):
+        # A bare single-clause filter (text_name=None retrieval, boot probe)
+        # is the clause itself; Chroma rejects a one-clause ``$and``.
+        clauses = where.get("$and", [where])
+        for clause in clauses:
             if "text_name" in clause:
                 text_name_filter = clause["text_name"]
             if "source_type" in clause:
@@ -634,8 +643,12 @@ def test_boot_probe_success_logs_no_error(
     with caplog.at_level(logging.ERROR, logger="study_tutor.cli.rag_wiring"):
         _wire(monkeypatch, tmp_path, collection)
     assert not [r for r in caplog.records if r.levelno == logging.ERROR]
-    # Exactly one probe query was made at boot.
+    # Exactly one probe query was made at boot, through the live source filter.
     assert collection.query_calls == 1
+    assert collection.last_query["n_results"] == 1
+    assert collection.last_query["where"] == {
+        "source_type": {"$in": [s.value for s in NON_AO3_SOURCE_TYPES]}
+    }
 
 
 def test_boot_probe_skips_an_empty_collection(
