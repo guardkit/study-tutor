@@ -553,8 +553,14 @@ class PlayerCoachOrchestrator:
         # handover is wired (FEAT-PH1-003 legacy callers / tests that
         # don't need it), the response is passed through unchanged and
         # ``verifier_metadata`` stays ``None``.
-        first_response, first_metadata = self._apply_coach_handover(
-            first_raw_response, learner_message, session_state
+        # Off the event loop (quote-lookup design R3): the handover can do
+        # blocking I/O (retrieval, and a quote-anchored lookup per unmatched
+        # span).
+        first_response, first_metadata = await asyncio.to_thread(
+            self._apply_coach_handover,
+            first_raw_response,
+            learner_message,
+            session_state,
         )
 
         # ADR-ARCH-026 D1 — async Coach mode: the learner-visible response
@@ -652,8 +658,11 @@ class PlayerCoachOrchestrator:
             # fresh Player generation that may introduce new quotes the
             # previous verification did not see (per TASK-PRV-006: the
             # Coach must always evaluate the rewritten text).
-            revised_response, revised_metadata = self._apply_coach_handover(
-                revised_raw_response, learner_message, session_state
+            revised_response, revised_metadata = await asyncio.to_thread(
+                self._apply_coach_handover,
+                revised_raw_response,
+                learner_message,
+                session_state,
             )
 
             try:
@@ -856,7 +865,9 @@ class PlayerCoachOrchestrator:
         runs on a worker thread started before generation, so the ~5s
         warm-retrieval cost overlaps the Player's first tokens instead of
         preceding them. Per-boundary verification against the fetched
-        chunks is milliseconds.
+        chunks is milliseconds — except a quote-anchored lookup for an
+        unmatched span (one per distinct span per reply, memoised), so
+        every ``verify`` call runs on a worker thread, awaited in order.
 
         After the stream drains, the final verified full text and its
         metadata dispatch the async Coach — the same end-of-turn
@@ -901,8 +912,10 @@ class PlayerCoachOrchestrator:
             nonlocal released_verified_len
             if verify is None:
                 verify = await verifier_task
-            candidate_verified, candidate_meta = verify(
-                accumulated_raw[:upto_raw]
+            # Off the event loop (quote-lookup design R3): a quote-anchored
+            # lookup blocks on retrieval. Awaited here, so passes stay in order.
+            candidate_verified, candidate_meta = await asyncio.to_thread(
+                verify, accumulated_raw[:upto_raw]
             )
             metadata = candidate_meta
             if getattr(candidate_meta, "verifier_exception", False):
@@ -954,7 +967,7 @@ class PlayerCoachOrchestrator:
         # the metadata the async Coach consumes.
         if verify is None:
             verify = await verifier_task
-        final_verified, metadata = verify(accumulated_raw)
+        final_verified, metadata = await asyncio.to_thread(verify, accumulated_raw)
         if getattr(metadata, "verifier_exception", False):
             # Fail CLOSED (ADR-ARCH-027 posture; the ADR is silent on
             # final-pass errors, so mirror sentence_chunker's stance —

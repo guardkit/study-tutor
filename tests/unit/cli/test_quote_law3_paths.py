@@ -128,11 +128,13 @@ class _FilteringCollection:
     def __init__(self, chunks: list[CorpusChunk]) -> None:
         self._chunks = chunks
         self.wheres: list[dict[str, Any]] = []
+        self.queries: list[str] = []
 
     def query(
         self, *, query_texts: list[str], n_results: int, where: dict[str, Any]
     ) -> dict[str, Any]:
         self.wheres.append(where)
+        self.queries.extend(query_texts)
         hits = [c for c in self._chunks if _matches(c, where)][:n_results]
         return {
             "documents": [[c.text for c in hits]],
@@ -308,8 +310,11 @@ async def test_no_text_name_retrieves_all_texts_and_redacts_invented_line(
 
     emitted, coach = await _run(path, _state(text_name=None), reply)
 
-    # Queried once, with no text-name filter (source-type filter only).
-    assert len(english.wheres) == 1
+    # The session's query once; then (quote-lookup design) the unmatched
+    # span's own lookup once, in the same scope — no text-name filter
+    # (source-type filter only).
+    assert english.queries == ["ambition", INCIDENT_SPAN]
+    assert english.wheres[1] == english.wheres[0]
     assert "text_name" not in repr(english.wheres[0])
     assert "source_type" in english.wheres[0]
     assert "".join(emitted) == (

@@ -44,7 +44,7 @@ from study_tutor.knowledge.store.wiring import build_student_store
 from study_tutor.session.provider import get_session_service
 from study_tutor.session.wiring import build_session_service, get_turn_notifier
 from study_tutor.knowledge.coach_handover import apply_quote_verification
-from study_tutor.knowledge.quote_verifier import VerifierMetadata
+from study_tutor.knowledge.quote_verifier import QuoteLookup, VerifierMetadata
 from study_tutor.knowledge.retrieval import (
     DEFAULT_SUBJECT,
     REASON_NO_SUBJECT_CORPUS,
@@ -110,6 +110,26 @@ def _select_token_resolver(oidc_settings: OIDCSettings) -> TokenResolver:
         err=True,
     )
     raise SystemExit(1)
+
+
+def _quote_lookup(subject: str, retrieval_text_name: str | None) -> QuoteLookup:
+    """One reply's quote-anchored lookup (docs/design/quote-lookup-by-span-2026-10-18.md).
+
+    Strict mode re-checks a span the session's chunks left unmatched against
+    the chunks retrieved with the span ITSELF as the query — same subject,
+    same text scope (the set text, or all of the subject's texts when
+    ``None``) and source filter as the session's own retrieval. Memoised and
+    budgeted per reply; a lookup that raises or finds nothing leaves the
+    span redacted (fail closed). Only built for a subject with a corpus.
+    """
+    return QuoteLookup(
+        lambda span: retrieve(
+            query=span,
+            text_name=retrieval_text_name,
+            focus_aos=set(),
+            subject=subject,
+        )
+    )
 
 
 def _build_coach_handover() -> CoachHandover:
@@ -194,6 +214,8 @@ def _build_coach_handover() -> CoachHandover:
                 redact_unmatched=True,
             )
 
+        # One lookup per handover call = per Player attempt (the reply).
+        lookup = _quote_lookup(subject, retrieval_text_name)
         decision = decide_retrieval(
             retrieval_text_name, focus_aos, subject=subject
         )
@@ -212,6 +234,7 @@ def _build_coach_handover() -> CoachHandover:
                 text_name,
                 retrieval_skipped_reason=decision.reason,
                 redact_unmatched=True,
+                lookup=lookup,
             )
 
         # TODO (TASK-RAG-002 / Phase 2 — AD-6): thread retrieval_mode
@@ -239,6 +262,7 @@ def _build_coach_handover() -> CoachHandover:
             text_name,
             retrieval_skipped_reason=None,
             redact_unmatched=True,
+            lookup=lookup,
         )
 
     return coach_handover
@@ -257,7 +281,10 @@ def _build_turn_verifier_factory() -> Any:
     text at stream end) — milliseconds per call, one retrieval per turn.
 
     Construction runs synchronously (retrieval blocks); the orchestrator
-    hoists it onto a thread and overlaps it with Player generation.
+    hoists it onto a thread and overlaps it with Player generation. Each
+    returned verifier owns one reply-scoped :class:`QuoteLookup`; a span
+    lookup can block too, so the orchestrator runs every ``verify`` call on
+    a worker thread.
 
     Same law-3 posture as the closure: strict verification always, and a
     session with no ``text_name`` retrieves across all of its subject's
@@ -279,10 +306,15 @@ def _build_turn_verifier_factory() -> Any:
 
         chunks: list[Any] = []
         skip_reason: str | None = None
+        # One lookup per verifier = per streamed reply: memoised across
+        # every boundary pass and the final pass, so no span's decision
+        # can change after it has been released.
+        lookup: QuoteLookup | None = None
 
         if not has_corpus(subject):
             skip_reason = REASON_NO_SUBJECT_CORPUS
         else:
+            lookup = _quote_lookup(subject, retrieval_text_name)
             decision = decide_retrieval(
                 retrieval_text_name, focus_aos, subject=subject
             )
@@ -312,6 +344,7 @@ def _build_turn_verifier_factory() -> Any:
                 text_name,
                 retrieval_skipped_reason=skip_reason,
                 redact_unmatched=True,
+                lookup=lookup,
             )
 
         return verify
