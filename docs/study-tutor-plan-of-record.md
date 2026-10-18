@@ -27,6 +27,32 @@ Hosts, cashed out once: **the spark** = the household DGX Spark inference/app bo
 (`spark-fcf6`); **the GB10** = the Dell DGX box, now returned to the software factory; **the
 NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only today.
 
+> **2026-10-18 update — hosting moved; read this before the table below (whose "spark"
+> rows are now historical).** Since 16–17 Oct the tutor runs on **the Dell
+> (`promaxgb10-41b1`) beside the factory**: `study_tutor_http` :8100 (`study-tutor:latest`,
+> built at `9b785c5`), `study_tutor_http_kc` :8101 (`study-tutor:kc-20261018`, same build),
+> and the NATS agent `study-tutor-gcse-tutor-1` (still the May `dev` image — **not**
+> redeployed). Tutor model `gemma4-tutor` on the Dell's llama-swap, **two conversations at
+> once** since 18 Oct (`-np 2`, 16K context split 8K each, `concurrencyLimit: 3`; backup
+> `config.yaml.bak-pre-tutor-np2-20261018`), loads cost 18.0 GiB measured (= mem-check's
+> figure). Coach = the factory's model via LiteLLM; voice pair on the Spark. Model map and
+> rules: ai-transition `docs/handoffs/study-tutor-models-brief-2026-10-18.md`.
+> **Fixed 18 Oct** ([design](design/tutor-busy-and-history-repair-2026-10-18.md); Codex
+> design + implementation reviews accepted, Opus coach approved; hermetic 2110/0): one
+> refused turn no longer breaks the rest of a session (Player history = complete
+> exchanges only), and a busy/refused tutor model is a retryable **`TutorBusy` 503**
+> (contract **Revision 3**; new `CONTRACT_SHA`/`BINDING_SHA` = **`9b785c5`**). Live-proven
+> on :8100 as `suite-runner`: saturated turn → 503 TutorBusy + `Retry-After`, next turn in
+> the same session → 200; four concurrent model requests → two parallel, one queued, one 429.
+> **Open:** (1) the app-side `TutorBusy` change on the Mac — `errors.dart` class, the
+> `TutorBusy` case in `http_session_api.dart` and both `http_voice_api.dart` switches,
+> "the tutor is busy, try again in a minute" copy in place of the connection-problem
+> dialog, pins → `9b785c5`, `flutter test`; until then installed apps show the
+> connection-problem dialog (as they did for the 500). (2) Redeploy the NATS agent
+> `gcse-tutor` (old image, still has both bugs) — operator act. (3) Brief items still
+> open: coach speed under factory load, coach accepting weak replies / trusting the
+> model's own total, one-active session across 8100/8101, `HF_HUB_OFFLINE` empty.
+
 | Piece | State | Receipt |
 |---|---|---|
 | Tutoring core (Player + async Coach + planner + quote verifier) | **LIVE** on the spark `:8100` (table auth) and `:8101` (Keycloak; voice OFF pending the Keycloak phone-flow proof). `:8100` capabilities, each live-proven: **verified streaming voice** (ADR-ARCH-027 as ratified — per-sentence quote-verification before tokens are shown/spoken/persisted, streamed TTS; transcript ~0.2s, first spoken sentence ~3s), **one-active (b) session semantics** (`resume_if_active:false` = end-then-create with settlement; structural via partial unique index `session_one_active_idx`, migration head `346cd366b66e`; the MCP door RESUMES — this and the concurrency-test rewrite were the build's two flagged judgment calls, **both BLESSED by Rich 2026-08-04**), and the **incremental think-filter** (reasoning can never stream to the learner). **2026-08-14: the filter was blind to a SECOND scaffolding family** — the current `gemma4-tutor` alias emits pipe-delimited channel markers (`<|channel>thought <channel|>`, sometimes an internal `m_context_…` id), and **7 of 22 tutor rows (32%) in Lilymay's live session persisted them; Rich confirmed they rendered in the phone app**, so a 14-year-old was reading model internals in her own transcript. Fixed at the model boundary in the Player adapter (not at persistence, which would have left the `/ws` frames leaking) — batch + streaming, split-marker safe, deployed and verified in-image; the 8 polluted rows (incl. one `<think>` row from 2026-08-03) were **backfilled clean**, revert copy in `/opt/study-tutor/backups/transcript-sanitise-2026-08-14/`. One row (turn 27) was scaffolding **end to end** — the model produced no tutoring at all that turn, and the markers were the only reason anything appeared; it is now an empty tutor row and logs `ERROR` when it recurs (ruling queue #10). The 2026-07-26→08-03 silent voice outage (empty `STT_MODEL`/`TTS_MODEL` falling back to dead GB10-era aliases) was found by the live suite and fixed same day; `VoiceConfig` now fails loud at boot on empty model names | `HANDOFF-study-tutor-full-encapsulation-spark.md` (2026-07-26); verified-streaming deploy `513bc70` + prod WS smoke 2026-08-03; (b) build `19a0211` + `HANDOFF-spark-double-active-server-build.md` (2026-08-04); voice env fix `1595b68`; fail-loud + scoped-reset `6d1c8e5`; verifier fail-closed deploy 2026-08-07 (merge `6b50821`, rollback `pre-track-a-20260807`, live probe 0 exceptions) |
