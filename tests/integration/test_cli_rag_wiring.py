@@ -630,9 +630,20 @@ def test_boot_probe_success_logs_no_error(
     macbeth_corpus: list[CorpusChunk],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    collection = _FakeCollection(macbeth_corpus)
     with caplog.at_level(logging.ERROR, logger="study_tutor.cli.rag_wiring"):
-        _wire(monkeypatch, tmp_path, _FakeCollection(macbeth_corpus))
+        _wire(monkeypatch, tmp_path, collection)
     assert not [r for r in caplog.records if r.levelno == logging.ERROR]
+    # Exactly one probe query was made at boot.
+    assert collection.query_calls == 1
+
+
+def test_boot_probe_skips_an_empty_collection(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    collection = _FakeCollection([])
+    _wire(monkeypatch, tmp_path, collection)
+    assert collection.query_calls == 0
 
 
 def test_query_failure_detail_is_in_the_log_message(
