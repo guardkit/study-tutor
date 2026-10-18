@@ -154,6 +154,73 @@ async def test_server_registers_four_tools(
 
 
 # ---------------------------------------------------------------------------
+# Contract §9 Rev 3 — TutorBusy flat envelope on tutor_turn (design F2.3)
+# ---------------------------------------------------------------------------
+
+
+async def test_turn_returns_tutor_busy_on_phase0_path(
+    adapter: MCPAdapter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase-0 ``reply_fn`` (no orchestrator): llama-swap's 429 → envelope."""
+    from study_tutor.llm import client as llm_client
+    from study_tutor.session.errors import TutorBusy
+
+    def busy_generate(self, prompt, system=None):  # type: ignore[no-untyped-def]
+        raise llm_client.LLMProviderError("upstream 429", status_code=429)
+
+    monkeypatch.setattr(llm_client.LLMClient, "generate", busy_generate)
+
+    started = await adapter.tutor_start_session(student_id="lilymay")
+    session_id = started["session_id"]
+    await _drain_warmups(adapter)
+
+    result = await adapter.tutor_turn(session_id=session_id, user_message="hi")
+
+    assert result == {"error": TutorBusy.MESSAGE, "error_type": "TutorBusy"}
+    # Only the learner row persisted; the session stays active.
+    status = await adapter.tutor_session_status(session_id=session_id)
+    assert status["turn_count"] == 1
+    assert status["status"] == "active"
+
+
+async def test_turn_returns_tutor_busy_on_orchestrator_path(
+    role_config: RoleConfig,
+) -> None:
+    """Orchestrator-backed ``reply_fn``: the Player's 502 → envelope."""
+    from unittest.mock import MagicMock
+
+    from study_tutor.llm.client import LLMProviderError
+    from study_tutor.session.errors import TutorBusy
+    from study_tutor.tutoring.orchestrator import PlayerCoachOrchestrator
+
+    class BusyPlayer:
+        async def respond(self, *, session_state, learner_message):  # type: ignore[no-untyped-def]
+            raise LLMProviderError("upstream 502", status_code=502)
+
+    coach = MagicMock()
+    store = FakeStudentStore()
+    store.add_student(student_id="lilymay", year_group=9)
+    adapter = MCPAdapter(
+        role_config=role_config,
+        session_service=SessionService(store=store),
+        orchestrator_factory=lambda: PlayerCoachOrchestrator(
+            player=BusyPlayer(), coach=coach
+        ),
+    )
+
+    started = await adapter.tutor_start_session(student_id="lilymay")
+    session_id = started["session_id"]
+    await _drain_warmups(adapter)
+
+    result = await adapter.tutor_turn(session_id=session_id, user_message="hi")
+
+    assert result == {"error": TutorBusy.MESSAGE, "error_type": "TutorBusy"}
+    coach.evaluate.assert_not_called()
+    status = await adapter.tutor_session_status(session_id=session_id)
+    assert status["turn_count"] == 1
+
+
+# ---------------------------------------------------------------------------
 # TASK-SMP3-06 — SessionService delegation
 # ---------------------------------------------------------------------------
 

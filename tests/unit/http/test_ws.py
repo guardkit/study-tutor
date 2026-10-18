@@ -383,6 +383,65 @@ class TestSuccessfulStreamingTurn:
                 assert frames[2]["turn_index"] == 1
 
 
+class TestTutorBusyIsNonTerminal:
+    """Contract §9 Rev 3 / design F2.3: a busy tutor model (upstream 429)
+    yields the TutorBusy error frame and the socket stays open."""
+
+    def test_busy_turn_yields_frame_and_next_turn_succeeds(
+        self, auth_config, voice_config_enabled, fake_student_store
+    ):
+        from study_tutor.llm.client import LLMProviderError
+        from study_tutor.session.errors import TutorBusy
+        from tests.unit.session.test_turn_stream import FakeStore
+
+        record = MagicMock(session_id="sess-123", student_id="student-123", status="active")
+        store = FakeStore(calls=[], session_record=record)
+        attempts: list[str] = []
+
+        def reply_stream_fn_factory(**kwargs):
+            async def stream(user_message: str) -> AsyncIterator[str]:
+                attempts.append(user_message)
+                if len(attempts) == 1:
+                    raise LLMProviderError("upstream 429", status_code=429)
+                yield "Hello again"
+
+            return stream
+
+        app = create_app(
+            auth_config=auth_config,
+            voice_config=voice_config_enabled,
+            student_store=fake_student_store,
+            service=SessionService(store=store),
+            reply_fn_factory=lambda **kwargs: AsyncMock(),
+            reply_stream_fn_factory=reply_stream_fn_factory,
+        )
+
+        with TestClient(app) as client:
+            with client.websocket_connect(
+                "/api/sessions/sess-123/ws",
+                headers={"Authorization": "Bearer test-token"},
+            ) as ws:
+                ws.send_json({"type": "turn", "user_message": "hi", "stream": True})
+                busy = ws.receive_json()
+                assert busy["type"] == "error"
+                assert busy["error"] == TutorBusy.MESSAGE
+                assert busy["error_type"] == "TutorBusy"
+
+                # Same socket: the learner sends again and is answered.
+                ws.send_json({"type": "turn", "user_message": "hi", "stream": True})
+                token = ws.receive_json()
+                done = ws.receive_json()
+
+        assert token["type"] == "token"
+        assert token["text"] == "Hello again"
+        assert done["type"] == "done"
+        assert store.calls == [
+            "append_turn(user)",
+            "append_turn(user)",
+            "append_turn(tutor)",
+        ]
+
+
 # ---------------------------------------------------------------------------
 # Contract §7 Rev 1: voice_turn frame dispatch (the missing half of
 # TASK-VS2-006, found live 2026-08-03 — the endpoint ignored the header

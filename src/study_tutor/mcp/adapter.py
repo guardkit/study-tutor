@@ -45,6 +45,7 @@ from study_tutor.session.errors import (
     SessionEnded,
     SessionForbidden,
     SessionNotFoundError,
+    TutorBusy,
 )
 from study_tutor.session.provider import get_session_service
 from study_tutor.session.service import (
@@ -327,6 +328,13 @@ class MCPAdapter:
             return {
                 "error": str(exc),
                 "error_type": "SessionForbidden",
+            }
+        except TutorBusy as exc:
+            # Contract §9 Revision 3 / API-mcp-transport addendum: the same
+            # flat envelope the robot already receives for SessionEnded.
+            return {
+                "error": str(exc),
+                "error_type": "TutorBusy",
             }
 
         # Re-project metadata into the unchanged response shape.

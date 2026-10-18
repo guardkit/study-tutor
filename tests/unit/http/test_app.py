@@ -377,6 +377,47 @@ def test_turn_session_ended(test_client, fake_service):
     assert data["error_type"] == "SessionEnded"
 
 
+def test_turn_tutor_busy_maps_to_503_with_retry_after(
+    fake_auth_config, fake_student_store
+):
+    """Rev 3 / design F2.3: the reply's upstream 502 (llama-swap refused the
+    load) surfaces through the REAL service as TutorBusy -> 503, the flat
+    envelope, and Retry-After: 30."""
+    from unittest.mock import MagicMock
+
+    from study_tutor.http.app import create_app
+    from study_tutor.llm.client import LLMProviderError
+    from study_tutor.session.errors import TutorBusy
+    from study_tutor.session.service import SessionService
+    from tests.unit.session.test_turn_stream import FakeStore
+
+    record = MagicMock(session_id="sess-123", student_id="test-student", status="active")
+    store = FakeStore(calls=[], session_record=record)
+
+    async def busy_reply(_msg: str):
+        raise LLMProviderError("upstream 502", status_code=502)
+
+    client = TestClient(
+        create_app(
+            service=SessionService(store=store),
+            reply_fn=busy_reply,
+            auth_config=fake_auth_config,
+            student_store=fake_student_store,
+        )
+    )
+
+    response = client.post(
+        "/api/sessions/sess-123/turn",
+        json={"user_message": "What is Macbeth about?"},
+        headers={"Authorization": "Bearer token-test"},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {"error": TutorBusy.MESSAGE, "error_type": "TutorBusy"}
+    assert response.headers["Retry-After"] == "30"
+    assert store.calls == ["append_turn(user)"]
+
+
 # -------------------- session_status tests --------------------
 
 

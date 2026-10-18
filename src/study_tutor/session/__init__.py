@@ -25,6 +25,7 @@ from study_tutor.session.errors import (
     SessionForbidden,
     SessionNotFoundError,
     SessionServiceError,
+    TutorBusy,
     Unauthenticated,
 )
 from study_tutor.session.provider import (
@@ -61,6 +62,7 @@ __all__ = [
     "StartSessionResult",
     "TurnEvent",
     "TurnResult",
+    "TutorBusy",
     "TutorReply",
     "Unauthenticated",
     "get_session_service",

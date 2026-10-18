@@ -64,15 +64,16 @@ _REVISE_PROMPT_HEADER = (
 # ---------------------------------------------------------------------------
 
 #: §2.6 in-session-memory window: the maximum number of prior transcript
-#: turns folded into the Player generation prompt. Oldest turns are dropped
-#: first (both when the window exceeds this count and when the token cap
-#: below is exceeded).
+#: turns folded into the Player generation prompt, counted as whole
+#: learner/tutor exchanges (12 turns = 6 exchanges). Oldest exchanges are
+#: dropped first (both when the window exceeds this count and when the token
+#: cap below is exceeded).
 _TRANSCRIPT_WINDOW_TURNS: int = 12
 
 #: §2.6 token budget for the transcript window. We cannot tokenise cheaply on
 #: the hot path, so we approximate one token ≈ 4 characters (the usual English
-#: heuristic) and cap the summed content length. Oldest turns are dropped
-#: first until the window fits. The cap lives here, beside the prompt
+#: heuristic) and cap the summed content length. Oldest exchanges are
+#: dropped first until the window fits. The cap lives here, beside the prompt
 #: assembly, per R13.
 _TRANSCRIPT_WINDOW_TOKEN_CAP: int = 1500
 _APPROX_CHARS_PER_TOKEN: int = 4
@@ -160,32 +161,50 @@ def _build_transcript_history(
 ) -> list[dict[str, str]]:
     """Build the messages-list history window for ``LLMClient.generate``.
 
-    Spec §2.6 / R13: take the last :data:`_TRANSCRIPT_WINDOW_TURNS` prior
-    turns, then enforce :data:`_TRANSCRIPT_WINDOW_TOKEN_CAP` by dropping the
-    **oldest** turns first until the window fits. Store roles map to the
-    chat vocabulary (``tutor`` → ``assistant``). Returns ``[]`` when the
-    session carries no prior transcript.
+    Spec §2.6 / R13, made well-formed (2026-10-18,
+    ``docs/design/tutor-busy-and-history-repair-2026-10-18.md`` F1): the
+    tutor model's chat template refuses anything but strict
+    ``user, assistant, user, …`` alternation starting with ``user``, and
+    ``LLMClient`` appends the current learner message after this history.
+    So the history is built from complete exchanges only:
+
+    1. Pair the transcript: a ``user`` row immediately followed by a
+       ``tutor`` row is one exchange. A learner row left unanswered (its turn
+       failed, e.g. the model was busy) and a tutor row with no learner row
+       before it are left out of the model's context — the durable rows are
+       untouched.
+    2. Keep the last :data:`_TRANSCRIPT_WINDOW_TURNS` turns' worth of
+       exchanges, then enforce :data:`_TRANSCRIPT_WINDOW_TOKEN_CAP` by
+       dropping the **oldest exchange** first. The newest exchange is kept
+       even when over budget (truncating it would corrupt the most recent
+       context).
+
+    Store roles map to the chat vocabulary (``tutor`` → ``assistant``).
+    Returns ``[]`` when there is no complete exchange.
     """
     turns = list(session_state.transcript)
-    if not turns:
+    exchanges: list[tuple[str, str]] = []
+    for previous, current in zip(turns, turns[1:]):
+        if previous.role == "user" and current.role == "tutor":
+            exchanges.append((previous.content, current.content))
+    if not exchanges:
         return []
 
-    # Keep only the most recent window of turns (oldest dropped first).
-    windowed = turns[-_TRANSCRIPT_WINDOW_TURNS:]
+    # Keep only the most recent window of exchanges (oldest dropped first).
+    windowed = exchanges[-(_TRANSCRIPT_WINDOW_TURNS // 2):]
 
-    # Enforce the token cap by dropping oldest turns until the approximate
-    # token budget is satisfied. A single over-budget final turn is kept
-    # (truncating it would corrupt the most recent context).
+    # Enforce the token cap by dropping oldest exchanges until the
+    # approximate token budget is satisfied.
     char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN
-    total = sum(len(turn.content) for turn in windowed)
+    total = sum(len(learner) + len(tutor) for learner, tutor in windowed)
     while len(windowed) > 1 and total > char_cap:
-        dropped = windowed.pop(0)
-        total -= len(dropped.content)
+        learner, tutor = windowed.pop(0)
+        total -= len(learner) + len(tutor)
 
     history: list[dict[str, str]] = []
-    for turn in windowed:
-        role = "assistant" if turn.role == "tutor" else "user"
-        history.append({"role": role, "content": turn.content})
+    for learner, tutor in windowed:
+        history.append({"role": "user", "content": learner})
+        history.append({"role": "assistant", "content": tutor})
     return history
 
 

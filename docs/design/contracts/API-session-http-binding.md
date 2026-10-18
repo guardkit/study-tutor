@@ -221,7 +221,7 @@ Real-time push for the same read-only mirror §2.4 serves by polling: the robot'
 
 ## 4. Error Status Codes
 
-The contract defines a closed set of four domain errors (contract §9, `src/study_tutor/session/errors.py`). Each maps to exactly one HTTP status code within the flat `{"error", "error_type"}` envelope (contract §9, API-tutoring §4).
+The contract defines a closed set of domain errors (contract §9, `src/study_tutor/session/errors.py`): the original four, the six Rev 1 voice types and `TutorBusy` (Rev 3). Each maps to exactly one HTTP status code within the flat `{"error", "error_type"}` envelope (contract §9, API-tutoring §4).
 
 ### 4.1 Closed-Set Domain Errors
 
@@ -237,6 +237,7 @@ The contract defines a closed set of four domain errors (contract §9, `src/stud
 | `EmptyRecording` *(Rev 1, voice)* | 422 Unprocessable Entity | Zero-byte upload |
 | `UnintelligibleQuery` *(Rev 1, voice)* | 422 Unprocessable Entity | STT produced an empty/whitespace transcript |
 | `VoiceUnavailable` *(Rev 1, voice)* | 503 Service Unavailable | STT/TTS unreachable — text `turn` unaffected (degradation copy, no cloud failover) |
+| `TutorBusy` *(Rev 3)* | 503 Service Unavailable, `Retry-After: 30` | The tutor model is busy or refused to load (upstream 429/502/503) — on `turn`, `voice_turn` and the WS turn frames (non-terminal). Retryable. Previously surfaced as the §4.2 500 |
 
 **Response body** (all types, unchanged envelope):
 ```json
@@ -246,7 +247,7 @@ The contract defines a closed set of four domain errors (contract §9, `src/stud
 }
 ```
 
-The six Rev 1 voice types occur only on the voice verbs/WS frames (contract §9 Rev 1); the original four remain the complete set for the six original verbs.
+The six Rev 1 voice types occur only on the voice verbs/WS frames (contract §9 Rev 1). The original four plus `TutorBusy` (Rev 3, on `turn` only) are the complete set for the six original verbs.
 
 ### 4.2 Transport-Level Errors (Outside Closed Set)
 
@@ -323,3 +324,5 @@ The fake auth server's token-to-student mapping (mirrors
 ---
 
 *Authored 2026-07-05 for FEAT-APP-001 (TASK-APP1-01); bound contract `22791afbcdb3b71abbe6bd2f1b8e18218988942f`. **Revision 1** 2026-07-05 (G-CON, voice — `/design-refine`): binds contract Revision 1 at `574615e916bfacafd014b2a0027b47cdf20d8f4a`; this revision's commit is the new `BINDING_SHA`, recorded in the [voice scope & build plan §0](../../research/ideas/voice-tutor-and-reachy-scope-and-build-plan.md). The prior `BINDING_SHA=6eb7b88c…` remains valid for phase-2 clients (additive change).*
+
+*Revision 3 (2026-10-18): §4.1 gains `TutorBusy` (contract [API-session-cross-device.md](API-session-cross-device.md) §9/§10 change 6). This revision's commit is the new `CONTRACT_SHA` and `BINDING_SHA`; clients pinned at `53f2fc5…` stay valid — an unknown `error_type` already degrades to their transport-error treatment.*

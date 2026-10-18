@@ -161,7 +161,7 @@ serves the live tutor. Repos live under
   (`f2c28b3d…`); five different fine-tunes on the GB10 share the same filename —
   ONLY checksums identify these artefacts.
 - **The GB10 is factory-only** (ruled): no study-tutor anything on it, ever again.
-- **Live probes** use the `suite-runner` identity (never `token-lilymay`); end any
+- **Live probes** use the `suite-runner` identity (never Lilymay's own bearer); end any
   session you start.
 
 ## 5. Rich's standing words still owed (ask, don't assume)
