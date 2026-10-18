@@ -24,6 +24,7 @@ from study_tutor.session.errors import (
     SessionNotFoundError,
     SessionEnded,
     SessionForbidden,
+    TutorBusy,
     Unauthenticated,
 )
 from study_tutor.session.service import (
@@ -78,6 +79,14 @@ def _map_error_to_response(error: Exception) -> JSONResponse:
         return JSONResponse(
             {"error": str(error), "error_type": "Unauthenticated"},
             status_code=401,
+        )
+    if isinstance(error, TutorBusy):
+        # Contract §9 Revision 3 — retryable, so it is not logged as an
+        # unexpected error (the service already logged the upstream status).
+        return JSONResponse(
+            {"error": str(error), "error_type": "TutorBusy"},
+            status_code=503,
+            headers={"Retry-After": "30"},
         )
 
     # Unexpected server error (binding doc §4.2 — no error_type)

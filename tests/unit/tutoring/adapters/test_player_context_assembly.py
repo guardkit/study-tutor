@@ -142,23 +142,117 @@ class TestTranscriptWindow:
         assert history[0]["content"] == f"t{first_kept}"
         assert history[-1]["content"] == "t19"
 
-    def test_token_cap_drops_oldest_until_within_budget(self) -> None:
-        # A handful of large turns (each near the whole budget) forces the
-        # token cap (not the turn-count cap) to drop oldest first.
+    def test_token_cap_drops_oldest_exchange_until_within_budget(self) -> None:
+        # Large exchanges (each near the whole budget) force the token cap,
+        # not the turn-count cap, to drop the oldest exchange first.
         char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN
-        big = "x" * (char_cap // 2 + 10)  # two of these already exceed the cap
+        big = "x" * (char_cap // 4 + 10)  # one exchange is over half the cap
         turns = (
-            TranscriptTurn(role="user", content="OLD-" + big),
-            TranscriptTurn(role="tutor", content="MID-" + big),
-            TranscriptTurn(role="user", content="NEW-" + big),
+            TranscriptTurn(role="user", content="OLD-q-" + big),
+            TranscriptTurn(role="tutor", content="OLD-a-" + big),
+            TranscriptTurn(role="user", content="NEW-q-" + big),
+            TranscriptTurn(role="tutor", content="NEW-a-" + big),
         )
         state = SessionState(
             session_id="s", student_id="lilymay", transcript=turns
         )
         history = _build_transcript_history(state)
-        # Oldest dropped until within budget; the newest turn is always kept.
-        assert history[-1]["content"].startswith("NEW-")
-        assert not any(h["content"].startswith("OLD-") for h in history)
+        assert [h["content"][:6] for h in history] == ["NEW-q-", "NEW-a-"]
+
+
+def _assert_template_alternation(history: list[dict[str, str]]) -> None:
+    """The tutor model's chat template rule, with the current learner message
+    that ``LLMClient`` appends: strictly user, assistant, … starting with user.
+    """
+    roles = [h["role"] for h in history] + ["user"]
+    for i, role in enumerate(roles):
+        assert role == ("user" if i % 2 == 0 else "assistant"), roles
+
+
+def _state(*turns: tuple[str, str]) -> SessionState:
+    return SessionState(
+        session_id="s",
+        student_id="lilymay",
+        transcript=tuple(TranscriptTurn(role=r, content=c) for r, c in turns),
+    )
+
+
+class TestHistoryIsAlwaysWellFormed:
+    """Design F1 (2026-10-18): a failed turn leaves its learner row
+    unanswered in the store; the next turn's history must still alternate."""
+
+    def test_orphaned_learner_row_before_the_current_turn_is_left_out(self) -> None:
+        # Exactly the 17 October failure: q2's turn was refused (429/502), the
+        # learner row persisted, no tutor row. The service drops only the
+        # trailing current row, so q2 is last in the prior window.
+        history = _build_transcript_history(
+            _state(("user", "q1"), ("tutor", "a1"), ("user", "q2"))
+        )
+        assert history == [
+            {"role": "user", "content": "q1"},
+            {"role": "assistant", "content": "a1"},
+        ]
+        _assert_template_alternation(history)
+
+    def test_several_consecutive_orphans_are_all_left_out(self) -> None:
+        history = _build_transcript_history(
+            _state(
+                ("user", "q1"),
+                ("user", "q2"),
+                ("user", "q3"),
+                ("tutor", "a3"),
+                ("user", "q4"),
+                ("user", "q5"),
+            )
+        )
+        assert [h["content"] for h in history] == ["q3", "a3"]
+        _assert_template_alternation(history)
+
+    def test_leading_tutor_row_is_left_out(self) -> None:
+        history = _build_transcript_history(
+            _state(("tutor", "greeting"), ("user", "q1"), ("tutor", "a1"))
+        )
+        assert [h["content"] for h in history] == ["q1", "a1"]
+        _assert_template_alternation(history)
+
+    def test_token_cap_never_leaves_a_leading_assistant_turn(self) -> None:
+        # Under the old single-turn rule this cap forced an odd number of
+        # drops, leaving the window starting with an assistant turn.
+        char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN
+        turns = []
+        for i in range(4):
+            turns.append(("user", f"q{i}-" + "x" * 10))
+            turns.append(("tutor", f"a{i}-" + "y" * (char_cap // 3)))
+        history = _build_transcript_history(_state(*turns))
+        assert history[0]["role"] == "user"
+        _assert_template_alternation(history)
+        total = sum(len(h["content"]) for h in history)
+        assert total <= char_cap
+
+    def test_single_over_budget_newest_exchange_is_kept(self) -> None:
+        char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN
+        history = _build_transcript_history(
+            _state(
+                ("user", "old q"),
+                ("tutor", "old a"),
+                ("user", "huge q"),
+                ("tutor", "z" * (char_cap * 2)),
+            )
+        )
+        assert [h["content"][:6] for h in history] == ["huge q", "zzzzzz"]
+        _assert_template_alternation(history)
+
+    def test_empty_tutor_row_still_counts_as_an_answer(self) -> None:
+        # A scaffolding-only reply is persisted as an empty tutor row
+        # (plan of record, 2026-08-14); it is still a valid assistant turn.
+        history = _build_transcript_history(
+            _state(("user", "q1"), ("tutor", ""), ("user", "q2"), ("tutor", "a2"))
+        )
+        assert [h["content"] for h in history] == ["q1", "", "q2", "a2"]
+        _assert_template_alternation(history)
+
+    def test_only_orphans_yield_no_history(self) -> None:
+        assert _build_transcript_history(_state(("user", "q1"))) == []
 
 
 # ---------------------------------------------------------------------------

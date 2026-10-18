@@ -27,7 +27,16 @@ DEFAULT_LOCAL_NUM_PREDICT = 2048
 
 
 class LLMProviderError(RuntimeError):
-    """Raised when the configured provider is misconfigured or unreachable."""
+    """Raised when the configured provider is misconfigured or unreachable.
+
+    ``status_code`` is the upstream HTTP status when the provider answered
+    with one (e.g. llama-swap's 429 when the model is already serving, or its
+    502 when ``mem-check`` refused to load it); ``None`` otherwise.
+    """
+
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
 
 
 def _resolve_num_predict() -> int:
@@ -215,7 +224,12 @@ class LLMClient:
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise LLMProviderError(
-                f"OpenAI-compat request to {base_url} failed: {exc}"
+                f"OpenAI-compat request to {base_url} failed: {exc}",
+                status_code=(
+                    exc.response.status_code
+                    if isinstance(exc, httpx.HTTPStatusError)
+                    else None
+                ),
             ) from exc
 
         data = response.json()
@@ -341,7 +355,12 @@ class LLMClient:
                     response.raise_for_status()
                 except httpx.HTTPError as exc:
                     raise LLMProviderError(
-                        f"OpenAI-compat streaming request to {base_url} failed: {exc}"
+                        f"OpenAI-compat streaming request to {base_url} failed: {exc}",
+                        status_code=(
+                            exc.response.status_code
+                            if isinstance(exc, httpx.HTTPStatusError)
+                            else None
+                        ),
                     ) from exc
 
                 async for line in response.aiter_lines():

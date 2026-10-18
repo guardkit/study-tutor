@@ -78,10 +78,12 @@ from study_tutor.planner.types import (
     _baseline_plan,
     load_curriculum_defaults,
 )
+from study_tutor.llm.client import LLMProviderError
 from study_tutor.session.errors import (
     SessionEnded,
     SessionForbidden,
     SessionNotFoundError,
+    TutorBusy,
 )
 from study_tutor.session.notifier import TurnNotifierPort
 from study_tutor.tutoring.adapters.session_state import (
@@ -94,6 +96,31 @@ from study_tutor.tutoring.session_end import (
 )
 
 logger = logging.getLogger(__name__)
+
+#: Upstream statuses that mean "the tutor model is busy or could not be
+#: loaded", not "the request was wrong": llama-swap answers 429 when the model
+#: is already serving its concurrency limit and 502 when it cannot start the
+#: model (``mem-check`` refused the load). Contract §9 Revision 3 —
+#: ``docs/design/tutor-busy-and-history-repair-2026-10-18.md`` F2.
+_TUTOR_BUSY_STATUSES: frozenset[int] = frozenset({429, 502, 503})
+
+
+def _tutor_busy_status(exc: BaseException) -> int | None:
+    """The busy upstream status behind ``exc``, or ``None`` if it is not one.
+
+    Walks the cause/context chain, because the orchestrator's streaming
+    and verification layers may re-raise or wrap the Player's
+    :class:`LLMProviderError`.
+    """
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, LLMProviderError):
+            if current.status_code in _TUTOR_BUSY_STATUSES:
+                return current.status_code
+        current = current.__cause__ or current.__context__
+    return None
 
 
 # The backend's copy of the SUBJECT_DEFAULT contract's one value
@@ -743,7 +770,20 @@ class SessionService:
         # Mirror signal after EACH persisted row (Stage 2) — the watching phone
         # sees the learner's question land before the tutor has answered it.
         self._notify_turn_change(session_id)
-        reply = await reply_fn(user_message)
+        try:
+            reply = await reply_fn(user_message)
+        except Exception as exc:
+            status = _tutor_busy_status(exc)
+            if status is None:
+                raise
+            # The learner row stays unanswered; the Player's history pairing
+            # leaves it out of the next turn's context (design F1).
+            logger.warning(
+                "Tutor model busy (upstream %s) — turn refused as TutorBusy",
+                status,
+                extra={"event": "turn_tutor_busy", "session_id": session_id},
+            )
+            raise TutorBusy() from exc
         # Per-turn capture signals ride the reply metadata (S-E4 §4.3/§4.4).
         ao_scaffolded, quotes_embedded = _per_turn_signals(reply.metadata)
         tutor_turn = await store.append_turn(
@@ -809,6 +849,21 @@ class SessionService:
         except Exception as exc:
             # ASSUM-004: generation failure mid-stream
             generation_failed = True
+            busy_status = _tutor_busy_status(exc)
+            if busy_status is not None:
+                # Contract §9 Rev 3: retryable and non-terminal — the socket
+                # stays open and the learner can send again.
+                logger.warning(
+                    "Tutor model busy (upstream %s) — streamed turn refused as TutorBusy",
+                    busy_status,
+                    extra={"event": "turn_tutor_busy", "session_id": session_id},
+                )
+                yield TurnEvent(
+                    type="error",
+                    error=TutorBusy.MESSAGE,
+                    error_type="TutorBusy",
+                )
+                return
             failure_reason = f"{type(exc).__name__}: {exc}"
             yield TurnEvent(
                 type="error",

@@ -7,6 +7,8 @@ boundary and map to the flat ``{"error", "error_type"}`` envelope
 contract** (``docs/design/contracts/API-session-cross-device.md`` §9 +
 API-tutoring §4): ``SessionNotFoundError``, ``SessionEnded``,
 ``SessionForbidden``, ``Unauthenticated``. Adding one requires ``/design-refine``.
+Revision 3 (2026-10-18) added ``TutorBusy`` on the turn verbs
+(``docs/design/tutor-busy-and-history-repair-2026-10-18.md``).
 
 Reconciliation (design-review #7): a ``SessionNotFoundError(KeyError)`` copy lives
 in ``session.tutor_session`` (the in-memory store being retired). **This is the
@@ -47,10 +49,26 @@ class Unauthenticated(SessionServiceError):
     """
 
 
+class TutorBusy(SessionServiceError):
+    """The tutor model is busy or refused to load (contract §9 Revision 3).
+
+    Raised by the service when the reply's upstream model answered 429
+    (already serving), 502 (llama-swap could not start it — ``mem-check``
+    refused the load) or 503. Retryable: the learner can send the turn again.
+    """
+
+    #: Learner-facing copy — the wire ``error`` for every transport.
+    MESSAGE = "The tutor is busy right now. Please try again in a minute."
+
+    def __init__(self, message: str = MESSAGE) -> None:
+        super().__init__(message)
+
+
 __all__ = [
     "SessionEnded",
     "SessionForbidden",
     "SessionNotFoundError",
     "SessionServiceError",
+    "TutorBusy",
     "Unauthenticated",
 ]

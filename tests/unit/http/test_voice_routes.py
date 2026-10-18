@@ -291,6 +291,23 @@ def test_voice_turn_session_ended(client_with_voice, fake_voice_service):
     assert response.json()["error_type"] == "SessionEnded"
 
 
+def test_voice_turn_tutor_busy(client_with_voice, fake_voice_service):
+    """TutorBusy from the session turn -> 503 envelope + Retry-After (Rev 3)."""
+    from study_tutor.session.errors import TutorBusy
+
+    fake_voice_service.voice_turn.side_effect = TutorBusy()
+
+    response = client_with_voice.post(
+        "/api/sessions/sess1/voice-turn",
+        headers={"Authorization": "Bearer token-test"},
+        files={"audio": ("test.wav", b"fake-audio", "audio/wav")},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {"error": TutorBusy.MESSAGE, "error_type": "TutorBusy"}
+    assert response.headers["Retry-After"] == "30"
+
+
 # -------------------- voice-turn happy path tests --------------------
 
 
