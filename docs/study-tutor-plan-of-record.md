@@ -35,9 +35,11 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 > tag `study-tutor:dev` = `e56ef17`, rollback `dev-pre-20261018-may`; now on the Postgres
 > store as **`suite-runner`** — Rich's choice, so fleet/test traffic never touches a real
 > learner; started via `sops exec-env study-tutor/study-tutor-root.enc.env` + compose).
-> **The robot is NOT the NATS agent** — Scholar calls :8100 over HTTP, and on 18 Oct its
-> Backend address still read `http://spark-fcf6.tailebf801.ts.net:8100` (dead since the
-> move); the Dell answers at `http://promaxgb10-41b1.tailebf801.ts.net:8100`. Tutor model `gemma4-tutor` on the Dell's llama-swap, **two conversations at
+> **The robot is NOT the NATS agent** — Scholar calls :8100 over HTTP. Its Backend address
+> still read the dead `spark-fcf6…:8100` after the move; **re-pointed 18 Oct by Rich to
+> `http://promaxgb10-41b1.tailebf801.ts.net:8100`** (saved token kept) and verified on the
+> Dell's log: `POST /api/sessions/start` 200 then a `/turn` 200 from the robot
+> (`100.75.228.107`, 13:42 UTC). Tutor model `gemma4-tutor` on the Dell's llama-swap, **two conversations at
 > once** since 18 Oct (`-np 2`, 16K context split 8K each, `concurrencyLimit: 3`; backup
 > `config.yaml.bak-pre-tutor-np2-20261018`), loads cost 18.0 GiB measured (= mem-check's
 > figure). Coach = the factory's model via LiteLLM; voice pair on the Spark. Model map and
@@ -53,8 +55,7 @@ NAS** = the Synology box (`whitestocks`) holding durable state. All tailnet-only
 > `TutorBusy` case in `http_session_api.dart` and both `http_voice_api.dart` switches,
 > "the tutor is busy, try again in a minute" copy in place of the connection-problem
 > dialog, pins → `9b785c5`, `flutter test`; until then installed apps show the
-> connection-problem dialog (as they did for the 500). (2) Re-point the robot's Scholar
-> Backend address to the Dell (above) and confirm with its "Test a question". (3) Brief items still
+> connection-problem dialog (as they did for the 500). (2) Brief items still
 > open: coach speed under factory load, coach accepting weak replies / trusting the
 > model's own total, one-active session across 8100/8101, `HF_HUB_OFFLINE` empty.
 
