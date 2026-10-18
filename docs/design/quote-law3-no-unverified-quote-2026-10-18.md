@@ -45,13 +45,38 @@ today's strip happens.
 Accepted cost: a genuine line that retrieval did not surface in its top chunks is also removed. That is the safe side of
 law 3 ("verified … before the student sees or hears it").
 
+**Strict mode closes three more gaps** (Codex design review round 1, R1–R3). With `redact_unmatched=True`:
+
+* **Every non-empty double-quoted span is checked, whatever its length** (R1). Today spans under
+  `MIN_QUOTE_WORDS = 4` (`quote_verifier.py:74-75, 292-307`) are never classified and pass untouched. In strict mode a
+  span shorter than four words passes only on an exact match (case, whitespace and punctuation normalised) in a
+  retrieved chunk; fuzzy matching stays for spans of four words or more. Otherwise it is redacted like any `NoMatch`.
+* **An unterminated quote is redacted** (R2). A straight or curly opening double quote with no closing quote before the
+  end of the reply (the final-tail path, `orchestrator.py:948-995`) is replaced from the opening quote to the end by the
+  neutral text. The streaming verifier already withholds an open quote until it closes
+  (`voice/verified_stream.py:36-42`), so the replacement happens before release; a previously released safe prefix is
+  unaffected.
+* **A verifier exception fails closed on the non-streaming path too** (R3). Today `knowledge/coach_handover.py:118-136`
+  returns the Player's text unchanged with `verifier_exception=True`, and `run_turn` releases it (first attempt and
+  revisions). In strict mode the handover instead returns the text with **every** double-quoted span, closed or
+  unterminated, replaced by the neutral text (a plain regex pass that does not depend on the verifier), keeping
+  `verifier_exception=True` in the metadata. The streaming path already fails closed on this flag. In every case the
+  text handed to the Coach is the text the learner receives.
+
 ### Q2 — no set text ⇒ verify against all of the subject's primary texts
 
 So that Q1 does not make every quote impossible in robot sessions and default phone sessions:
 
+* **The session's subject reaches the verifier** (R4). `SessionState` has no `subject` today
+  (`tutoring/adapters/session_state.py:61-80`), so both closures fall back to `DEFAULT_SUBJECT = "english"`
+  (`cli/main.py:165, 264`) for every session. `SessionState` gains `subject: str` (internal only), filled by
+  `SessionService.build_turn_session_state` from the persisted session row (normalised the same way start does), and the
+  closures read it. No app-facing field changes.
 * `retrieval.retrieve(..., text_name: str | None)` accepts `None`; `_query_collection` then omits the text-name filter
-  but keeps the primary-text source-type filter. Collections are per subject, so this is "all primary texts of this
-  subject", never another subject.
+  and keeps the **existing** source-type filter, `NON_AO3_SOURCE_TYPES` (primary text plus secondary study guides and
+  critical sources, `retrieval.py:405-409`), exactly as for a session with a set text (R5: this is not primary-only).
+  Collections are per subject, so the scope is "this subject's corpus", never another subject; an unwired subject
+  retrieves nothing and its quotes are therefore redacted.
 * `should_retrieve(text_name=None, …)` retrieves when the subject has any primary text registered (new helper
   `primary_texts_for(subject)`); the AO3-only and embedder-timeout skips are unchanged.
 * `quote_verifier.verify_quote`: when the session text name is empty, every primary chunk is in scope for exact and
@@ -89,5 +114,11 @@ streaming path).
   survives, the incident's fabricated line is replaced, the scope log line appears; (7) `run_turn_stream_verified` with a
   no-text session never releases the fabricated line in any chunk nor hands it to the Coach; (8) a regression test using
   the incident's reply text.
+* Strict-mode tests added for the Codex round-1 gaps, each through **both** production paths (non-streaming handover and
+  `run_turn_stream_verified`), asserting every emitted delta and the Coach's input text: a short (1–3 word) quoted span
+  that matches exactly survives and one that does not is redacted; an unterminated straight and curly quote at the end,
+  including after an already-released safe sentence, is redacted; a verifier exception on the first attempt and on a
+  revision releases no quoted text; a non-English wired subject queries only its own collection and an unwired subject
+  never queries English (using the real `build_turn_session_state`).
 * Runtime on the Dell after deploy: a robot-shaped session (subject only) logs `scope=all_primary_texts`, and a prompt
   that elicits a misquotation produces the neutral text, not the invented line.
