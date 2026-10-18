@@ -61,9 +61,23 @@ by counting match-type instances. Type-safe attribute access
 lookup, and Pydantic ``extra="forbid"`` makes accidental shape drift a
 parse-time failure rather than a silent payload mismatch.
 
+Quote-anchored lookup (strict mode only)
+----------------------------------------
+docs/design/quote-lookup-by-span-2026-10-18.md. The session's chunks are
+retrieved with the learner's message as the query, so a correct quote of
+a line far from the question's wording can be missing from them. With a
+``lookup`` (a :class:`QuoteLookup`), a span the matcher leaves unmatched
+is looked up by its own words and re-matched by the SAME matcher against
+the session's chunks plus that span's own lookup chunks (never another
+span's). Lookups are reply-scoped and memoised — every outcome (chunks,
+empty, exception, over budget) is cached, at most
+:data:`MAX_QUOTE_LOOKUPS_PER_REPLY` per reply — so a span's decision is
+identical on every streaming pass. Still unmatched ⇒ redacted as before.
+
 Concurrency
 -----------
-:func:`verify_quotes` is a pure function: no shared mutable state.
+:func:`verify_quotes` is a pure function: no shared mutable state (the
+only state it touches is the caller-owned, reply-scoped ``lookup``).
 Two concurrent calls produce independent results. The corpus chunks
 are treated as data only — instruction-like text inside a chunk does
 not steer the verifier (the chunk content is searched, not executed).
@@ -73,8 +87,9 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Callable, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -124,6 +139,12 @@ SECONDARY_ATTRIBUTION_TEMPLATES: tuple[str, ...] = (
     "as one study guide notes",
     "as one commentator suggests",
 )
+
+
+#: Strict mode: at most this many quote-anchored lookups per reply (one
+#: :class:`QuoteLookup`). Any further unmatched span is redacted without a
+#: lookup — bounded latency (quote-lookup design).
+MAX_QUOTE_LOOKUPS_PER_REPLY: int = 4
 
 
 # ---------------------------------------------------------------------------
@@ -734,6 +755,60 @@ def _build_replacement(
 
 
 # ---------------------------------------------------------------------------
+# Quote-anchored lookup — reply-scoped, memoised, budgeted.
+# ---------------------------------------------------------------------------
+
+
+class QuoteLookup:
+    """Reply-scoped, memoised ``span → chunks`` lookup (strict mode only).
+
+    Build ONE per reply (per streaming verifier, per non-streaming Player
+    attempt) around ``fetch`` (production: :func:`retrieve` with the span as
+    the query). Each distinct span is fetched at most once; the result is
+    cached whatever it is — chunks, an empty result, an exception (logged,
+    cached as empty) or "over budget" (the budget of ``max_lookups``
+    fetches is spent; cached as empty) — so a span's outcome never changes
+    between passes over a growing reply.
+    """
+
+    def __init__(
+        self,
+        fetch: Callable[[str], Sequence[CorpusChunk]],
+        max_lookups: int = MAX_QUOTE_LOOKUPS_PER_REPLY,
+    ) -> None:
+        self._fetch = fetch
+        self._max_lookups = max_lookups
+        self._cache: dict[str, tuple[CorpusChunk, ...]] = {}
+        self._lock = threading.Lock()
+        #: Number of times ``fetch`` has been called (budget spent).
+        self.lookups = 0
+
+    def __call__(self, span: str) -> tuple[CorpusChunk, ...]:
+        with self._lock:
+            cached = self._cache.get(span)
+            if cached is not None:
+                return cached
+            if self.lookups >= self._max_lookups:
+                logger.info(
+                    "quote_lookup.over_budget",
+                    extra={"max_lookups": self._max_lookups},
+                )
+                chunks: tuple[CorpusChunk, ...] = ()
+            else:
+                self.lookups += 1
+                try:
+                    chunks = tuple(self._fetch(span))
+                except Exception as exc:  # noqa: BLE001 — fail closed: span stays unmatched
+                    logger.warning(
+                        "quote_lookup.failed",
+                        extra={"detail": f"{type(exc).__name__}: {exc}"},
+                    )
+                    chunks = ()
+            self._cache[span] = chunks
+            return chunks
+
+
+# ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
 
@@ -745,6 +820,7 @@ def verify_quotes(
     retrieval_skipped_reason: str | None = None,
     *,
     redact_unmatched: bool = False,
+    lookup: Callable[[str], Sequence[CorpusChunk]] | None = None,
 ) -> tuple[str, VerifierMetadata]:
     """Verify every quoted span in ``response_text`` against the corpus.
 
@@ -777,6 +853,12 @@ def verify_quotes(
         keeps the original contract: spans under ``MIN_QUOTE_WORDS`` pass
         untouched, an unmatched span keeps its words with a softener, and
         an unterminated quote is left alone.
+    lookup
+        Strict mode only (ignored otherwise); ``None`` keeps today's
+        behaviour exactly. A span left unmatched is re-matched against
+        ``corpus_chunks`` plus ``lookup(span)`` — that span's chunks only.
+        Pass a reply-scoped :class:`QuoteLookup`; any other callable is
+        wrapped in one for this call (memoised, budgeted).
     """
     if not isinstance(response_text, str):
         # Boundary guard — pydantic-typed callers can't trip this, but
@@ -803,10 +885,22 @@ def verify_quotes(
     # Walk quotes in source order so splicing offsets stay valid as we
     # build the rewritten response. We accumulate the rewritten text in
     # a list-of-segments to avoid repeated O(n) string concatenation.
+    if not redact_unmatched:
+        lookup = None
+    elif lookup is not None and not isinstance(lookup, QuoteLookup):
+        lookup = QuoteLookup(lookup)
+
     output_segments: list[str] = []
     cursor = 0
     for quote in quotes:
         result = verify_quote(quote, corpus_chunks, session_text_name)
+        if isinstance(result, NoMatchStrip) and lookup is not None:
+            # Same matcher, session chunks + this span's own lookup chunks.
+            own_chunks = lookup(quote.text)
+            if own_chunks:
+                result = verify_quote(
+                    quote, [*corpus_chunks, *own_chunks], session_text_name
+                )
         if isinstance(result, NoMatchStrip) and redact_unmatched:
             result = NoMatchStrip(
                 original_span=result.original_span, softened=False, redacted=True
@@ -866,6 +960,8 @@ def verify_quotes(
 
 __all__ = [
     "MIN_QUOTE_WORDS",
+    "MAX_QUOTE_LOOKUPS_PER_REPLY",
+    "QuoteLookup",
     "FUZZY_MAX_EDIT_DISTANCE",
     "LONG_PASSAGE_WORD_THRESHOLD",
     "SHORT_QUOTE_MAX_WORDS",

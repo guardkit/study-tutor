@@ -60,7 +60,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Sequence
+from typing import Callable, Sequence
 
 from study_tutor.knowledge.corpus_models import CorpusChunk
 from study_tutor.knowledge.quote_verifier import (
@@ -94,6 +94,7 @@ def apply_quote_verification(
     retrieval_skipped_reason: str | None = None,
     *,
     redact_unmatched: bool = False,
+    lookup: Callable[[str], Sequence[CorpusChunk]] | None = None,
 ) -> tuple[str, VerifierMetadata]:
     """Run the verifier and return the Coach-ready ``(response, metadata)`` pair.
 
@@ -133,6 +134,11 @@ def apply_quote_verification(
         Strict mode (mission law 3), forwarded to :func:`verify_quotes`.
         Also makes the exception fallback fail CLOSED: every quoted span
         is redacted instead of the raw response being returned.
+    lookup
+        Strict mode's quote-anchored lookup, forwarded to
+        :func:`verify_quotes` (a reply-scoped
+        :class:`~study_tutor.knowledge.quote_verifier.QuoteLookup`).
+        ``None`` keeps today's behaviour exactly.
 
     Returns
     -------
@@ -150,6 +156,7 @@ def apply_quote_verification(
             session_text_name,
             retrieval_skipped_reason=retrieval_skipped_reason,
             redact_unmatched=redact_unmatched,
+            lookup=lookup,
         )
     except Exception as exc:  # noqa: BLE001 — graceful-degradation boundary
         # Log with structured context so session-end review can spot
