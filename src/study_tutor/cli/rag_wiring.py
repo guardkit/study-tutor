@@ -52,6 +52,7 @@ from study_tutor.knowledge.embedding_function import (
 )
 from study_tutor.knowledge.retrieval import (
     DEFAULT_SUBJECT,
+    NON_AO3_SOURCE_TYPES,
     register_primary_text,
     set_collection_provider,
 )
@@ -222,6 +223,8 @@ def build_rag_providers(role_config: Any) -> None:
             lambda pinned=collection: pinned, subject=subject
         )
 
+        _probe_collection(collection, subject, subject_collection)
+
         primary_count = _replay_primary_text_index(persist_dir, subject)
         total_primary += primary_count
         wired_subjects.append(subject)
@@ -244,6 +247,35 @@ def build_rag_providers(role_config: Any) -> None:
         total_primary,
         ",".join(wired_subjects),
     )
+
+
+def _probe_collection(collection: Any, subject: str, name: str) -> None:
+    """Run one real query against a wired, non-empty collection at boot.
+
+    A corpus embedded with a different model than the live embedder (e.g. the
+    2026-10-18 finding: 768-dim ``nomic-embed`` chunks queried with a 1024-dim
+    Qwen3 embedder) makes every retrieval fail — and retrieval fails soft, so
+    without this probe it is silent. A failure is logged at ERROR with the
+    cause in the message. The subject stays wired: a briefly unreachable
+    embedder at boot must not disable retrieval for the process lifetime.
+    """
+    try:
+        if collection.count() == 0:
+            return
+        # Same source filter as live retrieval, so the probe exercises the
+        # path a learner's turn takes.
+        collection.query(
+            query_texts=["retrieval boot probe"],
+            n_results=1,
+            where={"source_type": {"$in": [s.value for s in NON_AO3_SOURCE_TYPES]}},
+        )
+    except Exception as exc:  # noqa: BLE001 — boot diagnostics never crash wiring
+        logger.error(
+            "event=rag_subject_probe_failed subject=%s collection=%s detail=%s",
+            subject,
+            name,
+            f"{type(exc).__name__}: {exc}",
+        )
 
 
 # ---------------------------------------------------------------------------
