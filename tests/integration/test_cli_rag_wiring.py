@@ -576,3 +576,78 @@ def test_subject_discovery_wires_every_matching_collection(
     assert "gcse-english-v1" in fake_client.opened_names
     assert "gcse-french-v1" in fake_client.opened_names
     assert "unrelated-store" not in fake_client.opened_names
+
+
+# ---------------------------------------------------------------------------
+# Boot probe + query-failure detail (2026-10-18: a 768-dim corpus queried
+# with a 1024-dim embedder failed every retrieval, silently).
+# ---------------------------------------------------------------------------
+
+
+class _MismatchedCollection(_FakeCollection):
+    def query(self, **_kwargs: Any) -> Any:
+        raise RuntimeError(
+            "Collection expecting embedding with dimension of 768, got 1024"
+        )
+
+
+def _wire(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any, collection: Any
+) -> None:
+    persist_dir = tmp_path / "chroma"
+    persist_dir.mkdir()
+    fake_client = _FakePersistentClient(path=str(persist_dir))
+    fake_client.install_collection(collection)
+    _install_fake_chromadb_module(monkeypatch, fake_client)
+    monkeypatch.setenv(RAG_PERSIST_DIR_ENV, str(persist_dir))
+    monkeypatch.setenv(RAG_COLLECTION_ENV, "test-collection-v1")
+    build_rag_providers(load_role("tutor"))
+
+
+def test_boot_probe_failure_is_logged_loudly_and_subject_stays_wired(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
+    macbeth_corpus: list[CorpusChunk],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    collection = _MismatchedCollection(macbeth_corpus)
+    with caplog.at_level(logging.ERROR, logger="study_tutor.cli.rag_wiring"):
+        _wire(monkeypatch, tmp_path, collection)
+
+    errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
+    assert any(
+        "event=rag_subject_probe_failed" in m and "dimension of 768, got 1024" in m
+        for m in errors
+    ), errors
+    # Still wired: a transient embedder outage at boot must not disable
+    # retrieval for the life of the process.
+    assert get_collection_provider()() is collection
+
+
+def test_boot_probe_success_logs_no_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
+    macbeth_corpus: list[CorpusChunk],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.ERROR, logger="study_tutor.cli.rag_wiring"):
+        _wire(monkeypatch, tmp_path, _FakeCollection(macbeth_corpus))
+    assert not [r for r in caplog.records if r.levelno == logging.ERROR]
+
+
+def test_query_failure_detail_is_in_the_log_message(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
+    macbeth_corpus: list[CorpusChunk],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from study_tutor.knowledge.retrieval import retrieve
+
+    _wire(monkeypatch, tmp_path, _MismatchedCollection(macbeth_corpus))
+    with caplog.at_level(logging.WARNING, logger="study_tutor.knowledge.retrieval"):
+        assert retrieve("ambition", text_name=None, focus_aos=()) == []
+    assert any(
+        "retrieval.query_failed" in r.getMessage()
+        and "dimension of 768, got 1024" in r.getMessage()
+        for r in caplog.records
+    ), [r.getMessage() for r in caplog.records]

@@ -695,9 +695,14 @@ def _query_collection(
             where=where,
         )
     except Exception as exc:  # noqa: BLE001 — log + empty, see docstring
+        # The detail goes in the message: the production log format prints
+        # only the message, and on 2026-10-18 a corpus/embedder dimension
+        # mismatch hid here for days as a bare "retrieval.query_failed".
+        detail = f"{type(exc).__name__}: {exc}"
         logger.warning(
-            "retrieval.query_failed",
-            extra={"detail": f"{type(exc).__name__}: {exc}"},
+            "retrieval.query_failed detail=%s",
+            detail,
+            extra={"detail": detail},
         )
         return [], []
 
