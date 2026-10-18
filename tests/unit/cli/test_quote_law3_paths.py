@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import time
 from typing import Any, AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
@@ -431,6 +432,33 @@ async def test_unterminated_quote_at_end_is_redacted(
         # The safe sentence was released before the open quote arrived and
         # is never retracted; the open quote was held, then redacted.
         assert emitted[0] == "A metaphor compares directly. "
+    _assert_no_fragment(emitted, coach, ("no spur", "prick", opening))
+    _assert_coach_saw_what_learner_got(emitted, coach)
+
+
+class _SlowCollection(_FilteringCollection):
+    """Retrieval that is still pending when the Player's stream ends."""
+
+    def query(self, **kwargs: Any) -> dict[str, Any]:
+        time.sleep(0.3)
+        return super().query(**kwargs)
+
+
+@pytest.mark.parametrize("opening", ['"', "“"])
+async def test_stream_unterminated_quote_with_retrieval_still_pending(
+    opening: str,
+) -> None:
+    # Codex implementation review R1: no releasable boundary before the open
+    # quote, and generation finishes while the verifier is still being built
+    # (retrieval pending). The final pass must still verify and redact.
+    collection = _SlowCollection(ENGLISH_CHUNKS)
+    set_collection_provider(lambda: collection)
+    register_primary_text("macbeth")
+    reply = f"Then he says {opening}I have no spur to prick the sides of my"
+
+    emitted, coach = await _run_stream(_state(text_name=None), reply)
+
+    assert "".join(emitted) == f"Then he says {N}"
     _assert_no_fragment(emitted, coach, ("no spur", "prick", opening))
     _assert_coach_saw_what_learner_got(emitted, coach)
 
