@@ -721,3 +721,19 @@ def test_no_baked_secrets_in_environment(env_block: dict[str, str]) -> None:
             f"not a literal value; got {value!r}. Hardcoded secrets in "
             "compose files leak when the file is checked in."
         )
+
+
+def test_pg_dsn_uses_required_interpolation(env_block: dict[str, str]) -> None:
+    """serve-nats refuses to boot without the Postgres DSN (FEAT-SMP-004);
+    compose must fail loudly, and the DSN (a credential) is never literal."""
+    value = env_block["STUDY_TUTOR_PG_DSN"]
+    assert value.startswith("${STUDY_TUTOR_PG_DSN:?") and value.endswith("}"), value
+
+
+def test_student_id_default_is_suite_runner_never_a_learner(
+    env_block: dict[str, str],
+) -> None:
+    """Rich, 2026-10-18: the fleet surface writes as `suite-runner`. Without
+    this the code default is `lilymay` — fleet traffic in her real record."""
+    value = env_block["STUDY_TUTOR_STUDENT_ID"]
+    assert value == "${TUTOR_STUDENT_ID:-suite-runner}", value

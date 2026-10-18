@@ -72,6 +72,22 @@ services:
       # Identity used by serve-nats to register heartbeat / capability records.
       AGENT_ID: gcse-tutor
 
+      # FEAT-SMP-004: serve-nats wires the Postgres student store and refuses
+      # to boot without it (same fail-fast contract as serve-http). Supplied
+      # from the vault (study-tutor/study-tutor-root.enc.env), never .env.
+      STUDY_TUTOR_PG_DSN: ${STUDY_TUTOR_PG_DSN:?set STUDY_TUTOR_PG_DSN (vault)}
+      # Whose learner record this agent's sessions write to. The fleet
+      # surface is test/demo traffic, so it is the dedicated `suite-runner`
+      # identity, never a real learner (Rich, 2026-10-18). Unset, the code
+      # default would be `lilymay`: her XP, streaks and transcripts, and a
+      # fleet session would end her phone session (one active per learner).
+      STUDY_TUTOR_STUDENT_ID: ${TUTOR_STUDENT_ID:-suite-runner}
+      # Reading-material search (same endpoints as deploy/http). This agent's
+      # sessions carry no set text today, so retrieval is normally skipped.
+      LLM_EMBEDDINGS_BASE_URL: ${LLM_EMBEDDINGS_BASE_URL:-http://host.docker.internal:9000/v1}
+      LLM_EMBEDDINGS_MODEL: ${LLM_EMBEDDINGS_MODEL:-embed}
+      LLM_EMBEDDINGS_API_KEY: ${LLM_EMBEDDINGS_API_KEY:-not-needed}
+
       # LLM endpoints — see Bug #3 note above. The /v1 suffix on
       # OPENAI_BASE_URL is non-negotiable for langchain-openai compatibility.
       # LLM_BASE_URL (no /v1) is the bare host that the GBNF/llama.cpp
