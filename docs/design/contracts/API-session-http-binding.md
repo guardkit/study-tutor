@@ -221,7 +221,7 @@ Real-time push for the same read-only mirror §2.4 serves by polling: the robot'
 
 ## 4. Error Status Codes
 
-The contract defines a closed set of four domain errors (contract §9, `src/study_tutor/session/errors.py`). Each maps to exactly one HTTP status code within the flat `{"error", "error_type"}` envelope (contract §9, API-tutoring §4).
+The contract defines a closed set of domain errors (contract §9, `src/study_tutor/session/errors.py`): the original four, the six Rev 1 voice types and `TutorBusy` (Rev 3). Each maps to exactly one HTTP status code within the flat `{"error", "error_type"}` envelope (contract §9, API-tutoring §4).
 
 ### 4.1 Closed-Set Domain Errors
 

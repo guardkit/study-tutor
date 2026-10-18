@@ -216,18 +216,19 @@ class TestHistoryIsAlwaysWellFormed:
         _assert_template_alternation(history)
 
     def test_token_cap_never_leaves_a_leading_assistant_turn(self) -> None:
-        # Under the old single-turn rule this cap forced an odd number of
-        # drops, leaving the window starting with an assistant turn.
+        # Three exchanges of two cap/5-character messages: the old
+        # single-turn rule stopped after ONE drop (exactly at the cap),
+        # leaving the window starting with an assistant turn.
         char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN
+        size = char_cap // 5
         turns = []
-        for i in range(4):
-            turns.append(("user", f"q{i}-" + "x" * 10))
-            turns.append(("tutor", f"a{i}-" + "y" * (char_cap // 3)))
+        for i in range(3):
+            turns.append(("user", f"q{i}".ljust(size, "x")))
+            turns.append(("tutor", f"a{i}".ljust(size, "y")))
         history = _build_transcript_history(_state(*turns))
         assert history[0]["role"] == "user"
+        assert [h["content"][:2] for h in history] == ["q1", "a1", "q2", "a2"]
         _assert_template_alternation(history)
-        total = sum(len(h["content"]) for h in history)
-        assert total <= char_cap
 
     def test_single_over_budget_newest_exchange_is_kept(self) -> None:
         char_cap = _TRANSCRIPT_WINDOW_TOKEN_CAP * _APPROX_CHARS_PER_TOKEN

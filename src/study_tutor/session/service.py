@@ -108,18 +108,17 @@ _TUTOR_BUSY_STATUSES: frozenset[int] = frozenset({429, 502, 503})
 def _tutor_busy_status(exc: BaseException) -> int | None:
     """The busy upstream status behind ``exc``, or ``None`` if it is not one.
 
-    Walks the cause/context chain, because the orchestrator's streaming
-    and verification layers may re-raise or wrap the Player's
-    :class:`LLMProviderError`.
+    Follows explicit ``raise … from`` causes only, so a wrapped
+    :class:`LLMProviderError` is still recognised but an unrelated error
+    raised while handling one is not.
     """
-    seen: set[int] = set()
     current: BaseException | None = exc
-    while current is not None and id(current) not in seen:
-        seen.add(id(current))
+    while current is not None:
         if isinstance(current, LLMProviderError):
             if current.status_code in _TUTOR_BUSY_STATUSES:
                 return current.status_code
-        current = current.__cause__ or current.__context__
+            return None
+        current = current.__cause__
     return None
 
 

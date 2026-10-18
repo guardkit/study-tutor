@@ -50,8 +50,9 @@ def _map_error_to_response(error: Exception) -> JSONResponse:
     """Map closed-set domain errors to HTTP status + flat envelope (contract §9).
 
     Closed-set errors get error_type (SessionNotFoundError, SessionEnded,
-    SessionForbidden, Unauthenticated). Transport errors (validation, unexpected)
-    get no error_type per contract §4.2.
+    SessionForbidden, Unauthenticated, and TutorBusy from Revision 3).
+    Transport errors (validation, unexpected) get no error_type per
+    contract §4.2.
 
     Args:
         error: Exception from service or auth layer.
