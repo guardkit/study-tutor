@@ -19,6 +19,8 @@
 # 9b785c5 (TutorBusy + history pairing, contract Rev 3). Rollback tag: `kc-20260814`.
 # 2026-10-18 (later): `kc-20261018b` = the build at 0ea2103 (law-3 quote redaction, computed Coach
 # verdict). Rollback tag: `kc-20261018`.
+# 2026-10-18 (latest): `kc-20261018c` = build at e7551a5 (quote lookup, RAG boot probe, re-embedded
+# corpus). Rollback tag: `kc-20261018b`.
 #
 # Usage (from deploy/http/):
 #   docker compose -p study_tutor_http_kc \
@@ -39,7 +41,7 @@
 services:
   study_tutor_http:
     container_name: study_tutor_http_kc
-    image: study-tutor:kc-20261018b
+    image: study-tutor:kc-20261018c
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "whitestocks.tailebf801.ts.net:100.92.74.2"
