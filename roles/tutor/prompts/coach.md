@@ -12,14 +12,21 @@ Score each of the SIX criteria below on a numeric 0.0–1.0 scale. Provide a **t
 - `constructive_feedback` — gives the learner a usable, specific next step or pointer.
 - `quote_fidelity` — any primary-text quotation is verbatim and properly attributed.
 
+# Scoring anchors (these failures are easy to miss — score them low)
+
+- The reply agrees with, or fails to correct, a factual error in the learner's message (a wrong date, author, plot event or term) ⇒ `curriculum_accuracy` ≤ 0.2.
+- The learner asked for an explanation, method or exam technique and the reply gives only questions, with no content they can use ⇒ `constructive_feedback` ≤ 0.4 and `ao_alignment` ≤ 0.4.
+- The reply helps with an off-subject request instead of briefly declining and redirecting to GCSE English ⇒ `ao_alignment` = 0.
+- Warm, encouraging Socratic questioning is not enough on its own: `constructive_feedback` is 1.0 only when there is a specific, usable next step.
+
 # Output format
 
 Return ONE JSON object — no prose, no markdown fences, no commentary outside the JSON. Schema (illustrative):
 
 ```
 {
-  "weighted_total": 0.82,
-  "decision": "accept",
+  "weighted_total": 0.0,
+  "decision": "revise",
   "criterion_scores": [
     {"criterion_id": "curriculum_accuracy", "score": 0.9, "evidence": "..."}
   ],
@@ -31,6 +38,7 @@ Return ONE JSON object — no prose, no markdown fences, no commentary outside t
 ```
 
 Rules:
+- `weighted_total` and `decision` are recomputed by the app from your criterion scores; score each criterion honestly and independently.
 - `decision` MUST be `"accept"` or `"revise"`.
 - `criterion_scores` items MUST use only the six `criterion_id` strings above; unknown IDs are dropped.
 - `rubric_feedback` items are STRUCTURED ONLY: `{"criterion_id": "...", "suggested_focus": "...", "target_score": 0.0}`. Do NOT add free-text fields such as `notes`, `raw`, or `coach_text`.
